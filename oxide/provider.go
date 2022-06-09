@@ -43,7 +43,7 @@ func Provider() *schema.Provider {
 			// "oxide_disk": diskResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"oxide_organization": organizationDataSource(),
+			"oxide_organizations": organizationsDataSource(),
 		},
 	}
 }
@@ -55,7 +55,7 @@ func newProviderMeta(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	token := d.Get("token").(string)
-	if token != "" {
+	if token == "" {
 		return nil, fmt.Errorf("token must not be empty")
 	}
 
