@@ -19,7 +19,7 @@ func Provider() *schema.Provider {
 		ConfigureFunc: newProviderMeta,
 		Schema: map[string]*schema.Schema{
 			"host": {
-				// Description:  "Some description",
+				Description:  "URL of the root of the target server",
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.IsURLWithScheme([]string{"http", "https"}),
@@ -30,10 +30,10 @@ func Provider() *schema.Provider {
 				),
 			},
 			"token": {
-				// Description: "Some description",
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Description: "Token used to authenticate",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
 				DefaultFunc: schema.MultiEnvDefaultFunc(
 					[]string{"OXIDE_TOKEN", "OXIDE_TEST_TOKEN"}, "",
 				),
