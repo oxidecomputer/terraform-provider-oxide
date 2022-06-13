@@ -14,22 +14,26 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go"
 )
 
-func organizationsDataSource() *schema.Resource {
+func projectsDataSource() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: organizationsDataSourceRead,
-		Schema:      newOrganizationsDataSourceSchema(),
+		ReadContext: projectsDataSourceRead,
+		Schema:      newProjectsDataSourceSchema(),
 		Timeouts: &schema.ResourceTimeout{
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 	}
 }
 
-func newOrganizationsDataSourceSchema() map[string]*schema.Schema {
+func newProjectsDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"organizations": &schema.Schema{
+		"organization_name": {
+			Type:     schema.TypeString,
+			Required: true,
+		},
+		"projects": &schema.Schema{
 			Computed:    true,
 			Type:        schema.TypeList,
-			Description: "A list of all organizations",
+			Description: "A list of all projects",
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"description": {
@@ -41,6 +45,10 @@ func newOrganizationsDataSourceSchema() map[string]*schema.Schema {
 						Computed: true,
 					},
 					"name": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"organization_id": {
 						Type:     schema.TypeString,
 						Computed: true,
 					},
@@ -58,46 +66,48 @@ func newOrganizationsDataSourceSchema() map[string]*schema.Schema {
 	}
 }
 
-func organizationsDataSourceRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func projectsDataSourceRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
+	orgName := d.Get("organization_name").(string)
 
-	// TODO: It would be preferable to us the client.Organizations.ListAllPages method instead.
+	// TODO: It would be preferable to us the client.Projectss.ListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
-	// Seems unlikely anyone will have more than one million organizations.
-	result, err := client.Organizations.List(1000000, "", oxideSDK.NameOrIdSortModeIdAscending)
+	// Seems unlikely anyone will have more than one million projects.
+	result, err := client.Projects.List(1000000, "", oxideSDK.NameOrIdSortModeIdAscending, orgName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.SetId(strconv.Itoa(schema.HashString(time.Now().String())))
 
-	if err := organizationsToState(d, result); err != nil {
+	if err := projectsToState(d, result); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func organizationsToState(d *schema.ResourceData, orgs *oxideSDK.OrganizationResultsPage) error {
-	if orgs == nil {
+func projectsToState(d *schema.ResourceData, projects *oxideSDK.ProjectResultsPage) error {
+	if projects == nil {
 		return nil
 	}
 
-	var result = make([]interface{}, 0, len(orgs.Items))
-	for _, org := range orgs.Items {
+	var result = make([]interface{}, 0, len(projects.Items))
+	for _, project := range projects.Items {
 		var m = make(map[string]interface{})
 
-		m["description"] = org.Description
-		m["id"] = org.ID
-		m["name"] = org.Name
-		m["time_created"] = org.TimeCreated.String()
-		m["time_modified"] = org.TimeModified.String()
+		m["description"] = project.Description
+		m["id"] = project.ID
+		m["name"] = project.Name
+		m["organization_id"] = project.OrganizationID
+		m["time_created"] = project.TimeCreated.String()
+		m["time_modified"] = project.TimeModified.String()
 
 		result = append(result, m)
 
 		if len(result) > 0 {
-			if err := d.Set("organizations", result); err != nil {
+			if err := d.Set("projects", result); err != nil {
 				return err
 			}
 		}

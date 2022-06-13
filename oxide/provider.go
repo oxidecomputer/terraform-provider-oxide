@@ -44,6 +44,7 @@ func Provider() *schema.Provider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"oxide_organizations": organizationsDataSource(),
+			"oxide_projects":      projectsDataSource(),
 		},
 	}
 }
