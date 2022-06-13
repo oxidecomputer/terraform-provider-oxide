@@ -10,8 +10,10 @@ terraform {
 }
 
 provider "oxide" {
-    host = "http://127.0.0.1:12220"
-    token = "oxide-spoof-001de000-05e4-4000-8000-000000004007"
+  host = "http://127.0.0.1:12220"
+  token = "oxide-spoof-001de000-05e4-4000-8000-000000004007"
 }
 
-data "oxide_organizations" "example" {}
+data "oxide_projects" "example" {
+  organization_name = "corp"
+}
