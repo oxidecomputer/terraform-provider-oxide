@@ -64,7 +64,7 @@ func newDiskSchema() map[string]*schema.Schema {
 		},
 		"size": {
 			Type:        schema.TypeInt,
-			Description: "Size of the disk",
+			Description: "Size of the disk in bytes",
 			Required:    true,
 		},
 		"block_size": {
