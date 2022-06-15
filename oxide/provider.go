@@ -40,7 +40,8 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"oxide_disk": diskResource(),
+			"oxide_disk":     diskResource(),
+			"oxide_instance": instanceResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"oxide_organizations": organizationsDataSource(),
