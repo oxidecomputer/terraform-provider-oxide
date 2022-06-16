@@ -34,65 +34,68 @@ func newInstanceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"organization_name": {
 			Type:        schema.TypeString,
-			Description: "Name of the organization",
+			Description: "Name of the organization.",
 			Required:    true,
 		},
 		"project_name": {
 			Type:        schema.TypeString,
-			Description: "Name of the project",
+			Description: "Name of the project.",
 			Required:    true,
 		},
 		"name": {
 			Type:        schema.TypeString,
-			Description: "Name of the instance",
+			Description: "Name of the instance.",
 			Required:    true,
 		},
 		"description": {
 			Type:        schema.TypeString,
-			Description: "Description for the instance",
+			Description: "Description for the instance.",
 			Required:    true,
 		},
 		"host_name": {
 			Type:        schema.TypeString,
-			Description: "Host name of the instance",
+			Description: "Host name of the instance.",
 			Required:    true,
 		},
 		"memory": {
 			Type:        schema.TypeInt,
-			Description: "Instance memory in bytes",
+			Description: "Instance memory in bytes.",
 			Required:    true,
 		},
 		"ncpus": {
 			Type:        schema.TypeInt,
-			Description: "Number of CPUs in the Instance",
+			Description: "Number of CPUs allocated for this instance.",
 			Required:    true,
 		},
 		"id": {
 			Type:        schema.TypeString,
-			Description: "Immutable instance ID",
+			Description: "Unique, immutable, system-controlled identifier.",
 			Computed:    true,
 		},
 		"project_id": {
 			Type:        schema.TypeString,
-			Description: "Immutable project ID",
+			Description: "Unique, immutable, system-controlled identifier.",
 			Computed:    true,
 		},
 		"run_state": {
 			Type:        schema.TypeString,
-			Description: "Immutable project ID",
+			Description: "Running state of an Instance (primarily: booted or stopped). This typically reflects whether it's starting, running, stopping, or stopped, but also includes states related to the instance's lifecycle.",
 			Computed:    true,
 		},
 		"time_created": {
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Description: "Timestamp of when this instance was created.",
+			Computed:    true,
 		},
 		"time_modified": {
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Description: "Timestamp of when this instance was last modified.",
+			Computed:    true,
 		},
 		"time_run_state_updated": {
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Description: "Timestamp of when the run state of this instance was last modified.",
+			Computed:    true,
 		},
 	}
 }

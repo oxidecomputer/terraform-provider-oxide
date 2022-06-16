@@ -27,8 +27,9 @@ func projectsDataSource() *schema.Resource {
 func newProjectsDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"organization_name": {
-			Type:     schema.TypeString,
-			Required: true,
+			Type:        schema.TypeString,
+			Description: "Name of the organization.",
+			Required:    true,
 		},
 		"projects": &schema.Schema{
 			Computed:    true,
@@ -37,28 +38,34 @@ func newProjectsDataSourceSchema() map[string]*schema.Schema {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"description": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Description for the project.",
+						Computed:    true,
 					},
 					"id": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Unique, immutable, system-controlled identifier of the project.",
+						Computed:    true,
 					},
 					"name": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Name of the project.",
+						Computed:    true,
 					},
 					"organization_id": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Unique, immutable, system-controlled identifier of the organization.",
+						Computed:    true,
 					},
 					"time_created": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Timestamp of when this project was created.",
+						Computed:    true,
 					},
 					"time_modified": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Timestamp of when this project was last modified.",
+						Computed:    true,
 					},
 				},
 			},

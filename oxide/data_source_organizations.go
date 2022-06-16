@@ -33,24 +33,29 @@ func newOrganizationsDataSourceSchema() map[string]*schema.Schema {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"description": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Description of the organization.",
+						Computed:    true,
 					},
 					"id": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Unique, immutable, system-controlled identifier of the organization.",
+						Computed:    true,
 					},
 					"name": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Name of the organization.",
+						Computed:    true,
 					},
 					"time_created": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Timestamp of when this organization was created.",
+						Computed:    true,
 					},
 					"time_modified": {
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Description: "Timestamp of when this organization was last modified.",
+						Computed:    true,
 					},
 				},
 			},
