@@ -12,6 +12,7 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go"
 )
 
+// TODO: Remove this default host
 const defaultHost = "http://127.0.0.1:12220"
 
 func Provider() *schema.Provider {
@@ -35,6 +36,7 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				Sensitive:   true,
 				DefaultFunc: schema.MultiEnvDefaultFunc(
+					// TODO: Decide on these tokens
 					[]string{"OXIDE_TOKEN", "OXIDE_TEST_TOKEN"}, "",
 				),
 			},

@@ -36,27 +36,27 @@ func newDiskSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"organization_name": {
 			Type:        schema.TypeString,
-			Description: "Name of the organization",
+			Description: "Name of the organization.",
 			Required:    true,
 		},
 		"project_name": {
 			Type:        schema.TypeString,
-			Description: "Name of the project",
+			Description: "Name of the project.",
 			Required:    true,
 		},
 		"name": {
 			Type:        schema.TypeString,
-			Description: "Name of the disk",
+			Description: "Name of the disk.",
 			Required:    true,
 		},
 		"description": {
 			Type:        schema.TypeString,
-			Description: "Description for the disk",
+			Description: "Description for the disk.",
 			Required:    true,
 		},
 		"disk_source": {
 			Type:        schema.TypeMap,
-			Description: "Source of a disk. Can be one of blank=block_size, image=image_id, global_image=image_id, or snapshot=snapshot_id",
+			Description: "Source of a disk. Can be one of blank=block_size, image=image_id, global_image=image_id, or snapshot=snapshot_id.",
 			Required:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -64,42 +64,42 @@ func newDiskSchema() map[string]*schema.Schema {
 		},
 		"size": {
 			Type:        schema.TypeInt,
-			Description: "Size of the disk in bytes",
+			Description: "Size of the disk in bytes.",
 			Required:    true,
 		},
 		"block_size": {
 			Type:        schema.TypeInt,
-			Description: "Size of blocks in bytes",
+			Description: "Size of blocks in bytes.",
 			Computed:    true,
 		},
 		"image_id": {
 			Type:        schema.TypeString,
-			Description: "Image ID of the disk source",
+			Description: "Image ID of the disk source.",
 			Computed:    true,
 		},
 		"snapshot_id": {
 			Type:        schema.TypeString,
-			Description: "Snapshot ID of the disk source",
+			Description: "Snapshot ID of the disk source.",
 			Computed:    true,
 		},
 		"device_path": {
 			Type:        schema.TypeString,
-			Description: "Path of the disk",
+			Description: "Path of the disk.",
 			Computed:    true,
 		},
 		"id": {
 			Type:        schema.TypeString,
-			Description: "Immutable disk ID",
+			Description: "Unique, immutable, system-controlled identifier of the disk.",
 			Computed:    true,
 		},
 		"project_id": {
 			Type:        schema.TypeString,
-			Description: "Immutable project ID",
+			Description: "Unique, immutable, system-controlled identifier of the project.",
 			Computed:    true,
 		},
 		"state": {
 			Type:        schema.TypeList,
-			Description: "State of the disk",
+			Description: "State of a Disk (primarily: attached or not).",
 			Computed:    true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
@@ -116,12 +116,14 @@ func newDiskSchema() map[string]*schema.Schema {
 			},
 		},
 		"time_created": {
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Description: "Timestamp of when this disk was created.",
+			Computed:    true,
 		},
 		"time_modified": {
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Description: "Timestamp of when this disk was last modified.",
+			Computed:    true,
 		},
 	}
 }
@@ -187,6 +189,8 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
+	// Check if disk is detached here too? Not sure if this matters or not
+
 	if err := client.Disks.Delete(diskName, orgName, projectName); err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -234,10 +238,10 @@ func diskToState(d *schema.ResourceData, disk *oxideSDK.Disk) error {
 		return err
 	}
 
-	var result = make([]interface{}, 0, 2)
 	var m = make(map[string]interface{})
 	m["state"] = disk.State.State
 	m["instance"] = disk.State.Instance
+	var result = make([]interface{}, 0, len(m))
 	result = append(result, m)
 	if err := d.Set("state", result); err != nil {
 		return err
