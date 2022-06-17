@@ -213,22 +213,13 @@ func diskToState(d *schema.ResourceData, disk *oxideSDK.Disk) error {
 	if err := d.Set("snapshot_id", disk.SnapshotID); err != nil {
 		return err
 	}
-	if err := d.Set("description", disk.Description); err != nil {
-		return err
-	}
 	if err := d.Set("device_path", disk.DevicePath); err != nil {
 		return err
 	}
 	if err := d.Set("id", disk.ID); err != nil {
 		return err
 	}
-	if err := d.Set("name", disk.Name); err != nil {
-		return err
-	}
 	if err := d.Set("project_id", disk.ProjectID); err != nil {
-		return err
-	}
-	if err := d.Set("size", disk.Size); err != nil {
 		return err
 	}
 	if err := d.Set("time_created", disk.TimeCreated.String()); err != nil {

@@ -26,7 +26,7 @@ func organizationsDataSource() *schema.Resource {
 
 func newOrganizationsDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"organizations": &schema.Schema{
+		"organizations": {
 			Computed:    true,
 			Type:        schema.TypeList,
 			Description: "A list of all organizations",
