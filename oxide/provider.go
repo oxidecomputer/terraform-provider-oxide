@@ -5,19 +5,19 @@
 package oxide
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	oxideSDK "github.com/oxidecomputer/oxide.go"
 )
 
-// TODO: Remove this default host
-const defaultHost = "http://127.0.0.1:12220"
-
+// Provider is the schema for the oxide terraform provider
 func Provider() *schema.Provider {
 	return &schema.Provider{
-		ConfigureFunc: newProviderMeta,
+		ConfigureContextFunc: newProviderMeta,
 		Schema: map[string]*schema.Schema{
 			"host": {
 				Description:  "URL of the root of the target server",
@@ -25,9 +25,7 @@ func Provider() *schema.Provider {
 				Optional:     true,
 				ValidateFunc: validation.IsURLWithScheme([]string{"http", "https"}),
 				DefaultFunc: schema.MultiEnvDefaultFunc(
-					// TODO: Decide on these hosts
-					[]string{"OXIDE_HOST", "OXIDE_TEST_HOST"},
-					defaultHost,
+					[]string{"OXIDE_HOST", "OXIDE_TEST_HOST"}, "",
 				),
 			},
 			"token": {
@@ -53,16 +51,21 @@ func Provider() *schema.Provider {
 	}
 }
 
-func newProviderMeta(d *schema.ResourceData) (interface{}, error) {
+func newProviderMeta(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	host := d.Get("host").(string)
 	if host == "" {
-		return nil, fmt.Errorf("host must not be empty")
+		return nil, diag.FromErr(fmt.Errorf("host must not be empty"))
 	}
 
 	token := d.Get("token").(string)
 	if token == "" {
-		return nil, fmt.Errorf("token must not be empty")
+		return nil, diag.FromErr(fmt.Errorf("token must not be empty"))
 	}
 
-	return oxideSDK.NewClient(token, "terraform-provider-oxide", host)
+	client, err := oxideSDK.NewClient(token, "terraform-provider-oxide", host)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	return client, nil
 }

@@ -5,14 +5,9 @@
 package oxide
 
 import (
-	"fmt"
 	"strings"
 )
 
 func is404(err error) bool {
-	if strings.Contains(err.Error(), fmt.Sprintf("404 Not Found")) {
-		return true
-	}
-
-	return false
+	return strings.Contains(err.Error(), "404 Not Found")
 }

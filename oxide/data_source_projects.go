@@ -31,7 +31,7 @@ func newProjectsDataSourceSchema() map[string]*schema.Schema {
 			Description: "Name of the organization.",
 			Required:    true,
 		},
-		"projects": &schema.Schema{
+		"projects": {
 			Computed:    true,
 			Type:        schema.TypeList,
 			Description: "A list of all projects",

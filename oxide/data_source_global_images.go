@@ -26,7 +26,7 @@ func globalImagesDataSource() *schema.Resource {
 
 func newGlobalImagesDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"global_images": &schema.Schema{
+		"global_images": {
 			Computed:    true,
 			Type:        schema.TypeList,
 			Description: "A list of all global images",
