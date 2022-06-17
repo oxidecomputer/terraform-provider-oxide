@@ -11,12 +11,12 @@ This resource manages instances.
 ```hcl
 resource "oxide_instance" "example" {
   organization_name = "staff"
-  project_name = "test"
-  description = "a test instance"
-  name = "myinstance"
-  host_name = "<host value>"
-  memory = 512
-  ncpus = 1
+  project_name      = "test"
+  description       = "a test instance"
+  name              = "myinstance"
+  host_name         = "<host value>"
+  memory            = 512
+  ncpus             = 1
 }
 ```
 

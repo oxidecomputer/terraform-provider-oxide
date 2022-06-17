@@ -175,11 +175,11 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 	}
 
 	// Wait for instance to be stopped before attempting to destroy
-	ch := make(chan waitForStoppedInstanceResult)
+	ch := make(chan error)
 	go waitForStoppedInstance(client, instanceName, orgName, projectName, ch)
-	r := <-ch
-	if r.err != nil {
-		return diag.FromErr(r.err)
+	e := <-ch
+	if e != nil {
+		return diag.FromErr(e)
 	}
 
 	if err := client.Instances.Delete(instanceName, orgName, projectName); err != nil {
@@ -217,21 +217,16 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 	return nil
 }
 
-type waitForStoppedInstanceResult struct {
-	done bool
-	err  error
-}
-
-func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName string, ch chan waitForStoppedInstanceResult) {
+func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName string, ch chan error) {
 	for {
 		resp, err := client.Instances.Get(instanceName, orgName, projectName)
 		if err != nil {
-			ch <- waitForStoppedInstanceResult{false, err}
+			ch <- err
 		}
 		if resp.RunState == "stopped" {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	ch <- waitForStoppedInstanceResult{true, nil}
+	ch <- nil
 }

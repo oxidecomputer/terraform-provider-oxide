@@ -11,10 +11,10 @@ This resource manages disks.
 ```hcl
 resource "oxide_disk" "example" {
   organization_name = "staff"
-  project_name = "test"
-  description = "a test disk"
-  name = "mydisk"
-  size = 1024
+  project_name      = "test"
+  description       = "a test disk"
+  name              = "mydisk"
+  size              = 1024
   disk_source = {
     blank = 512
   }
@@ -22,13 +22,11 @@ resource "oxide_disk" "example" {
 
 resource "oxide_disk" "example2" {
   organization_name = "staff"
-  project_name = "test"
-  description = "a test disk"
-  name = "mydisk2"
-  size = 104857600
-  disk_source = {
-    global_image = "611bb17d-6883-45be-b3aa-8a186fdeafe8"
-  }
+  project_name      = "test"
+  description       = "a test disk"
+  name              = "mydisk2"
+  size              = 104857600
+  disk_source       = { global_image = "611bb17d-6883-45be-b3aa-8a186fdeafe8" }
 }
 ```
 

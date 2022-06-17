@@ -14,6 +14,7 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go"
 )
 
+// Provider is the schema for the oxide terraform provider
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ConfigureContextFunc: newProviderMeta,
