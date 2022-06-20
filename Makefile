@@ -1,9 +1,16 @@
+# Build variables
 VERSION ?= 0.1.0-dev
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
 OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)
 PROVIDER_PATH ?= registry.terraform.io/oxidecomputer/oxide/$(VERSION)/$(OS_ARCH)/
 PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
+
+# Acceptance test variables
+TEST_COUNT ?= 1
+TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide-demo/oxide
+TEST_NAME ?= TestAcc
+TEST_ACC_PARALLEL = 6
 
 include Makefile.tools
 
@@ -56,3 +63,9 @@ terrafmt: tools
 configfmt:
 	@ echo "-> Checking that the terraform .tf files are formatted..."
 	@ terraform fmt -write=false -recursive -check
+
+.PHONY: testacc
+## Runs the Terraform acceptance tests. Use TEST_NAME, TESTARGS, TEST_COUNT and TEST_ACC_PARALLEL to control execution.
+testacc:
+	@ echo "-> Running terraform acceptance tests..."
+	@ TF_ACC=1 go test $(TEST_ACC) -v -count $(TEST_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TESTARGS) -timeout 20m -run $(TEST_NAME)
