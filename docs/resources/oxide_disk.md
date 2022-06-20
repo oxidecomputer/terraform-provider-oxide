@@ -15,9 +15,7 @@ resource "oxide_disk" "example" {
   description       = "a test disk"
   name              = "mydisk"
   size              = 1024
-  disk_source = {
-    blank = 512
-  }
+  disk_source       = { blank = 512 }
 }
 
 resource "oxide_disk" "example2" {

@@ -9,5 +9,9 @@ import (
 )
 
 func is404(err error) bool {
-	return strings.Contains(err.Error(), "404 Not Found")
+	if strings.Contains(err.Error(), "HTTP 404") ||
+		strings.Contains(err.Error(), "404 Not Found") {
+		return true
+	}
+	return false
 }
