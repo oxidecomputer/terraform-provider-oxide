@@ -25,7 +25,7 @@ func instanceResource() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(10 * time.Minute),
+			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 	}
 }
@@ -66,6 +66,20 @@ func newInstanceSchema() map[string]*schema.Schema {
 			Type:        schema.TypeInt,
 			Description: "Number of CPUs allocated for this instance.",
 			Required:    true,
+		},
+		"disks": {
+			Type:        schema.TypeList,
+			Description: "Disks attached to this instance",
+			Optional:    true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"name": {
+						Type:        schema.TypeString,
+						Description: "Name of the disk.",
+						Required:    true,
+					},
+				},
+			},
 		},
 		"id": {
 			Type:        schema.TypeString,
@@ -117,6 +131,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		Hostname:    hostName,
 		Memory:      oxideSDK.ByteCount(memory),
 		NCPUs:       oxideSDK.InstanceCPUCount(ncpus),
+		Disks:       newInstanceDiskAttach(d),
 		// Due to a small bug in the oxide.go SDK where the request does not
 		// omit the NetworkInterfaces struct if not set, I will set the type
 		// as "none" until this feature is implemented.
@@ -229,4 +244,28 @@ func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, proj
 		time.Sleep(100 * time.Millisecond)
 	}
 	ch <- nil
+}
+
+func newInstanceDiskAttach(d *schema.ResourceData) []oxideSDK.InstanceDiskAttachment {
+	var diskAttachement = []oxideSDK.InstanceDiskAttachment{}
+	disks := d.Get("disks").([]interface{})
+
+	if len(disks) < 1 {
+		return diskAttachement
+	}
+	for _, disk := range disks {
+		var cfg = disk.(map[string]interface{})
+		var ds = oxideSDK.InstanceDiskAttachment{}
+
+		if v, ok := cfg["name"]; ok {
+			ds = oxideSDK.InstanceDiskAttachment{
+				Name: v.(string),
+				Type: "attach",
+			}
+		}
+
+		diskAttachement = append(diskAttachement, ds)
+	}
+
+	return diskAttachement
 }
