@@ -37,6 +37,5 @@ resource "oxide_instance" "example3" {
   host_name         = "myhost"
   memory            = 512
   ncpus             = 1
-  disks { name = "myattacheddisk1" }
-  disks { name = "myattacheddisk2" }
+  attach_to_disks   = ["myattacheddisk1", "myattacheddisk2"]
 }

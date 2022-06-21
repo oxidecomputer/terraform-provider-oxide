@@ -90,8 +90,7 @@ resource "oxide_instance" "test2" {
   host_name         = "terraform-acc-myhost"
   memory            = 512
   ncpus             = 1
-  disks { name = "terraform-acc-mydisk1" }
-  disks { name = "terraform-acc-mydisk2" }
+  attach_to_disks   = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
 }
 `
 
@@ -105,8 +104,8 @@ func checkResourceInstanceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "512"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "disks.0.name", "terraform-acc-mydisk1"),
-		resource.TestCheckResourceAttr(resourceName, "disks.1.name", "terraform-acc-mydisk2"),
+		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", "terraform-acc-mydisk1"),
+		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", "terraform-acc-mydisk2"),
 		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),

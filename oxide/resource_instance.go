@@ -67,18 +67,12 @@ func newInstanceSchema() map[string]*schema.Schema {
 			Description: "Number of CPUs allocated for this instance.",
 			Required:    true,
 		},
-		"disks": {
+		"attach_to_disks": {
 			Type:        schema.TypeList,
-			Description: "Disks attached to this instance",
+			Description: "Disks to be attached to this instance.",
 			Optional:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"name": {
-						Type:        schema.TypeString,
-						Description: "Name of the disk.",
-						Required:    true,
-					},
-				},
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
 			},
 		},
 		"id": {
@@ -248,20 +242,15 @@ func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, proj
 
 func newInstanceDiskAttach(d *schema.ResourceData) []oxideSDK.InstanceDiskAttachment {
 	var diskAttachement = []oxideSDK.InstanceDiskAttachment{}
-	disks := d.Get("disks").([]interface{})
+	disks := d.Get("attach_to_disks").([]interface{})
 
 	if len(disks) < 1 {
 		return diskAttachement
 	}
 	for _, disk := range disks {
-		var cfg = disk.(map[string]interface{})
-		var ds = oxideSDK.InstanceDiskAttachment{}
-
-		if v, ok := cfg["name"]; ok {
-			ds = oxideSDK.InstanceDiskAttachment{
-				Name: v.(string),
-				Type: "attach",
-			}
+		ds := oxideSDK.InstanceDiskAttachment{
+			Name: disk.(string),
+			Type: "attach",
 		}
 
 		diskAttachement = append(diskAttachement, ds)
