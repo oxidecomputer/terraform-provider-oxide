@@ -25,7 +25,7 @@ func instanceResource() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(10 * time.Minute),
+			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 	}
 }
@@ -66,6 +66,14 @@ func newInstanceSchema() map[string]*schema.Schema {
 			Type:        schema.TypeInt,
 			Description: "Number of CPUs allocated for this instance.",
 			Required:    true,
+		},
+		"attach_to_disks": {
+			Type:        schema.TypeList,
+			Description: "Disks to be attached to this instance.",
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
 		},
 		"id": {
 			Type:        schema.TypeString,
@@ -117,6 +125,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		Hostname:    hostName,
 		Memory:      oxideSDK.ByteCount(memory),
 		NCPUs:       oxideSDK.InstanceCPUCount(ncpus),
+		Disks:       newInstanceDiskAttach(d),
 		// Due to a small bug in the oxide.go SDK where the request does not
 		// omit the NetworkInterfaces struct if not set, I will set the type
 		// as "none" until this feature is implemented.
@@ -229,4 +238,23 @@ func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, proj
 		time.Sleep(100 * time.Millisecond)
 	}
 	ch <- nil
+}
+
+func newInstanceDiskAttach(d *schema.ResourceData) []oxideSDK.InstanceDiskAttachment {
+	var diskAttachement = []oxideSDK.InstanceDiskAttachment{}
+	disks := d.Get("attach_to_disks").([]interface{})
+
+	if len(disks) < 1 {
+		return diskAttachement
+	}
+	for _, disk := range disks {
+		ds := oxideSDK.InstanceDiskAttachment{
+			Name: disk.(string),
+			Type: "attach",
+		}
+
+		diskAttachement = append(diskAttachement, ds)
+	}
+
+	return diskAttachement
 }

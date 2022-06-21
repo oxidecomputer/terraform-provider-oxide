@@ -27,7 +27,7 @@ func diskResource() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(10 * time.Minute),
+			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 	}
 }
@@ -189,7 +189,19 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	// Check if disk is detached here too? Not sure if this matters or not
+	// Wait for disk to be detached before attempting to destroy.
+	// TODO: For the time being there is no endpoint to detach disks without
+	// knowing the Instance name first. The Disk get endpoint only retrieves
+	// the attached instance ID, so we can't get the name from there.
+	// This means that we cannot automatically detach disks here.
+	// for a temporary workaround for the acceptance tests we will only check for a `detached`
+	// status for 5 seconds and return an error otherwise.
+	ch := make(chan error)
+	go waitForDetachedDisk(client, diskName, orgName, projectName, ch)
+	e := <-ch
+	if e != nil {
+		return diag.FromErr(e)
+	}
 
 	if err := client.Disks.Delete(diskName, orgName, projectName); err != nil {
 		if is404(err) {
@@ -287,4 +299,18 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 	}
 
 	return ds, nil
+}
+
+func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName string, ch chan error) {
+	for start := time.Now(); time.Since(start) < (5 * time.Second); {
+		resp, err := client.Disks.Get(diskName, orgName, projectName)
+		if err != nil {
+			ch <- err
+		}
+		if resp.State.State == "detached" {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	ch <- nil
 }

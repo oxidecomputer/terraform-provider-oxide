@@ -8,6 +8,8 @@ This resource manages instances.
 
 ## Example Usage
 
+### Basic instance
+
 ```hcl
 resource "oxide_instance" "example" {
   organization_name = "staff"
@@ -17,6 +19,21 @@ resource "oxide_instance" "example" {
   host_name         = "<host value>"
   memory            = 512
   ncpus             = 1
+}
+```
+
+### Attaching two disks to the instance
+
+```hcl
+resource "oxide_instance" "example" {
+  organization_name = "staff"
+  project_name      = "test"
+  description       = "a test instance"
+  name              = "myinstance"
+  host_name         = "<host value>"
+  memory            = 512
+  ncpus             = 1
+  attach_to_disks   = ["disk1", "disk2"]
 }
 ```
 
@@ -34,6 +51,7 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
+- `attach_to_disks` (List of String, Optional) Disks to be attached to this instance.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
