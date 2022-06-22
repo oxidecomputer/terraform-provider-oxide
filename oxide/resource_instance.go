@@ -75,6 +75,12 @@ func newInstanceSchema() map[string]*schema.Schema {
 				Type: schema.TypeString,
 			},
 		},
+		"network_interface": {
+			Type:        schema.TypeList,
+			Description: "Attaches network interfaces to an instance at the time the instance is created.",
+			Optional:    true,
+			Elem:        newNetworkInterfaceResource(),
+		},
 		"id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier.",
@@ -108,6 +114,51 @@ func newInstanceSchema() map[string]*schema.Schema {
 	}
 }
 
+func newNetworkInterfaceResource() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"description": {
+				Type:        schema.TypeString,
+				Description: "Description for the network interface.",
+				Required:    true,
+			},
+			"name": {
+				Type:        schema.TypeString,
+				Description: "Name for the network interface.",
+				Required:    true,
+			},
+			"subnet_name": {
+				Type:        schema.TypeString,
+				Description: "Name of the VPC Subnet in which to create the network interface.",
+				Required:    true,
+			},
+			"vpc_name": {
+				Type:        schema.TypeString,
+				Description: "Name of the VPC in which to create the network interface.",
+				Required:    true,
+			},
+			"ip": {
+				Type:        schema.TypeString,
+				Description: "IP address for the network interface.",
+				// TODO: For the purposes of this demo we will stick to
+				// auto-assigned IP addresses. In the future we will want
+				// this value to be computed/optional or required.
+				Computed: true,
+			},
+			"subnet_id": {
+				Type:        schema.TypeString,
+				Description: "ID of the VPC Subnet to which the interface belongs.",
+				Computed:    true,
+			},
+			"vpc_id": {
+				Type:        schema.TypeString,
+				Description: "ID of the VPC in which to which the interface belongs.",
+				Computed:    true,
+			},
+		},
+	}
+}
+
 func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 
@@ -129,9 +180,10 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		// Due to a small bug in the oxide.go SDK where the request does not
 		// omit the NetworkInterfaces struct if not set, I will set the type
 		// as "none" until this feature is implemented.
-		NetworkInterfaces: oxideSDK.InstanceNetworkInterfaceAttachment{
-			Type: "none",
-		},
+		//NetworkInterfaces: oxideSDK.InstanceNetworkInterfaceAttachment{
+		//	Type: "none",
+		//},
+		NetworkInterfaces: newNetworkInterface(d),
 	}
 
 	resp, err := client.Instances.Create(orgName, projectName, &body)
@@ -156,6 +208,16 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	}
 
 	if err := instanceToState(d, resp); err != nil {
+		return diag.FromErr(err)
+	}
+
+	resp2, err := client.Instances.NetworkInterfacesList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	networkInterfaces := networkInterfaceToState(*resp2)
+	if err := d.Set("network_interface", networkInterfaces); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -257,4 +319,58 @@ func newInstanceDiskAttach(d *schema.ResourceData) []oxideSDK.InstanceDiskAttach
 	}
 
 	return diskAttachement
+}
+
+func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfaceAttachment {
+	nis := d.Get("network_interface").([]interface{})
+
+	if len(nis) < 1 {
+		return oxideSDK.InstanceNetworkInterfaceAttachment{
+			Type: "none",
+		}
+	}
+
+	var interfaceCreate = []oxideSDK.NetworkInterfaceCreate{}
+	for _, ni := range nis {
+		nwInterface := ni.(map[string]interface{})
+
+		nwInterfaceCreate := oxideSDK.NetworkInterfaceCreate{
+			Description: nwInterface["description"].(string),
+			Name:        nwInterface["name"].(string),
+			SubnetName:  nwInterface["subnet_name"].(string),
+			VPCName:     nwInterface["vpc_name"].(string),
+		}
+
+		interfaceCreate = append(interfaceCreate, nwInterfaceCreate)
+	}
+
+	return oxideSDK.InstanceNetworkInterfaceAttachment{
+		Params: interfaceCreate,
+		Type:   "create",
+	}
+}
+
+func networkInterfaceToState(nwInterface oxideSDK.NetworkInterfaceResultsPage) []interface{} {
+	items := nwInterface.Items
+	var result = make([]interface{}, 0, len(items))
+	for _, item := range items {
+		var m = make(map[string]interface{})
+
+		m["description"] = item.Description
+		m["ip"] = item.Ip
+		m["name"] = item.Name
+		m["subnet_id"] = item.SubnetID
+		m["vpc_id"] = item.VPCId
+
+		// TODO: Unfortunately NetworkInterface doesn't have the following fields yet.
+		// This means that they are unset when a read is performed (which is on every create).
+		// For the demo this won't be a problem, but we must fix this before we can implement
+		// update.
+		//m["subnet_name"] = item.SubnetName
+		//m["vpc_name"] = item.VPCName
+
+		result = append(result, m)
+	}
+
+	return result
 }
