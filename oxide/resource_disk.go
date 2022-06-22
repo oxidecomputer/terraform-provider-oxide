@@ -216,6 +216,12 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 }
 
 func diskToState(d *schema.ResourceData, disk *oxideSDK.Disk) error {
+	if err := d.Set("name", disk.Name); err != nil {
+		return err
+	}
+	if err := d.Set("description", disk.Description); err != nil {
+		return err
+	}
 	if err := d.Set("block_size", disk.BlockSize); err != nil {
 		return err
 	}
