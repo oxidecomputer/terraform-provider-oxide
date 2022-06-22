@@ -171,18 +171,12 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 	ncpus := d.Get("ncpus").(int)
 
 	body := oxideSDK.InstanceCreate{
-		Description: description,
-		Name:        name,
-		Hostname:    hostName,
-		Memory:      oxideSDK.ByteCount(memory),
-		NCPUs:       oxideSDK.InstanceCPUCount(ncpus),
-		Disks:       newInstanceDiskAttach(d),
-		// Due to a small bug in the oxide.go SDK where the request does not
-		// omit the NetworkInterfaces struct if not set, I will set the type
-		// as "none" until this feature is implemented.
-		//NetworkInterfaces: oxideSDK.InstanceNetworkInterfaceAttachment{
-		//	Type: "none",
-		//},
+		Description:       description,
+		Name:              name,
+		Hostname:          hostName,
+		Memory:            oxideSDK.ByteCount(memory),
+		NCPUs:             oxideSDK.InstanceCPUCount(ncpus),
+		Disks:             newInstanceDiskAttach(d),
 		NetworkInterfaces: newNetworkInterface(d),
 	}
 
