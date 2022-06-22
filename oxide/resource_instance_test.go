@@ -40,7 +40,7 @@ resource "oxide_instance" "test" {
   description       = "a test instance"
   name              = "terraform-acc-myinstance"
   host_name         = "terraform-acc-myhost"
-  memory            = 512
+  memory            = 1073741824
   ncpus             = 1
 }
 `
@@ -53,7 +53,7 @@ func checkResourceInstance(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance"),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
-		resource.TestCheckResourceAttr(resourceName, "memory", "512"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -69,7 +69,7 @@ resource "oxide_disk" "test-instance" {
   project_name      = "test"
   description       = "a test disk"
   name              = "terraform-acc-mydisk1"
-  size              = 1024
+  size              = 1073741824
   disk_source       = { blank = 512 }
 }
 
@@ -78,7 +78,7 @@ resource "oxide_disk" "test-instance2" {
   project_name      = "test"
   description       = "a test disk"
   name              = "terraform-acc-mydisk2"
-  size              = 1024
+  size              = 1073741824
   disk_source       = { blank = 512 }
 }
 
@@ -88,7 +88,7 @@ resource "oxide_instance" "test2" {
   description       = "a test instance"
   name              = "terraform-acc-myinstance2"
   host_name         = "terraform-acc-myhost"
-  memory            = 512
+  memory            = 1073741824
   ncpus             = 1
   attach_to_disks   = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
 }
@@ -102,7 +102,7 @@ func checkResourceInstanceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance2"),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
-		resource.TestCheckResourceAttr(resourceName, "memory", "512"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", "terraform-acc-mydisk1"),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", "terraform-acc-mydisk2"),
