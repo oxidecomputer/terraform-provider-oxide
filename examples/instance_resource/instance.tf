@@ -17,6 +17,6 @@ resource "oxide_instance" "example" {
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "myhost"
-  memory            = 512
+  memory            = 1073741824
   ncpus             = 1
 }

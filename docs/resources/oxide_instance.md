@@ -17,7 +17,7 @@ resource "oxide_instance" "example" {
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "<host value>"
-  memory            = 512
+  memory            = 1073741824
   ncpus             = 1
 }
 ```
@@ -31,7 +31,7 @@ resource "oxide_instance" "example" {
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "<host value>"
-  memory            = 512
+  memory            = 1073741824
   ncpus             = 1
   attach_to_disks   = ["disk1", "disk2"]
 }

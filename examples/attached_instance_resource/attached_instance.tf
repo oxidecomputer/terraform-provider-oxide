@@ -16,7 +16,7 @@ resource "oxide_disk" "example" {
   project_name      = "test"
   description       = "a test disk"
   name              = "myattacheddisk1"
-  size              = 1024
+  size              = 1073741824
   disk_source       = { blank = 512 }
 }
 
@@ -25,7 +25,7 @@ resource "oxide_disk" "example2" {
   project_name      = "test"
   description       = "a test disk"
   name              = "myattacheddisk2"
-  size              = 1024
+  size              = 1073741824
   disk_source       = { blank = 512 }
 }
 
@@ -35,7 +35,7 @@ resource "oxide_instance" "example3" {
   description       = "a test instance"
   name              = "myinstance2"
   host_name         = "myhost"
-  memory            = 512
+  memory            = 1073741824
   ncpus             = 1
   attach_to_disks   = ["myattacheddisk1", "myattacheddisk2"]
 }

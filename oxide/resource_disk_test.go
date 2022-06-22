@@ -34,7 +34,7 @@ resource "oxide_disk" "test" {
   project_name      = "test"
   description       = "a test disk"
   name              = "terraform-acc-mydisk"
-  size              = 1024
+  size              = 1073741824
   disk_source       = { blank = 512 }
 }
 `
@@ -46,7 +46,7 @@ func checkResourceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test disk"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-mydisk"),
-		resource.TestCheckResourceAttr(resourceName, "size", "1024"),
+		resource.TestCheckResourceAttr(resourceName, "size", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/terraform-acc-mydisk"),
 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
 		resource.TestCheckResourceAttr(resourceName, "disk_source.blank", "512"),
