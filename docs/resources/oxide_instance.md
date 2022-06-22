@@ -6,6 +6,8 @@ page_title: "oxide_instance Resource - terraform-provider-oxide"
 
 This resource manages instances.
 
+!> This resource currently only provides create, read and delete actions. Once update endpoints have been added to the API, that functionality will be added here as well.
+
 ## Example Usage
 
 ### Basic instance
