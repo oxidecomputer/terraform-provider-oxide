@@ -15,6 +15,7 @@ import (
 func TestAccResourceInstance(t *testing.T) {
 	resourceName := "oxide_instance.test"
 	secondResourceName := "oxide_instance.test2"
+	thirdResourceName := "oxide_instance.test3"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -28,6 +29,14 @@ func TestAccResourceInstance(t *testing.T) {
 			{
 				Config: testResourceInstanceDiskConfig,
 				Check:  checkResourceInstanceDisk(secondResourceName),
+			},
+			{
+				// TODO: Because of the bug explained in the networkInterfaceToState() function,
+				// the plan is not empty after applying this step of the test. We'll have to
+				// temporarily expect a non-empty plan until this bug is fixed.
+				ExpectNonEmptyPlan: true,
+				Config:             testResourceInstanceNetworkInterfaceConfig,
+				Check:              checkResourceInstanceNetworkInterface(thirdResourceName),
 			},
 		},
 	})
@@ -106,6 +115,47 @@ func checkResourceInstanceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", "terraform-acc-mydisk1"),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", "terraform-acc-mydisk2"),
+		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_run_state_updated"),
+	}...)
+}
+
+var testResourceInstanceNetworkInterfaceConfig = `
+resource "oxide_instance" "test3" {
+  organization_name = "corp"
+  project_name      = "test"
+  description       = "a test instance"
+  name              = "terraform-acc-myinstance3"
+  host_name         = "terraform-acc-myhost"
+  memory            = 1073741824
+  ncpus             = 1
+  network_interface {
+    description = "a network interface"
+    name        = "terraform-acc-mynetworkinterface"
+    subnet_name = "default"
+    vpc_name    = "default"
+  }
+}
+`
+
+func checkResourceInstanceNetworkInterface(resourceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
+		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance3"),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "network_interface.0.description", "a network interface"),
+		resource.TestCheckResourceAttr(resourceName, "network_interface.0.name", "terraform-acc-mynetworkinterface"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interface.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interface.0.subnet_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interface.0.vpc_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
