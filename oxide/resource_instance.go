@@ -260,6 +260,21 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 }
 
 func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error {
+	if err := d.Set("name", instance.Name); err != nil {
+		return err
+	}
+	if err := d.Set("description", instance.Description); err != nil {
+		return err
+	}
+	if err := d.Set("host_name", instance.Hostname); err != nil {
+		return err
+	}
+	if err := d.Set("memory", instance.Memory); err != nil {
+		return err
+	}
+	if err := d.Set("ncpus", instance.NCPUs); err != nil {
+		return err
+	}
 	if err := d.Set("id", instance.ID); err != nil {
 		return err
 	}
