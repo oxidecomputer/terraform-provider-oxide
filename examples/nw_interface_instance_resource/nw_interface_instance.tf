@@ -15,7 +15,7 @@ resource "oxide_instance" "example" {
   organization_name = "corp"
   project_name      = "test"
   description       = "a test instance"
-  name              = "myinstance"
+  name              = "myinstance3"
   host_name         = "myhost"
   memory            = 1073741824
   ncpus             = 1

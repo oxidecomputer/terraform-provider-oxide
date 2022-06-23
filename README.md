@@ -28,7 +28,7 @@ To try out the provider you'll need to follow these steps:
 - Make sure you've installed the provider using `make install`.
 - Have a Nexus server running.
 - Set the `$OXIDE_HOST` and `$OXIDE_TOKEN` environment variables.
-- Pick an example From the `examples/` directory and cd into it, or create your own Terraform configuration file.
+- Pick an example From the `examples/` directory and cd into it, or create your own Terraform configuration file. You can change the values of the fields of the example files to work with your environment.
 - Run `terraform init` and `terraform apply` to use the example Terraform configuration file.
 - To remove all created resources run `terraform destroy`.
 
