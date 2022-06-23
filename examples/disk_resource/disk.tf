@@ -26,5 +26,5 @@ resource "oxide_disk" "example2" {
   description       = "a test disk"
   name              = "mydisk2"
   size              = 1073741824
-  disk_source       = { global_image = "611bb17d-6883-45be-b3aa-8a186fdeafe8" }
+  disk_source       = { global_image = "2f62fa1c-f50c-4657-a331-fa81ddb41ade" }
 }
