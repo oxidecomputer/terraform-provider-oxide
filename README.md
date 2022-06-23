@@ -1,6 +1,6 @@
 # Terraform Provider Oxide Demo
 
-The [scope](https://docs.google.com/document/d/1TNvy5-aqZPcv1PQllzySSIV7KJsGl5llvfc2L1IiD-Y/edit?usp=sharing) of this provider is to only have the necessary resources and data sources for the on-site demo.
+The [scope](https://docs.google.com/document/d/1TNvy5-aqZPcv1PQllzySSIV7KJsGl5llvfc2L1IiD-Y/edit?usp=sharing) of this provider is to only have the necessary [resources](https://www.terraform.io/language/resources) and [data sources](https://www.terraform.io/language/data-sources) for the on-site demo.
 
 **IMPORTANT:** The resources for this provider currently only provide create, read and delete actions. Once update endpoints have been added to the API, that functionality will be added here as well. That said, this is not a blocker for the demo. The requirements for the demo only specify resource creation.
 
@@ -29,8 +29,10 @@ To try out the provider you'll need to follow these steps:
 - Have a Nexus server running.
 - Set the `$OXIDE_HOST` and `$OXIDE_TOKEN` environment variables.
 - Pick an example From the `examples/` directory and cd into it, or create your own Terraform configuration file. You can change the values of the fields of the example files to work with your environment.
-- Run `terraform init` and `terraform apply` to use the example Terraform configuration file.
+- Run `terraform init` and `terraform apply` from within the chosen example directory. This will create resources or read data sources based on a Terraform configuration file.
 - To remove all created resources run `terraform destroy`.
+
+To try out the demo configuration file, use the [examples/demo/](./examples/demo/) directory.
 
 When trying out the same example with a provider you've recently built with changes, make sure to remove all the files from the example Terraform generated first.
 
