@@ -10,7 +10,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	oxideSDK "github.com/oxidecomputer/oxide.go"
 )
 
@@ -20,10 +19,11 @@ func Provider() *schema.Provider {
 		ConfigureContextFunc: newProviderMeta,
 		Schema: map[string]*schema.Schema{
 			"host": {
-				Description:  "URL of the root of the target server",
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.IsURLWithScheme([]string{"http", "https"}),
+				Description: "URL of the root of the target server",
+				Type:        schema.TypeString,
+				Optional:    true,
+				// We'll remove this validation for now. Will confirm later if needed with rack testing.
+				// ValidateFunc: validation.IsURLWithScheme([]string{"http", "https"}),
 				DefaultFunc: schema.MultiEnvDefaultFunc(
 					[]string{"OXIDE_HOST", "OXIDE_TEST_HOST"}, "",
 				),
