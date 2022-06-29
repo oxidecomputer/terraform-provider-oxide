@@ -3,6 +3,14 @@ VERSION ?= 0.1.0-dev
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
 OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)
+
+# Terraform currently does not have a binary for Illumos.
+# The one for Solaris works fine with Illumos, so we'll need
+# to make sure we install the plugin in the solaris directory.
+ifeq ($(shell go env GOOS), illumos)
+    OS_ARCH = solaris_$(shell go env GOARCH)
+endif
+
 PROVIDER_PATH ?= registry.terraform.io/oxidecomputer/oxide/$(VERSION)/$(OS_ARCH)/
 PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
 

@@ -6,7 +6,7 @@ The [scope](https://docs.google.com/document/d/1TNvy5-aqZPcv1PQllzySSIV7KJsGl5ll
 
 ## Requirements
 
-- [Terraform](https://www.terraform.io/downloads) 0.1.x and above, we recommend using the latest stable release whenever possible.
+- [Terraform](https://www.terraform.io/downloads) 0.1.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
 - [Go 1.18](https://go.dev/dl/) (to build the provider plugin)
 
 ## Building the provider
@@ -27,10 +27,18 @@ To try out the provider you'll need to follow these steps:
 
 - Make sure you've installed the provider using `make install`.
 - Have a Nexus server running.
-- Set the `$OXIDE_HOST` and `$OXIDE_TOKEN` environment variables.
+- Set the `$OXIDE_HOST` and `$OXIDE_TOKEN` environment variables. If you do not wish to use these variables, you have the option to set the host and token directly on the provider block. For security reasons this approach is not recommended.
+  ```hcl
+  provider "oxide" {
+  host = "<host>"
+  token = "<token>"
+  }
+  ```
 - Pick an example From the `examples/` directory and cd into it, or create your own Terraform configuration file. You can change the values of the fields of the example files to work with your environment.
 - Run `terraform init` and `terraform apply` from within the chosen example directory. This will create resources or read data sources based on a Terraform configuration file.
 - To remove all created resources run `terraform destroy`.
+
+**IMPORTANT: Given the update functionality is not enabled; when changing a .tf configuration file on a resource where you have already run `terraform apply`, you MUST run a `terraform destroy` first.**
 
 To try out the demo configuration file, use the [examples/demo/](./examples/demo/) directory.
 
