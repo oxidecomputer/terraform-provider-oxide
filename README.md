@@ -30,8 +30,8 @@ To try out the provider you'll need to follow these steps:
 - Set the `$OXIDE_HOST` and `$OXIDE_TOKEN` environment variables. If you do not wish to use these variables, you have the option to set the host and token directly on the provider block. For security reasons this approach is not recommended.
   ```hcl
   provider "oxide" {
-  host = "<host>"
-  token = "<token>"
+    host = "<host>"
+    token = "<token>"
   }
   ```
 - Pick an example From the `examples/` directory and cd into it, or create your own Terraform configuration file. You can change the values of the fields of the example files to work with your environment.
