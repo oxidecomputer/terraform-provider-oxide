@@ -81,7 +81,7 @@ func projectsDataSourceRead(_ context.Context, d *schema.ResourceData, meta inte
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
 	// Seems unlikely anyone will have more than one million projects.
-	result, err := client.Projects.List(1000000, "", oxideSDK.NameOrIdSortModeIdAscending, orgName)
+	result, err := client.Projects.ProjectList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending, orgName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -105,9 +105,9 @@ func projectsToState(d *schema.ResourceData, projects *oxideSDK.ProjectResultsPa
 		var m = make(map[string]interface{})
 
 		m["description"] = project.Description
-		m["id"] = project.ID
+		m["id"] = project.Id
 		m["name"] = project.Name
-		m["organization_id"] = project.OrganizationID
+		m["organization_id"] = project.OrganizationId
 		m["time_created"] = project.TimeCreated.String()
 		m["time_modified"] = project.TimeModified.String()
 

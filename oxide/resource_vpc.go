@@ -101,18 +101,18 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	name := d.Get("name").(string)
 	dnsName := d.Get("dns_name").(string)
 
-	body := oxideSDK.VPCCreate{
+	body := oxideSDK.VpcCreate{
 		Description: description,
 		Name:        name,
 		DnsName:     dnsName,
 	}
 
-	resp, err := client.VPCs.VPCCreate(orgName, projectName, &body)
+	resp, err := client.Vpcs.VpcCreate(orgName, projectName, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(resp.ID)
+	d.SetId(resp.Id)
 
 	return readVPC(ctx, d, meta)
 }
@@ -123,7 +123,7 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.VPCs.VPCView(orgName, projectName, vpcName)
+	resp, err := client.Vpcs.VpcView(orgName, projectName, vpcName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -144,7 +144,7 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	name := d.Get("name").(string)
 	dnsName := d.Get("dns_name").(string)
 
-	body := oxideSDK.VPCUpdate{
+	body := oxideSDK.VpcUpdate{
 		Description: description,
 		// We cannot change the name of the VPC as it is used as an identifier for
 		// the update in the Put method. Changing it would make it impossible for
@@ -153,12 +153,12 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		DnsName: dnsName,
 	}
 
-	resp, err := client.VPCs.VPCUpdate(orgName, projectName, name, &body)
+	resp, err := client.Vpcs.VpcUpdate(orgName, projectName, name, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(resp.ID)
+	d.SetId(resp.Id)
 
 	return readVPC(ctx, d, meta)
 }
@@ -169,7 +169,7 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	if err := client.VPCs.VPCDelete(orgName, projectName, vpcName); err != nil {
+	if err := client.Vpcs.VpcDelete(orgName, projectName, vpcName); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -181,26 +181,26 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	return nil
 }
 
-func vpcToState(d *schema.ResourceData, vpc *oxideSDK.VPC) error {
+func vpcToState(d *schema.ResourceData, vpc *oxideSDK.Vpc) error {
 	if err := d.Set("description", vpc.Description); err != nil {
 		return err
 	}
 	if err := d.Set("dns_name", vpc.DnsName); err != nil {
 		return err
 	}
-	if err := d.Set("id", vpc.ID); err != nil {
+	if err := d.Set("id", vpc.Id); err != nil {
 		return err
 	}
-	if err := d.Set("ipv6_prefix", vpc.IPv6Prefix); err != nil {
+	if err := d.Set("ipv6_prefix", vpc.Ipv6Prefix); err != nil {
 		return err
 	}
 	if err := d.Set("name", vpc.Name); err != nil {
 		return err
 	}
-	if err := d.Set("project_id", vpc.ProjectID); err != nil {
+	if err := d.Set("project_id", vpc.ProjectId); err != nil {
 		return err
 	}
-	if err := d.Set("system_router_id", vpc.SystemRouterID); err != nil {
+	if err := d.Set("system_router_id", vpc.SystemRouterId); err != nil {
 		return err
 	}
 	if err := d.Set("time_created", vpc.TimeCreated.String()); err != nil {

@@ -207,7 +207,7 @@ func testAccInstanceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.Instances.View("terraform-acc-myinstance", "corp", "test")
+		res, err := client.Instances.InstanceView("terraform-acc-myinstance", "corp", "test")
 		if err != nil && is404(err) {
 			continue
 		}
