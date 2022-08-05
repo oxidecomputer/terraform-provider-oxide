@@ -183,18 +183,18 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		Name:              name,
 		Hostname:          hostName,
 		Memory:            oxideSDK.ByteCount(memory),
-		NCPUs:             oxideSDK.InstanceCPUCount(ncpus),
+		Ncpus:             oxideSDK.InstanceCpuCount(ncpus),
 		Disks:             newInstanceDiskAttach(d),
 		ExternalIps:       newInstanceExternalIps(d),
 		NetworkInterfaces: newNetworkInterface(d),
 	}
 
-	resp, err := client.Instances.Create(orgName, projectName, &body)
+	resp, err := client.Instances.InstanceCreate(orgName, projectName, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(resp.ID)
+	d.SetId(resp.Id)
 
 	return readInstance(ctx, d, meta)
 }
@@ -205,7 +205,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Instances.View(instanceName, orgName, projectName)
+	resp, err := client.Instances.InstanceView(instanceName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -214,7 +214,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.Instances.NetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
+	resp2, err := client.Instances.InstanceNetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -239,7 +239,7 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	_, err := client.Instances.Stop(instanceName, orgName, projectName)
+	_, err := client.Instances.InstanceStop(instanceName, orgName, projectName)
 	if err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -256,7 +256,7 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 		return diag.FromErr(e)
 	}
 
-	if err := client.Instances.Delete(instanceName, orgName, projectName); err != nil {
+	if err := client.Instances.InstanceDelete(instanceName, orgName, projectName); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -281,13 +281,13 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 	if err := d.Set("memory", instance.Memory); err != nil {
 		return err
 	}
-	if err := d.Set("ncpus", instance.NCPUs); err != nil {
+	if err := d.Set("ncpus", instance.Ncpus); err != nil {
 		return err
 	}
-	if err := d.Set("id", instance.ID); err != nil {
+	if err := d.Set("id", instance.Id); err != nil {
 		return err
 	}
-	if err := d.Set("project_id", instance.ProjectID); err != nil {
+	if err := d.Set("project_id", instance.ProjectId); err != nil {
 		return err
 	}
 	if err := d.Set("run_state", instance.RunState); err != nil {
@@ -308,7 +308,7 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 
 func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName string, ch chan error) {
 	for {
-		resp, err := client.Instances.View(instanceName, orgName, projectName)
+		resp, err := client.Instances.InstanceView(instanceName, orgName, projectName)
 		if err != nil {
 			ch <- err
 		}
@@ -376,7 +376,7 @@ func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfa
 			Description: nwInterface["description"].(string),
 			Name:        nwInterface["name"].(string),
 			SubnetName:  nwInterface["subnet_name"].(string),
-			VPCName:     nwInterface["vpc_name"].(string),
+			VpcName:     nwInterface["vpc_name"].(string),
 		}
 
 		interfaceCreate = append(interfaceCreate, nwInterfaceCreate)
@@ -397,8 +397,8 @@ func networkInterfaceToState(nwInterface oxideSDK.NetworkInterfaceResultsPage) [
 		m["description"] = item.Description
 		m["ip"] = item.Ip
 		m["name"] = item.Name
-		m["subnet_id"] = item.SubnetID
-		m["vpc_id"] = item.VPCId
+		m["subnet_id"] = item.SubnetId
+		m["vpc_id"] = item.VpcId
 
 		// TODO: Unfortunately NetworkInterface doesn't have the following fields yet.
 		// This means that they are unset when a read is performed (which is on every create).

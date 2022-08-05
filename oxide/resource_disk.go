@@ -149,12 +149,12 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 		Size:        oxideSDK.ByteCount(size),
 	}
 
-	resp, err := client.Disks.Create(orgName, projectName, &body)
+	resp, err := client.Disks.DiskCreate(orgName, projectName, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(resp.ID)
+	d.SetId(resp.Id)
 
 	return readDisk(ctx, d, meta)
 }
@@ -165,7 +165,7 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Disks.View(diskName, orgName, projectName)
+	resp, err := client.Disks.DiskView(diskName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,7 +203,7 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 		return diag.FromErr(e)
 	}
 
-	if err := client.Disks.Delete(diskName, orgName, projectName); err != nil {
+	if err := client.Disks.DiskDelete(diskName, orgName, projectName); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -225,19 +225,19 @@ func diskToState(d *schema.ResourceData, disk *oxideSDK.Disk) error {
 	if err := d.Set("block_size", disk.BlockSize); err != nil {
 		return err
 	}
-	if err := d.Set("image_id", disk.ImageID); err != nil {
+	if err := d.Set("image_id", disk.ImageId); err != nil {
 		return err
 	}
-	if err := d.Set("snapshot_id", disk.SnapshotID); err != nil {
+	if err := d.Set("snapshot_id", disk.SnapshotId); err != nil {
 		return err
 	}
 	if err := d.Set("device_path", disk.DevicePath); err != nil {
 		return err
 	}
-	if err := d.Set("id", disk.ID); err != nil {
+	if err := d.Set("id", disk.Id); err != nil {
 		return err
 	}
-	if err := d.Set("project_id", disk.ProjectID); err != nil {
+	if err := d.Set("project_id", disk.ProjectId); err != nil {
 		return err
 	}
 	if err := d.Set("time_created", disk.TimeCreated.String()); err != nil {
@@ -285,21 +285,21 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 
 	if source, ok := diskSource["image"]; ok {
 		ds = oxideSDK.DiskSource{
-			ImageID: source.(string),
+			ImageId: source.(string),
 			Type:    "image",
 		}
 	}
 
 	if source, ok := diskSource["global_image"]; ok {
 		ds = oxideSDK.DiskSource{
-			ImageID: source.(string),
+			ImageId: source.(string),
 			Type:    "global_image",
 		}
 	}
 
 	if source, ok := diskSource["snapshot"]; ok {
 		ds = oxideSDK.DiskSource{
-			SnapshotID: source.(string),
+			SnapshotId: source.(string),
 			Type:       "snapshot",
 		}
 	}
@@ -309,7 +309,7 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 
 func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName string, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.Disks.View(diskName, orgName, projectName)
+		resp, err := client.Disks.DiskView(diskName, orgName, projectName)
 		if err != nil {
 			ch <- err
 		}
