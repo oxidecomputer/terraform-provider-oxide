@@ -24,6 +24,21 @@ resource "oxide_instance" "example" {
 }
 ```
 
+### Assign an IP pool for the instance
+
+```hcl
+resource "oxide_instance" "example" {
+  organization_name = "staff"
+  project_name      = "test"
+  description       = "a test instance"
+  name              = "myinstance"
+  host_name         = "<host value>"
+  memory            = 1073741824
+  ncpus             = 1
+  external_ips      = ["myippool"]
+}
+```
+
 ### Attach two disks to the instance
 
 ```hcl
@@ -74,6 +89,7 @@ resource "oxide_instance" "example" {
 ### Optional
 
 - `attach_to_disks` (List of String, Optional) Disks to be attached to this instance.
+- `external_ips` (List of String, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses.
 - `network_interface` (List of Object, Optional) Attaches network interfaces to an instance at the time the instance is created. (see [below for nested schema](#nestedblock--network_interface))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

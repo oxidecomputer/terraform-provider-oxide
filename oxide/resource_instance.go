@@ -75,6 +75,14 @@ func newInstanceSchema() map[string]*schema.Schema {
 				Type: schema.TypeString,
 			},
 		},
+		"external_ips": {
+			Type:        schema.TypeList,
+			Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
+			Optional:    true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
 		"network_interface": {
 			Type:        schema.TypeList,
 			Description: "Attaches network interfaces to an instance at the time the instance is created.",
@@ -177,6 +185,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		Memory:            oxideSDK.ByteCount(memory),
 		NCPUs:             oxideSDK.InstanceCPUCount(ncpus),
 		Disks:             newInstanceDiskAttach(d),
+		ExternalIps:       newInstanceExternalIps(d),
 		NetworkInterfaces: newNetworkInterface(d),
 	}
 
@@ -196,7 +205,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Instances.Get(instanceName, orgName, projectName)
+	resp, err := client.Instances.View(instanceName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -205,7 +214,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.Instances.NetworkInterfacesList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
+	resp2, err := client.Instances.NetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -299,7 +308,7 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 
 func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName string, ch chan error) {
 	for {
-		resp, err := client.Instances.Get(instanceName, orgName, projectName)
+		resp, err := client.Instances.View(instanceName, orgName, projectName)
 		if err != nil {
 			ch <- err
 		}
@@ -309,6 +318,26 @@ func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, proj
 		time.Sleep(100 * time.Millisecond)
 	}
 	ch <- nil
+}
+
+func newInstanceExternalIps(d *schema.ResourceData) []oxideSDK.ExternalIpCreate {
+	var externalIps = []oxideSDK.ExternalIpCreate{}
+	ips := d.Get("external_ips").([]interface{})
+
+	if len(ips) < 1 {
+		return externalIps
+	}
+	for _, ip := range ips {
+		ds := oxideSDK.ExternalIpCreate{
+			PoolName: ip.(string),
+			// TODO: Implement other types when these are supported.
+			Type: "ephemeral",
+		}
+
+		externalIps = append(externalIps, ds)
+	}
+
+	return externalIps
 }
 
 func newInstanceDiskAttach(d *schema.ResourceData) []oxideSDK.InstanceDiskAttachment {

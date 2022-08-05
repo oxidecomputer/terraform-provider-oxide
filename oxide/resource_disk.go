@@ -165,7 +165,7 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Disks.Get(diskName, orgName, projectName)
+	resp, err := client.Disks.View(diskName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -309,7 +309,7 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 
 func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName string, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.Disks.Get(diskName, orgName, projectName)
+		resp, err := client.Disks.View(diskName, orgName, projectName)
 		if err != nil {
 			ch <- err
 		}

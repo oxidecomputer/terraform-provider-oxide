@@ -164,6 +164,38 @@ func checkResourceInstanceNetworkInterface(resourceName string) resource.TestChe
 	}...)
 }
 
+var testResourceInstanceExternalIpsConfig = `
+resource "oxide_instance" "test4" {
+  organization_name = "corp"
+  project_name      = "test"
+  description       = "a test instance"
+  name              = "terraform-acc-myinstance4"
+  host_name         = "terraform-acc-myhost"
+  memory            = 1073741824
+  ncpus             = 1
+  external_ips   = ["mypool"]
+}
+`
+
+func checkResourceInstanceExternalIps(resourceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
+		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance2"),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "mypool"),
+		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_run_state_updated"),
+	}...)
+}
+
 func testAccInstanceDestroy(s *terraform.State) error {
 	client, err := newTestClient()
 	if err != nil {
@@ -175,7 +207,7 @@ func testAccInstanceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.Instances.Get("terraform-acc-myinstance", "corp", "test")
+		res, err := client.Instances.View("terraform-acc-myinstance", "corp", "test")
 		if err != nil && is404(err) {
 			continue
 		}
