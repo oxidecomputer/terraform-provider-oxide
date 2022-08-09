@@ -65,7 +65,7 @@ func testAccVPCDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.Vpcs.VpcView("corp", "test", "terraform-acc-myvpc")
+		res, err := client.VpcView("corp", "test", "terraform-acc-myvpc")
 		if err != nil && is404(err) {
 			continue
 		}
