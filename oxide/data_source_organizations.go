@@ -70,7 +70,7 @@ func organizationsDataSourceRead(_ context.Context, d *schema.ResourceData, meta
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
 	// Seems unlikely anyone will have more than one million organizations.
-	result, err := client.Organizations.OrganizationList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending)
+	result, err := client.OrganizationList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -103,7 +103,7 @@ func globalImagesDataSourceRead(_ context.Context, d *schema.ResourceData, meta 
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
 	// Seems unlikely anyone will have more than one million globalImages.
-	result, err := client.Images.ImageGlobalList(1000000, "", oxideSDK.NameSortModeNameAscending)
+	result, err := client.ImageGlobalList(1000000, "", oxideSDK.NameSortModeNameAscending)
 	if err != nil {
 		return diag.FromErr(err)
 	}

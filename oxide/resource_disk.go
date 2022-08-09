@@ -149,7 +149,7 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 		Size:        oxideSDK.ByteCount(size),
 	}
 
-	resp, err := client.Disks.DiskCreate(orgName, projectName, &body)
+	resp, err := client.DiskCreate(orgName, projectName, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -165,7 +165,7 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Disks.DiskView(diskName, orgName, projectName)
+	resp, err := client.DiskView(diskName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,7 +203,7 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 		return diag.FromErr(e)
 	}
 
-	if err := client.Disks.DiskDelete(diskName, orgName, projectName); err != nil {
+	if err := client.DiskDelete(diskName, orgName, projectName); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -309,7 +309,7 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 
 func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName string, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.Disks.DiskView(diskName, orgName, projectName)
+		resp, err := client.DiskView(diskName, orgName, projectName)
 		if err != nil {
 			ch <- err
 		}

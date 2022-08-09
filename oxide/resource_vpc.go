@@ -107,7 +107,7 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		DnsName:     dnsName,
 	}
 
-	resp, err := client.Vpcs.VpcCreate(orgName, projectName, &body)
+	resp, err := client.VpcCreate(orgName, projectName, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,7 +123,7 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Vpcs.VpcView(orgName, projectName, vpcName)
+	resp, err := client.VpcView(orgName, projectName, vpcName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -153,7 +153,7 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		DnsName: dnsName,
 	}
 
-	resp, err := client.Vpcs.VpcUpdate(orgName, projectName, name, &body)
+	resp, err := client.VpcUpdate(orgName, projectName, name, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -169,7 +169,7 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	if err := client.Vpcs.VpcDelete(orgName, projectName, vpcName); err != nil {
+	if err := client.VpcDelete(orgName, projectName, vpcName); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

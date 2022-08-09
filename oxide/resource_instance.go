@@ -189,7 +189,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		NetworkInterfaces: newNetworkInterface(d),
 	}
 
-	resp, err := client.Instances.InstanceCreate(orgName, projectName, &body)
+	resp, err := client.InstanceCreate(orgName, projectName, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -205,7 +205,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.Instances.InstanceView(instanceName, orgName, projectName)
+	resp, err := client.InstanceView(instanceName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -214,7 +214,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.Instances.InstanceNetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
+	resp2, err := client.InstanceNetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -239,7 +239,7 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	_, err := client.Instances.InstanceStop(instanceName, orgName, projectName)
+	_, err := client.InstanceStop(instanceName, orgName, projectName)
 	if err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -256,7 +256,7 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 		return diag.FromErr(e)
 	}
 
-	if err := client.Instances.InstanceDelete(instanceName, orgName, projectName); err != nil {
+	if err := client.InstanceDelete(instanceName, orgName, projectName); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -308,7 +308,7 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 
 func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName string, ch chan error) {
 	for {
-		resp, err := client.Instances.InstanceView(instanceName, orgName, projectName)
+		resp, err := client.InstanceView(instanceName, orgName, projectName)
 		if err != nil {
 			ch <- err
 		}
