@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	oxideSDK "github.com/oxidecomputer/oxide.go"
+	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func instanceResource() *schema.Resource {

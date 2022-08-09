@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	oxideSDK "github.com/oxidecomputer/oxide.go"
+	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 // TODO: Use this prefix + random string for all resource names for uniqueness
