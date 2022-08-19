@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.17.0
-	github.com/oxidecomputer/oxide.go v0.0.0-20220809070350-aefa39e0c4d3
+	github.com/oxidecomputer/oxide.go v0.0.0-20220819004526-63b1366ce87b
 )
 
 require (
@@ -54,5 +54,4 @@ require (
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d // indirect
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0 // indirect
 )

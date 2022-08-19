@@ -180,7 +180,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	body := oxideSDK.InstanceCreate{
 		Description:       description,
-		Name:              name,
+		Name:              oxideSDK.Name(name),
 		Hostname:          hostName,
 		Memory:            oxideSDK.ByteCount(memory),
 		Ncpus:             oxideSDK.InstanceCpuCount(ncpus),
@@ -189,7 +189,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		NetworkInterfaces: newNetworkInterface(d),
 	}
 
-	resp, err := client.InstanceCreate(orgName, projectName, &body)
+	resp, err := client.InstanceCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -205,7 +205,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.InstanceView(instanceName, orgName, projectName)
+	resp, err := client.InstanceView(oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -214,7 +214,7 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.InstanceNetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, instanceName, orgName, projectName)
+	resp2, err := client.InstanceNetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -239,7 +239,7 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	_, err := client.InstanceStop(instanceName, orgName, projectName)
+	_, err := client.InstanceStop(oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
 	if err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -250,13 +250,13 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 
 	// Wait for instance to be stopped before attempting to destroy
 	ch := make(chan error)
-	go waitForStoppedInstance(client, instanceName, orgName, projectName, ch)
+	go waitForStoppedInstance(client, oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName), ch)
 	e := <-ch
 	if e != nil {
 		return diag.FromErr(e)
 	}
 
-	if err := client.InstanceDelete(instanceName, orgName, projectName); err != nil {
+	if err := client.InstanceDelete(oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -306,7 +306,7 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 	return nil
 }
 
-func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName string, ch chan error) {
+func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName oxideSDK.Name, ch chan error) {
 	for {
 		resp, err := client.InstanceView(instanceName, orgName, projectName)
 		if err != nil {
@@ -329,7 +329,7 @@ func newInstanceExternalIps(d *schema.ResourceData) []oxideSDK.ExternalIpCreate 
 	}
 	for _, ip := range ips {
 		ds := oxideSDK.ExternalIpCreate{
-			PoolName: ip.(string),
+			PoolName: oxideSDK.Name(ip.(string)),
 			// TODO: Implement other types when these are supported.
 			Type: "ephemeral",
 		}
@@ -349,7 +349,7 @@ func newInstanceDiskAttach(d *schema.ResourceData) []oxideSDK.InstanceDiskAttach
 	}
 	for _, disk := range disks {
 		ds := oxideSDK.InstanceDiskAttachment{
-			Name: disk.(string),
+			Name: oxideSDK.Name(disk.(string)),
 			Type: "attach",
 		}
 
@@ -374,9 +374,9 @@ func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfa
 
 		nwInterfaceCreate := oxideSDK.NetworkInterfaceCreate{
 			Description: nwInterface["description"].(string),
-			Name:        nwInterface["name"].(string),
-			SubnetName:  nwInterface["subnet_name"].(string),
-			VpcName:     nwInterface["vpc_name"].(string),
+			Name:        oxideSDK.Name(nwInterface["name"].(string)),
+			SubnetName:  oxideSDK.Name(nwInterface["subnet_name"].(string)),
+			VpcName:     oxideSDK.Name(nwInterface["vpc_name"].(string)),
 		}
 
 		interfaceCreate = append(interfaceCreate, nwInterfaceCreate)
