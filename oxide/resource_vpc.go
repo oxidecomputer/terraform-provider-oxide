@@ -103,11 +103,11 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 
 	body := oxideSDK.VpcCreate{
 		Description: description,
-		Name:        name,
-		DnsName:     dnsName,
+		Name:        oxideSDK.Name(name),
+		DnsName:     oxideSDK.Name(dnsName),
 	}
 
-	resp, err := client.VpcCreate(orgName, projectName, &body)
+	resp, err := client.VpcCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,7 +123,7 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.VpcView(orgName, projectName, vpcName)
+	resp, err := client.VpcView(oxideSDK.Name(orgName), oxideSDK.Name(projectName), oxideSDK.Name(vpcName))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -150,10 +150,10 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		// the update in the Put method. Changing it would make it impossible for
 		// terraform to know which VPC to update.
 		// Name:        name,
-		DnsName: dnsName,
+		DnsName: oxideSDK.Name(dnsName),
 	}
 
-	resp, err := client.VpcUpdate(orgName, projectName, name, &body)
+	resp, err := client.VpcUpdate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), oxideSDK.Name(name), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -169,7 +169,7 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	if err := client.VpcDelete(orgName, projectName, vpcName); err != nil {
+	if err := client.VpcDelete(oxideSDK.Name(orgName), oxideSDK.Name(projectName), oxideSDK.Name(vpcName)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

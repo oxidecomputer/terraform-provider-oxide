@@ -81,7 +81,7 @@ func projectsDataSourceRead(_ context.Context, d *schema.ResourceData, meta inte
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
 	// Seems unlikely anyone will have more than one million projects.
-	result, err := client.ProjectList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending, orgName)
+	result, err := client.ProjectList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending, oxideSDK.Name(orgName))
 	if err != nil {
 		return diag.FromErr(err)
 	}

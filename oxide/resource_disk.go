@@ -144,12 +144,12 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 
 	body := oxideSDK.DiskCreate{
 		Description: description,
-		Name:        name,
+		Name:        oxideSDK.Name(name),
 		DiskSource:  ds,
 		Size:        oxideSDK.ByteCount(size),
 	}
 
-	resp, err := client.DiskCreate(orgName, projectName, &body)
+	resp, err := client.DiskCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -165,7 +165,7 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.DiskView(diskName, orgName, projectName)
+	resp, err := client.DiskView(oxideSDK.Name(diskName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -197,13 +197,13 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	// for a temporary workaround for the acceptance tests we will only check for a `detached`
 	// status for 5 seconds and return an error otherwise.
 	ch := make(chan error)
-	go waitForDetachedDisk(client, diskName, orgName, projectName, ch)
+	go waitForDetachedDisk(client, oxideSDK.Name(diskName), oxideSDK.Name(orgName), oxideSDK.Name(projectName), ch)
 	e := <-ch
 	if e != nil {
 		return diag.FromErr(e)
 	}
 
-	if err := client.DiskDelete(diskName, orgName, projectName); err != nil {
+	if err := client.DiskDelete(oxideSDK.Name(diskName), oxideSDK.Name(orgName), oxideSDK.Name(projectName)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -307,9 +307,9 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 	return ds, nil
 }
 
-func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName string, ch chan error) {
+func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName oxideSDK.Name, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.DiskView(diskName, orgName, projectName)
+		resp, err := client.DiskView(oxideSDK.Name(diskName), orgName, projectName)
 		if err != nil {
 			ch <- err
 		}

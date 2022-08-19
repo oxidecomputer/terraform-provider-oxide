@@ -16,6 +16,7 @@ func TestAccResourceInstance(t *testing.T) {
 	resourceName := "oxide_instance.test"
 	secondResourceName := "oxide_instance.test2"
 	thirdResourceName := "oxide_instance.test3"
+	fourthResourceName := "oxide_instance.test4"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -37,6 +38,10 @@ func TestAccResourceInstance(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 				Config:             testResourceInstanceNetworkInterfaceConfig,
 				Check:              checkResourceInstanceNetworkInterface(thirdResourceName),
+			},
+			{
+				Config: testResourceInstanceExternalIpsConfig,
+				Check:  checkResourceInstanceExternalIps(fourthResourceName),
 			},
 		},
 	})
@@ -183,7 +188,7 @@ func checkResourceInstanceExternalIps(resourceName string) resource.TestCheckFun
 		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
 		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance2"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance4"),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
