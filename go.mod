@@ -1,4 +1,4 @@
-module github.com/oxidecomputer/terraform-provider-oxide-demo
+module github.com/oxidecomputer/terraform-provider-oxide
 
 go 1.18
 

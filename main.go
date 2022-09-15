@@ -8,7 +8,7 @@ import (
 	"flag"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/oxidecomputer/terraform-provider-oxide-demo/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/oxide"
 )
 
 func main() {

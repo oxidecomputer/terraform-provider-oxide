@@ -10,4 +10,4 @@ This configuration file does the following:
 2. Using the data retrieved from the previous step, 5 disks are created; 3 10GiB disks for the web instances and 2 20GiB disks for the DB instances.
 3. Finally, using data from the first and second steps, the 5 instances are created using the default VPC and subnet; 3 web instances with 2 CPUs and 1GiB of memory, and 2 DB instances with 4 CPUs and 2GiB of memory.
 
-To try out this configuration file follow the [instructions](https://github.com/oxidecomputer/terraform-provider-oxide-demo/#using-the-provider) from the README.
+To try out this configuration file follow the [instructions](https://github.com/oxidecomputer/terraform-provider-oxide/#using-the-provider) from the README.

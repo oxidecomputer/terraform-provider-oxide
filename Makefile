@@ -16,7 +16,7 @@ PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
 
 # Acceptance test variables
 TEST_COUNT ?= 1
-TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide-demo/oxide
+TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/oxide
 TEST_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
 
