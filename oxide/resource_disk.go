@@ -176,9 +176,8 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 }
 
 func updateDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// TODO: Currently there is no endpoint to update a disk. This function will remain
-	// as readonly until such endpoint exists.
-	return readDisk(ctx, d, meta)
+	// TODO: Currently there is no endpoint to update a disk. Update this function when such endpoint exists
+	return diag.FromErr(errors.New("the oxide_disk resource currently does not support updates"))
 }
 
 func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
