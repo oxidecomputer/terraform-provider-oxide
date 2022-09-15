@@ -201,11 +201,12 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 
 func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
+	instanceId := d.Get("id").(string)
 	instanceName := d.Get("name").(string)
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	resp, err := client.InstanceView(oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
+	resp, err := client.InstanceViewById(instanceId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -214,7 +215,14 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.InstanceNetworkInterfaceList(1000000, "", oxideSDK.NameSortModeNameAscending, oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
+	resp2, err := client.InstanceNetworkInterfaceList(
+		1000000,
+		"",
+		oxideSDK.NameSortModeNameAscending,
+		oxideSDK.Name(instanceName),
+		oxideSDK.Name(orgName),
+		oxideSDK.Name(projectName),
+	)
 	if err != nil {
 		return diag.FromErr(err)
 	}
