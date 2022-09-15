@@ -1,13 +1,11 @@
-# Terraform Provider Oxide Demo
+# Terraform Provider Oxide
 
-The [scope](https://docs.google.com/document/d/1TNvy5-aqZPcv1PQllzySSIV7KJsGl5llvfc2L1IiD-Y/edit?usp=sharing) of this provider is to only have the necessary [resources](https://www.terraform.io/language/resources) and [data sources](https://www.terraform.io/language/data-sources) for the on-site demo.
-
-**IMPORTANT:** The resources for this provider currently only provide create, read and delete actions. Once update endpoints have been added to the API, that functionality will be added here as well. That said, this is not a blocker for the demo. The requirements for the demo only specify resource creation.
+**IMPORTANT:** Several resources for this provider currently only provide create, read and delete actions. Once update endpoints have been added to the API, that functionality will be added here as well.
 
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads) 0.1.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
-- [Go 1.18](https://go.dev/dl/) (to build the provider plugin)
+- [Go](https://go.dev/dl/) 1.18.x and above (to build the provider plugin)
 
 ## Building the provider
 
