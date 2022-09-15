@@ -27,6 +27,11 @@ func vpcResource() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
+		// TODO: add a function to validate updates. For example:
+		// Name cannot be changed as currently there are only updates
+		// by name
+		//  CustomizeDiff: customdiff.All(
+		//    customdiff.ValidateChange()),
 	}
 }
 
@@ -119,11 +124,9 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 
 func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	vpcName := d.Get("name").(string)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	vpcId := d.Get("id").(string)
 
-	resp, err := client.VpcView(oxideSDK.Name(orgName), oxideSDK.Name(projectName), oxideSDK.Name(vpcName))
+	resp, err := client.VpcViewById(vpcId)
 	if err != nil {
 		return diag.FromErr(err)
 	}

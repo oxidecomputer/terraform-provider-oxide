@@ -161,11 +161,9 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 
 func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	diskName := d.Get("name").(string)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	diskId := d.Get("id").(string)
 
-	resp, err := client.DiskView(oxideSDK.Name(diskName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
+	resp, err := client.DiskViewById(diskId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
