@@ -6,6 +6,7 @@ package oxide
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -236,9 +237,8 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 }
 
 func updateInstance(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// TODO: Currently there is no endpoint to update an instance. This function will remain
-	// as readonly until such endpoint exists.
-	return readInstance(ctx, d, meta)
+	// TODO: Currently there is no endpoint to update an instance. Update this function when such endpoint exists
+	return diag.FromErr(errors.New("the oxide_instance resource currently does not support updates"))
 }
 
 func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

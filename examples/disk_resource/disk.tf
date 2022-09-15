@@ -11,6 +11,8 @@ terraform {
 
 provider "oxide" {}
 
+data "oxide_global_images" "image_example" {}
+
 resource "oxide_disk" "example" {
   organization_name = "corp"
   project_name      = "test"
@@ -26,5 +28,5 @@ resource "oxide_disk" "example2" {
   description       = "a test disk"
   name              = "mydisk2"
   size              = 1073741824
-  disk_source       = { global_image = "2f62fa1c-f50c-4657-a331-fa81ddb41ade" }
+  disk_source       = { global_image = data.oxide_global_images.image_example.global_images.0.id }
 }

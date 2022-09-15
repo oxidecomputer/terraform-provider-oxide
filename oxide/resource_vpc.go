@@ -6,9 +6,11 @@ package oxide
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -27,11 +29,21 @@ func vpcResource() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
-		// TODO: add a function to validate updates. For example:
-		// Name cannot be changed as currently there are only updates
-		// by name
-		//  CustomizeDiff: customdiff.All(
-		//    customdiff.ValidateChange()),
+		CustomizeDiff: customdiff.All(
+			// TODO: When there is an API to update VPCs by ID remove this check to allow name changes
+			customdiff.ValidateChange("name", func(ctx context.Context, old, new, meta any) error {
+				if old.(string) != "" && new.(string) != old.(string) {
+					return fmt.Errorf("name of VPC cannot be updated via Terraform; please revert to: \"%s\"", old.(string))
+				}
+				return nil
+			}),
+			customdiff.ValidateChange("ipv6_prefix", func(ctx context.Context, old, new, meta any) error {
+				if old.(string) != "" && new.(string) != old.(string) {
+					return fmt.Errorf("ipv6_prefix of VPC cannot be updated; please revert to: \"%s\"", old.(string))
+				}
+				return nil
+			}),
+		),
 	}
 }
 
@@ -65,9 +77,8 @@ func newVPCSchema() map[string]*schema.Schema {
 		"ipv6_prefix": {
 			Type:        schema.TypeString,
 			Description: "All IPv6 subnets created from this VPC must be taken from this range, which should be a unique local address in the range `fd00::/48`. The default VPC Subnet will have the first `/64` range from this prefix.",
-			// TODO: For demo purposes this range will be generated only. When we move forward from demo stage
-			// this value should be optional/computed
-			Computed: true,
+			Computed:    true,
+			Optional:    true,
 		},
 		"id": {
 			Type:        schema.TypeString,
@@ -105,11 +116,16 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	dnsName := d.Get("dns_name").(string)
+	ipv6Prefix := d.Get("ipv6_prefix").(string)
 
 	body := oxideSDK.VpcCreate{
 		Description: description,
 		Name:        oxideSDK.Name(name),
 		DnsName:     oxideSDK.Name(dnsName),
+	}
+
+	if ipv6Prefix != "" {
+		body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
 	}
 
 	resp, err := client.VpcCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)

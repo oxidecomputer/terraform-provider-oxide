@@ -16,5 +16,6 @@ resource "oxide_vpc" "example" {
   project_name      = "test"
   description       = "a test vpc"
   name              = "myvpc"
-  dns_name          = "my-vpc-dns"
+  dns_name          = "my-vpc-dnssd"
+  ipv6_prefix       = "fd1e:4947:d4a1::/48"
 }
