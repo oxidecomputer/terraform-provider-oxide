@@ -43,6 +43,7 @@ func Provider() *schema.Provider {
 			"oxide_disk":     diskResource(),
 			"oxide_instance": instanceResource(),
 			"oxide_vpc":      vpcResource(),
+			"oxide_ip_pool":  ipPoolResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"oxide_organizations": organizationsDataSource(),
