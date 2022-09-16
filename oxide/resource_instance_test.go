@@ -32,12 +32,8 @@ func TestAccResourceInstance(t *testing.T) {
 				Check:  checkResourceInstanceDisk(secondResourceName),
 			},
 			{
-				// TODO: Because of the bug explained in the networkInterfaceToState() function,
-				// the plan is not empty after applying this step of the test. We'll have to
-				// temporarily expect a non-empty plan until this bug is fixed.
-				ExpectNonEmptyPlan: true,
-				Config:             testResourceInstanceNetworkInterfaceConfig,
-				Check:              checkResourceInstanceNetworkInterface(thirdResourceName),
+				Config: testResourceInstanceNetworkInterfaceConfig,
+				Check:  checkResourceInstanceNetworkInterface(thirdResourceName),
 			},
 			{
 				Config: testResourceInstanceExternalIpsConfig,
