@@ -216,21 +216,28 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.InstanceNetworkInterfaceList(
-		1000000,
-		"",
-		oxideSDK.NameSortModeNameAscending,
-		oxideSDK.Name(instanceName),
-		oxideSDK.Name(orgName),
-		oxideSDK.Name(projectName),
-	)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	nis := d.Get("network_interface").([]interface{})
+	if len(nis) > 0 {
+		resp2, err := client.InstanceNetworkInterfaceList(
+			1000000,
+			"",
+			oxideSDK.NameSortModeNameAscending,
+			oxideSDK.Name(instanceName),
+			oxideSDK.Name(orgName),
+			oxideSDK.Name(projectName),
+		)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 
-	networkInterfaces := networkInterfaceToState(*resp2)
-	if err := d.Set("network_interface", networkInterfaces); err != nil {
-		return diag.FromErr(err)
+		networkInterfaces, err := networkInterfaceToState(client, *resp2)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		if err := d.Set("network_interface", networkInterfaces); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return nil
@@ -396,7 +403,7 @@ func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfa
 	}
 }
 
-func networkInterfaceToState(nwInterface oxideSDK.NetworkInterfaceResultsPage) []interface{} {
+func networkInterfaceToState(client *oxideSDK.Client, nwInterface oxideSDK.NetworkInterfaceResultsPage) ([]interface{}, error) {
 	items := nwInterface.Items
 	var result = make([]interface{}, 0, len(items))
 	for _, item := range items {
@@ -408,15 +415,23 @@ func networkInterfaceToState(nwInterface oxideSDK.NetworkInterfaceResultsPage) [
 		m["subnet_id"] = item.SubnetId
 		m["vpc_id"] = item.VpcId
 
-		// TODO: Unfortunately NetworkInterface doesn't have the following fields yet.
-		// This means that they are unset when a read is performed (which is on every create).
-		// For the demo this won't be a problem, but we must fix this before we can implement
-		// update.
-		//m["subnet_name"] = item.SubnetName
-		//m["vpc_name"] = item.VPCName
+		// Ideally the NetworkInterface struct would contain the names of the VPC and subnet.
+		// For now they only give the ID so we'll retrieve the names separately.
+		vpcResp, err := client.VpcViewById(item.VpcId)
+		if err != nil {
+			return nil, err
+		}
+
+		subnetResp, err := client.VpcSubnetViewById(item.SubnetId)
+		if err != nil {
+			return nil, err
+		}
+
+		m["subnet_name"] = subnetResp.Name
+		m["vpc_name"] = vpcResp.Name
 
 		result = append(result, m)
 	}
 
-	return result
+	return result, nil
 }
