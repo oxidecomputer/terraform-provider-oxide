@@ -1,4 +1,4 @@
-# Disks
+# IP Pools
 
 This example Terraform configuration file performs the following:
 
