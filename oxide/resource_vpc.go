@@ -188,7 +188,36 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 
-	if err := client.VpcDelete(oxideSDK.Name(orgName), oxideSDK.Name(projectName), oxideSDK.Name(vpcName)); err != nil {
+	res, err := client.VpcSubnetList(
+		1000000,
+		"",
+		oxideSDK.NameSortMode(oxideSDK.NameOrIdSortModeIdAscending),
+		oxideSDK.Name(orgName),
+		oxideSDK.Name(projectName),
+		oxideSDK.Name(vpcName),
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if res != nil {
+		for _, subnet := range res.Items {
+			if err := client.VpcSubnetDelete(
+				oxideSDK.Name(orgName),
+				oxideSDK.Name(projectName),
+				subnet.Name,
+				oxideSDK.Name(vpcName),
+			); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	}
+
+	if err := client.VpcDelete(
+		oxideSDK.Name(orgName),
+		oxideSDK.Name(projectName),
+		oxideSDK.Name(vpcName),
+	); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
