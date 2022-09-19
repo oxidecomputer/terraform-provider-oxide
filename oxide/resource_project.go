@@ -39,7 +39,7 @@ func projectResource() *schema.Resource {
 			}),
 			customdiff.ValidateChange("organization", func(ctx context.Context, old, new, meta any) error {
 				if old != nil && new.(string) != old.(string) {
-					return fmt.Errorf("organization of IP pool cannot be updated; please revert to: \"%s\"", old.(string))
+					return fmt.Errorf("organization of project cannot be updated; please revert to: \"%s\"", old.(string))
 				}
 				return nil
 			}),
