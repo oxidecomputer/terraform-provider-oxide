@@ -43,6 +43,7 @@ func Provider() *schema.Provider {
 			"oxide_disk":         diskResource(),
 			"oxide_instance":     instanceResource(),
 			"oxide_ip_pool":      ipPoolResource(),
+			"oxide_project":      projectResource(),
 			"oxide_organization": organizationResource(),
 			"oxide_vpc":          vpcResource(),
 		},
