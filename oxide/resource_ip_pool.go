@@ -57,12 +57,12 @@ func newIpPoolSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"name": {
 			Type:        schema.TypeString,
-			Description: "Name of the disk.",
+			Description: "Name of the IP pool.",
 			Required:    true,
 		},
 		"description": {
 			Type:        schema.TypeString,
-			Description: "Description for the disk.",
+			Description: "Description for the IP pool.",
 			Required:    true,
 		},
 		"organization_name": {
@@ -82,12 +82,12 @@ func newIpPoolSchema() map[string]*schema.Schema {
 		},
 		"time_created": {
 			Type:        schema.TypeString,
-			Description: "Timestamp of when this disk was created.",
+			Description: "Timestamp of when this IP pool was created.",
 			Computed:    true,
 		},
 		"time_modified": {
 			Type:        schema.TypeString,
-			Description: "Timestamp of when this disk was last modified.",
+			Description: "Timestamp of when this IP pool was last modified.",
 			Computed:    true,
 		},
 	}
