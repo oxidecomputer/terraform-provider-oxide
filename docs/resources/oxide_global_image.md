@@ -61,5 +61,3 @@ resource "oxide_global_image" "example2" {
 Optional:
 
 - `default` (String)
-
-<a id="nestedatt--state"></a>
