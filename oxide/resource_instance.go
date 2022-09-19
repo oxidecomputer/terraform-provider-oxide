@@ -346,7 +346,7 @@ func newInstanceExternalIps(d *schema.ResourceData) []oxideSDK.ExternalIpCreate 
 		ds := oxideSDK.ExternalIpCreate{
 			PoolName: oxideSDK.Name(ip.(string)),
 			// TODO: Implement other types when these are supported.
-			Type: "ephemeral",
+			Type: oxideSDK.ExternalIpCreateTypeEphemeral,
 		}
 
 		externalIps = append(externalIps, ds)
