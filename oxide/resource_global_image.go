@@ -224,20 +224,20 @@ func newImageSource(d *schema.ResourceData) (oxideSDK.ImageSource, error) {
 	if source, ok := imageSource["url"]; ok {
 		is = oxideSDK.ImageSource{
 			Url:  source.(string),
-			Type: string(oxideSDK.ImageSourceTypeUrl),
+			Type: oxideSDK.ImageSourceTypeUrl,
 		}
 	}
 
 	if source, ok := imageSource["snapshot"]; ok {
 		is = oxideSDK.ImageSource{
 			Id:   source.(string),
-			Type: string(oxideSDK.ImageSourceTypeSnapshot),
+			Type: oxideSDK.ImageSourceTypeSnapshot,
 		}
 	}
 
 	if _, ok := imageSource["you_can_boot_anything_as_long_as_its_alpine"]; ok {
 		is = oxideSDK.ImageSource{
-			Type: string(oxideSDK.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine),
+			Type: oxideSDK.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine,
 		}
 	}
 

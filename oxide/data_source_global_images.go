@@ -156,7 +156,7 @@ func globalImagesToState(d *schema.ResourceData, images *oxideSDK.GlobalImageRes
 func flattenDigest(digest oxideSDK.Digest) map[string]interface{} {
 	var result = make(map[string]interface{})
 	if digest.Type != "" {
-		result[digest.Type] = digest.Value
+		result[string(digest.Type)] = digest.Value
 	}
 	return result
 }
