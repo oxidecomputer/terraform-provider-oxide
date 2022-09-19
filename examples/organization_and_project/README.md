@@ -3,6 +3,7 @@
 This example Terraform configuration file performs the following:
 
 1. Creates an organization.
+2. Creates a project within that organization
 
 To try it out make sure you have the following:
 

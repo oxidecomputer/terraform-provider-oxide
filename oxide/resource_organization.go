@@ -53,6 +53,11 @@ func newOrganizationSchema() map[string]*schema.Schema {
 			Description: "Description for the organization.",
 			Required:    true,
 		},
+		"id": {
+			Type:        schema.TypeString,
+			Description: "Unique, immutable, system-controlled identifier of the organization.",
+			Computed:    true,
+		},
 		"time_created": {
 			Type:        schema.TypeString,
 			Description: "Timestamp of when this organization was created.",
@@ -88,9 +93,9 @@ func createOrganization(ctx context.Context, d *schema.ResourceData, meta interf
 
 func readOrganization(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	orgName := d.Get("name").(string)
+	orgID := d.Get("id").(string)
 
-	resp, err := client.OrganizationView(oxideSDK.Name(orgName))
+	resp, err := client.OrganizationViewById(orgID)
 	if err != nil {
 		return diag.FromErr(err)
 	}

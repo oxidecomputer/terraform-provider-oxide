@@ -15,3 +15,9 @@ resource "oxide_organization" "example" {
   description       = "a test org"
   name              = "anorg"
 }
+
+resource "oxide_project" "example2" {
+  description       = "a test project"
+  name              = "aproject"
+  organization_name = oxide_organization.example.name
+}
