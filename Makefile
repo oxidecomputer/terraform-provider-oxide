@@ -85,6 +85,5 @@ local-api:
 
 .PHONY: unset-local-api
 ## Removes local API language client
-
 unset-local-api:
 	@ go mod edit -dropreplace=github.com/oxidecomputer/oxide.go
