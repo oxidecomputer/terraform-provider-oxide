@@ -78,12 +78,13 @@ testacc:
 	@ echo "-> Running terraform acceptance tests..."
 	@ TF_ACC=1 go test $(TEST_ACC) -v -count $(TEST_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TESTARGS) -timeout 20m -run $(TEST_NAME)
 
-## Use local API language client
 .PHONY: local-api
+## Use local API language client
 local-api:
 	@ go mod edit -replace=github.com/oxidecomputer/oxide.go=../oxide.go
 
-## Removes local API language client
 .PHONY: unset-local-api
+## Removes local API language client
+
 unset-local-api:
 	@ go mod edit -dropreplace=github.com/oxidecomputer/oxide.go
