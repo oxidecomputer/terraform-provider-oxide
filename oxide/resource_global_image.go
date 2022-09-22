@@ -124,7 +124,7 @@ func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		Source: is,
 	}
 
-	resp, err := client.ImageGlobalCreate(&body)
+	resp, err := client.SystemImageCreate(&body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -138,7 +138,7 @@ func readImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	client := meta.(*oxideSDK.Client)
 	imageId := d.Get("id").(string)
 
-	resp, err := client.ImageGlobalViewById(imageId)
+	resp, err := client.SystemImageViewById(imageId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -159,7 +159,7 @@ func deleteImage(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	client := meta.(*oxideSDK.Client)
 	imageName := d.Get("name").(string)
 
-	if err := client.ImageGlobalDelete(oxideSDK.Name(imageName)); err != nil {
+	if err := client.SystemImageDelete(oxideSDK.Name(imageName)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
