@@ -327,7 +327,7 @@ func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, proj
 		if err != nil {
 			ch <- err
 		}
-		if resp.RunState == "stopped" {
+		if resp.RunState == oxideSDK.InstanceStateStopped {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
