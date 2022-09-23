@@ -6,6 +6,7 @@ package oxide
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -49,6 +50,12 @@ func ipPoolResource() *schema.Resource {
 				}
 				return nil
 			}),
+			customdiff.ValidateChange("ranges", func(ctx context.Context, old, new, meta any) error {
+				if old != nil && len(new.([]interface{})) != len(old.([]interface{})) && len(old.([]interface{})) > 0 {
+					return fmt.Errorf("ranges IP pool cannot be updated; please revert to previous configuration")
+				}
+				return nil
+			}),
 		),
 	}
 }
@@ -75,6 +82,12 @@ func newIpPoolSchema() map[string]*schema.Schema {
 			Description: "Name of the project.",
 			Optional:    true,
 		},
+		"ranges": {
+			Type:        schema.TypeList,
+			Description: "A non-decreasing IPv4 or IPv6 address range, inclusive of both ends. The first address must be less than or equal to the last address.",
+			Optional:    true,
+			Elem:        newRangeResource(),
+		},
 		"project_id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier of the project.",
@@ -93,12 +106,40 @@ func newIpPoolSchema() map[string]*schema.Schema {
 	}
 }
 
+func newRangeResource() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"ip_version": {
+				Type:        schema.TypeString,
+				Description: "IP version of the range. Accepted values are ipv4 and ipv6",
+				Required:    true,
+			},
+			"first_address": {
+				Type:        schema.TypeString,
+				Description: "First address in the range.",
+				Required:    true,
+			},
+			"last_address": {
+				Type:        schema.TypeString,
+				Description: "Last address in the range.",
+				Required:    true,
+			},
+			"time_created": {
+				Type:        schema.TypeString,
+				Description: "Timestamp of when this range was created.",
+				Computed:    true,
+			},
+		},
+	}
+}
+
 func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 	orgName := d.Get("organization_name").(string)
 	projectName := d.Get("project_name").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
+	ranges := d.Get("ranges").([]interface{})
 
 	body := oxideSDK.IpPoolCreate{
 		Description: description,
@@ -116,6 +157,19 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 	resp, err := client.IpPoolCreate(&body)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	if len(ranges) > 0 {
+		ipRanges, err := newIpPoolRange(d)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		for _, r := range ipRanges {
+			_, err := client.IpPoolRangeAdd(resp.Name, &r)
+			if err != nil {
+				return diag.FromErr(fmt.Errorf("%v: %v", len(ipRanges), err))
+			}
+		}
 	}
 
 	d.SetId(resp.Id)
@@ -191,4 +245,38 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 
 	d.SetId("")
 	return nil
+}
+
+func newIpPoolRange(d *schema.ResourceData) ([]oxideSDK.IpRange, error) {
+	rs := d.Get("ranges").([]interface{})
+
+	var ipRanges []oxideSDK.IpRange
+
+	for _, r := range rs {
+		ipR := r.(map[string]interface{})
+
+		if ipR["ip_version"].(string) != "ipv4" && ipR["ip_version"].(string) != "ipv6" {
+			return nil, errors.New("ip_version must be one of \"ipv4\" or \"ipv6\"")
+		}
+
+		var ipRange oxideSDK.IpRange
+
+		if ipR["ip_version"].(string) == "ipv4" {
+			ipRange = oxideSDK.Ipv4Range{
+				First: ipR["first_address"].(string),
+				Last:  ipR["last_address"].(string),
+			}
+		}
+
+		if ipR["ip_version"].(string) == "ipv6" {
+			ipRange = oxideSDK.Ipv6Range{
+				First: ipR["first_address"].(string),
+				Last:  ipR["last_address"].(string),
+			}
+		}
+
+		ipRanges = append(ipRanges, ipRange)
+	}
+
+	return ipRanges, nil
 }
