@@ -172,8 +172,8 @@ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLA
 github.com/nsf/jsondiff v0.0.0-20200515183724-f29ed568f4ce h1:RPclfga2SEJmgMmz2k+Mg7cowZ8yv4Trqw9UsJby758=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/oxidecomputer/oxide.go v0.0.21-0.20220922074620-7ee7951534b5 h1:yauyvjvyCfHAAuIAxVDQCnH+h+kGqsAZbV7QzNldV6U=
-github.com/oxidecomputer/oxide.go v0.0.21-0.20220922074620-7ee7951534b5/go.mod h1:8WVsEdfRRD3uqbMToF+DfOQ9qa/AnnJKdswoNvQ1Smc=
+github.com/oxidecomputer/oxide.go v0.0.22 h1:IcEOIyEBHSP7nC2SPQG1DzW/e5hKyci0bcf3fUVE5/8=
+github.com/oxidecomputer/oxide.go v0.0.22/go.mod h1:8WVsEdfRRD3uqbMToF+DfOQ9qa/AnnJKdswoNvQ1Smc=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
