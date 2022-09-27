@@ -3,6 +3,7 @@ module github.com/oxidecomputer/terraform-provider-oxide
 go 1.18
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.23.0
 	github.com/oxidecomputer/oxide.go v0.0.22
 )

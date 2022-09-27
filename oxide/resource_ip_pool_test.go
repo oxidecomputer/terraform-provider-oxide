@@ -77,6 +77,10 @@ resource "oxide_ip_pool" "test2" {
 	project_name      = "test"
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool2"
+	ranges {
+		first_address = "172.20.15.227"
+		last_address  = "172.20.15.239"
+	}
   }
 `
 
@@ -90,6 +94,10 @@ func checkResourceIpPoolOrgProject(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "ranges.0.first_address", "172.20.15.227"),
+		resource.TestCheckResourceAttr(resourceName, "ranges.0.last_address", "172.20.15.239"),
+		resource.TestCheckResourceAttrSet(resourceName, "ranges.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "ranges.0.time_created"),
 	}...)
 }
 
