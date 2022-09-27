@@ -3,6 +3,7 @@
 This example Terraform configuration file performs the following:
 
 1. Creates an IP pool.
+2. Adds IP ranges to that pool
 
 To try it out make sure you have the following:
 

@@ -12,6 +12,11 @@ terraform {
 provider "oxide" {}
 
 resource "oxide_ip_pool" "example" {
-  description       = "a test IP pool"
-  name              = "anippool"
+  description = "a test IP pool"
+  name        = "myippool"
+  ranges {
+    ip_version    = "ipv4"
+    first_address = "172.20.15.227"
+    last_address  = "172.20.15.239"
+  }
 }
