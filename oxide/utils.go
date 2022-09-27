@@ -5,6 +5,7 @@
 package oxide
 
 import (
+	"net"
 	"strings"
 )
 
@@ -14,4 +15,22 @@ func is404(err error) bool {
 		return true
 	}
 	return false
+}
+
+// Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
+// Shamelessly copied here to avoid importing the entire package
+//
+// isIPv4 checks if the string is an IP version 4.
+func isIPv4(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil && strings.Contains(str, ".")
+}
+
+// Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv6
+// Shamelessly copied here to avoid importing the entire package
+//
+// isIPv6 checks if the string is an IP version 6.
+func isIPv6(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil && strings.Contains(str, ":")
 }

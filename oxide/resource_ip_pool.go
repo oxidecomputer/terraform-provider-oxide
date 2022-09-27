@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -270,12 +269,12 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	for _, item := range resp.Items {
 		var ipRange oxideSDK.IpRange
 		rs := item.Range.(map[string]interface{})
-		if govalidator.IsIPv4(rs["first"].(string)) {
+		if isIPv4(rs["first"].(string)) {
 			ipRange = oxideSDK.Ipv4Range{
 				First: rs["first"].(string),
 				Last:  rs["last"].(string),
 			}
-		} else if govalidator.IsIPv6(rs["first"].(string)) {
+		} else if isIPv6(rs["first"].(string)) {
 			ipRange = oxideSDK.Ipv6Range{
 				First: rs["first"].(string),
 				Last:  rs["last"].(string),
@@ -319,12 +318,12 @@ func newIpPoolRange(d *schema.ResourceData) ([]oxideSDK.IpRange, error) {
 
 		var ipRange oxideSDK.IpRange
 
-		if govalidator.IsIPv4(ipR["first_address"].(string)) {
+		if isIPv4(ipR["first_address"].(string)) {
 			ipRange = oxideSDK.Ipv4Range{
 				First: ipR["first_address"].(string),
 				Last:  ipR["last_address"].(string),
 			}
-		} else if govalidator.IsIPv6(ipR["first_address"].(string)) {
+		} else if isIPv6(ipR["first_address"].(string)) {
 			ipRange = oxideSDK.Ipv6Range{
 				First: ipR["first_address"].(string),
 				Last:  ipR["last_address"].(string),
