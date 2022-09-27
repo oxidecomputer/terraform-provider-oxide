@@ -6,7 +6,7 @@ page_title: "oxide_ip_pool Resource - terraform-provider-oxide"
 
 This resource manages IP pools.
 
-!> This resource currently only provides create and read actions. Once remaining endpoints have been added to the API, that functionality will be added here as well.
+!> This resource currently only provides create, read and delete actions.
 
 ## Example Usage
 
@@ -15,7 +15,6 @@ resource "oxide_ip_pool" "example" {
   description       = "a test ippool"
   name              = "myippool"
   ranges {
-    ip_version    = "ipv4"
     first_address = "172.20.15.227"
     last_address  = "172.20.15.239"
   }
@@ -31,9 +30,9 @@ resource "oxide_ip_pool" "example" {
 
 ### Optional
 
-- `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. (see [below for nested schema](#nestedblock--ranges))
 - `organization_name` (String, Optional) Name of the organization.
 - `project_name` (String, Optional) Name of the project.
+- `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. Can be IPv4 or IPv6. (see [below for nested schema](#nestedblock--ranges))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
@@ -49,7 +48,6 @@ resource "oxide_ip_pool" "example" {
 
 Required:
 
-- `ip_version` (String) IP version of the range. Accepted values are `ipv4` or `ipv6`.
 - `first_address` (String) First address in the range.
 - `last_address` (String) Last address in the range.
 

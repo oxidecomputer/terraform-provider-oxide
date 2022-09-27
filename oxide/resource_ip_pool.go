@@ -6,12 +6,12 @@ package oxide
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -117,12 +117,6 @@ func newIpPoolSchema() map[string]*schema.Schema {
 func newRangeResource() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			// TODO: Will likely have to remove this field as it complicates things for updates
-			"ip_version": {
-				Type:        schema.TypeString,
-				Description: "IP version of the range. Accepted values are ipv4 and ipv6",
-				Required:    true,
-			},
 			"first_address": {
 				Type:        schema.TypeString,
 				Description: "First address in the range.",
@@ -267,8 +261,42 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	client := meta.(*oxideSDK.Client)
 	ipPoolName := d.Get("name").(string)
 
-	// TODO: Remove ranges first? Will find out if this is necessary when this endpoint is enabled
+	// Remove all IP pool ranges first
+	resp, err := client.IpPoolRangeList(oxideSDK.Name(ipPoolName), 1000000000, "")
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
+	for _, item := range resp.Items {
+		var ipRange oxideSDK.IpRange
+		rs := item.Range.(map[string]interface{})
+		if govalidator.IsIPv4(rs["first"].(string)) {
+			ipRange = oxideSDK.Ipv4Range{
+				First: rs["first"].(string),
+				Last:  rs["last"].(string),
+			}
+		} else if govalidator.IsIPv6(rs["first"].(string)) {
+			ipRange = oxideSDK.Ipv6Range{
+				First: rs["first"].(string),
+				Last:  rs["last"].(string),
+			}
+		} else {
+			// This should never happen as we are retrieving information from Nexus. If we do encounter
+			// this error we have a huge problem.
+			return diag.FromErr(
+				fmt.Errorf(
+					"the value %s retrieved from Nexus is neither a valid IPv4 or IPv6. If you encounter this error please contact support",
+					rs["first"].(string),
+				),
+			)
+		}
+
+		if err := client.IpPoolRangeRemove(oxideSDK.Name(ipPoolName), &ipRange); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Delete IP Pool once all ranges have been removed
 	if err := client.IpPoolDelete(oxideSDK.Name(ipPoolName)); err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -289,24 +317,20 @@ func newIpPoolRange(d *schema.ResourceData) ([]oxideSDK.IpRange, error) {
 	for _, r := range rs {
 		ipR := r.(map[string]interface{})
 
-		if ipR["ip_version"].(string) != "ipv4" && ipR["ip_version"].(string) != "ipv6" {
-			return nil, errors.New("ip_version must be one of \"ipv4\" or \"ipv6\"")
-		}
-
 		var ipRange oxideSDK.IpRange
 
-		if ipR["ip_version"].(string) == "ipv4" {
+		if govalidator.IsIPv4(ipR["first_address"].(string)) {
 			ipRange = oxideSDK.Ipv4Range{
 				First: ipR["first_address"].(string),
 				Last:  ipR["last_address"].(string),
 			}
-		}
-
-		if ipR["ip_version"].(string) == "ipv6" {
+		} else if govalidator.IsIPv6(ipR["first_address"].(string)) {
 			ipRange = oxideSDK.Ipv6Range{
 				First: ipR["first_address"].(string),
 				Last:  ipR["last_address"].(string),
 			}
+		} else {
+			return nil, fmt.Errorf("%s is neither a valid IPv4 or IPv6", ipR["first_address"].(string))
 		}
 
 		ipRanges = append(ipRanges, ipRange)
@@ -333,7 +357,11 @@ func ipPoolRangesToState(client *oxideSDK.Client, ipPoolRange oxideSDK.IpPoolRan
 			m["last_address"] = rs["last"]
 		default:
 			// Theoretically this should never happen. Just in case though!
-			return nil, fmt.Errorf("internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support", reflect.TypeOf(item.Range), item.Range)
+			return nil, fmt.Errorf(
+				"internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support",
+				reflect.TypeOf(item.Range),
+				item.Range,
+			)
 		}
 		result = append(result, m)
 	}
