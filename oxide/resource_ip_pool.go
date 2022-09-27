@@ -8,6 +8,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -50,9 +52,10 @@ func ipPoolResource() *schema.Resource {
 				}
 				return nil
 			}),
+			// TODO: Enable adding and removing ranges. Figuring out best way forward for this
 			customdiff.ValidateChange("ranges", func(ctx context.Context, old, new, meta any) error {
 				if old != nil && len(new.([]interface{})) != len(old.([]interface{})) && len(old.([]interface{})) > 0 {
-					return fmt.Errorf("ranges IP pool cannot be updated; please revert to previous configuration")
+					return fmt.Errorf("IP pool ranges cannot be updated; please revert to previous configuration")
 				}
 				return nil
 			}),
@@ -88,6 +91,11 @@ func newIpPoolSchema() map[string]*schema.Schema {
 			Optional:    true,
 			Elem:        newRangeResource(),
 		},
+		"id": {
+			Type:        schema.TypeString,
+			Description: "Unique, immutable, system-controlled identifier.",
+			Computed:    true,
+		},
 		"project_id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier of the project.",
@@ -109,6 +117,7 @@ func newIpPoolSchema() map[string]*schema.Schema {
 func newRangeResource() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
+			// TODO: Will likely have to remove this field as it complicates things for updates
 			"ip_version": {
 				Type:        schema.TypeString,
 				Description: "IP version of the range. Accepted values are ipv4 and ipv6",
@@ -123,6 +132,11 @@ func newRangeResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: "Last address in the range.",
 				Required:    true,
+			},
+			"id": {
+				Type:        schema.TypeString,
+				Description: "Unique, immutable, system-controlled identifier.",
+				Computed:    true,
 			},
 			"time_created": {
 				Type:        schema.TypeString,
@@ -166,6 +180,10 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 		}
 		for _, r := range ipRanges {
 			_, err := client.IpPoolRangeAdd(resp.Name, &r)
+			// TODO: Remove when error from the API is more end user friendly
+			if err != nil && strings.Contains(err.Error(), "data did not match any variant of untagged enum IpRange") {
+				return diag.FromErr(fmt.Errorf("%+v is not an accepted IP range", r))
+			}
 			if err != nil {
 				return diag.FromErr(fmt.Errorf("%v: %v", len(ipRanges), err))
 			}
@@ -204,6 +222,20 @@ func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 		}
 	}
 
+	resp2, err := client.IpPoolRangeList(oxideSDK.Name(ipPoolName), 1000000000, "")
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	ranges, err := ipPoolRangesToState(client, *resp2)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("ranges", ranges); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return nil
 }
 
@@ -234,6 +266,8 @@ func updateIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 	ipPoolName := d.Get("name").(string)
+
+	// TODO: Remove ranges first? Will find out if this is necessary when this endpoint is enabled
 
 	if err := client.IpPoolDelete(oxideSDK.Name(ipPoolName)); err != nil {
 		if is404(err) {
@@ -279,4 +313,30 @@ func newIpPoolRange(d *schema.ResourceData) ([]oxideSDK.IpRange, error) {
 	}
 
 	return ipRanges, nil
+}
+
+func ipPoolRangesToState(client *oxideSDK.Client, ipPoolRange oxideSDK.IpPoolRangeResultsPage) ([]interface{}, error) {
+	items := ipPoolRange.Items
+	var result = make([]interface{}, 0, len(items))
+	for _, item := range items {
+		var m = make(map[string]interface{})
+
+		m["id"] = item.Id
+		m["time_created"] = item.TimeCreated.String()
+
+		// TODO: For the time being we are using interfaces for nested allOf within oneOf objects in
+		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect that.
+		switch item.Range.(type) {
+		case map[string]interface{}:
+			rs := item.Range.(map[string]interface{})
+			m["first_address"] = rs["first"]
+			m["last_address"] = rs["last"]
+		default:
+			// Theoretically this should never happen. Just in case though!
+			return nil, fmt.Errorf("internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support", reflect.TypeOf(item.Range), item.Range)
+		}
+		result = append(result, m)
+	}
+
+	return result, nil
 }

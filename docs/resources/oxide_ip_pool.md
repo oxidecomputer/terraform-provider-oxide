@@ -6,12 +6,19 @@ page_title: "oxide_ip_pool Resource - terraform-provider-oxide"
 
 This resource manages IP pools.
 
+!> This resource currently only provides create and read actions. Once remaining endpoints have been added to the API, that functionality will be added here as well.
+
 ## Example Usage
 
 ```hcl
 resource "oxide_ip_pool" "example" {
   description       = "a test ippool"
   name              = "myippool"
+  ranges {
+    ip_version    = "ipv4"
+    first_address = "172.20.15.227"
+    last_address  = "172.20.15.239"
+  }
 }
 ```
 
@@ -24,6 +31,7 @@ resource "oxide_ip_pool" "example" {
 
 ### Optional
 
+- `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. (see [below for nested schema](#nestedblock--ranges))
 - `organization_name` (String, Optional) Name of the organization.
 - `project_name` (String, Optional) Name of the project.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
@@ -34,6 +42,21 @@ resource "oxide_ip_pool" "example" {
 - `project_id` (String) Unique, immutable, system-controlled identifier of the project.
 - `time_created` (String) Timestamp of when this IP pool was created.
 - `time_modified` (String) Timestamp of when this IP pool was last modified.
+
+<a id="nestedblock--ranges"></a>
+
+### Nested Schema for `ranges`
+
+Required:
+
+- `ip_version` (String) IP version of the range. Accepted values are `ipv4` or `ipv6`.
+- `first_address` (String) First address in the range.
+- `last_address` (String) Last address in the range.
+
+Read-Only:
+
+- `id` (String) Unique, immutable, system-controlled identifier.
+- `time_created` (String) Timestamp of when this range was added to the IP pool.
 
 <a id="nestedblock--timeouts"></a>
 
