@@ -11,11 +11,11 @@
 
 There are two make targets to build the provider.
 
-`make install` will build the binary in the `/bin` directory in the root of this repository, and install the provider in your local Terraform plugins directory. Using this target will enable you to use the provider you've just built with your own Terraform configuration files.
+`make install` will build the binary in the `./bin` directory in the root of this repository, and install the provider in your local Terraform plugins directory. Using this target will enable you to use the provider you've just built with your own Terraform configuration files.
 
 There is a caveat when installing with an Apple M1 computer. When building the same version with changes you will have to manually delete the previous binary, or change the version in the Makefile.
 
-`make build` will only build the binary in the `/bin` directory. Terraform will not know to look for the provider there, and will not work with Terraform configuration files.
+`make build` will only build the binary in the `./bin` directory. Terraform will not know to look for the provider there, and will not work with Terraform configuration files.
 
 ## Using the provider
 
