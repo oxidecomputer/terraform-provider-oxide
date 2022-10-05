@@ -10,3 +10,9 @@ This Terraform configuration file sets up the basic elements on a rack to be abl
 _IMPORTANT: Currently there is no way to delete a global image. This means that you cannot run `terraform destroy` on this configuration file._
 
 To try out this configuration file follow the [instructions](https://github.com/oxidecomputer/terraform-provider-oxide/#using-the-provider) from the README.
+
+If you have not set up the catacomb tunnel, use the Terraform CLI to change the value of the `catacomb` variable while applying the plan by running:
+
+```console
+$ terraform apply -var="catacomb=catacomb.eng.oxide.computer"
+```
