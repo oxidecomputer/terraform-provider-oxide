@@ -31,7 +31,7 @@ resource "oxide_ip_pool" "ip_pool_ranges" {
   }
 }
 
-resource "oxide_global_image" "test" {
+resource "oxide_global_image" "dummy_image" {
   description          = "a test global_image"
   name                 = "alpine"
   image_source         = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
