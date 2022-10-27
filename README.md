@@ -5,7 +5,7 @@
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads) 0.1.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
-- [Go](https://go.dev/dl/) 1.18.x and above (to build the provider plugin)
+- [Go](https://go.dev/dl/) 1.19.x and above (to build the provider plugin)
 
 ## Building the provider
 
