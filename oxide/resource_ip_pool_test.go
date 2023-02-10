@@ -30,8 +30,8 @@ func TestAccResourceIpPool(t *testing.T) {
 				Check:  checkResourceIpPoolUpdate(resourceName),
 			},
 			{
-				Config: testResourceIpPoolOrgProjectConfig,
-				Check:  checkResourceIpPoolOrgProject(resourceName2),
+				Config: testResourceIpPoolRangesConfig,
+				Check:  checkResourceIpPoolRanges(resourceName2),
 			},
 		},
 	})
@@ -71,10 +71,8 @@ func checkResourceIpPoolUpdate(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceIpPoolOrgProjectConfig = `
+var testResourceIpPoolRangesConfig = `
 resource "oxide_ip_pool" "test2" {
-	organization_name = "corp"
-	project_name      = "test"
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool2"
 	ranges {
@@ -84,7 +82,7 @@ resource "oxide_ip_pool" "test2" {
   }
 `
 
-func checkResourceIpPoolOrgProject(resourceName string) resource.TestCheckFunc {
+func checkResourceIpPoolRanges(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),

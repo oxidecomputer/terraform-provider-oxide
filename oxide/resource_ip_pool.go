@@ -39,18 +39,6 @@ func ipPoolResource() *schema.Resource {
 				}
 				return nil
 			}),
-			customdiff.ValidateChange("organization", func(ctx context.Context, old, new, meta any) error {
-				if old != nil && new.(string) != old.(string) {
-					return fmt.Errorf("organization of IP pool cannot be updated; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
-			customdiff.ValidateChange("project", func(ctx context.Context, old, new, meta any) error {
-				if old != nil && new.(string) != old.(string) {
-					return fmt.Errorf("project of IP pool cannot be updated; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
 			// TODO: Enable adding and removing ranges. Figuring out best way forward for this
 			customdiff.ValidateChange("ranges", func(ctx context.Context, old, new, meta any) error {
 				if old != nil && len(new.([]interface{})) != len(old.([]interface{})) && len(old.([]interface{})) > 0 {
@@ -142,8 +130,6 @@ func newRangeResource() *schema.Resource {
 
 func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	ranges := d.Get("ranges").([]interface{})
@@ -151,14 +137,6 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 	body := oxideSDK.IpPoolCreate{
 		Description: description,
 		Name:        oxideSDK.Name(name),
-	}
-
-	if orgName != "" {
-		body.Organization = oxideSDK.Name(orgName)
-	}
-
-	if projectName != "" {
-		body.Project = oxideSDK.Name(projectName)
 	}
 
 	resp, err := client.IpPoolCreate(&body)
@@ -208,11 +186,6 @@ func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	}
 	if err := d.Set("time_modified", resp.TimeModified.String()); err != nil {
 		return diag.FromErr(err)
-	}
-	if resp.ProjectId != "" {
-		if err := d.Set("project_id", resp.ProjectId); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 
 	resp2, err := client.IpPoolRangeList(oxideSDK.Name(ipPoolName), 1000000000, "")
