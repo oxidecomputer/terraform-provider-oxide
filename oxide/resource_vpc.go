@@ -191,7 +191,7 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	res, err := client.VpcSubnetList(
 		1000000,
 		"",
-		oxideSDK.NameSortMode(oxideSDK.NameOrIdSortModeIdAscending),
+		oxideSDK.NameSortMode(oxideSDK.NameOrIdSortModeNameAscending),
 		oxideSDK.Name(orgName),
 		oxideSDK.Name(projectName),
 		oxideSDK.Name(vpcName),

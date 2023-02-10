@@ -30,8 +30,6 @@ resource "oxide_ip_pool" "example" {
 
 ### Optional
 
-- `organization_name` (String, Optional) Name of the organization.
-- `project_name` (String, Optional) Name of the project.
 - `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. Can be IPv4 or IPv6. (see [below for nested schema](#nestedblock--ranges))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
