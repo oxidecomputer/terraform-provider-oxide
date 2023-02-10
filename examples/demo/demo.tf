@@ -20,8 +20,7 @@ data "oxide_projects" "project_list" {
 data "oxide_global_images" "image_list" {}
 
 resource "oxide_disk" "web_disk_1" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Disk for a web instance"
   name              = "web-disk-1"
   size              = var.ten_gib
@@ -29,8 +28,7 @@ resource "oxide_disk" "web_disk_1" {
 }
 
 resource "oxide_disk" "web_disk_2" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Disk for a web instance"
   name              = "web-disk-2"
   size              = var.ten_gib
@@ -38,8 +36,7 @@ resource "oxide_disk" "web_disk_2" {
 }
 
 resource "oxide_disk" "web_disk_3" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Disk for a web instance"
   name              = "web-disk-3"
   size              = var.ten_gib
@@ -47,8 +44,7 @@ resource "oxide_disk" "web_disk_3" {
 }
 
 resource "oxide_disk" "db_disk_1" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Disk for a DB instance"
   name              = "db-disk-1"
   size              = var.twenty_gib
@@ -56,8 +52,7 @@ resource "oxide_disk" "db_disk_1" {
 }
 
 resource "oxide_disk" "db_disk_2" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Disk for a DB instance"
   name              = "db-disk-2"
   size              = var.twenty_gib

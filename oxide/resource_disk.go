@@ -34,24 +34,14 @@ func diskResource() *schema.Resource {
 
 func newDiskSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"organization_name": {
+		"project_id": {
 			Type:        schema.TypeString,
-			Description: "Name of the organization.",
-			Required:    true,
-		},
-		"project_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the project.",
+			Description: "ID of the project that will contain the disk.",
 			Required:    true,
 		},
 		"name": {
 			Type:        schema.TypeString,
 			Description: "Name of the disk.",
-			Required:    true,
-		},
-		"description": {
-			Type:        schema.TypeString,
-			Description: "Description for the disk.",
 			Required:    true,
 		},
 		"disk_source": {
@@ -66,6 +56,11 @@ func newDiskSchema() map[string]*schema.Schema {
 			Type:        schema.TypeInt,
 			Description: "Size of the disk in bytes.",
 			Required:    true,
+		},
+		"description": {
+			Type:        schema.TypeString,
+			Description: "Description for the disk.",
+			Optional:    true,
 		},
 		"block_size": {
 			Type:        schema.TypeInt,
@@ -90,11 +85,6 @@ func newDiskSchema() map[string]*schema.Schema {
 		"id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier of the disk.",
-			Computed:    true,
-		},
-		"project_id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier of the project.",
 			Computed:    true,
 		},
 		"state": {
@@ -131,8 +121,7 @@ func newDiskSchema() map[string]*schema.Schema {
 func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	projectId := d.Get("project_id").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	size := d.Get("size").(int)
@@ -149,7 +138,7 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 		Size:        oxideSDK.ByteCount(size),
 	}
 
-	resp, err := client.DiskCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)
+	resp, err := client.DiskCreateV1(oxideSDK.NameOrId(""), oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -163,7 +152,7 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 	client := meta.(*oxideSDK.Client)
 	diskId := d.Get("id").(string)
 
-	resp, err := client.DiskViewById(diskId)
+	resp, err := client.DiskViewV1(oxideSDK.NameOrId(diskId), oxideSDK.NameOrId(""), oxideSDK.NameOrId(""))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -182,9 +171,7 @@ func updateDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 
 func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	diskName := d.Get("name").(string)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	diskId := d.Get("id").(string)
 
 	// Wait for disk to be detached before attempting to destroy.
 	// TODO: For the time being there is no endpoint to detach disks without
@@ -194,13 +181,13 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	// for a temporary workaround for the acceptance tests we will only check for a `detached`
 	// status for 5 seconds and return an error otherwise.
 	ch := make(chan error)
-	go waitForDetachedDisk(client, oxideSDK.Name(diskName), oxideSDK.Name(orgName), oxideSDK.Name(projectName), ch)
+	go waitForDetachedDisk(client, oxideSDK.NameOrId(diskId), ch)
 	e := <-ch
 	if e != nil {
 		return diag.FromErr(e)
 	}
 
-	if err := client.DiskDelete(oxideSDK.Name(diskName), oxideSDK.Name(orgName), oxideSDK.Name(projectName)); err != nil {
+	if err := client.DiskDeleteV1(oxideSDK.NameOrId(diskId), oxideSDK.NameOrId(""), oxideSDK.NameOrId("")); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -304,9 +291,9 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 	return ds, nil
 }
 
-func waitForDetachedDisk(client *oxideSDK.Client, diskName, orgName, projectName oxideSDK.Name, ch chan error) {
+func waitForDetachedDisk(client *oxideSDK.Client, diskId oxideSDK.NameOrId, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.DiskView(oxideSDK.Name(diskName), orgName, projectName)
+		resp, err := client.DiskViewV1(diskId, oxideSDK.NameOrId(""), oxideSDK.NameOrId(""))
 		if err != nil {
 			ch <- err
 		}

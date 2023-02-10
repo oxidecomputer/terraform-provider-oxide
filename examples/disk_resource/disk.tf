@@ -13,9 +13,14 @@ provider "oxide" {}
 
 data "oxide_global_images" "image_example" {}
 
+data "oxide_organizations" "org_list" {}
+
+data "oxide_projects" "project_list" {
+  organization_name = data.oxide_organizations.org_list.organizations.0.name
+}
+
 resource "oxide_disk" "example" {
-  organization_name = "corp"
-  project_name      = "test"
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "a test disk"
   name              = "mydisk"
   size              = 1073741824
@@ -23,8 +28,7 @@ resource "oxide_disk" "example" {
 }
 
 resource "oxide_disk" "example2" {
-  organization_name = "corp"
-  project_name      = "test"
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "a test disk"
   name              = "mydisk2"
   size              = 1073741824

@@ -29,9 +29,14 @@ func TestAccResourceDisk(t *testing.T) {
 }
 
 var testResourceDiskConfig = `
+data "oxide_organizations" "org_list" {}
+
+data "oxide_projects" "project_list" {
+  organization_name = data.oxide_organizations.org_list.organizations.0.name
+}
+
 resource "oxide_disk" "test" {
-  organization_name = "corp"
-  project_name      = "test"
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "a test disk"
   name              = "terraform-acc-mydisk"
   size              = 1073741824
@@ -42,8 +47,6 @@ resource "oxide_disk" "test" {
 func checkResourceDisk(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
-		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test disk"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-mydisk"),
 		resource.TestCheckResourceAttr(resourceName, "size", "1073741824"),

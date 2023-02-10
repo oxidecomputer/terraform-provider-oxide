@@ -12,8 +12,7 @@ This resource manages disks.
 
 ```hcl
 resource "oxide_disk" "example" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test disk"
   name              = "mydisk"
   size              = 1073741824
@@ -21,8 +20,7 @@ resource "oxide_disk" "example" {
 }
 
 resource "oxide_disk" "example2" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test disk"
   name              = "mydisk2"
   size              = 1073741824
@@ -34,15 +32,14 @@ resource "oxide_disk" "example2" {
 
 ### Required
 
-- `description` (String) Description for the disk.
 - `disk_source` (Map of String) Source of a disk. Can be one of `blank = block_size`, `image = "image_id"`, `global_image = "image_id"`, or `snapshot = "snapshot_id"`.
 - `name` (String) Name of the disk.
-- `organization_name` (String) Name of the organization.
-- `project_name` (String) Name of the project.
+- `project_id` (String) ID of the project that will contain the disk.
 - `size` (Number) Size of the disk in bytes.
 
 ### Optional
 
+- `description` (String) Description for the disk.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
