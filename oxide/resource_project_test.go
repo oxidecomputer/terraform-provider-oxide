@@ -54,7 +54,7 @@ func checkResourceProject(resourceName string) resource.TestCheckFunc {
 var testResourceProjectUpdateConfig = `
 resource "oxide_project" "test" {
 	description       = "a new description for project"
-	name              = "terraform-acc-myproject"
+	name              = "terraform-acc-myproject2"
 	organization_name = "corp"
   }
 `
@@ -63,7 +63,7 @@ func checkResourceProjectUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a new description for project"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myproject"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myproject2"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
@@ -80,7 +80,7 @@ func testAccProjectDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.ProjectView(oxide.Name("corp"), oxide.Name("terraform-acc-myproject"))
+		res, err := client.ProjectView(oxide.Name("corp"), oxide.Name("terraform-acc-myproject2"))
 		if err != nil && is404(err) {
 			continue
 		}

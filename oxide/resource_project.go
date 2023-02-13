@@ -30,13 +30,6 @@ func projectResource() *schema.Resource {
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 		CustomizeDiff: customdiff.All(
-			// TODO: When there is an API to update projects by ID remove this check to allow name changes
-			customdiff.ValidateChange("name", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return fmt.Errorf("name of project cannot be updated via Terraform; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
 			customdiff.ValidateChange("organization", func(ctx context.Context, old, new, meta any) error {
 				if old != nil && new.(string) != old.(string) {
 					return fmt.Errorf("organization of project cannot be updated; please revert to: \"%s\"", old.(string))
@@ -59,6 +52,7 @@ func newProjectSchema() map[string]*schema.Schema {
 			Description: "Description for the project.",
 			Required:    true,
 		},
+		// TODO: Remove when organization endpoints are gone
 		"organization_name": {
 			Type:        schema.TypeString,
 			Description: "Name of the organization.",
@@ -67,11 +61,6 @@ func newProjectSchema() map[string]*schema.Schema {
 		"id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier of the project.",
-			Computed:    true,
-		},
-		"organization_id": {
-			Type:        schema.TypeString,
-			Description: "ID of the organization.",
 			Computed:    true,
 		},
 		"time_created": {
@@ -98,7 +87,7 @@ func createProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.ProjectCreate(oxideSDK.Name(orgName), &body)
+	resp, err := client.ProjectCreateV1(oxideSDK.NameOrId(orgName), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -112,15 +101,12 @@ func readProject(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	client := meta.(*oxideSDK.Client)
 	projectId := d.Get("id").(string)
 
-	resp, err := client.ProjectViewById(projectId)
+	resp, err := client.ProjectViewV1(oxideSDK.NameOrId(projectId), oxideSDK.NameOrId(""))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	if err := d.Set("name", resp.Name); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("organization_id", resp.OrganizationId); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("description", resp.Description); err != nil {
@@ -138,19 +124,16 @@ func readProject(_ context.Context, d *schema.ResourceData, meta interface{}) di
 
 func updateProject(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	orgName := d.Get("organization_name").(string)
+	projectId := d.Get("id").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 
 	body := oxideSDK.ProjectUpdate{
 		Description: description,
-		// We cannot change the name of the project as it is used as an identifier for
-		// the update in the Put method. Changing it would make it impossible for
-		// terraform to know which project to update.
-		// Name:        name,
+		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.ProjectUpdate(oxideSDK.Name(orgName), oxideSDK.Name(name), &body)
+	resp, err := client.ProjectUpdateV1(oxideSDK.NameOrId(projectId), oxideSDK.NameOrId(""), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -162,10 +145,9 @@ func updateProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 
 func deleteProject(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	orgName := d.Get("organization_name").(string)
-	name := d.Get("name").(string)
+	projectId := d.Get("id").(string)
 
-	if err := client.ProjectDelete(oxideSDK.Name(orgName), oxideSDK.Name(name)); err != nil {
+	if err := client.ProjectDeleteV1(oxideSDK.NameOrId(projectId), oxideSDK.NameOrId("")); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
