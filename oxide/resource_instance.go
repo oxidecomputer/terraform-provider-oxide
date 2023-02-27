@@ -33,14 +33,9 @@ func instanceResource() *schema.Resource {
 
 func newInstanceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"organization_name": {
+		"project_id": {
 			Type:        schema.TypeString,
-			Description: "Name of the organization.",
-			Required:    true,
-		},
-		"project_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the project.",
+			Description: "ID of the project that will contain the instance.",
 			Required:    true,
 		},
 		"name": {
@@ -91,11 +86,6 @@ func newInstanceSchema() map[string]*schema.Schema {
 			Elem:        newNetworkInterfaceResource(),
 		},
 		"id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier.",
-			Computed:    true,
-		},
-		"project_id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier.",
 			Computed:    true,
@@ -171,8 +161,7 @@ func newNetworkInterfaceResource() *schema.Resource {
 func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	projectId := d.Get("project_id").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	hostName := d.Get("host_name").(string)
@@ -190,7 +179,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		NetworkInterfaces: newNetworkInterface(d),
 	}
 
-	resp, err := client.InstanceCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)
+	resp, err := client.InstanceCreateV1("", oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,11 +192,8 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 	instanceId := d.Get("id").(string)
-	instanceName := d.Get("name").(string)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
 
-	resp, err := client.InstanceViewById(instanceId)
+	resp, err := client.InstanceViewV1("", "", instanceId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -218,13 +204,13 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 
 	nis := d.Get("network_interface").([]interface{})
 	if len(nis) > 0 {
-		resp2, err := client.InstanceNetworkInterfaceList(
+		resp2, err := client.InstanceNetworkInterfaceListV1(
+			oxideSDK.NameOrId(instanceId),
 			1000000,
 			"",
-			oxideSDK.NameSortModeNameAscending,
-			oxideSDK.Name(instanceName),
-			oxideSDK.Name(orgName),
-			oxideSDK.Name(projectName),
+			"",
+			"",
+			oxideSDK.NameOrIdSortModeNameAscending,
 		)
 		if err != nil {
 			return diag.FromErr(err)
@@ -250,11 +236,9 @@ func updateInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 
 func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	instanceName := d.Get("name").(string)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	instanceId := d.Get("id").(string)
 
-	_, err := client.InstanceStop(oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName))
+	_, err := client.InstanceStopV1("", "", oxideSDK.NameOrId(instanceId))
 	if err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -265,13 +249,13 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 
 	// Wait for instance to be stopped before attempting to destroy
 	ch := make(chan error)
-	go waitForStoppedInstance(client, oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName), ch)
+	go waitForStoppedInstance(client, oxideSDK.NameOrId(instanceId), ch)
 	e := <-ch
 	if e != nil {
 		return diag.FromErr(e)
 	}
 
-	if err := client.InstanceDelete(oxideSDK.Name(instanceName), oxideSDK.Name(orgName), oxideSDK.Name(projectName)); err != nil {
+	if err := client.InstanceDeleteV1("", "", oxideSDK.NameOrId(instanceId)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -321,9 +305,9 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 	return nil
 }
 
-func waitForStoppedInstance(client *oxideSDK.Client, instanceName, orgName, projectName oxideSDK.Name, ch chan error) {
+func waitForStoppedInstance(client *oxideSDK.Client, instanceId oxideSDK.NameOrId, ch chan error) {
 	for {
-		resp, err := client.InstanceView(instanceName, orgName, projectName)
+		resp, err := client.InstanceViewV1("", "", instanceId)
 		if err != nil {
 			ch <- err
 		}
@@ -390,8 +374,9 @@ func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfa
 		nwInterfaceCreate := oxideSDK.NetworkInterfaceCreate{
 			Description: nwInterface["description"].(string),
 			Name:        oxideSDK.Name(nwInterface["name"].(string)),
-			SubnetName:  oxideSDK.Name(nwInterface["subnet_name"].(string)),
-			VpcName:     oxideSDK.Name(nwInterface["vpc_name"].(string)),
+			// TODO: Ideally from the API we should be able to create with IDs, not names
+			SubnetName: oxideSDK.Name(nwInterface["subnet_name"].(string)),
+			VpcName:    oxideSDK.Name(nwInterface["vpc_name"].(string)),
 		}
 
 		interfaceCreate = append(interfaceCreate, nwInterfaceCreate)
@@ -417,11 +402,27 @@ func networkInterfaceToState(client *oxideSDK.Client, nwInterface oxideSDK.Netwo
 
 		// Ideally the NetworkInterface struct would contain the names of the VPC and subnet.
 		// For now they only give the ID so we'll retrieve the names separately.
-		vpcResp, err := client.VpcViewById(item.VpcId)
+		vpcResp, err := client.VpcViewV1(oxideSDK.NameOrId(item.VpcId), "", "")
 		if err != nil {
 			return nil, err
 		}
 
+		// TODO: There seems to be a bug in Omicron:
+		//
+		// If I only set subnet ID:
+		// Error: HTTP 400 (http://127.0.0.1:12220/v1/vpc-subnets/41f2a800-3ba5-43d4-a32a-ad61c9e6c0cb) BODY -> {
+		// "request_id": "16a01f10-2fac-457c-8c4d-bd577101ba28",
+		// "message": "unable to parse query string: missing field `vpc`"
+		//  }
+		//
+		// If I set the VPC ID
+		// Error: HTTP 400 (http://127.0.0.1:12220/v1/vpc-subnets/41f2a800-3ba5-43d4-a32a-ad61c9e6c0cb?vpc=c45200bb-bb8c-400d-9cb4-cf8b0a35741f) BODY -> {
+		//	"request_id": "d73ee287-0456-45be-8d11-8c6993a237fa",
+		//	"error_code": "InvalidRequest",
+		//	"message": "when providing subnet as an ID, vpc should not be specified"
+		//  }
+
+		//subnetResp, err := client.VpcSubnetViewV1(oxideSDK.NameOrId(item.SubnetId), "", "", "")
 		subnetResp, err := client.VpcSubnetViewById(item.SubnetId)
 		if err != nil {
 			return nil, err

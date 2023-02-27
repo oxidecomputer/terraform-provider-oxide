@@ -60,8 +60,7 @@ resource "oxide_disk" "db_disk_2" {
 }
 
 resource "oxide_instance" "web_instance_1" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Web instance"
   name              = "web-instance-1"
   host_name         = "web-instance-1"
@@ -77,8 +76,7 @@ resource "oxide_instance" "web_instance_1" {
 }
 
 resource "oxide_instance" "web_instance_2" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Web instance"
   name              = "web-instance-2"
   host_name         = "web-instance-2"
@@ -94,8 +92,7 @@ resource "oxide_instance" "web_instance_2" {
 }
 
 resource "oxide_instance" "web_instance_3" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Web instance"
   name              = "web-instance-3"
   host_name         = "web-instance-3"
@@ -111,8 +108,7 @@ resource "oxide_instance" "web_instance_3" {
 }
 
 resource "oxide_instance" "db_instance_1" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Web instance"
   name              = "db-instance-1"
   host_name         = "db-instance-1"
@@ -128,8 +124,7 @@ resource "oxide_instance" "db_instance_1" {
 }
 
 resource "oxide_instance" "db_instance_2" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-  project_name      = data.oxide_projects.project_list.projects.0.name
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Web instance"
   name              = "db-instance-2"
   host_name         = "db-instance-2"
