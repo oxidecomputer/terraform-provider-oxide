@@ -14,8 +14,7 @@ This resource manages instances.
 
 ```hcl
 resource "oxide_instance" "example" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "<host value>"
@@ -28,8 +27,7 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "<host value>"
@@ -43,8 +41,7 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "<host value>"
@@ -58,8 +55,7 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test instance"
   name              = "myinstance"
   host_name         = "<host value>"
@@ -83,8 +79,7 @@ resource "oxide_instance" "example" {
 - `memory` (Number) Instance memory in bytes.
 - `name` (String) Name of the instance.
 - `ncpus` (Number) Number of CPUs allocated for this instance.
-- `organization_name` (String) Name of the organization.
-- `project_name` (String) Name of the project.
+- `project_id` (String) ID of the project that will contain the instance.
 
 ### Optional
 
@@ -96,7 +91,6 @@ resource "oxide_instance" "example" {
 ### Read-Only
 
 - `id` (String) Unique, immutable, system-controlled identifier of the instance.
-- `project_id` (String) Unique, immutable, system-controlled identifier of the project.
 - `run_state` (String) Running state of an Instance (primarily: booted or stopped). This typically reflects whether it's starting, running, stopping, or stopped, but also includes states related to the instance's lifecycle.
 - `time_created` (String) Timestamp of when this instance was created.
 - `time_modified` (String) Timestamp of when this instance last modified.

@@ -72,7 +72,7 @@ func testAccDiskDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.DiskView("terraform-acc-mydisk", "corp", "test")
+		res, err := client.DiskViewV1("terraform-acc-mydisk", "corp", "test")
 
 		if err != nil && is404(err) {
 			continue
