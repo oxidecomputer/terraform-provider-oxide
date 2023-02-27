@@ -30,13 +30,6 @@ func vpcResource() *schema.Resource {
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 		CustomizeDiff: customdiff.All(
-			// TODO: When there is an API to update VPCs by ID remove this check to allow name changes
-			customdiff.ValidateChange("name", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return fmt.Errorf("name of VPC cannot be updated via Terraform; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
 			customdiff.ValidateChange("ipv6_prefix", func(ctx context.Context, old, new, meta any) error {
 				if old.(string) != "" && new.(string) != old.(string) {
 					return fmt.Errorf("ipv6_prefix of VPC cannot be updated; please revert to: \"%s\"", old.(string))
@@ -49,14 +42,9 @@ func vpcResource() *schema.Resource {
 
 func newVPCSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"organization_name": {
+		"project_id": {
 			Type:        schema.TypeString,
-			Description: "Name of the organization.",
-			Required:    true,
-		},
-		"project_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the project.",
+			Description: "ID of the project that will contain the VPC.",
 			Required:    true,
 		},
 		"name": {
@@ -85,11 +73,6 @@ func newVPCSchema() map[string]*schema.Schema {
 			Description: "Unique, immutable, system-controlled identifier.",
 			Computed:    true,
 		},
-		"project_id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier.",
-			Computed:    true,
-		},
 		"system_router_id": {
 			Type:        schema.TypeString,
 			Description: "SystemRouterID is the ID for the system router where subnet default routes are registered.",
@@ -111,8 +94,7 @@ func newVPCSchema() map[string]*schema.Schema {
 func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	projectId := d.Get("project_id").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	dnsName := d.Get("dns_name").(string)
@@ -128,7 +110,7 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
 	}
 
-	resp, err := client.VpcCreate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), &body)
+	resp, err := client.VpcCreateV1(oxideSDK.NameOrId(""), oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -142,7 +124,7 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 	client := meta.(*oxideSDK.Client)
 	vpcId := d.Get("id").(string)
 
-	resp, err := client.VpcViewById(vpcId)
+	resp, err := client.VpcViewV1(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""), oxideSDK.NameOrId(""))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -157,22 +139,18 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	dnsName := d.Get("dns_name").(string)
+	vpcId := d.Get("id").(string)
 
 	body := oxideSDK.VpcUpdate{
 		Description: description,
-		// We cannot change the name of the VPC as it is used as an identifier for
-		// the update in the Put method. Changing it would make it impossible for
-		// terraform to know which VPC to update.
-		// Name:        name,
-		DnsName: oxideSDK.Name(dnsName),
+		Name:        oxideSDK.Name(name),
+		DnsName:     oxideSDK.Name(dnsName),
 	}
 
-	resp, err := client.VpcUpdate(oxideSDK.Name(orgName), oxideSDK.Name(projectName), oxideSDK.Name(name), &body)
+	resp, err := client.VpcUpdateV1(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""), oxideSDK.NameOrId(""), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -184,17 +162,15 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 
 func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	vpcName := d.Get("name").(string)
-	orgName := d.Get("organization_name").(string)
-	projectName := d.Get("project_name").(string)
+	vpcId := d.Get("id").(string)
 
-	res, err := client.VpcSubnetList(
+	res, err := client.VpcSubnetListV1(
 		1000000,
 		"",
-		oxideSDK.NameSortMode(oxideSDK.NameOrIdSortModeNameAscending),
-		oxideSDK.Name(orgName),
-		oxideSDK.Name(projectName),
-		oxideSDK.Name(vpcName),
+		"",
+		"",
+		oxideSDK.NameOrIdSortModeIdAscending,
+		oxideSDK.NameOrId(vpcId),
 	)
 	if err != nil {
 		return diag.FromErr(err)
@@ -202,22 +178,18 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 
 	if res != nil {
 		for _, subnet := range res.Items {
-			if err := client.VpcSubnetDelete(
-				oxideSDK.Name(orgName),
-				oxideSDK.Name(projectName),
-				subnet.Name,
-				oxideSDK.Name(vpcName),
+			if err := client.VpcSubnetDeleteV1(
+				oxideSDK.NameOrId(subnet.Id),
+				"",
+				"",
+				"",
 			); err != nil {
 				return diag.FromErr(err)
 			}
 		}
 	}
 
-	if err := client.VpcDelete(
-		oxideSDK.Name(orgName),
-		oxideSDK.Name(projectName),
-		oxideSDK.Name(vpcName),
-	); err != nil {
+	if err := client.VpcDeleteV1(oxideSDK.NameOrId(vpcId), "", ""); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

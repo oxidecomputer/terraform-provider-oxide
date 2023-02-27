@@ -11,9 +11,14 @@ terraform {
 
 provider "oxide" {}
 
+data "oxide_organizations" "org_list" {}
+
+data "oxide_projects" "project_list" {
+  organization_name = data.oxide_organizations.org_list.organizations.0.name
+}
+
 resource "oxide_vpc" "example" {
-  organization_name = "corp"
-  project_name      = "test"
+  project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "a test vpc"
   name              = "myvpc"
   dns_name          = "my-vpc-dnssd"
