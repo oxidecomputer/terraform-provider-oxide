@@ -6,8 +6,7 @@ This example Terraform configuration file performs the following:
 
 To try it out make sure you have the following:
 
-- An organization named `corp`.
-- A project within the `corp` organization called `test`.
+- A project already created.
 - Previously set `OXIDE_HOST` and `OXIDE_TOKEN` environment variables
 
 Alternatively, you can modify the configuration file with your own `organization_name` and `project_name`. Although not recommended, if you do not wish to set the environment variables, you can use the `host` and `token` fields in the `oxide` provider block:

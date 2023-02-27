@@ -10,8 +10,7 @@ This resource manages VPCs.
 
 ```hcl
 resource "oxide_vpc" "example" {
-  organization_name = "staff"
-  project_name      = "test"
+  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description       = "a test vpc"
   name              = "myvpc"
   dns_name          = "my-vpc-dns"
@@ -26,8 +25,7 @@ resource "oxide_vpc" "example" {
 - `description` (String) Description for the VPC.
 - `dns_name` (String) DNS name of the VPC.
 - `name` (String) Name of the VPC.
-- `organization_name` (String) Name of the organization.
-- `project_name` (String) Name of the project.
+- `project_id` (String) ID of the project that will contain the VPC.
 
 ### Optional
 
@@ -37,7 +35,6 @@ resource "oxide_vpc" "example" {
 ### Read-Only
 
 - `id` (String) Unique, immutable, system-controlled identifier of the VPC.
-- `project_id` (String) Unique, immutable, system-controlled identifier of the project.
 - `system_router_id` (String) ID for the system router where subnet default routes are registered.
 - `time_created` (String) Timestamp of when this VPC was created.
 - `time_modified` (String) Timestamp of when this VPC was last modified.

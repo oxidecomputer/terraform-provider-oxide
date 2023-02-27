@@ -38,9 +38,14 @@ func TestAccResourceVPC(t *testing.T) {
 }
 
 var testResourceVPCConfig = `
+data "oxide_organizations" "org_list" {}
+
+data "oxide_projects" "project_list" {
+  organization_name = data.oxide_organizations.org_list.organizations.0.name
+}
+
 resource "oxide_vpc" "test" {
-	organization_name = "corp"
-	project_name      = "test"
+	project_id        = data.oxide_projects.project_list.projects.0.id
 	description       = "a test vpc"
 	name              = "terraform-acc-myvpc"
 	dns_name          = "my-vpc-dns"
@@ -50,8 +55,6 @@ resource "oxide_vpc" "test" {
 func checkResourceVPC(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
-		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc"),
 		resource.TestCheckResourceAttr(resourceName, "dns_name", "my-vpc-dns"),
@@ -64,11 +67,16 @@ func checkResourceVPC(resourceName string) resource.TestCheckFunc {
 }
 
 var testResourceVPCUpdateConfig = `
+data "oxide_organizations" "org_list" {}
+
+data "oxide_projects" "project_list" {
+  organization_name = data.oxide_organizations.org_list.organizations.0.name
+}
+
 resource "oxide_vpc" "test" {
-	organization_name = "corp"
-	project_name      = "test"
+	project_id        = data.oxide_projects.project_list.projects.0.id
 	description       = "a test vopac"
-	name              = "terraform-acc-myvpc"
+	name              = "terraform-acc-myvpc-new"
 	dns_name          = "my-vpc-donas"
   }
 `
@@ -76,10 +84,8 @@ resource "oxide_vpc" "test" {
 func checkResourceVPCUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
-		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vopac"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc-new"),
 		resource.TestCheckResourceAttr(resourceName, "dns_name", "my-vpc-donas"),
 		resource.TestCheckResourceAttrSet(resourceName, "ipv6_prefix"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -90,9 +96,14 @@ func checkResourceVPCUpdate(resourceName string) resource.TestCheckFunc {
 }
 
 var testResourceVPCIPv6Config = `
+data "oxide_organizations" "org_list" {}
+
+data "oxide_projects" "project_list" {
+  organization_name = data.oxide_organizations.org_list.organizations.0.name
+}
+
 resource "oxide_vpc" "test2" {
-	organization_name = "corp"
-	project_name      = "test"
+	project_id        = data.oxide_projects.project_list.projects.0.id
 	description       = "a test vpc"
 	name              = "terraform-acc-myvpc2"
 	dns_name          = "my-vpc-dns"
@@ -103,8 +114,6 @@ resource "oxide_vpc" "test2" {
 func checkResourceVPCIPv6(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
-		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc2"),
 		resource.TestCheckResourceAttr(resourceName, "dns_name", "my-vpc-dns"),
