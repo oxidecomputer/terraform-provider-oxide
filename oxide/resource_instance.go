@@ -407,23 +407,7 @@ func networkInterfaceToState(client *oxideSDK.Client, nwInterface oxideSDK.Netwo
 			return nil, err
 		}
 
-		// TODO: There seems to be a bug in Omicron:
-		//
-		// If I only set subnet ID:
-		// Error: HTTP 400 (http://127.0.0.1:12220/v1/vpc-subnets/41f2a800-3ba5-43d4-a32a-ad61c9e6c0cb) BODY -> {
-		// "request_id": "16a01f10-2fac-457c-8c4d-bd577101ba28",
-		// "message": "unable to parse query string: missing field `vpc`"
-		//  }
-		//
-		// If I set the VPC ID
-		// Error: HTTP 400 (http://127.0.0.1:12220/v1/vpc-subnets/41f2a800-3ba5-43d4-a32a-ad61c9e6c0cb?vpc=c45200bb-bb8c-400d-9cb4-cf8b0a35741f) BODY -> {
-		//	"request_id": "d73ee287-0456-45be-8d11-8c6993a237fa",
-		//	"error_code": "InvalidRequest",
-		//	"message": "when providing subnet as an ID, vpc should not be specified"
-		//  }
-
-		//subnetResp, err := client.VpcSubnetViewV1(oxideSDK.NameOrId(item.SubnetId), "", "", "")
-		subnetResp, err := client.VpcSubnetViewById(item.SubnetId)
+		subnetResp, err := client.VpcSubnetViewV1(oxideSDK.NameOrId(item.SubnetId), "", "", "")
 		if err != nil {
 			return nil, err
 		}
