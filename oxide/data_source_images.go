@@ -14,22 +14,27 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func globalImagesDataSource() *schema.Resource {
+func imagesDataSource() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: globalImagesDataSourceRead,
-		Schema:      newGlobalImagesDataSourceSchema(),
+		ReadContext: imagesDataSourceRead,
+		Schema:      newImagesDataSourceSchema(),
 		Timeouts: &schema.ResourceTimeout{
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 	}
 }
 
-func newGlobalImagesDataSourceSchema() map[string]*schema.Schema {
+func newImagesDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"global_images": {
+		"project_id": {
+			Type:        schema.TypeString,
+			Description: "ID of the project that contains the images.",
+			Required:    true,
+		},
+		"images": {
 			Computed:    true,
 			Type:        schema.TypeList,
-			Description: "A list of all global images",
+			Description: "A list of all images belonging to a project",
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"block_size": {
@@ -50,9 +55,9 @@ func newGlobalImagesDataSourceSchema() map[string]*schema.Schema {
 							Type: schema.TypeString,
 						},
 					},
-					"distribution": {
+					"os": {
 						Type:        schema.TypeString,
-						Description: "Image distribution.",
+						Description: "OS image distribution.",
 						Computed:    true,
 					},
 					"id": {
@@ -87,7 +92,7 @@ func newGlobalImagesDataSourceSchema() map[string]*schema.Schema {
 					},
 					"version": {
 						Type:        schema.TypeString,
-						Description: "Image version.",
+						Description: "Version od the OS.",
 						Computed:    true,
 					},
 				},
@@ -96,28 +101,29 @@ func newGlobalImagesDataSourceSchema() map[string]*schema.Schema {
 	}
 }
 
-func globalImagesDataSourceRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func imagesDataSourceRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
+	projectId := d.Get("project_id").(string)
 
 	// TODO: It would be preferable to us the client.Images.GlobalListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
-	// Seems unlikely anyone will have more than one million globalImages.
-	result, err := client.SystemImageList(1000000, "", oxideSDK.NameSortModeNameAscending)
+	// Seems unlikely anyone will have more than one million Images.
+	result, err := client.ImageListV1(1000000, "", "", projectId, oxideSDK.NameOrIdSortModeIdAscending)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.SetId(strconv.Itoa(schema.HashString(time.Now().String())))
 
-	if err := globalImagesToState(d, result); err != nil {
+	if err := ImagesToState(d, result); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func globalImagesToState(d *schema.ResourceData, images *oxideSDK.GlobalImageResultsPage) error {
+func ImagesToState(d *schema.ResourceData, images *oxideSDK.ImageResultsPage) error {
 	if images == nil {
 		return nil
 	}
@@ -128,7 +134,7 @@ func globalImagesToState(d *schema.ResourceData, images *oxideSDK.GlobalImageRes
 
 		m["block_size"] = image.BlockSize
 		m["description"] = image.Description
-		m["distribution"] = image.Distribution
+		m["os"] = image.Os
 		m["id"] = image.Id
 		m["name"] = image.Name
 		m["size"] = image.Size
@@ -144,7 +150,7 @@ func globalImagesToState(d *schema.ResourceData, images *oxideSDK.GlobalImageRes
 		result = append(result, m)
 
 		if len(result) > 0 {
-			if err := d.Set("global_images", result); err != nil {
+			if err := d.Set("images", result); err != nil {
 				return err
 			}
 		}
