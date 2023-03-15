@@ -41,7 +41,7 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"oxide_disk":         diskResource(),
-			"oxide_global_image": globalImageResource(),
+			"oxide_image":        imageResource(),
 			"oxide_instance":     instanceResource(),
 			"oxide_ip_pool":      ipPoolResource(),
 			"oxide_project":      projectResource(),
