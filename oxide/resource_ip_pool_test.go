@@ -57,7 +57,7 @@ func checkResourceIpPool(resourceName string) resource.TestCheckFunc {
 var testResourceIpPoolUpdateConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
-	name              = "terraform-acc-myippool"
+	name              = "terraform-acc-myippool-new"
   }
 `
 
@@ -65,7 +65,7 @@ func checkResourceIpPoolUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a new description for ip_pool"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool-new"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
@@ -85,11 +85,8 @@ resource "oxide_ip_pool" "test2" {
 func checkResourceIpPoolRanges(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "organization_name", "corp"),
-		resource.TestCheckResourceAttr(resourceName, "project_name", "test"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test ip_pool"),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool2"),
-		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckResourceAttr(resourceName, "ranges.0.first_address", "172.20.15.227"),
