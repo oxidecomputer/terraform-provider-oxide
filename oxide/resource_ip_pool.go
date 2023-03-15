@@ -32,13 +32,6 @@ func ipPoolResource() *schema.Resource {
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 		CustomizeDiff: customdiff.All(
-			// TODO: When there is an API to update IP pools by ID remove this check to allow name changes
-			customdiff.ValidateChange("name", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return fmt.Errorf("name of IP pool cannot be updated via Terraform; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
 			// TODO: Enable adding and removing ranges. Figuring out best way forward for this
 			customdiff.ValidateChange("ranges", func(ctx context.Context, old, new, meta any) error {
 				if old != nil && len(new.([]interface{})) != len(old.([]interface{})) && len(old.([]interface{})) > 0 {
@@ -62,16 +55,6 @@ func newIpPoolSchema() map[string]*schema.Schema {
 			Description: "Description for the IP pool.",
 			Required:    true,
 		},
-		"organization_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the organization.",
-			Optional:    true,
-		},
-		"project_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the project.",
-			Optional:    true,
-		},
 		"ranges": {
 			Type:        schema.TypeList,
 			Description: "A non-decreasing IPv4 or IPv6 address range, inclusive of both ends. The first address must be less than or equal to the last address.",
@@ -81,11 +64,6 @@ func newIpPoolSchema() map[string]*schema.Schema {
 		"id": {
 			Type:        schema.TypeString,
 			Description: "Unique, immutable, system-controlled identifier.",
-			Computed:    true,
-		},
-		"project_id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier of the project.",
 			Computed:    true,
 		},
 		"time_created": {
@@ -139,7 +117,7 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.IpPoolCreate(&body)
+	resp, err := client.IpPoolCreateV1(&body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -150,7 +128,7 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 			return diag.FromErr(err)
 		}
 		for _, r := range ipRanges {
-			_, err := client.IpPoolRangeAdd(resp.Name, &r)
+			_, err := client.IpPoolRangeAddV1(oxideSDK.NameOrId(resp.Id), &r)
 			// TODO: Remove when error from the API is more end user friendly
 			if err != nil && strings.Contains(err.Error(), "data did not match any variant of untagged enum IpRange") {
 				return diag.FromErr(fmt.Errorf("%+v is not an accepted IP range", r))
@@ -168,9 +146,9 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 
 func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	ipPoolName := d.Get("name").(string)
+	ipPoolId := d.Get("id").(string)
 
-	resp, err := client.IpPoolView(oxideSDK.Name(ipPoolName))
+	resp, err := client.IpPoolViewV1(oxideSDK.NameOrId(ipPoolId))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -188,7 +166,7 @@ func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.IpPoolRangeList(oxideSDK.Name(ipPoolName), 1000000000, "")
+	resp2, err := client.IpPoolRangeListV1(oxideSDK.NameOrId(ipPoolId), 1000000000, "")
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -210,16 +188,14 @@ func updateIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
+	ipPoolId := d.Get("id").(string)
 
 	body := oxideSDK.IpPoolUpdate{
 		Description: description,
-		// We cannot change the name of the IP pool as it is used as an identifier for
-		// the update in the Put method. Changing it would make it impossible for
-		// terraform to know which IP pool to update.
-		// Name:        name,
+		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.IpPoolUpdate(oxideSDK.Name(name), &body)
+	resp, err := client.IpPoolUpdateV1(oxideSDK.NameOrId(ipPoolId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -231,10 +207,10 @@ func updateIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 
 func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	ipPoolName := d.Get("name").(string)
+	ipPoolId := d.Get("id").(string)
 
 	// Remove all IP pool ranges first
-	resp, err := client.IpPoolRangeList(oxideSDK.Name(ipPoolName), 1000000000, "")
+	resp, err := client.IpPoolRangeListV1(oxideSDK.NameOrId(ipPoolId), 1000000000, "")
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -263,13 +239,13 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 			)
 		}
 
-		if err := client.IpPoolRangeRemove(oxideSDK.Name(ipPoolName), &ipRange); err != nil {
+		if err := client.IpPoolRangeRemoveV1(oxideSDK.NameOrId(ipPoolId), &ipRange); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	// Delete IP Pool once all ranges have been removed
-	if err := client.IpPoolDelete(oxideSDK.Name(ipPoolName)); err != nil {
+	if err := client.IpPoolDeleteV1(oxideSDK.NameOrId(ipPoolId)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

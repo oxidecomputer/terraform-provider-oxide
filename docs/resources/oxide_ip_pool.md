@@ -36,7 +36,6 @@ resource "oxide_ip_pool" "example" {
 ### Read-Only
 
 - `id` (String) Unique, immutable, system-controlled identifier of the IP pool.
-- `project_id` (String) Unique, immutable, system-controlled identifier of the project.
 - `time_created` (String) Timestamp of when this IP pool was created.
 - `time_modified` (String) Timestamp of when this IP pool was last modified.
 
