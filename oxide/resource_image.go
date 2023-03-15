@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func globalImageResource() *schema.Resource {
+func imageResource() *schema.Resource {
 	return &schema.Resource{
 		Description:   "",
 		Schema:        newImageSchema(),
@@ -28,11 +29,54 @@ func globalImageResource() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
+		CustomizeDiff: customdiff.All(
+			customdiff.ValidateChange("name", func(ctx context.Context, old, new, meta any) error {
+				if old.(string) != "" && new.(string) != old.(string) {
+					return errors.New("the oxide_image resource currently does not support updates")
+				}
+				return nil
+			}),
+			customdiff.ValidateChange("description", func(ctx context.Context, old, new, meta any) error {
+				if old.(string) != "" && new.(string) != old.(string) {
+					return errors.New("the oxide_image resource currently does not support updates")
+				}
+				return nil
+			}),
+			customdiff.ValidateChange("image_source", func(ctx context.Context, old, new, meta any) error {
+				if old != nil && len(new.(map[string]interface{})) != len(old.(map[string]interface{})) && len(old.(map[string]interface{})) > 0 {
+					return errors.New("the oxide_image resource currently does not support updates")
+				}
+				return nil
+			}),
+			customdiff.ValidateChange("os", func(ctx context.Context, old, new, meta any) error {
+				if old.(string) != "" && new.(string) != old.(string) {
+					return errors.New("the oxide_image resource currently does not support updates")
+				}
+				return nil
+			}),
+			customdiff.ValidateChange("version", func(ctx context.Context, old, new, meta any) error {
+				if old.(string) != "" && new.(string) != old.(string) {
+					return errors.New("the oxide_image resource currently does not support updates")
+				}
+				return nil
+			}),
+			customdiff.ValidateChange("block_size", func(ctx context.Context, old, new, meta any) error {
+				if old.(int) != 0 && new.(int) != old.(int) {
+					return errors.New("the oxide_image resource currently does not support updates")
+				}
+				return nil
+			}),
+		),
 	}
 }
 
 func newImageSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
+		"project_id": {
+			Type:        schema.TypeString,
+			Description: "ID of the project that will contain the image.",
+			Required:    true,
+		},
 		"name": {
 			Type:        schema.TypeString,
 			Description: "Name of the image.",
@@ -51,12 +95,12 @@ func newImageSchema() map[string]*schema.Schema {
 				Type: schema.TypeString,
 			},
 		},
-		"distribution": {
+		"os": {
 			Type:        schema.TypeString,
 			Description: "OS image distribution. Example: alpine",
 			Required:    true,
 		},
-		"distribution_version": {
+		"version": {
 			Type:        schema.TypeString,
 			Description: "OS image version. Example: 3.16.",
 			Required:    true,
@@ -102,29 +146,28 @@ func newImageSchema() map[string]*schema.Schema {
 func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
 
+	projectId := d.Get("project_id").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 	bs := d.Get("block_size").(int)
-	distro := d.Get("distribution").(string)
-	distroV := d.Get("distribution_version").(string)
+	os := d.Get("os").(string)
+	version := d.Get("version").(string)
 
 	is, err := newImageSource(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	body := oxideSDK.GlobalImageCreate{
+	body := oxideSDK.ImageCreate{
 		Description: description,
 		Name:        oxideSDK.Name(name),
 		BlockSize:   oxideSDK.BlockSize(bs),
-		Distribution: oxideSDK.Distribution{
-			Name:    oxideSDK.Name(distro),
-			Version: distroV,
-		},
-		Source: is,
+		Os:          os,
+		Version:     version,
+		Source:      is,
 	}
 
-	resp, err := client.SystemImageCreate(&body)
+	resp, err := client.ImageCreateV1("", oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -138,7 +181,7 @@ func readImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	client := meta.(*oxideSDK.Client)
 	imageId := d.Get("id").(string)
 
-	resp, err := client.SystemImageViewById(imageId)
+	resp, err := client.ImageViewV1(imageId, oxideSDK.NameOrId(""), oxideSDK.NameOrId(""))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -152,14 +195,15 @@ func readImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 
 func updateImage(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// TODO: Currently there is no endpoint to update a image. Update this function when such endpoint exists
-	return diag.FromErr(errors.New("the oxide_global_image resource currently does not support updates"))
+	return diag.FromErr(errors.New("the oxide_image resource currently does not support updates"))
 }
 
 func deleteImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	imageName := d.Get("name").(string)
+	imageId := d.Get("id").(string)
 
-	if err := client.SystemImageDelete(oxideSDK.Name(imageName)); err != nil {
+	// NB: This endpoint is not implemented yet
+	if err := client.ImageDeleteV1(oxideSDK.NameOrId(""), oxideSDK.NameOrId(""), oxideSDK.NameOrId(imageId)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -171,7 +215,7 @@ func deleteImage(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	return nil
 }
 
-func imageToState(d *schema.ResourceData, image *oxideSDK.GlobalImage) error {
+func imageToState(d *schema.ResourceData, image *oxideSDK.Image) error {
 	if err := d.Set("name", image.Name); err != nil {
 		return err
 	}
@@ -185,10 +229,10 @@ func imageToState(d *schema.ResourceData, image *oxideSDK.GlobalImage) error {
 	if err := d.Set("digest", image.Digest.Value); err != nil {
 		return err
 	}
-	if err := d.Set("distribution", image.Distribution); err != nil {
+	if err := d.Set("os", image.Os); err != nil {
 		return err
 	}
-	if err := d.Set("distribution_version", image.Version); err != nil {
+	if err := d.Set("version", image.Version); err != nil {
 		return err
 	}
 	if err := d.Set("id", image.Id); err != nil {

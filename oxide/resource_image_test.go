@@ -5,69 +5,75 @@
 package oxide
 
 // TODO: Restore test when it is possible to delete a global image
-//
-// func TestAccResourceGlobalImage(t *testing.T) {
-// 	resourceName := "oxide_global_image.test"
+
+// func TestAccResourceImage(t *testing.T) {
+// 	resourceName := "oxide_image.test"
 //
 // 	resource.ParallelTest(t, resource.TestCase{
 // 		PreCheck:          func() { testAccPreCheck(t) },
 // 		ProviderFactories: testAccProviderFactory,
-// 		CheckDestroy:      testAccGlobalImageDestroy,
+// 		CheckDestroy:      testAccImageDestroy,
 // 		Steps: []resource.TestStep{
 // 			{
-// 				Config: testResourceGlobalImageConfig,
-// 				Check:  checkResourceGlobalImage(resourceName),
+// 				Config: testResourceImageConfig,
+// 				Check:  checkResourceImage(resourceName),
 // 			},
 // 		},
 // 	})
 // }
 //
-// var testResourceGlobalImageConfig = `
-// resource "oxide_global_image" "test" {
-//   description          = "a test global_image"
-//   name                 = "terraform-acc-myglobalimage"
-//   image_source         = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
-//   block_size           = 512
-//   distribution         = "alpine"
-//   distribution_version = "propolis_blob"
-// }
-// `
+// var testResourceImageConfig = `
+// data "oxide_organizations" "org_list" {}
 //
-// func checkResourceGlobalImage(resourceName string) resource.TestCheckFunc {
+// data "oxide_projects" "project_list" {
+//   organization_name = data.oxide_organizations.org_list.organizations.0.name
+// }
+//
+//  resource "oxide_image" "test" {
+//    project_id   = data.oxide_projects.project_list.projects.0.id
+//    description  = "a test image"
+//    name         = "terraform-acc-myglobalimage"
+//    image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
+//    block_size   = 512
+//    os           = "alpine"
+//    version      = "propolis_blob"
+//  }
+//  `
+//
+// func checkResourceImage(resourceName string) resource.TestCheckFunc {
 // 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 // 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-// 		resource.TestCheckResourceAttr(resourceName, "description", "a test global_image"),
+// 		resource.TestCheckResourceAttr(resourceName, "description", "a test image"),
 // 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myglobalimage"),
-// 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
-// 		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/terraform-acc-myglobalimage"),
 // 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "image_source.you_can_boot_anything_as_long_as_its_alpine"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "size"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-// 		// TODO: Eventually we'll want to test creating a global_image from URL and snapshot
+// 		// TODO: Eventually we'll want to test creating a image from URL and snapshot
 // 	}...)
 // }
 //
-// func testAccGlobalImageDestroy(s *terraform.State) error {
+// func testAccImageDestroy(s *terraform.State) error {
 // 	client, err := newTestClient()
 // 	if err != nil {
 // 		return err
 // 	}
 //
 // 	for _, rs := range s.RootModule().Resources {
-// 		if rs.Type != "oxide_global_image" {
+// 		if rs.Type != "oxide_image" {
 // 			continue
 // 		}
 //
-// 		res, err := client.ImageGlobalView("terraform-acc-myglobalimage")
+// 		res, err := client.ImageViewV1("corp", "test", "terraform-acc-myglobalimage")
 //
 // 		if err != nil && is404(err) {
 // 			continue
 // 		}
 //
-// 		return fmt.Errorf("global_image (%v) still exists", &res.Name)
+// 		return fmt.Errorf("image (%v) still exists", &res.Name)
 // 	}
 //
 // 	return nil
 // }
+//

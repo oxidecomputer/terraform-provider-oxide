@@ -17,14 +17,16 @@ data "oxide_projects" "project_list" {
   organization_name = data.oxide_organizations.org_list.organizations.0.name
 }
 
-data "oxide_global_images" "image_list" {}
+data "oxide_images" "image_list" {
+  project_id = data.oxide_projects.project_list.projects.0.id
+}
 
 resource "oxide_disk" "web_disk_1" {
   project_id        = data.oxide_projects.project_list.projects.0.id
   description       = "Disk for a web instance"
   name              = "web-disk-1"
   size              = var.ten_gib
-  disk_source       = { global_image = data.oxide_global_images.image_list.global_images.0.id }
+  disk_source       = { global_image = data.oxide_images.image_list.images.0.id }
 }
 
 resource "oxide_disk" "web_disk_2" {
@@ -32,7 +34,7 @@ resource "oxide_disk" "web_disk_2" {
   description       = "Disk for a web instance"
   name              = "web-disk-2"
   size              = var.ten_gib
-  disk_source       = { global_image = data.oxide_global_images.image_list.global_images.0.id }
+  disk_source       = { global_image = data.oxide_images.image_list.images.0.id }
 }
 
 resource "oxide_disk" "web_disk_3" {
@@ -40,7 +42,7 @@ resource "oxide_disk" "web_disk_3" {
   description       = "Disk for a web instance"
   name              = "web-disk-3"
   size              = var.ten_gib
-  disk_source       = { global_image = data.oxide_global_images.image_list.global_images.0.id }
+  disk_source       = { global_image = data.oxide_images.image_list.images.0.id }
 }
 
 resource "oxide_disk" "db_disk_1" {
@@ -48,7 +50,7 @@ resource "oxide_disk" "db_disk_1" {
   description       = "Disk for a DB instance"
   name              = "db-disk-1"
   size              = var.twenty_gib
-  disk_source       = { global_image = data.oxide_global_images.image_list.global_images.0.id }
+  disk_source       = { global_image = data.oxide_images.image_list.images.0.id }
 }
 
 resource "oxide_disk" "db_disk_2" {
@@ -56,7 +58,7 @@ resource "oxide_disk" "db_disk_2" {
   description       = "Disk for a DB instance"
   name              = "db-disk-2"
   size              = var.twenty_gib
-  disk_source       = { global_image = data.oxide_global_images.image_list.global_images.0.id }
+  disk_source       = { global_image = data.oxide_images.image_list.images.0.id }
 }
 
 resource "oxide_instance" "web_instance_1" {
