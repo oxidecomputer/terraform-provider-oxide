@@ -37,7 +37,6 @@ var testResourceProjectConfig = `
 resource "oxide_project" "test" {
 	description       = "a test project"
 	name              = "terraform-acc-myproject"
-	organization_name = "corp"
   }
 `
 
@@ -55,7 +54,6 @@ var testResourceProjectUpdateConfig = `
 resource "oxide_project" "test" {
 	description       = "a new description for project"
 	name              = "terraform-acc-myproject2"
-	organization_name = "corp"
   }
 `
 

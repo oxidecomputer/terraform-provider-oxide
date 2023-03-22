@@ -61,8 +61,7 @@ To run the acceptance testing suite, you need to make sure to have either the `$
 
 Until all resources have been added you'll need to make sure your testing environment has the following:
 
-- An organization named "corp".
-- A project within the "corp" organization named "test".
+- A project named "test".
 - At least one global image.
 
 Run `make testacc`.

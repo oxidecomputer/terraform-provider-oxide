@@ -10,9 +10,8 @@ This resource manages projects.
 
 ```hcl
 resource "oxide_project" "example" {
-  description       = "a test org"
-  name              = "myorg"
-  organization_name = "staff"
+  description       = "a test project"
+  name              = "myproject"
 }
 ```
 
@@ -22,7 +21,6 @@ resource "oxide_project" "example" {
 
 - `description` (String) Description for the project.
 - `name` (String) Name of the project.
-- `organization_name` (String) Name of the organization.
 
 ### Optional
 

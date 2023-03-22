@@ -11,11 +11,7 @@ terraform {
 
 provider "oxide" {}
 
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 data "oxide_images" "image_list" {
   project_id = data.oxide_projects.project_list.projects.0.id
