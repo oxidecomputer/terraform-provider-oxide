@@ -27,11 +27,7 @@ func TestAccDataSourceImages(t *testing.T) {
 }
 
 var testDataSourceImagesConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 data "oxide_images" "test" {
   project_id = data.oxide_projects.project_list.projects.0.id

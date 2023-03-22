@@ -44,11 +44,7 @@ func TestAccResourceInstance(t *testing.T) {
 }
 
 var testResourceInstanceConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test" {
   project_id        = data.oxide_projects.project_list.projects.0.id
@@ -77,11 +73,7 @@ func checkResourceInstance(resourceName string) resource.TestCheckFunc {
 }
 
 var testResourceInstanceDiskConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "test-instance" {
   project_id        = data.oxide_projects.project_list.projects.0.id
@@ -129,11 +121,7 @@ func checkResourceInstanceDisk(resourceName string) resource.TestCheckFunc {
 }
 
 var testResourceInstanceNetworkInterfaceConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test3" {
   project_id        = data.oxide_projects.project_list.projects.0.id
@@ -173,11 +161,7 @@ func checkResourceInstanceNetworkInterface(resourceName string) resource.TestChe
 }
 
 var testResourceInstanceExternalIpsConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test4" {
   project_id        = data.oxide_projects.project_list.projects.0.id
@@ -218,7 +202,7 @@ func testAccInstanceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.InstanceViewV1("corp", "test", "terraform-acc-myinstance")
+		res, err := client.InstanceView("test", "terraform-acc-myinstance")
 		if err != nil && is404(err) {
 			continue
 		}

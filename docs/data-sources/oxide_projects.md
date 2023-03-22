@@ -4,21 +4,15 @@ page_title: "oxide_projects Data Source - terraform-provider-oxide"
 
 # oxide_projects (Data Source)
 
-Retrieve a list of projects within an organization.
+Retrieve a list of projects.
 
 ## Example Usage
 
 ```hcl
-data "oxide_projects" "example" {
-  organization_name = "staff"
-}
+data "oxide_projects" "example" {}
 ```
 
 ## Schema
-
-### Required
-
-- `organization_name` (String) Name of the organization.
 
 ### Optional
 
@@ -46,6 +40,5 @@ Read-Only:
 - `description` (String) Description for the project.
 - `id` (String) Unique, immutable, system-controlled identifier of the project.
 - `name` (String) Name of the project.
-- `organization_id` (String) Unique, immutable, system-controlled identifier of the organization.
 - `time_created` (String) Timestamp of when this project was created.
 - `time_modified` (String) Timestamp of when this project was last modified.

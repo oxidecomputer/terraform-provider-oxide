@@ -11,15 +11,9 @@ terraform {
 
 provider "oxide" {}
 
-resource "oxide_organization" "setup_org" {
-  description       = "a test org"
-  name              = "myorg"
-}
-
 resource "oxide_project" "setup_project" {
   description       = "a test project"
   name              = "myproj"
-  organization_name = oxide_organization.setup_org.name
 }
 
 resource "oxide_ip_pool" "ip_pool_ranges" {

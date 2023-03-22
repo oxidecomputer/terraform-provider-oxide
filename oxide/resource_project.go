@@ -6,11 +6,9 @@ package oxide
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -29,14 +27,6 @@ func projectResource() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
-		CustomizeDiff: customdiff.All(
-			customdiff.ValidateChange("organization", func(ctx context.Context, old, new, meta any) error {
-				if old != nil && new.(string) != old.(string) {
-					return fmt.Errorf("organization of project cannot be updated; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
-		),
 	}
 }
 
@@ -50,12 +40,6 @@ func newProjectSchema() map[string]*schema.Schema {
 		"description": {
 			Type:        schema.TypeString,
 			Description: "Description for the project.",
-			Required:    true,
-		},
-		// TODO: Remove when organization endpoints are gone
-		"organization_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the organization.",
 			Required:    true,
 		},
 		"id": {
@@ -78,7 +62,6 @@ func newProjectSchema() map[string]*schema.Schema {
 
 func createProject(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	orgName := d.Get("organization_name").(string)
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 
@@ -87,7 +70,7 @@ func createProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.ProjectCreateV1(oxideSDK.NameOrId(orgName), &body)
+	resp, err := client.ProjectCreate(&body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -101,7 +84,7 @@ func readProject(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	client := meta.(*oxideSDK.Client)
 	projectId := d.Get("id").(string)
 
-	resp, err := client.ProjectViewV1(oxideSDK.NameOrId(projectId), oxideSDK.NameOrId(""))
+	resp, err := client.ProjectView(oxideSDK.NameOrId(projectId))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -133,7 +116,7 @@ func updateProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.ProjectUpdateV1(oxideSDK.NameOrId(projectId), oxideSDK.NameOrId(""), &body)
+	resp, err := client.ProjectUpdate(oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -147,7 +130,7 @@ func deleteProject(_ context.Context, d *schema.ResourceData, meta interface{}) 
 	client := meta.(*oxideSDK.Client)
 	projectId := d.Get("id").(string)
 
-	if err := client.ProjectDeleteV1(oxideSDK.NameOrId(projectId), oxideSDK.NameOrId("")); err != nil {
+	if err := client.ProjectDelete(oxideSDK.NameOrId(projectId)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

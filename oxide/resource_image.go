@@ -167,7 +167,7 @@ func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		Source:      is,
 	}
 
-	resp, err := client.ImageCreateV1("", oxideSDK.NameOrId(projectId), &body)
+	resp, err := client.ImageCreate(oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -181,7 +181,7 @@ func readImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	client := meta.(*oxideSDK.Client)
 	imageId := d.Get("id").(string)
 
-	resp, err := client.ImageViewV1(imageId, oxideSDK.NameOrId(""), oxideSDK.NameOrId(""))
+	resp, err := client.ImageView(imageId, oxideSDK.NameOrId(""))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,7 +203,7 @@ func deleteImage(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	imageId := d.Get("id").(string)
 
 	// NB: This endpoint is not implemented yet
-	if err := client.ImageDeleteV1(oxideSDK.NameOrId(""), oxideSDK.NameOrId(""), oxideSDK.NameOrId(imageId)); err != nil {
+	if err := client.ImageDelete(oxideSDK.NameOrId(""), oxideSDK.NameOrId(imageId)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

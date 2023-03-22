@@ -117,7 +117,7 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.IpPoolCreateV1(&body)
+	resp, err := client.IpPoolCreate(&body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -128,7 +128,7 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 			return diag.FromErr(err)
 		}
 		for _, r := range ipRanges {
-			_, err := client.IpPoolRangeAddV1(oxideSDK.NameOrId(resp.Id), &r)
+			_, err := client.IpPoolRangeAdd(oxideSDK.NameOrId(resp.Id), &r)
 			// TODO: Remove when error from the API is more end user friendly
 			if err != nil && strings.Contains(err.Error(), "data did not match any variant of untagged enum IpRange") {
 				return diag.FromErr(fmt.Errorf("%+v is not an accepted IP range", r))
@@ -148,7 +148,7 @@ func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	client := meta.(*oxideSDK.Client)
 	ipPoolId := d.Get("id").(string)
 
-	resp, err := client.IpPoolViewV1(oxideSDK.NameOrId(ipPoolId))
+	resp, err := client.IpPoolView(oxideSDK.NameOrId(ipPoolId))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -166,7 +166,7 @@ func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 		return diag.FromErr(err)
 	}
 
-	resp2, err := client.IpPoolRangeListV1(oxideSDK.NameOrId(ipPoolId), 1000000000, "")
+	resp2, err := client.IpPoolRangeList(oxideSDK.NameOrId(ipPoolId), 1000000000, "")
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -195,7 +195,7 @@ func updateIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.IpPoolUpdateV1(oxideSDK.NameOrId(ipPoolId), &body)
+	resp, err := client.IpPoolUpdate(oxideSDK.NameOrId(ipPoolId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -210,7 +210,7 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	ipPoolId := d.Get("id").(string)
 
 	// Remove all IP pool ranges first
-	resp, err := client.IpPoolRangeListV1(oxideSDK.NameOrId(ipPoolId), 1000000000, "")
+	resp, err := client.IpPoolRangeList(oxideSDK.NameOrId(ipPoolId), 1000000000, "")
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -239,13 +239,13 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 			)
 		}
 
-		if err := client.IpPoolRangeRemoveV1(oxideSDK.NameOrId(ipPoolId), &ipRange); err != nil {
+		if err := client.IpPoolRangeRemove(oxideSDK.NameOrId(ipPoolId), &ipRange); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	// Delete IP Pool once all ranges have been removed
-	if err := client.IpPoolDeleteV1(oxideSDK.NameOrId(ipPoolId)); err != nil {
+	if err := client.IpPoolDelete(oxideSDK.NameOrId(ipPoolId)); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

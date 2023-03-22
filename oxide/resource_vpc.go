@@ -110,7 +110,7 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
 	}
 
-	resp, err := client.VpcCreateV1(oxideSDK.NameOrId(""), oxideSDK.NameOrId(projectId), &body)
+	resp, err := client.VpcCreate(oxideSDK.NameOrId(projectId), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -124,7 +124,7 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 	client := meta.(*oxideSDK.Client)
 	vpcId := d.Get("id").(string)
 
-	resp, err := client.VpcViewV1(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""), oxideSDK.NameOrId(""))
+	resp, err := client.VpcView(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -150,7 +150,7 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		DnsName:     oxideSDK.Name(dnsName),
 	}
 
-	resp, err := client.VpcUpdateV1(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""), oxideSDK.NameOrId(""), &body)
+	resp, err := client.VpcUpdate(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""), &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -164,9 +164,8 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	client := meta.(*oxideSDK.Client)
 	vpcId := d.Get("id").(string)
 
-	res, err := client.VpcSubnetListV1(
+	res, err := client.VpcSubnetList(
 		1000000,
-		"",
 		"",
 		"",
 		oxideSDK.NameOrIdSortModeIdAscending,
@@ -178,9 +177,8 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 
 	if res != nil {
 		for _, subnet := range res.Items {
-			if err := client.VpcSubnetDeleteV1(
+			if err := client.VpcSubnetDelete(
 				oxideSDK.NameOrId(subnet.Id),
-				"",
 				"",
 				"",
 			); err != nil {
@@ -189,7 +187,7 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 		}
 	}
 
-	if err := client.VpcDeleteV1(oxideSDK.NameOrId(vpcId), "", ""); err != nil {
+	if err := client.VpcDelete(oxideSDK.NameOrId(vpcId), ""); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

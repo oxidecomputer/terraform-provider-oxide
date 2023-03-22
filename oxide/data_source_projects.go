@@ -26,11 +26,6 @@ func projectsDataSource() *schema.Resource {
 
 func newProjectsDataSourceSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"organization_name": {
-			Type:        schema.TypeString,
-			Description: "Name of the organization.",
-			Required:    true,
-		},
 		"projects": {
 			Computed:    true,
 			Type:        schema.TypeList,
@@ -52,11 +47,6 @@ func newProjectsDataSourceSchema() map[string]*schema.Schema {
 						Description: "Name of the project.",
 						Computed:    true,
 					},
-					"organization_id": {
-						Type:        schema.TypeString,
-						Description: "Unique, immutable, system-controlled identifier of the organization.",
-						Computed:    true,
-					},
 					"time_created": {
 						Type:        schema.TypeString,
 						Description: "Timestamp of when this project was created.",
@@ -75,13 +65,12 @@ func newProjectsDataSourceSchema() map[string]*schema.Schema {
 
 func projectsDataSourceRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*oxideSDK.Client)
-	orgName := d.Get("organization_name").(string)
 
 	// TODO: It would be preferable to us the client.Projectss.ListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
 	// Seems unlikely anyone will have more than one million projects.
-	result, err := client.ProjectList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending, oxideSDK.Name(orgName))
+	result, err := client.ProjectList(1000000, "", oxideSDK.NameOrIdSortModeIdAscending)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -107,7 +96,6 @@ func projectsToState(d *schema.ResourceData, projects *oxideSDK.ProjectResultsPa
 		m["description"] = project.Description
 		m["id"] = project.Id
 		m["name"] = project.Name
-		m["organization_id"] = project.OrganizationId
 		m["time_created"] = project.TimeCreated.String()
 		m["time_modified"] = project.TimeModified.String()
 

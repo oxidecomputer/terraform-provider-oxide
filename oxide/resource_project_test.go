@@ -37,7 +37,6 @@ var testResourceProjectConfig = `
 resource "oxide_project" "test" {
 	description       = "a test project"
 	name              = "terraform-acc-myproject"
-	organization_name = "corp"
   }
 `
 
@@ -55,7 +54,6 @@ var testResourceProjectUpdateConfig = `
 resource "oxide_project" "test" {
 	description       = "a new description for project"
 	name              = "terraform-acc-myproject2"
-	organization_name = "corp"
   }
 `
 
@@ -80,7 +78,7 @@ func testAccProjectDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.ProjectView(oxide.Name("corp"), oxide.Name("terraform-acc-myproject2"))
+		res, err := client.ProjectView(oxide.Name("terraform-acc-myproject2"))
 		if err != nil && is404(err) {
 			continue
 		}

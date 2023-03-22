@@ -26,15 +26,12 @@ func TestAccDataSourceProjects(t *testing.T) {
 }
 
 var testDataSourceProjectsConfig = `
-data "oxide_projects" "test" {
-  organization_name = "corp"
-}
+data "oxide_projects" "test" {}
 `
 
 func checkDataSourceProjects(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
-		resource.TestCheckResourceAttr(dataName, "organization_name", "corp"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.description"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.id"),
 		// Ideally we would like to test that a project has the name we want set with:
@@ -42,7 +39,6 @@ func checkDataSourceProjects(dataName string) resource.TestCheckFunc {
 		// Unfortunately, for now we can't guarantee that the projects will be in the
 		// same order for everyone who runs the tests. This means we'll only check that it's set.
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.name"),
-		resource.TestCheckResourceAttrSet(dataName, "projects.0.organization_id"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.time_modified"),
 	}...)

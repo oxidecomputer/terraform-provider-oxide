@@ -38,11 +38,7 @@ func TestAccResourceVPC(t *testing.T) {
 }
 
 var testResourceVPCConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_vpc" "test" {
 	project_id        = data.oxide_projects.project_list.projects.0.id
@@ -67,11 +63,7 @@ func checkResourceVPC(resourceName string) resource.TestCheckFunc {
 }
 
 var testResourceVPCUpdateConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_vpc" "test" {
 	project_id        = data.oxide_projects.project_list.projects.0.id
@@ -96,11 +88,7 @@ func checkResourceVPCUpdate(resourceName string) resource.TestCheckFunc {
 }
 
 var testResourceVPCIPv6Config = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_vpc" "test2" {
 	project_id        = data.oxide_projects.project_list.projects.0.id
@@ -136,7 +124,7 @@ func testAccVPCDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.VpcView("corp", "test", "terraform-acc-myvpc")
+		res, err := client.VpcView("test", "terraform-acc-myvpc")
 		if err != nil && is404(err) {
 			continue
 		}
