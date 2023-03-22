@@ -80,7 +80,7 @@ func testAccProjectDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.ProjectView(oxide.Name("corp"), oxide.Name("terraform-acc-myproject2"))
+		res, err := client.ProjectView(oxide.Name("terraform-acc-myproject2"))
 		if err != nil && is404(err) {
 			continue
 		}

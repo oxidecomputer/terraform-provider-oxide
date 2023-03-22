@@ -23,22 +23,18 @@ package oxide
 // }
 //
 // var testResourceImageConfig = `
-// data "oxide_organizations" "org_list" {}
+//  data "oxide_projects" "project_list" {}
 //
-// data "oxide_projects" "project_list" {
-//   organization_name = data.oxide_organizations.org_list.organizations.0.name
-// }
-//
-//  resource "oxide_image" "test" {
-//    project_id   = data.oxide_projects.project_list.projects.0.id
-//    description  = "a test image"
-//    name         = "terraform-acc-myglobalimage"
-//    image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
-//    block_size   = 512
-//    os           = "alpine"
-//    version      = "propolis_blob"
-//  }
-//  `
+//   resource "oxide_image" "test" {
+//     project_id   = data.oxide_projects.project_list.projects.0.id
+//     description  = "a test image"
+//     name         = "terraform-acc-myglobalimage"
+//     image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
+//     block_size   = 512
+//     os           = "alpine"
+//     version      = "propolis_blob"
+//   }
+//   `
 //
 // func checkResourceImage(resourceName string) resource.TestCheckFunc {
 // 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -65,7 +61,7 @@ package oxide
 // 			continue
 // 		}
 //
-// 		res, err := client.ImageViewV1("corp", "test", "terraform-acc-myglobalimage")
+// 		res, err := client.ImageView("test", "terraform-acc-myglobalimage")
 //
 // 		if err != nil && is404(err) {
 // 			continue
@@ -76,4 +72,3 @@ package oxide
 //
 // 	return nil
 // }
-//

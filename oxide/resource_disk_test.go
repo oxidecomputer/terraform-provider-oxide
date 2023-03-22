@@ -29,11 +29,7 @@ func TestAccResourceDisk(t *testing.T) {
 }
 
 var testResourceDiskConfig = `
-data "oxide_organizations" "org_list" {}
-
-data "oxide_projects" "project_list" {
-  organization_name = data.oxide_organizations.org_list.organizations.0.name
-}
+data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "test" {
   project_id        = data.oxide_projects.project_list.projects.0.id
@@ -72,7 +68,7 @@ func testAccDiskDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.DiskViewV1("terraform-acc-mydisk", "corp", "test")
+		res, err := client.DiskView("terraform-acc-mydisk", "test")
 
 		if err != nil && is404(err) {
 			continue

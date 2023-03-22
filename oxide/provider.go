@@ -40,18 +40,16 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"oxide_disk":         diskResource(),
-			"oxide_image":        imageResource(),
-			"oxide_instance":     instanceResource(),
-			"oxide_ip_pool":      ipPoolResource(),
-			"oxide_project":      projectResource(),
-			"oxide_organization": organizationResource(),
-			"oxide_vpc":          vpcResource(),
+			"oxide_disk":     diskResource(),
+			"oxide_image":    imageResource(),
+			"oxide_instance": instanceResource(),
+			"oxide_ip_pool":  ipPoolResource(),
+			"oxide_project":  projectResource(),
+			"oxide_vpc":      vpcResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"oxide_organizations": organizationsDataSource(),
-			"oxide_projects":      projectsDataSource(),
-			"oxide_images":        imagesDataSource(),
+			"oxide_projects": projectsDataSource(),
+			"oxide_images":   imagesDataSource(),
 		},
 	}
 }

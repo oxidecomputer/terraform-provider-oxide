@@ -109,7 +109,7 @@ func imagesDataSourceRead(_ context.Context, d *schema.ResourceData, meta interf
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
 	// Seems unlikely anyone will have more than one million Images.
-	result, err := client.ImageListV1(1000000, "", "", projectId, oxideSDK.NameOrIdSortModeIdAscending)
+	result, err := client.ImageList(1000000, "", projectId, oxideSDK.NameOrIdSortModeIdAscending)
 	if err != nil {
 		return diag.FromErr(err)
 	}
