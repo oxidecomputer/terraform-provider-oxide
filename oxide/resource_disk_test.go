@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func TestAccResourceDisk(t *testing.T) {
@@ -68,7 +69,11 @@ func testAccDiskDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.DiskView("terraform-acc-mydisk", "test")
+		params := oxideSDK.DiskViewParams{
+			Project: "test",
+			Disk:    "terraform-acc-mydisk",
+		}
+		res, err := client.DiskView(params)
 
 		if err != nil && is404(err) {
 			continue

@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func TestAccResourceInstance(t *testing.T) {
@@ -202,7 +203,11 @@ func testAccInstanceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.InstanceView("test", "terraform-acc-myinstance")
+		params := oxideSDK.InstanceViewParams{
+			Instance: "terraform-acc-myinstance",
+			Project:  "test",
+		}
+		res, err := client.InstanceView(params)
 		if err != nil && is404(err) {
 			continue
 		}

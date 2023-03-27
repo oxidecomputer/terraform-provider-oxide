@@ -131,6 +131,9 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 		return diag.FromErr(err)
 	}
 
+	params := oxideSDK.DiskCreateParams{
+		Project: oxideSDK.NameOrId(projectId),
+	}
 	body := oxideSDK.DiskCreate{
 		Description: description,
 		Name:        oxideSDK.Name(name),
@@ -138,7 +141,7 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 		Size:        oxideSDK.ByteCount(size),
 	}
 
-	resp, err := client.DiskCreate(oxideSDK.NameOrId(projectId), &body)
+	resp, err := client.DiskCreate(params, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -152,7 +155,8 @@ func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.
 	client := meta.(*oxideSDK.Client)
 	diskId := d.Get("id").(string)
 
-	resp, err := client.DiskView(oxideSDK.NameOrId(diskId), oxideSDK.NameOrId(""))
+	params := oxideSDK.DiskViewParams{Disk: oxideSDK.NameOrId(diskId)}
+	resp, err := client.DiskView(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -187,7 +191,8 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 		return diag.FromErr(e)
 	}
 
-	if err := client.DiskDelete(oxideSDK.NameOrId(diskId), oxideSDK.NameOrId("")); err != nil {
+	params := oxideSDK.DiskDeleteParams{Disk: oxideSDK.NameOrId(diskId)}
+	if err := client.DiskDelete(params); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -293,7 +298,7 @@ func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
 
 func waitForDetachedDisk(client *oxideSDK.Client, diskId oxideSDK.NameOrId, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.DiskView(diskId, oxideSDK.NameOrId(""))
+		resp, err := client.DiskView(oxideSDK.DiskViewParams{Disk: diskId})
 		if err != nil {
 			ch <- err
 		}

@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.25.0
-	github.com/oxidecomputer/oxide.go v0.0.22-0.20230321224924-63d0679a4f54
+	github.com/oxidecomputer/oxide.go v0.0.22-0.20230327040446-b479df5a7aac
 )
 
 require (

@@ -168,6 +168,9 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 	memory := d.Get("memory").(int)
 	ncpus := d.Get("ncpus").(int)
 
+	params := oxideSDK.InstanceCreateParams{
+		Project: oxideSDK.NameOrId(projectId),
+	}
 	body := oxideSDK.InstanceCreate{
 		Description:       description,
 		Name:              oxideSDK.Name(name),
@@ -178,8 +181,7 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 		ExternalIps:       newInstanceExternalIps(d),
 		NetworkInterfaces: newNetworkInterface(d),
 	}
-
-	resp, err := client.InstanceCreate(oxideSDK.NameOrId(projectId), &body)
+	resp, err := client.InstanceCreate(params, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -193,7 +195,8 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 	client := meta.(*oxideSDK.Client)
 	instanceId := d.Get("id").(string)
 
-	resp, err := client.InstanceView("", instanceId)
+	params := oxideSDK.InstanceViewParams{Instance: oxideSDK.NameOrId(instanceId)}
+	resp, err := client.InstanceView(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -204,13 +207,12 @@ func readInstance(_ context.Context, d *schema.ResourceData, meta interface{}) d
 
 	nis := d.Get("network_interface").([]interface{})
 	if len(nis) > 0 {
-		resp2, err := client.InstanceNetworkInterfaceList(
-			oxideSDK.NameOrId(instanceId),
-			1000000,
-			"",
-			"",
-			oxideSDK.NameOrIdSortModeNameAscending,
-		)
+		nicParams := oxideSDK.InstanceNetworkInterfaceListParams{
+			Instance: oxideSDK.NameOrId(instanceId),
+			Limit:    1000000000,
+			SortBy:   oxideSDK.NameOrIdSortModeNameAscending,
+		}
+		resp2, err := client.InstanceNetworkInterfaceList(nicParams)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -237,7 +239,8 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 	client := meta.(*oxideSDK.Client)
 	instanceId := d.Get("id").(string)
 
-	_, err := client.InstanceStop("", oxideSDK.NameOrId(instanceId))
+	params := oxideSDK.InstanceStopParams{Instance: oxideSDK.NameOrId(instanceId)}
+	_, err := client.InstanceStop(params)
 	if err != nil {
 		if is404(err) {
 			d.SetId("")
@@ -254,7 +257,8 @@ func deleteInstance(_ context.Context, d *schema.ResourceData, meta interface{})
 		return diag.FromErr(e)
 	}
 
-	if err := client.InstanceDelete("", oxideSDK.NameOrId(instanceId)); err != nil {
+	delParams := oxideSDK.InstanceDeleteParams{Instance: oxideSDK.NameOrId(instanceId)}
+	if err := client.InstanceDelete(delParams); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil
@@ -306,7 +310,8 @@ func instanceToState(d *schema.ResourceData, instance *oxideSDK.Instance) error 
 
 func waitForStoppedInstance(client *oxideSDK.Client, instanceId oxideSDK.NameOrId, ch chan error) {
 	for {
-		resp, err := client.InstanceView("", instanceId)
+		params := oxideSDK.InstanceViewParams{Instance: instanceId}
+		resp, err := client.InstanceView(params)
 		if err != nil {
 			ch <- err
 		}
@@ -401,12 +406,14 @@ func networkInterfaceToState(client *oxideSDK.Client, nwInterface oxideSDK.Netwo
 
 		// Ideally the NetworkInterface struct would contain the names of the VPC and subnet.
 		// For now they only give the ID so we'll retrieve the names separately.
-		vpcResp, err := client.VpcView(oxideSDK.NameOrId(item.VpcId), "")
+		params := oxideSDK.VpcViewParams{Vpc: oxideSDK.NameOrId(item.VpcId)}
+		vpcResp, err := client.VpcView(params)
 		if err != nil {
 			return nil, err
 		}
 
-		subnetResp, err := client.VpcSubnetView(oxideSDK.NameOrId(item.SubnetId), "", "")
+		subnetParams := oxideSDK.VpcSubnetViewParams{Subnet: oxideSDK.NameOrId(item.SubnetId)}
+		subnetResp, err := client.VpcSubnetView(subnetParams)
 		if err != nil {
 			return nil, err
 		}

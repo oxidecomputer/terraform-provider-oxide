@@ -158,6 +158,9 @@ func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		return diag.FromErr(err)
 	}
 
+	params := oxideSDK.ImageCreateParams{
+		Project: oxideSDK.NameOrId(projectId),
+	}
 	body := oxideSDK.ImageCreate{
 		Description: description,
 		Name:        oxideSDK.Name(name),
@@ -167,7 +170,7 @@ func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		Source:      is,
 	}
 
-	resp, err := client.ImageCreate(oxideSDK.NameOrId(projectId), &body)
+	resp, err := client.ImageCreate(params, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -181,7 +184,7 @@ func readImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	client := meta.(*oxideSDK.Client)
 	imageId := d.Get("id").(string)
 
-	resp, err := client.ImageView(imageId, oxideSDK.NameOrId(""))
+	resp, err := client.ImageView(oxideSDK.ImageViewParams{Image: oxideSDK.NameOrId(imageId)})
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,7 +206,8 @@ func deleteImage(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	imageId := d.Get("id").(string)
 
 	// NB: This endpoint is not implemented yet
-	if err := client.ImageDelete(oxideSDK.NameOrId(""), oxideSDK.NameOrId(imageId)); err != nil {
+	params := oxideSDK.ImageDeleteParams{Image: oxideSDK.NameOrId(imageId)}
+	if err := client.ImageDelete(params); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

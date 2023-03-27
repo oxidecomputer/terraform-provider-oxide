@@ -84,7 +84,8 @@ func readProject(_ context.Context, d *schema.ResourceData, meta interface{}) di
 	client := meta.(*oxideSDK.Client)
 	projectId := d.Get("id").(string)
 
-	resp, err := client.ProjectView(oxideSDK.NameOrId(projectId))
+	params := oxideSDK.ProjectViewParams{Project: oxideSDK.NameOrId(projectId)}
+	resp, err := client.ProjectView(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -116,7 +117,8 @@ func updateProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 		Name:        oxideSDK.Name(name),
 	}
 
-	resp, err := client.ProjectUpdate(oxideSDK.NameOrId(projectId), &body)
+	params := oxideSDK.ProjectUpdateParams{Project: oxideSDK.NameOrId(projectId)}
+	resp, err := client.ProjectUpdate(params, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -130,7 +132,8 @@ func deleteProject(_ context.Context, d *schema.ResourceData, meta interface{}) 
 	client := meta.(*oxideSDK.Client)
 	projectId := d.Get("id").(string)
 
-	if err := client.ProjectDelete(oxideSDK.NameOrId(projectId)); err != nil {
+	params := oxideSDK.ProjectDeleteParams{Project: oxideSDK.NameOrId(projectId)}
+	if err := client.ProjectDelete(params); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

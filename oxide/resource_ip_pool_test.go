@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func TestAccResourceIpPool(t *testing.T) {
@@ -107,12 +108,12 @@ func testAccIpPoolDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.IpPoolView("terraform-acc-myippool")
+		res, err := client.IpPoolView(oxide.IpPoolViewParams{Pool: "terraform-acc-myippool"})
 		if err == nil || !is404(err) {
 			return fmt.Errorf("ip_pool (%v) still exists", &res.Name)
 		}
 
-		res2, err := client.IpPoolView("terraform-acc-myippool2")
+		res2, err := client.IpPoolView(oxide.IpPoolViewParams{Pool: "terraform-acc-myippool2"})
 		if err != nil && is404(err) {
 			continue
 		}

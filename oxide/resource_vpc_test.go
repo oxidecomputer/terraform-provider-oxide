@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func TestAccResourceVPC(t *testing.T) {
@@ -124,7 +125,11 @@ func testAccVPCDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.VpcView("test", "terraform-acc-myvpc")
+		params := oxideSDK.VpcViewParams{
+			Project: "test",
+			Vpc:     "terraform-acc-myvpc",
+		}
+		res, err := client.VpcView(params)
 		if err != nil && is404(err) {
 			continue
 		}
