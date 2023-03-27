@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/oxidecomputer/oxide.go/oxide"
+	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func TestAccResourceProject(t *testing.T) {
@@ -78,7 +78,7 @@ func testAccProjectDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.ProjectView(oxide.Name("terraform-acc-myproject2"))
+		res, err := client.ProjectView(oxideSDK.ProjectViewParams{Project: "terraform-acc-myproject2"})
 		if err != nil && is404(err) {
 			continue
 		}

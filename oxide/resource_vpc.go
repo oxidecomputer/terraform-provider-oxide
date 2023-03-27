@@ -110,7 +110,8 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
 	}
 
-	resp, err := client.VpcCreate(oxideSDK.NameOrId(projectId), &body)
+	params := oxideSDK.VpcCreateParams{Project: oxideSDK.NameOrId(projectId)}
+	resp, err := client.VpcCreate(params, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -124,7 +125,8 @@ func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.D
 	client := meta.(*oxideSDK.Client)
 	vpcId := d.Get("id").(string)
 
-	resp, err := client.VpcView(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""))
+	params := oxideSDK.VpcViewParams{Vpc: oxideSDK.NameOrId(vpcId)}
+	resp, err := client.VpcView(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -150,7 +152,8 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		DnsName:     oxideSDK.Name(dnsName),
 	}
 
-	resp, err := client.VpcUpdate(oxideSDK.NameOrId(vpcId), oxideSDK.NameOrId(""), &body)
+	params := oxideSDK.VpcUpdateParams{Vpc: oxideSDK.NameOrId(vpcId)}
+	resp, err := client.VpcUpdate(params, &body)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -164,30 +167,29 @@ func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag
 	client := meta.(*oxideSDK.Client)
 	vpcId := d.Get("id").(string)
 
-	res, err := client.VpcSubnetList(
-		1000000,
-		"",
-		"",
-		oxideSDK.NameOrIdSortModeIdAscending,
-		oxideSDK.NameOrId(vpcId),
-	)
+	params := oxideSDK.VpcSubnetListParams{
+		Limit:  1000000000,
+		SortBy: oxideSDK.NameOrIdSortModeIdAscending,
+		Vpc:    oxideSDK.NameOrId(vpcId),
+	}
+	res, err := client.VpcSubnetList(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	if res != nil {
 		for _, subnet := range res.Items {
-			if err := client.VpcSubnetDelete(
-				oxideSDK.NameOrId(subnet.Id),
-				"",
-				"",
-			); err != nil {
+			subnetParams := oxideSDK.VpcSubnetDeleteParams{
+				Subnet: oxideSDK.NameOrId(subnet.Id),
+			}
+			if err := client.VpcSubnetDelete(subnetParams); err != nil {
 				return diag.FromErr(err)
 			}
 		}
 	}
 
-	if err := client.VpcDelete(oxideSDK.NameOrId(vpcId), ""); err != nil {
+	deleteParams := oxideSDK.VpcDeleteParams{Vpc: oxideSDK.NameOrId(vpcId)}
+	if err := client.VpcDelete(deleteParams); err != nil {
 		if is404(err) {
 			d.SetId("")
 			return nil

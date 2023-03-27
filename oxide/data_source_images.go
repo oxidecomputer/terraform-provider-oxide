@@ -108,8 +108,13 @@ func imagesDataSourceRead(_ context.Context, d *schema.ResourceData, meta interf
 	// TODO: It would be preferable to us the client.Images.GlobalListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000 results.
-	// Seems unlikely anyone will have more than one million Images.
-	result, err := client.ImageList(1000000, "", projectId, oxideSDK.NameOrIdSortModeIdAscending)
+	// Seems unlikely anyone will have more than one billion Images.
+	params := oxideSDK.ImageListParams{
+		Project: oxideSDK.NameOrId(projectId),
+		Limit:   1000000000,
+		SortBy:  oxideSDK.NameOrIdSortModeIdAscending,
+	}
+	result, err := client.ImageList(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
