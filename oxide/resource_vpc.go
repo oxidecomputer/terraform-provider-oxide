@@ -100,18 +100,19 @@ func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	dnsName := d.Get("dns_name").(string)
 	ipv6Prefix := d.Get("ipv6_prefix").(string)
 
-	body := oxideSDK.VpcCreate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
-		DnsName:     oxideSDK.Name(dnsName),
+	params := oxideSDK.VpcCreateParams{
+		Project: oxideSDK.NameOrId(projectId),
+		Body: &oxideSDK.VpcCreate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+			DnsName:     oxideSDK.Name(dnsName),
+		},
 	}
-
 	if ipv6Prefix != "" {
-		body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
+		params.Body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
 	}
 
-	params := oxideSDK.VpcCreateParams{Project: oxideSDK.NameOrId(projectId)}
-	resp, err := client.VpcCreate(params, &body)
+	resp, err := client.VpcCreate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -146,14 +147,15 @@ func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	dnsName := d.Get("dns_name").(string)
 	vpcId := d.Get("id").(string)
 
-	body := oxideSDK.VpcUpdate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
-		DnsName:     oxideSDK.Name(dnsName),
+	params := oxideSDK.VpcUpdateParams{
+		Vpc: oxideSDK.NameOrId(vpcId),
+		Body: &oxideSDK.VpcUpdate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+			DnsName:     oxideSDK.Name(dnsName),
+		},
 	}
-
-	params := oxideSDK.VpcUpdateParams{Vpc: oxideSDK.NameOrId(vpcId)}
-	resp, err := client.VpcUpdate(params, &body)
+	resp, err := client.VpcUpdate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}

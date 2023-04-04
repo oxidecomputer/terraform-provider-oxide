@@ -18,7 +18,7 @@ PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
 TEST_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/oxide
 TEST_NAME ?= TestAcc
-TEST_ACC_PARALLEL = 6
+TEST_ACC_PARALLEL = 1
 
 include Makefile.tools
 

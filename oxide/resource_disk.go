@@ -133,15 +133,15 @@ func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) d
 
 	params := oxideSDK.DiskCreateParams{
 		Project: oxideSDK.NameOrId(projectId),
-	}
-	body := oxideSDK.DiskCreate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
-		DiskSource:  ds,
-		Size:        oxideSDK.ByteCount(size),
+		Body: &oxideSDK.DiskCreate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+			DiskSource:  ds,
+			Size:        oxideSDK.ByteCount(size),
+		},
 	}
 
-	resp, err := client.DiskCreate(params, &body)
+	resp, err := client.DiskCreate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
