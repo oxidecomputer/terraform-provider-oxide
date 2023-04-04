@@ -160,17 +160,17 @@ func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 
 	params := oxideSDK.ImageCreateParams{
 		Project: oxideSDK.NameOrId(projectId),
-	}
-	body := oxideSDK.ImageCreate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
-		BlockSize:   oxideSDK.BlockSize(bs),
-		Os:          os,
-		Version:     version,
-		Source:      is,
+		Body: &oxideSDK.ImageCreate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+			BlockSize:   oxideSDK.BlockSize(bs),
+			Os:          os,
+			Version:     version,
+			Source:      is,
+		},
 	}
 
-	resp, err := client.ImageCreate(params, &body)
+	resp, err := client.ImageCreate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}

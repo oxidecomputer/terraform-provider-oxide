@@ -112,12 +112,14 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 	name := d.Get("name").(string)
 	ranges := d.Get("ranges").([]interface{})
 
-	body := oxideSDK.IpPoolCreate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
+	params := oxideSDK.IpPoolCreateParams{
+		Body: &oxideSDK.IpPoolCreate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+		},
 	}
 
-	resp, err := client.IpPoolCreate(&body)
+	resp, err := client.IpPoolCreate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -128,8 +130,11 @@ func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 			return diag.FromErr(err)
 		}
 		for _, r := range ipRanges {
-			params := oxideSDK.IpPoolRangeAddParams{Pool: oxideSDK.NameOrId(resp.Id)}
-			_, err := client.IpPoolRangeAdd(params, &r)
+			params := oxideSDK.IpPoolRangeAddParams{
+				Pool: oxideSDK.NameOrId(resp.Id),
+				Body: &r,
+			}
+			_, err := client.IpPoolRangeAdd(params)
 			// TODO: Remove when error from the API is more end user friendly
 			if err != nil && strings.Contains(err.Error(), "data did not match any variant of untagged enum IpRange") {
 				return diag.FromErr(fmt.Errorf("%+v is not an accepted IP range", r))
@@ -198,12 +203,12 @@ func updateIpPool(ctx context.Context, d *schema.ResourceData, meta interface{})
 
 	params := oxideSDK.IpPoolUpdateParams{
 		Pool: oxideSDK.NameOrId(ipPoolId),
+		Body: &oxideSDK.IpPoolUpdate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+		},
 	}
-	body := oxideSDK.IpPoolUpdate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
-	}
-	resp, err := client.IpPoolUpdate(params, &body)
+	resp, err := client.IpPoolUpdate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -253,8 +258,9 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 
 		params := oxideSDK.IpPoolRangeRemoveParams{
 			Pool: oxideSDK.NameOrId(ipPoolId),
+			Body: &ipRange,
 		}
-		if err := client.IpPoolRangeRemove(params, &ipRange); err != nil {
+		if err := client.IpPoolRangeRemove(params); err != nil {
 			return diag.FromErr(err)
 		}
 	}

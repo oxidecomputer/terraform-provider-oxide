@@ -65,12 +65,14 @@ func createProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 
-	body := oxideSDK.ProjectCreate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
+	params := oxideSDK.ProjectCreateParams{
+		Body: &oxideSDK.ProjectCreate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+		},
 	}
 
-	resp, err := client.ProjectCreate(&body)
+	resp, err := client.ProjectCreate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -112,13 +114,14 @@ func updateProject(ctx context.Context, d *schema.ResourceData, meta interface{}
 	description := d.Get("description").(string)
 	name := d.Get("name").(string)
 
-	body := oxideSDK.ProjectUpdate{
-		Description: description,
-		Name:        oxideSDK.Name(name),
+	params := oxideSDK.ProjectUpdateParams{
+		Project: oxideSDK.NameOrId(projectId),
+		Body: &oxideSDK.ProjectUpdate{
+			Description: description,
+			Name:        oxideSDK.Name(name),
+		},
 	}
-
-	params := oxideSDK.ProjectUpdateParams{Project: oxideSDK.NameOrId(projectId)}
-	resp, err := client.ProjectUpdate(params, &body)
+	resp, err := client.ProjectUpdate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}

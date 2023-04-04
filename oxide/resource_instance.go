@@ -170,18 +170,19 @@ func createInstance(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	params := oxideSDK.InstanceCreateParams{
 		Project: oxideSDK.NameOrId(projectId),
+		Body: &oxideSDK.InstanceCreate{
+			Description:       description,
+			Name:              oxideSDK.Name(name),
+			Hostname:          hostName,
+			Memory:            oxideSDK.ByteCount(memory),
+			Ncpus:             oxideSDK.InstanceCpuCount(ncpus),
+			Disks:             newInstanceDiskAttach(d),
+			ExternalIps:       newInstanceExternalIps(d),
+			NetworkInterfaces: newNetworkInterface(d),
+		},
 	}
-	body := oxideSDK.InstanceCreate{
-		Description:       description,
-		Name:              oxideSDK.Name(name),
-		Hostname:          hostName,
-		Memory:            oxideSDK.ByteCount(memory),
-		Ncpus:             oxideSDK.InstanceCpuCount(ncpus),
-		Disks:             newInstanceDiskAttach(d),
-		ExternalIps:       newInstanceExternalIps(d),
-		NetworkInterfaces: newNetworkInterface(d),
-	}
-	resp, err := client.InstanceCreate(params, &body)
+
+	resp, err := client.InstanceCreate(params)
 	if err != nil {
 		return diag.FromErr(err)
 	}
