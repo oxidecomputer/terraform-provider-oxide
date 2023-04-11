@@ -372,11 +372,11 @@ func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfa
 		}
 	}
 
-	var interfaceCreate = []oxideSDK.NetworkInterfaceCreate{}
+	var interfaceCreate = []oxideSDK.InstanceNetworkInterfaceCreate{}
 	for _, ni := range nis {
 		nwInterface := ni.(map[string]interface{})
 
-		nwInterfaceCreate := oxideSDK.NetworkInterfaceCreate{
+		nwInterfaceCreate := oxideSDK.InstanceNetworkInterfaceCreate{
 			Description: nwInterface["description"].(string),
 			Name:        oxideSDK.Name(nwInterface["name"].(string)),
 			// TODO: Ideally from the API we should be able to create with IDs, not names
@@ -393,7 +393,7 @@ func newNetworkInterface(d *schema.ResourceData) oxideSDK.InstanceNetworkInterfa
 	}
 }
 
-func networkInterfaceToState(client *oxideSDK.Client, nwInterface oxideSDK.NetworkInterfaceResultsPage) ([]interface{}, error) {
+func networkInterfaceToState(client *oxideSDK.Client, nwInterface oxideSDK.InstanceNetworkInterfaceResultsPage) ([]interface{}, error) {
 	items := nwInterface.Items
 	var result = make([]interface{}, 0, len(items))
 	for _, item := range items {
