@@ -18,24 +18,22 @@ import (
 // TODO: Use this prefix + random string for all resource names for uniqueness
 // const accPrefix = "terraform-acc-"
 
+// TODO: Remove once migration is done
 var testAccProviderFactory = map[string]func() (*schema.Provider, error){
 	"oxide": providerFactory,
 }
 
-var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"oxide": providerserver.NewProtocol6WithError(New()),
-}
-
+// TODO: Remove once migration is done
 func providerFactory() (*schema.Provider, error) {
 	return &schema.Provider{}, nil
 	//return Provider(), nil
 }
 
-//func protoV6ProviderFactory() map[string]func() (tfprotov6.ProviderServer, error) {
-//	return map[string]func() (tfprotov6.ProviderServer, error){
-//		"oxide": providerserver.NewProtocol6WithError(New()),
-//	}
-//}
+func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"oxide": providerserver.NewProtocol6WithError(New()),
+	}
+}
 
 func testAccPreCheck(t *testing.T) {
 	host, token := setAccFromEnvVar()
