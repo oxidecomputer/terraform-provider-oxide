@@ -20,15 +20,10 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	//	plugin.Serve(&plugin.ServeOpts{
-	//		ProviderFunc: oxide.Provider,
-	//		Debug:        debug,
-	//	})
 	err := providerserver.Serve(
 		context.Background(),
 		oxide.New,
 		providerserver.ServeOpts{
-			// TODO: Uncomment this when we publish the provider
 			Address: "registry.terraform.io/oxidecomputer/oxide",
 			Debug:   debug,
 		},
