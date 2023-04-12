@@ -22,6 +22,7 @@ type projectsDataSource struct {
 }
 
 type projectsDataSourceModel struct {
+	ID       types.String   `tfsdk:"id"`
 	Projects []projectModel `tfsdk:"projects"`
 }
 
@@ -54,6 +55,9 @@ func (d *projectsDataSource) Configure(_ context.Context, req datasource.Configu
 func (d *projectsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"projects": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -104,6 +108,9 @@ func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadReques
 		)
 		return
 	}
+
+	// TODO: Set a better ID
+	state.ID = types.StringValue("TODO-ID")
 
 	// Map response body to model
 	for _, project := range projects.Items {

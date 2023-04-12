@@ -8,6 +8,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -19,10 +22,20 @@ var testAccProviderFactory = map[string]func() (*schema.Provider, error){
 	"oxide": providerFactory,
 }
 
+var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
+	"oxide": providerserver.NewProtocol6WithError(New()),
+}
+
 func providerFactory() (*schema.Provider, error) {
 	return &schema.Provider{}, nil
 	//return Provider(), nil
 }
+
+//func protoV6ProviderFactory() map[string]func() (tfprotov6.ProviderServer, error) {
+//	return map[string]func() (tfprotov6.ProviderServer, error){
+//		"oxide": providerserver.NewProtocol6WithError(New()),
+//	}
+//}
 
 func testAccPreCheck(t *testing.T) {
 	host, token := setAccFromEnvVar()
