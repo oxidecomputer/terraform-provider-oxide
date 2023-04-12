@@ -92,7 +92,7 @@ func newImagesDataSourceSchema() map[string]*schema.Schema {
 					},
 					"version": {
 						Type:        schema.TypeString,
-						Description: "Version od the OS.",
+						Description: "Version of the OS.",
 						Computed:    true,
 					},
 				},

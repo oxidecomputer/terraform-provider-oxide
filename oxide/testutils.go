@@ -31,7 +31,7 @@ func providerFactory() (*schema.Provider, error) {
 
 func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
-		"oxide": providerserver.NewProtocol6WithError(New()),
+		"oxide": providerserver.NewProtocol6WithError(New(Version)),
 	}
 }
 

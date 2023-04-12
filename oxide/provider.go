@@ -20,8 +20,7 @@ import (
 var _ provider.Provider = (*oxideProvider)(nil)
 
 type oxideProvider struct {
-	// TODO: Handle version
-	//	version string
+	version string
 }
 
 type oxideProviderModel struct {
@@ -29,13 +28,15 @@ type oxideProviderModel struct {
 	Token types.String `tfsdk:"token"`
 }
 
-func New() provider.Provider {
-	return &oxideProvider{}
+func New(version string) provider.Provider {
+	return &oxideProvider{
+		version: version,
+	}
 }
 
 func (p *oxideProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "oxide"
-	// resp.Version = p.version
+	resp.Version = p.version
 }
 
 // Schema defines the provider-level schema for configuration data.
