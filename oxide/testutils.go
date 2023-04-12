@@ -20,7 +20,8 @@ var testAccProviderFactory = map[string]func() (*schema.Provider, error){
 }
 
 func providerFactory() (*schema.Provider, error) {
-	return Provider(), nil
+	return &schema.Provider{}, nil
+	//return Provider(), nil
 }
 
 func testAccPreCheck(t *testing.T) {
