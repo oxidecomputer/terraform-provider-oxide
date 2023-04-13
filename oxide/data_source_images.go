@@ -36,17 +36,17 @@ type imagesDataSourceModel struct {
 }
 
 type imageDataSourceModel struct {
-	BlockSize    types.Int64                  `tfsdk:"block_size"`
-	Description  types.String                 `tfsdk:"description"`
-	Digest       []imageDataSourceDigestModel `tfsdk:"digest"`
-	ID           types.String                 `tfsdk:"id"`
-	Name         types.String                 `tfsdk:"name"`
-	OS           types.String                 `tfsdk:"os"`
-	Size         types.Int64                  `tfsdk:"size"`
-	TimeCreated  types.String                 `tfsdk:"time_created"`
-	TimeModified types.String                 `tfsdk:"time_modified"`
-	URL          types.String                 `tfsdk:"url"`
-	Version      types.String                 `tfsdk:"version"`
+	BlockSize    types.Int64                `tfsdk:"block_size"`
+	Description  types.String               `tfsdk:"description"`
+	Digest       imageDataSourceDigestModel `tfsdk:"digest"`
+	ID           types.String               `tfsdk:"id"`
+	Name         types.String               `tfsdk:"name"`
+	OS           types.String               `tfsdk:"os"`
+	Size         types.Int64                `tfsdk:"size"`
+	TimeCreated  types.String               `tfsdk:"time_created"`
+	TimeModified types.String               `tfsdk:"time_modified"`
+	URL          types.String               `tfsdk:"url"`
+	Version      types.String               `tfsdk:"version"`
 }
 
 type imageDataSourceDigestModel struct {
@@ -89,19 +89,17 @@ func (d *imagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 							Computed:    true,
 							Description: "Description of the image.",
 						},
-						"digest": schema.ListNestedAttribute{
+						"digest": schema.SingleNestedAttribute{
 							Computed:    true,
 							Description: "Hash of the image contents, if applicable.",
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"type": schema.StringAttribute{
-										Description: "Digest type.",
-										Computed:    true,
-									},
-									"value": schema.StringAttribute{
-										Description: "Digest type value.",
-										Computed:    true,
-									},
+							Attributes: map[string]schema.Attribute{
+								"type": schema.StringAttribute{
+									Description: "Digest type.",
+									Computed:    true,
+								},
+								"value": schema.StringAttribute{
+									Description: "Digest type value.",
+									Computed:    true,
 								},
 							},
 						},
@@ -194,7 +192,7 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			Value: types.StringValue(image.Digest.Value),
 		}
 
-		imageState.Digest = append(imageState.Digest, digestState)
+		imageState.Digest = digestState
 
 		state.Images = append(state.Images, imageState)
 	}

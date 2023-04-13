@@ -8,8 +8,7 @@ import (
 	"context"
 	"errors"
 
-	//"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,9 +33,9 @@ type imageResource struct {
 }
 
 type imageResourceModel struct {
-	BlockSize   types.Int64  `tfsdk:"block_size"`
-	Description types.String `tfsdk:"description"`
-	//	Digest       []imageResourceDigestModel `tfsdk:"digest"`
+	BlockSize    types.Int64  `tfsdk:"block_size"`
+	Description  types.String `tfsdk:"description"`
+	Digest       types.Object `tfsdk:"digest"`
 	ID           types.String `tfsdk:"id"`
 	ImageSource  types.Map    `tfsdk:"image_source"`
 	Name         types.String `tfsdk:"name"`
@@ -49,10 +48,10 @@ type imageResourceModel struct {
 	Version      types.String `tfsdk:"version"`
 }
 
-//type imageResourceDigestModel struct {
-//	Type  types.String `tfsdk:"type"`
-//	Value types.String `tfsdk:"value"`
-//}
+type imageResourceDigestModel struct {
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
+}
 
 // Metadata returns the resource type name.
 func (r *imageResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -101,22 +100,20 @@ func (r *imageResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Required:    true,
 				Description: "Size of blocks in bytes.",
 			},
-			//	"digest": schema.ListNestedAttribute{
-			//		Computed:    true,
-			//		Description: "Hash of the image contents, if applicable.",
-			//		NestedObject: schema.NestedAttributeObject{
-			//			Attributes: map[string]schema.Attribute{
-			//				"type": schema.StringAttribute{
-			//					Description: "Digest type.",
-			//					Computed:    true,
-			//				},
-			//				"value": schema.StringAttribute{
-			//					Description: "Digest type value.",
-			//					Computed:    true,
-			//				},
-			//			},
-			//		},
-			//	},
+			"digest": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "Hash of the image contents, if applicable.",
+				Attributes: map[string]schema.Attribute{
+					"type": schema.StringAttribute{
+						Description: "Digest type.",
+						Computed:    true,
+					},
+					"value": schema.StringAttribute{
+						Description: "Digest type value.",
+						Computed:    true,
+					},
+				},
+			},
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the image.",
@@ -187,11 +184,16 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.TimeModified = types.StringValue(image.TimeCreated.String())
 	plan.URL = types.StringValue(image.Url)
 	plan.Version = types.StringValue(image.Version)
-	//	digestState := imageResourceDigestModel{
-	//		Type:  types.StringValue(string(image.Digest.Type)),
-	//		Value: types.StringValue(image.Digest.Value),
-	//	}
-	//	plan.Digest = append(plan.Digest, digestState)
+
+	ds := imageResourceDigestModel{
+		Type:  types.StringValue(string(image.Digest.Type)),
+		Value: types.StringValue(image.Digest.Value),
+	}
+	attributeTypes := map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+	plan.Digest, _ = types.ObjectValueFrom(ctx, attributeTypes, ds)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -232,11 +234,15 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.URL = types.StringValue(image.Url)
 	state.Version = types.StringValue(image.Version)
 
-	//	digestState := imageResourceDigestModel{
-	//		Type:  types.StringValue(string(image.Digest.Type)),
-	//		Value: types.StringValue(image.Digest.Value),
-	//	}
-	//	state.Digest = append(state.Digest, digestState)
+	ds := imageResourceDigestModel{
+		Type:  types.StringValue(string(image.Digest.Type)),
+		Value: types.StringValue(image.Digest.Value),
+	}
+	attributeTypes := map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+	state.Digest, _ = types.ObjectValueFrom(ctx, attributeTypes, ds)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
