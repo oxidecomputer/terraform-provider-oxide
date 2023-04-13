@@ -3,6 +3,7 @@ module github.com/oxidecomputer/terraform-provider-oxide
 go 1.20
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/terraform-plugin-framework v1.2.0
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1

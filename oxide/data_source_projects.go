@@ -7,6 +7,7 @@ package oxide
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -109,8 +110,8 @@ func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	// TODO: Set a better ID
-	state.ID = types.StringValue("TODO-ID")
+	// Set a unique ID for the datasource payload
+	state.ID = types.StringValue(uuid.New().String())
 
 	// Map response body to model
 	for _, project := range projects.Items {
