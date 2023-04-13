@@ -185,7 +185,8 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.URL = types.StringValue(image.Url)
 	plan.Version = types.StringValue(image.Version)
 
-	ds := imageResourceDigestModel{
+	// Parse imageResourceDigestModel into types.Object
+	dm := imageResourceDigestModel{
 		Type:  types.StringValue(string(image.Digest.Type)),
 		Value: types.StringValue(image.Digest.Value),
 	}
@@ -193,7 +194,12 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		"type":  types.StringType,
 		"value": types.StringType,
 	}
-	plan.Digest, _ = types.ObjectValueFrom(ctx, attributeTypes, ds)
+	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.Digest = digest
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -234,7 +240,8 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.URL = types.StringValue(image.Url)
 	state.Version = types.StringValue(image.Version)
 
-	ds := imageResourceDigestModel{
+	// Parse imageResourceDigestModel into types.Object
+	dm := imageResourceDigestModel{
 		Type:  types.StringValue(string(image.Digest.Type)),
 		Value: types.StringValue(image.Digest.Value),
 	}
@@ -242,7 +249,12 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		"type":  types.StringType,
 		"value": types.StringType,
 	}
-	state.Digest, _ = types.ObjectValueFrom(ctx, attributeTypes, ds)
+	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Digest = digest
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
