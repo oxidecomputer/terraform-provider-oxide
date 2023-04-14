@@ -17,9 +17,9 @@ func TestAccResourceProject(t *testing.T) {
 	resourceName := "oxide_project.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      testAccProjectDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccProjectDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceProjectConfig,

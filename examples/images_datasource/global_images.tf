@@ -14,5 +14,5 @@ provider "oxide" {}
 data "oxide_projects" "project_list" {}
 
 data "oxide_images" "example" {
-  project_id = data.oxide_projects.project_list.projects.0.id
+  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
 }

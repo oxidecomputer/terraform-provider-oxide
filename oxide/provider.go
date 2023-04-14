@@ -128,7 +128,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewImageResource,
 		// NewInstanceResource,
 		// NewIpPoolResource,
-		// NewProjectResource,
+		NewProjectResource,
 		// NewVpcResource,
 	}
 }
