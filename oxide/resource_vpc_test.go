@@ -18,9 +18,9 @@ func TestAccResourceVPC(t *testing.T) {
 	resourceName2 := "oxide_vpc.test2"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      testAccVPCDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccVPCDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceVPCConfig,
@@ -42,7 +42,7 @@ var testResourceVPCConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_vpc" "test" {
-	project_id        = data.oxide_projects.project_list.projects.0.id
+	project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
 	description       = "a test vpc"
 	name              = "terraform-acc-myvpc"
 	dns_name          = "my-vpc-dns"
@@ -67,7 +67,7 @@ var testResourceVPCUpdateConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_vpc" "test" {
-	project_id        = data.oxide_projects.project_list.projects.0.id
+	project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
 	description       = "a test vopac"
 	name              = "terraform-acc-myvpc-new"
 	dns_name          = "my-vpc-donas"
@@ -92,7 +92,7 @@ var testResourceVPCIPv6Config = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_vpc" "test2" {
-	project_id        = data.oxide_projects.project_list.projects.0.id
+	project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
 	description       = "a test vpc"
 	name              = "terraform-acc-myvpc2"
 	dns_name          = "my-vpc-dns"

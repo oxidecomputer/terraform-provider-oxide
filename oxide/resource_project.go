@@ -58,23 +58,23 @@ func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the image.",
+				Description: "Name of the project.",
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the image.",
+				Description: "Description for the project.",
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the image.",
+				Description: "Unique, immutable, system-controlled identifier of the project.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this image was created.",
+				Description: "Timestamp of when this project was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this image was last modified.",
+				Description: "Timestamp of when this project was last modified.",
 			},
 		},
 	}
@@ -96,7 +96,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 			Name:        oxideSDK.Name(plan.Name.ValueString()),
 		},
 	}
-	image, err := r.client.ProjectCreate(params)
+	project, err := r.client.ProjectCreate(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating project",
@@ -106,9 +106,9 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(image.Id)
-	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
-	plan.TimeModified = types.StringValue(image.TimeCreated.String())
+	plan.ID = types.StringValue(project.Id)
+	plan.TimeCreated = types.StringValue(project.TimeCreated.String())
+	plan.TimeModified = types.StringValue(project.TimeCreated.String())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -127,7 +127,7 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	image, err := r.client.ProjectView(oxideSDK.ProjectViewParams{
+	project, err := r.client.ProjectView(oxideSDK.ProjectViewParams{
 		Project: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -138,11 +138,11 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	state.Description = types.StringValue(image.Description)
-	state.ID = types.StringValue(image.Id)
-	state.Name = types.StringValue(string(image.Name))
-	state.TimeCreated = types.StringValue(image.TimeCreated.String())
-	state.TimeModified = types.StringValue(image.TimeCreated.String())
+	state.Description = types.StringValue(project.Description)
+	state.ID = types.StringValue(project.Id)
+	state.Name = types.StringValue(string(project.Name))
+	state.TimeCreated = types.StringValue(project.TimeCreated.String())
+	state.TimeModified = types.StringValue(project.TimeCreated.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
