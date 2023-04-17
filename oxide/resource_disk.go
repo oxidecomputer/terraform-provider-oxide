@@ -10,172 +10,280 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func diskResource() *schema.Resource {
-	return &schema.Resource{
-		Description:   "",
-		Schema:        newDiskSchema(),
-		CreateContext: createDisk,
-		ReadContext:   readDisk,
-		UpdateContext: updateDisk,
-		DeleteContext: deleteDisk,
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(5 * time.Minute),
-		},
-	}
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource              = (*diskResource)(nil)
+	_ resource.ResourceWithConfigure = (*diskResource)(nil)
+)
+
+// NewDiskResource is a helper function to simplify the provider implementation.
+func NewDiskResource() resource.Resource {
+	return &diskResource{}
 }
 
-func newDiskSchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		"project_id": {
-			Type:        schema.TypeString,
-			Description: "ID of the project that will contain the disk.",
-			Required:    true,
-		},
-		"name": {
-			Type:        schema.TypeString,
-			Description: "Name of the disk.",
-			Required:    true,
-		},
-		"disk_source": {
-			Type:        schema.TypeMap,
-			Description: "Source of a disk. Can be one of blank=block_size, image=image_id, global_image=image_id, or snapshot=snapshot_id.",
-			Required:    true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-			},
-		},
-		"size": {
-			Type:        schema.TypeInt,
-			Description: "Size of the disk in bytes.",
-			Required:    true,
-		},
-		"description": {
-			Type:        schema.TypeString,
-			Description: "Description for the disk.",
-			Optional:    true,
-		},
-		"block_size": {
-			Type:        schema.TypeInt,
-			Description: "Size of blocks in bytes.",
-			Computed:    true,
-		},
-		"image_id": {
-			Type:        schema.TypeString,
-			Description: "Image ID of the disk source.",
-			Computed:    true,
-		},
-		"snapshot_id": {
-			Type:        schema.TypeString,
-			Description: "Snapshot ID of the disk source.",
-			Computed:    true,
-		},
-		"device_path": {
-			Type:        schema.TypeString,
-			Description: "Path of the disk.",
-			Computed:    true,
-		},
-		"id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier of the disk.",
-			Computed:    true,
-		},
-		"state": {
-			Type:        schema.TypeList,
-			Description: "State of a Disk (primarily: attached or not).",
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"state": {
-						Type:     schema.TypeString,
-						Computed: true,
-					},
+// diskResource is the resource implementation.
+type diskResource struct {
+	client *oxideSDK.Client
+}
 
-					"instance": {
-						Type:     schema.TypeString,
-						Computed: true,
+type diskResourceModel struct {
+	BlockSize    types.Int64  `tfsdk:"block_size"`
+	Description  types.String `tfsdk:"description"`
+	DevicePath   types.String `tfsdk:"device_path"`
+	DiskSource   types.Map    `tfsdk:"disk_source"`
+	ID           types.String `tfsdk:"id"`
+	ImageID      types.String `tfsdk:"image_id"`
+	Name         types.String `tfsdk:"name"`
+	ProjectID    types.String `tfsdk:"project_id"`
+	Size         types.Int64  `tfsdk:"size"`
+	State        types.Object `tfsdk:"state"`
+	SnapshotID   types.String `tfsdk:"snapshot_id"`
+	TimeCreated  types.String `tfsdk:"time_created"`
+	TimeModified types.String `tfsdk:"time_modified"`
+}
+
+type diskResourceStateModel struct {
+	State    types.String `tfsdk:"state"`
+	Instance types.String `tfsdk:"instance"`
+}
+
+// Metadata returns the resource type name.
+func (r *diskResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "oxide_disk"
+}
+
+// Configure adds the provider configured client to the data source.
+func (r *diskResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*oxideSDK.Client)
+}
+
+// Schema defines the schema for the resource.
+func (r *diskResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"project_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the project that will contain the disk.",
+			},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the disk.",
+			},
+			"disk_source": schema.MapAttribute{
+				Required:    true,
+				Description: "Source of a disk. Can be one of `blank = <block_size>`, `image = <image_id>`, `global_image = <image_id>`, or `snapshot = <snapshot_id>`.",
+				ElementType: types.StringType,
+			},
+			"size": schema.Int64Attribute{
+				Required:    true,
+				Description: "Size of the disk in bytes.",
+			},
+			"description": schema.StringAttribute{
+				Optional:    true,
+				Description: "Description for the disk.",
+			},
+			"block_size": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Size of blocks in bytes.",
+			},
+			"device_path": schema.StringAttribute{
+				Computed:    true,
+				Description: "Path of the disk.",
+			},
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the image.",
+			},
+			"image_id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Image ID of the disk source if applicable.",
+			},
+			"snapshot_id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Snapshot ID of the disk source if applicable.",
+			},
+
+			"state": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "State of a Disk (primarily: attached or not).",
+				Attributes: map[string]schema.Attribute{
+					"state": schema.StringAttribute{
+						Description: "State of the disk.",
+						Computed:    true,
+					},
+					"instance": schema.StringAttribute{
+						Description: "Associated instance.",
+						Computed:    true,
 					},
 				},
 			},
-		},
-		"time_created": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this disk was created.",
-			Computed:    true,
-		},
-		"time_modified": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this disk was last modified.",
-			Computed:    true,
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this image was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this image was last modified.",
+			},
 		},
 	}
 }
 
-func createDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
+// Create creates the resource and sets the initial Terraform state.
+func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan diskResourceModel
 
-	projectId := d.Get("project_id").(string)
-	description := d.Get("description").(string)
-	name := d.Get("name").(string)
-	size := d.Get("size").(int)
-
-	ds, err := newDiskSource(d)
-	if err != nil {
-		return diag.FromErr(err)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	params := oxideSDK.DiskCreateParams{
-		Project: oxideSDK.NameOrId(projectId),
+		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxideSDK.DiskCreate{
-			Description: description,
-			Name:        oxideSDK.Name(name),
-			DiskSource:  ds,
-			Size:        oxideSDK.ByteCount(size),
+			Description: plan.Description.ValueString(),
+			Name:        oxideSDK.Name(plan.Name.ValueString()),
+			Size:        oxideSDK.ByteCount(plan.Size.ValueInt64()),
 		},
 	}
 
-	resp, err := client.DiskCreate(params)
+	ds, err := newDiskSource(plan)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to parse disk source:",
+			err.Error(),
+		)
+		return
 	}
+	params.Body.DiskSource = ds
 
-	d.SetId(resp.Id)
-
-	return readDisk(ctx, d, meta)
-}
-
-func readDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	diskId := d.Get("id").(string)
-
-	params := oxideSDK.DiskViewParams{Disk: oxideSDK.NameOrId(diskId)}
-	resp, err := client.DiskView(params)
+	disk, err := r.client.DiskCreate(params)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Error creating disk",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	if err := diskToState(d, resp); err != nil {
-		return diag.FromErr(err)
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(disk.Id)
+	plan.DevicePath = types.StringValue(disk.DevicePath)
+	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
+	plan.ImageID = types.StringValue(disk.ImageId)
+	plan.SnapshotID = types.StringValue(disk.SnapshotId)
+	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
+	plan.TimeModified = types.StringValue(disk.TimeCreated.String())
+
+	// Parse diskResourceStateModel into types.Object
+	sm := diskResourceStateModel{
+		State:    types.StringValue(string(disk.State.State)),
+		Instance: types.StringValue(disk.State.Instance),
+	}
+	attributeTypes := map[string]attr.Type{
+		"state":    types.StringType,
+		"instance": types.StringType,
+	}
+	state, diags := types.ObjectValueFrom(ctx, attributeTypes, sm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.State = state
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state diskResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	return nil
+	disk, err := r.client.DiskView(oxideSDK.DiskViewParams{
+		Disk: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read disk:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	state.BlockSize = types.Int64Value(int64(disk.BlockSize))
+	state.Description = types.StringValue(disk.Description)
+	state.DevicePath = types.StringValue(disk.DevicePath)
+	state.ID = types.StringValue(disk.Id)
+	state.ImageID = types.StringValue(disk.ImageId)
+	state.Name = types.StringValue(string(disk.Name))
+	state.ProjectID = types.StringValue(disk.ProjectId)
+	state.Size = types.Int64Value(int64(disk.Size))
+	state.SnapshotID = types.StringValue(disk.SnapshotId)
+	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
+	state.TimeModified = types.StringValue(disk.TimeCreated.String())
+
+	// Parse diskResourceStateModel into types.Object
+	sm := diskResourceStateModel{
+		State:    types.StringValue(string(disk.State.State)),
+		Instance: types.StringValue(disk.State.Instance),
+	}
+	attributeTypes := map[string]attr.Type{
+		"state":    types.StringType,
+		"instance": types.StringType,
+	}
+	diskState, diags := types.ObjectValueFrom(ctx, attributeTypes, sm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.State = diskState
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func updateDisk(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// TODO: Currently there is no endpoint to update a disk. Update this function when such endpoint exists
-	return diag.FromErr(errors.New("the oxide_disk resource currently does not support updates"))
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *diskResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError(
+		"Error updating image",
+		"the oxide API currently does not support updating images")
 }
 
-func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	diskId := d.Get("id").(string)
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state diskResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// TODO: Update this with detaching instance if state attached
 
 	// Wait for disk to be detached before attempting to destroy.
 	// TODO: For the time being there is no endpoint to detach disks without
@@ -185,111 +293,74 @@ func deleteDisk(_ context.Context, d *schema.ResourceData, meta interface{}) dia
 	// for a temporary workaround for the acceptance tests we will only check for a `detached`
 	// status for 5 seconds and return an error otherwise.
 	ch := make(chan error)
-	go waitForDetachedDisk(client, oxideSDK.NameOrId(diskId), ch)
+	go waitForDetachedDisk(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
 	e := <-ch
 	if e != nil {
-		return diag.FromErr(e)
+		resp.Diagnostics.AddError(
+			"Unable to delete disk:",
+			"API error: "+e.Error(),
+		)
+		return
 	}
 
-	params := oxideSDK.DiskDeleteParams{Disk: oxideSDK.NameOrId(diskId)}
-	if err := client.DiskDelete(params); err != nil {
-		if is404(err) {
-			d.SetId("")
-			return nil
+	if err := r.client.DiskDelete(oxideSDK.DiskDeleteParams{
+		Disk: oxideSDK.NameOrId(state.ID.ValueString()),
+	}); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to delete disk:",
+				"API error: "+err.Error(),
+			)
+			return
 		}
-		return diag.FromErr(err)
 	}
-
-	d.SetId("")
-	return nil
 }
 
-func diskToState(d *schema.ResourceData, disk *oxideSDK.Disk) error {
-	if err := d.Set("name", disk.Name); err != nil {
-		return err
-	}
-	if err := d.Set("description", disk.Description); err != nil {
-		return err
-	}
-	if err := d.Set("block_size", disk.BlockSize); err != nil {
-		return err
-	}
-	if err := d.Set("image_id", disk.ImageId); err != nil {
-		return err
-	}
-	if err := d.Set("snapshot_id", disk.SnapshotId); err != nil {
-		return err
-	}
-	if err := d.Set("device_path", disk.DevicePath); err != nil {
-		return err
-	}
-	if err := d.Set("id", disk.Id); err != nil {
-		return err
-	}
-	if err := d.Set("project_id", disk.ProjectId); err != nil {
-		return err
-	}
-	if err := d.Set("time_created", disk.TimeCreated.String()); err != nil {
-		return err
-	}
-	if err := d.Set("time_modified", disk.TimeModified.String()); err != nil {
-		return err
-	}
-
-	var m = make(map[string]interface{})
-	m["state"] = disk.State.State
-	m["instance"] = disk.State.Instance
-	var result = make([]interface{}, 0, len(m))
-	result = append(result, m)
-	if err := d.Set("state", result); err != nil {
-		return err
-
-	}
-
-	return nil
-
-}
-
-func newDiskSource(d *schema.ResourceData) (oxideSDK.DiskSource, error) {
+func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
 	var ds = oxideSDK.DiskSource{}
 
-	diskSource := d.Get("disk_source").(map[string]interface{})
+	diskSource := p.DiskSource.Elements()
 	if len(diskSource) > 1 {
 		return ds, errors.New(
-			"only one of blank=block_size, image=image_id, global_image=image_id, or snapshot=snapshot_id can be set",
+			"only one of blank = <block_size>, image = <image_id>, " +
+				"global_image = <image_id>, or snapshot = <snapshot_id> can be set",
 		)
 	}
 
 	if source, ok := diskSource["blank"]; ok {
-		rawBs := source.(string)
-		bs, err := strconv.Atoi(rawBs)
+		rawBs := source.String()
+		blockSize, err := strconv.Unquote(rawBs)
+		if err != nil {
+			return ds, err
+		}
+		bs, err := strconv.Atoi(blockSize)
 		if err != nil {
 			return ds, err
 		}
 		ds = oxideSDK.DiskSource{
 			BlockSize: oxideSDK.BlockSize(bs),
-			Type:      "blank",
-		}
-	}
-
-	if source, ok := diskSource["image"]; ok {
-		ds = oxideSDK.DiskSource{
-			ImageId: source.(string),
-			Type:    "image",
-		}
-	}
-
-	if source, ok := diskSource["global_image"]; ok {
-		ds = oxideSDK.DiskSource{
-			ImageId: source.(string),
-			Type:    "global_image",
+			Type:      oxideSDK.DiskSourceTypeBlank,
 		}
 	}
 
 	if source, ok := diskSource["snapshot"]; ok {
 		ds = oxideSDK.DiskSource{
-			SnapshotId: source.(string),
-			Type:       "snapshot",
+			SnapshotId: source.String(),
+			Type:       oxideSDK.DiskSourceTypeSnapshot,
+		}
+	}
+
+	if source, ok := diskSource["image"]; ok {
+		ds = oxideSDK.DiskSource{
+			ImageId: source.String(),
+			Type:    oxideSDK.DiskSourceTypeImage,
+		}
+	}
+
+	if source, ok := diskSource["global_image"]; ok {
+		ds = oxideSDK.DiskSource{
+			ImageId: source.String(),
+			Type:    oxideSDK.DiskSourceTypeGlobalImage,
 		}
 	}
 

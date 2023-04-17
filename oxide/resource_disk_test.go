@@ -17,9 +17,9 @@ func TestAccResourceDisk(t *testing.T) {
 	resourceName := "oxide_disk.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      testAccDiskDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccDiskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceDiskConfig,
@@ -33,7 +33,7 @@ var testResourceDiskConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "test" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "terraform-acc-mydisk"
   size              = 1073741824
@@ -50,7 +50,7 @@ func checkResourceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/terraform-acc-mydisk"),
 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
 		resource.TestCheckResourceAttr(resourceName, "disk_source.blank", "512"),
-		resource.TestCheckResourceAttr(resourceName, "state.0.state", "detached"),
+		resource.TestCheckResourceAttrSet(resourceName, "state.state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

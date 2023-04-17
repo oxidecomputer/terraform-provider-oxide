@@ -85,7 +85,7 @@ func (r *imageResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			},
 			"image_source": schema.MapAttribute{
 				Required:    true,
-				Description: "Description for the image.",
+				Description: "Source of an image. Can be one of `url = <URL>` or `snapshot = <snapshot_id>`",
 				ElementType: types.StringType,
 			},
 			"os": schema.StringAttribute{
