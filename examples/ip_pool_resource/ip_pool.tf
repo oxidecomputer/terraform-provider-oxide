@@ -14,8 +14,10 @@ provider "oxide" {}
 resource "oxide_ip_pool" "example" {
   description = "a test IP pool"
   name        = "myippool"
-  ranges {
-    first_address = "172.20.15.227"
-    last_address  = "172.20.15.239"
-  }
+  ranges = [
+    {
+		  first_address = "172.20.18.227"
+		  last_address  = "172.20.18.239"
+	  }
+  ]
 }

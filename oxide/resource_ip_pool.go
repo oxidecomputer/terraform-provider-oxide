@@ -8,231 +8,373 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
-	"time"
+	"strconv"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func ipPoolResource() *schema.Resource {
-	return &schema.Resource{
-		Description:   "",
-		Schema:        newIpPoolSchema(),
-		CreateContext: createIpPool,
-		ReadContext:   readIpPool,
-		UpdateContext: updateIpPool,
-		DeleteContext: deleteIpPool,
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(5 * time.Minute),
-		},
-		CustomizeDiff: customdiff.All(
-			// TODO: Enable adding and removing ranges. Figuring out best way forward for this
-			customdiff.ValidateChange("ranges", func(ctx context.Context, old, new, meta any) error {
-				if old != nil && len(new.([]interface{})) != len(old.([]interface{})) && len(old.([]interface{})) > 0 {
-					return fmt.Errorf("IP pool ranges cannot be updated; please revert to previous configuration")
-				}
-				return nil
-			}),
-		),
-	}
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource              = (*ipPoolResource)(nil)
+	_ resource.ResourceWithConfigure = (*ipPoolResource)(nil)
+)
+
+// NewIPPoolResource is a helper function to simplify the provider implementation.
+func NewIPPoolResource() resource.Resource {
+	return &ipPoolResource{}
 }
 
-func newIpPoolSchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		"name": {
-			Type:        schema.TypeString,
-			Description: "Name of the IP pool.",
-			Required:    true,
-		},
-		"description": {
-			Type:        schema.TypeString,
-			Description: "Description for the IP pool.",
-			Required:    true,
-		},
-		"ranges": {
-			Type:        schema.TypeList,
-			Description: "A non-decreasing IPv4 or IPv6 address range, inclusive of both ends. The first address must be less than or equal to the last address.",
-			Optional:    true,
-			Elem:        newRangeResource(),
-		},
-		"id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier.",
-			Computed:    true,
-		},
-		"time_created": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this IP pool was created.",
-			Computed:    true,
-		},
-		"time_modified": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this IP pool was last modified.",
-			Computed:    true,
-		},
-	}
+// ipPoolResource is the resource implementation.
+type ipPoolResource struct {
+	client *oxideSDK.Client
 }
 
-func newRangeResource() *schema.Resource {
-	return &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			"first_address": {
-				Type:        schema.TypeString,
-				Description: "First address in the range.",
+type ipPoolResourceModel struct {
+	Description  types.String               `tfsdk:"description"`
+	ID           types.String               `tfsdk:"id"`
+	Name         types.String               `tfsdk:"name"`
+	Ranges       []ipPoolResourceRangeModel `tfsdk:"ranges"`
+	TimeCreated  types.String               `tfsdk:"time_created"`
+	TimeModified types.String               `tfsdk:"time_modified"`
+}
+
+type ipPoolResourceRangeModel struct {
+	FirstAddress types.String `tfsdk:"first_address"`
+	LastAddress  types.String `tfsdk:"last_address"`
+	ID           types.String `tfsdk:"id"`
+	TimeCreated  types.String `tfsdk:"time_created"`
+}
+
+// Metadata returns the resource type name.
+func (r *ipPoolResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "oxide_ip_pool"
+}
+
+// Configure adds the provider configured client to the data source.
+func (r *ipPoolResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*oxideSDK.Client)
+}
+
+// Schema defines the schema for the resource.
+func (r *ipPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"name": schema.StringAttribute{
 				Required:    true,
+				Description: "Name of the IP Pool.",
 			},
-			"last_address": {
-				Type:        schema.TypeString,
-				Description: "Last address in the range.",
+			"description": schema.StringAttribute{
 				Required:    true,
+				Description: "Description for the IP Pool.",
 			},
-			"id": {
-				Type:        schema.TypeString,
-				Description: "Unique, immutable, system-controlled identifier.",
-				Computed:    true,
+			"ranges": schema.ListNestedAttribute{
+				Optional: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"first_address": schema.StringAttribute{
+							Description: "First address in the range",
+							Required:    true,
+						},
+						"last_address": schema.StringAttribute{
+							Description: "Last address in the range",
+							Required:    true,
+						},
+						"id": schema.StringAttribute{
+							Computed:    true,
+							Description: "Unique, immutable, system-controlled identifier of the range.",
+						},
+						"time_created": schema.StringAttribute{
+							Computed:    true,
+							Description: "Timestamp of when this range was created.",
+						},
+					},
+				},
 			},
-			"time_created": {
-				Type:        schema.TypeString,
-				Description: "Timestamp of when this range was created.",
+			"id": schema.StringAttribute{
 				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the IP Pool.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this IP Pool was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this IP Pool was last modified.",
 			},
 		},
 	}
 }
 
-func createIpPool(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	description := d.Get("description").(string)
-	name := d.Get("name").(string)
-	ranges := d.Get("ranges").([]interface{})
+// Create creates the resource and sets the initial Terraform state.
+func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan ipPoolResourceModel
+
+	// Read Terraform plan data into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	params := oxideSDK.IpPoolCreateParams{
 		Body: &oxideSDK.IpPoolCreate{
-			Description: description,
-			Name:        oxideSDK.Name(name),
+			Description: plan.Description.ValueString(),
+			Name:        oxideSDK.Name(plan.Name.ValueString()),
 		},
 	}
-
-	resp, err := client.IpPoolCreate(params)
+	ipPool, err := r.client.IpPoolCreate(params)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Error creating IP Pool",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	if len(ranges) > 0 {
-		ipRanges, err := newIpPoolRange(d)
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(ipPool.Id)
+	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
+	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+
+	for index, ipPoolRange := range plan.Ranges {
+		var body oxideSDK.IpRange
+
+		// TODO: Error checking here can be improved by checking both addresses
+		firstAddress, err := strconv.Unquote(ipPoolRange.FirstAddress.String())
 		if err != nil {
-			return diag.FromErr(err)
+			resp.Diagnostics.AddError(
+				"Error creating range within IP Pool",
+				err.Error(),
+			)
+			return
 		}
-		for _, r := range ipRanges {
-			params := oxideSDK.IpPoolRangeAddParams{
-				Pool: oxideSDK.NameOrId(resp.Id),
-				Body: &r,
-			}
-			_, err := client.IpPoolRangeAdd(params)
-			// TODO: Remove when error from the API is more end user friendly
-			if err != nil && strings.Contains(err.Error(), "data did not match any variant of untagged enum IpRange") {
-				return diag.FromErr(fmt.Errorf("%+v is not an accepted IP range", r))
-			}
-			if err != nil {
-				return diag.FromErr(fmt.Errorf("%v: %v", len(ipRanges), err))
-			}
+		lastAddress, err := strconv.Unquote(ipPoolRange.LastAddress.String())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating range within IP Pool",
+				err.Error(),
+			)
+			return
 		}
+		if isIPv4(firstAddress) {
+			body = oxideSDK.Ipv4Range{
+				First: firstAddress,
+				Last:  lastAddress,
+			}
+		} else if isIPv6(firstAddress) {
+			body = oxideSDK.Ipv6Range{
+				First: firstAddress,
+				Last:  lastAddress,
+			}
+		} else {
+			resp.Diagnostics.AddError(
+				"Error creating range within IP Pool",
+				fmt.Errorf("%s is neither a valid IPv4 or IPv6",
+					firstAddress).Error(),
+			)
+			return
+		}
+
+		params := oxideSDK.IpPoolRangeAddParams{
+			Pool: oxideSDK.NameOrId(plan.ID.ValueString()),
+			Body: &body,
+		}
+
+		ipR, err := r.client.IpPoolRangeAdd(params)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating range within IP Pool",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+
+		ipPoolRange.ID = types.StringValue(ipR.Id)
+		ipPoolRange.TimeCreated = types.StringValue(ipR.TimeCreated.String())
+
+		plan.Ranges[index] = ipPoolRange
 	}
 
-	d.SetId(resp.Id)
-
-	return readIpPool(ctx, d, meta)
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func readIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	ipPoolId := d.Get("id").(string)
+// Read refreshes the Terraform state with the latest data.
+func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ipPoolResourceModel
 
-	params := oxideSDK.IpPoolViewParams{Pool: oxideSDK.NameOrId(ipPoolId)}
-	resp, err := client.IpPoolView(params)
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ipPool, err := r.client.IpPoolView(oxideSDK.IpPoolViewParams{
+		Pool: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to read IP Pool:",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	if err := d.Set("name", resp.Name); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("description", resp.Description); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("time_created", resp.TimeCreated.String()); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("time_modified", resp.TimeModified.String()); err != nil {
-		return diag.FromErr(err)
-	}
+	state.Description = types.StringValue(ipPool.Description)
+	state.ID = types.StringValue(ipPool.Id)
+	state.Name = types.StringValue(string(ipPool.Name))
+	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
+	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
 
+	// Append information about IP Pool ranges
 	listParams := oxideSDK.IpPoolRangeListParams{
-		Pool:  oxideSDK.NameOrId(ipPoolId),
+		Pool:  oxideSDK.NameOrId(ipPool.Id),
 		Limit: 1000000000,
 	}
-	resp2, err := client.IpPoolRangeList(listParams)
+	ipPoolRanges, err := r.client.IpPoolRangeList(listParams)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to read IP Pool ranges:",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	ranges, err := ipPoolRangesToState(client, *resp2)
-	if err != nil {
-		return diag.FromErr(err)
+	for index, item := range ipPoolRanges.Items {
+		ipPoolRange := ipPoolResourceRangeModel{
+			ID:          types.StringValue(item.Id),
+			TimeCreated: types.StringValue(item.TimeCreated.String()),
+		}
+
+		// TODO: For the time being we are using interfaces for nested allOf within oneOf objects in
+		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect that.
+		switch item.Range.(type) {
+		case map[string]interface{}:
+			rs := item.Range.(map[string]interface{})
+			ipPoolRange.FirstAddress = types.StringValue(rs["first"].(string))
+			ipPoolRange.LastAddress = types.StringValue(rs["last"].(string))
+		default:
+			// Theoretically this should never happen. Just in case though!
+			resp.Diagnostics.AddError(
+				"Unable to read IP Pool ranges:",
+				fmt.Sprintf(
+					"internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support",
+					reflect.TypeOf(item.Range),
+					item.Range,
+				),
+			)
+			return
+		}
+
+		state.Ranges[index] = ipPoolRange
 	}
 
-	if err := d.Set("ranges", ranges); err != nil {
-		return diag.FromErr(err)
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	return nil
 }
 
-func updateIpPool(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan ipPoolResourceModel
+	var state ipPoolResourceModel
 
-	description := d.Get("description").(string)
-	name := d.Get("name").(string)
-	ipPoolId := d.Get("id").(string)
+	// Read Terraform plan data into the plan model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read Terraform prior state data into the state model to retrieve ID
+	// which is a computed attribute, so it won't show up in the plan.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// TODO: Support updates here
+	if !reflect.DeepEqual(plan.Ranges, state.Ranges) {
+		resp.Diagnostics.AddError(
+			"Error updating IP Pool",
+			"IP pool ranges cannot be updated; please revert to previous configuration",
+		)
+		return
+	}
 
 	params := oxideSDK.IpPoolUpdateParams{
-		Pool: oxideSDK.NameOrId(ipPoolId),
+		Pool: oxideSDK.NameOrId(state.ID.ValueString()),
 		Body: &oxideSDK.IpPoolUpdate{
-			Description: description,
-			Name:        oxideSDK.Name(name),
+			Description: plan.Description.ValueString(),
+			Name:        oxideSDK.Name(plan.Name.ValueString()),
 		},
 	}
-	resp, err := client.IpPoolUpdate(params)
+
+	ipPool, err := r.client.IpPoolUpdate(params)
+
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Error updating IP Pool",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	d.SetId(resp.Id)
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(ipPool.Id)
+	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
+	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
 
-	return readIpPool(ctx, d, meta)
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	ipPoolId := d.Get("id").(string)
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state ipPoolResourceModel
 
-	params := oxideSDK.IpPoolRangeListParams{
-		Pool:  oxideSDK.NameOrId(ipPoolId),
-		Limit: 1000000000,
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
+
 	// Remove all IP pool ranges first
-	resp, err := client.IpPoolRangeList(params)
+	ranges, err := r.client.IpPoolRangeList(
+		oxideSDK.IpPoolRangeListParams{
+			Pool:  oxideSDK.NameOrId(state.ID.ValueString()),
+			Limit: 1000000000,
+		},
+	)
 	if err != nil {
-		return diag.FromErr(err)
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error retrieving IP Pool ranges:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
 	}
 
-	for _, item := range resp.Items {
+	for _, item := range ranges.Items {
 		var ipRange oxideSDK.IpRange
 		rs := item.Range.(map[string]interface{})
 		if isIPv4(rs["first"].(string)) {
@@ -248,93 +390,41 @@ func deleteIpPool(_ context.Context, d *schema.ResourceData, meta interface{}) d
 		} else {
 			// This should never happen as we are retrieving information from Nexus. If we do encounter
 			// this error we have a huge problem.
-			return diag.FromErr(
-				fmt.Errorf(
-					"the value %s retrieved from Nexus is neither a valid IPv4 or IPv6. If you encounter this error please contact support",
-					rs["first"].(string),
+			resp.Diagnostics.AddError(
+				"Unable to read IP Pool ranges:",
+				fmt.Sprintf(
+					"internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support",
+					reflect.TypeOf(item.Range),
+					item.Range,
 				),
 			)
+			return
 		}
 
 		params := oxideSDK.IpPoolRangeRemoveParams{
-			Pool: oxideSDK.NameOrId(ipPoolId),
+			Pool: oxideSDK.NameOrId(state.ID.ValueString()),
 			Body: &ipRange,
 		}
-		if err := client.IpPoolRangeRemove(params); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	// Delete IP Pool once all ranges have been removed
-	deleteParams := oxideSDK.IpPoolDeleteParams{Pool: oxideSDK.NameOrId(ipPoolId)}
-	if err := client.IpPoolDelete(deleteParams); err != nil {
-		if is404(err) {
-			d.SetId("")
-			return nil
-		}
-		return diag.FromErr(err)
-	}
-
-	d.SetId("")
-	return nil
-}
-
-func newIpPoolRange(d *schema.ResourceData) ([]oxideSDK.IpRange, error) {
-	rs := d.Get("ranges").([]interface{})
-
-	var ipRanges []oxideSDK.IpRange
-
-	for _, r := range rs {
-		ipR := r.(map[string]interface{})
-
-		var ipRange oxideSDK.IpRange
-
-		if isIPv4(ipR["first_address"].(string)) {
-			ipRange = oxideSDK.Ipv4Range{
-				First: ipR["first_address"].(string),
-				Last:  ipR["last_address"].(string),
+		if err := r.client.IpPoolRangeRemove(params); err != nil {
+			if !is404(err) {
+				resp.Diagnostics.AddError(
+					"Error deleting IP Pool range:",
+					"API error: "+err.Error(),
+				)
+				return
 			}
-		} else if isIPv6(ipR["first_address"].(string)) {
-			ipRange = oxideSDK.Ipv6Range{
-				First: ipR["first_address"].(string),
-				Last:  ipR["last_address"].(string),
-			}
-		} else {
-			return nil, fmt.Errorf("%s is neither a valid IPv4 or IPv6", ipR["first_address"].(string))
 		}
-
-		ipRanges = append(ipRanges, ipRange)
 	}
 
-	return ipRanges, nil
-}
-
-func ipPoolRangesToState(client *oxideSDK.Client, ipPoolRange oxideSDK.IpPoolRangeResultsPage) ([]interface{}, error) {
-	items := ipPoolRange.Items
-	var result = make([]interface{}, 0, len(items))
-	for _, item := range items {
-		var m = make(map[string]interface{})
-
-		m["id"] = item.Id
-		m["time_created"] = item.TimeCreated.String()
-
-		// TODO: For the time being we are using interfaces for nested allOf within oneOf objects in
-		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect that.
-		switch item.Range.(type) {
-		case map[string]interface{}:
-			rs := item.Range.(map[string]interface{})
-			m["first_address"] = rs["first"]
-			m["last_address"] = rs["last"]
-		default:
-			// Theoretically this should never happen. Just in case though!
-			return nil, fmt.Errorf(
-				"internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support",
-				reflect.TypeOf(item.Range),
-				item.Range,
+	if err := r.client.IpPoolDelete(oxideSDK.IpPoolDeleteParams{
+		Pool: oxideSDK.NameOrId(state.ID.ValueString()),
+	}); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting IP Pool:",
+				"API error: "+err.Error(),
 			)
+			return
 		}
-		result = append(result, m)
 	}
-
-	return result, nil
 }
