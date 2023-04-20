@@ -20,9 +20,9 @@ func TestAccResourceInstance(t *testing.T) {
 	fourthResourceName := "oxide_instance.test4"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      testAccInstanceDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceInstanceConfig,
@@ -48,7 +48,7 @@ var testResourceInstanceConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
   name              = "terraform-acc-myinstance"
   host_name         = "terraform-acc-myhost"
@@ -77,7 +77,7 @@ var testResourceInstanceDiskConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "test-instance" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "terraform-acc-mydisk1"
   size              = 1073741824
@@ -85,7 +85,7 @@ resource "oxide_disk" "test-instance" {
 }
 
 resource "oxide_disk" "test-instance2" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "terraform-acc-mydisk2"
   size              = 1073741824
@@ -93,7 +93,7 @@ resource "oxide_disk" "test-instance2" {
 }
 
 resource "oxide_instance" "test2" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
   name              = "terraform-acc-myinstance2"
   host_name         = "terraform-acc-myhost"
@@ -125,18 +125,20 @@ var testResourceInstanceNetworkInterfaceConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test3" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
   name              = "terraform-acc-myinstance3"
   host_name         = "terraform-acc-myhost"
   memory            = 1073741824
   ncpus             = 1
-  network_interface {
-    description = "a network interface"
-    name        = "terraform-acc-mynetworkinterface"
-    subnet_name = "default"
-    vpc_name    = "default"
-  }
+  network_interface = [
+    {
+      description = "a network interface"
+      name        = "terraform-acc-mynetworkinterface"
+      subnet_name = "default"
+      vpc_name    = "default"
+    }
+  ]
 }
 `
 
@@ -165,7 +167,7 @@ var testResourceInstanceExternalIpsConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test4" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
   name              = "terraform-acc-myinstance4"
   host_name         = "terraform-acc-myhost"

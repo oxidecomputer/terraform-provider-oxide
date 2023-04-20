@@ -328,7 +328,6 @@ func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
 	}
 
 	if source, ok := diskSource["blank"]; ok {
-		// TODO: Check if I really need the unquote if I use ValueString() instead
 		rawBs := source.String()
 		blockSize, err := strconv.Unquote(rawBs)
 		if err != nil {
@@ -377,7 +376,7 @@ func waitForDetachedDisk(client *oxideSDK.Client, diskId oxideSDK.NameOrId, ch c
 		if resp.State.State == "detached" {
 			break
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(time.Second)
 	}
 	ch <- nil
 }

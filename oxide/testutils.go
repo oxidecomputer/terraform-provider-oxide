@@ -11,23 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 // TODO: Use this prefix + random string for all resource names for uniqueness
 // const accPrefix = "terraform-acc-"
-
-// TODO: Remove once migration is done
-var testAccProviderFactory = map[string]func() (*schema.Provider, error){
-	"oxide": providerFactory,
-}
-
-// TODO: Remove once migration is done
-func providerFactory() (*schema.Provider, error) {
-	return &schema.Provider{}, nil
-	//return Provider(), nil
-}
 
 func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
