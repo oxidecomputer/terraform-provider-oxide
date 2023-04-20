@@ -10,9 +10,9 @@ package oxide
 // 	resourceName := "oxide_image.test"
 //
 // 	resource.ParallelTest(t, resource.TestCase{
-// 		PreCheck:          func() { testAccPreCheck(t) },
-// 		ProviderFactories: testAccProviderFactory,
-// 		CheckDestroy:      testAccImageDestroy,
+// 		PreCheck:                 func() { testAccPreCheck(t) },
+// 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+// 		CheckDestroy:             testAccImageDestroy,
 // 		Steps: []resource.TestStep{
 // 			{
 // 				Config: testResourceImageConfig,
@@ -23,18 +23,18 @@ package oxide
 // }
 //
 // var testResourceImageConfig = `
-//  data "oxide_projects" "project_list" {}
+// data "oxide_projects" "project_list" {}
 //
-//   resource "oxide_image" "test" {
-//     project_id   = data.oxide_projects.project_list.projects.0.id
-//     description  = "a test image"
-//     name         = "terraform-acc-myglobalimage"
-//     image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
-//     block_size   = 512
-//     os           = "alpine"
-//     version      = "propolis_blob"
-//   }
-//   `
+// resource "oxide_image" "test" {
+//   project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+//   description  = "a test image"
+//   name         = "terraform-acc-myglobalimage"
+//   image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
+//   block_size   = 512
+//   os           = "alpine"
+//   version      = "propolis-blob"
+// }
+// `
 //
 // func checkResourceImage(resourceName string) resource.TestCheckFunc {
 // 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -57,18 +57,21 @@ package oxide
 // 	}
 //
 // 	for _, rs := range s.RootModule().Resources {
-// 		if rs.Type != "oxide_image" {
-// 			continue
-// 		}
+//      if rs.Type != "oxide_image" {
+//	        continue
+//      }
 //
-// 		res, err := client.ImageView("test", "terraform-acc-myglobalimage")
+//  	res, err := client.ImageView(oxide.ImageViewParams{
+//			Image:   "terraform-acc-myglobalimage",
+//			Project: "test",
+//		})
 //
-// 		if err != nil && is404(err) {
-// 			continue
-// 		}
+//		if err != nil && is404(err) {
+//			continue
+//		}
 //
-// 		return fmt.Errorf("image (%v) still exists", &res.Name)
-// 	}
+//		return fmt.Errorf("image (%v) still exists", &res.Name)
+//	}
 //
-// 	return nil
+//	return nil
 // }

@@ -16,7 +16,7 @@ data "oxide_global_images" "image_example" {}
 data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "example" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "mydisk"
   size              = 1073741824
@@ -24,7 +24,7 @@ resource "oxide_disk" "example" {
 }
 
 resource "oxide_disk" "example2" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "mydisk2"
   size              = 1073741824

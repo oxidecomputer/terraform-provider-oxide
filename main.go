@@ -5,10 +5,14 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"github.com/oxidecomputer/terraform-provider-oxide/oxide"
+
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 func main() {
@@ -17,8 +21,16 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	plugin.Serve(&plugin.ServeOpts{
-		ProviderFunc: oxide.Provider,
-		Debug:        debug,
-	})
+	err := providerserver.Serve(
+		context.Background(),
+		func() provider.Provider { return oxide.New(oxide.Version) },
+		providerserver.ServeOpts{
+			Address: "registry.terraform.io/oxidecomputer/oxide",
+			Debug:   debug,
+		},
+	)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

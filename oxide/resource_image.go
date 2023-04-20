@@ -7,262 +7,301 @@ package oxide
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func imageResource() *schema.Resource {
-	return &schema.Resource{
-		Description:   "",
-		Schema:        newImageSchema(),
-		CreateContext: createImage,
-		ReadContext:   readImage,
-		UpdateContext: updateImage,
-		DeleteContext: deleteImage,
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(5 * time.Minute),
-		},
-		CustomizeDiff: customdiff.All(
-			customdiff.ValidateChange("name", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return errors.New("the oxide_image resource currently does not support updates")
-				}
-				return nil
-			}),
-			customdiff.ValidateChange("description", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return errors.New("the oxide_image resource currently does not support updates")
-				}
-				return nil
-			}),
-			customdiff.ValidateChange("image_source", func(ctx context.Context, old, new, meta any) error {
-				if old != nil && len(new.(map[string]interface{})) != len(old.(map[string]interface{})) && len(old.(map[string]interface{})) > 0 {
-					return errors.New("the oxide_image resource currently does not support updates")
-				}
-				return nil
-			}),
-			customdiff.ValidateChange("os", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return errors.New("the oxide_image resource currently does not support updates")
-				}
-				return nil
-			}),
-			customdiff.ValidateChange("version", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return errors.New("the oxide_image resource currently does not support updates")
-				}
-				return nil
-			}),
-			customdiff.ValidateChange("block_size", func(ctx context.Context, old, new, meta any) error {
-				if old.(int) != 0 && new.(int) != old.(int) {
-					return errors.New("the oxide_image resource currently does not support updates")
-				}
-				return nil
-			}),
-		),
-	}
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource              = (*imageResource)(nil)
+	_ resource.ResourceWithConfigure = (*imageResource)(nil)
+)
+
+// NewImageResource is a helper function to simplify the provider implementation.
+func NewImageResource() resource.Resource {
+	return &imageResource{}
 }
 
-func newImageSchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		"project_id": {
-			Type:        schema.TypeString,
-			Description: "ID of the project that will contain the image.",
-			Required:    true,
-		},
-		"name": {
-			Type:        schema.TypeString,
-			Description: "Name of the image.",
-			Required:    true,
-		},
-		"description": {
-			Type:        schema.TypeString,
-			Description: "Description for the image.",
-			Required:    true,
-		},
-		"image_source": {
-			Type:        schema.TypeMap,
-			Description: "Source of an image. Can be one of url=<URL> or snapshot=<snapshot_id>.",
-			Required:    true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+// imageResource is the resource implementation.
+type imageResource struct {
+	client *oxideSDK.Client
+}
+
+type imageResourceModel struct {
+	BlockSize    types.Int64  `tfsdk:"block_size"`
+	Description  types.String `tfsdk:"description"`
+	Digest       types.Object `tfsdk:"digest"`
+	ID           types.String `tfsdk:"id"`
+	ImageSource  types.Map    `tfsdk:"image_source"`
+	Name         types.String `tfsdk:"name"`
+	OS           types.String `tfsdk:"os"`
+	ProjectID    types.String `tfsdk:"project_id"`
+	Size         types.Int64  `tfsdk:"size"`
+	TimeCreated  types.String `tfsdk:"time_created"`
+	TimeModified types.String `tfsdk:"time_modified"`
+	URL          types.String `tfsdk:"url"`
+	Version      types.String `tfsdk:"version"`
+}
+
+type imageResourceDigestModel struct {
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
+}
+
+// Metadata returns the resource type name.
+func (r *imageResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "oxide_image"
+}
+
+// Configure adds the provider configured client to the data source.
+func (r *imageResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*oxideSDK.Client)
+}
+
+// Schema defines the schema for the resource.
+func (r *imageResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"project_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the project that will contain the image.",
+			},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the image.",
+			},
+			"description": schema.StringAttribute{
+				Required:    true,
+				Description: "Description for the image.",
+			},
+			"image_source": schema.MapAttribute{
+				Required:    true,
+				Description: "Source of an image. Can be one of `url = <URL>` or `snapshot = <snapshot_id>`",
+				ElementType: types.StringType,
+			},
+			"os": schema.StringAttribute{
+				Required:    true,
+				Description: "OS image distribution. Example: alpine",
+			},
+			"version": schema.StringAttribute{
+				Required:    true,
+				Description: "OS image version. Example: 3.16.",
+			},
+			"block_size": schema.Int64Attribute{
+				Required:    true,
+				Description: "Size of blocks in bytes.",
+			},
+			"digest": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "Hash of the image contents, if applicable.",
+				Attributes: map[string]schema.Attribute{
+					"type": schema.StringAttribute{
+						Description: "Digest type.",
+						Computed:    true,
+					},
+					"value": schema.StringAttribute{
+						Description: "Digest type value.",
+						Computed:    true,
+					},
+				},
+			},
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the image.",
+			},
+			"size": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Total size in bytes.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this image was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this image was last modified.",
+			},
+			"url": schema.StringAttribute{
+				Computed:    true,
+				Description: "URL source of this image, if any.",
 			},
 		},
-		"os": {
-			Type:        schema.TypeString,
-			Description: "OS image distribution. Example: alpine",
-			Required:    true,
-		},
-		"version": {
-			Type:        schema.TypeString,
-			Description: "OS image version. Example: 3.16.",
-			Required:    true,
-		},
-		"block_size": {
-			Type:        schema.TypeInt,
-			Description: "Size of blocks in bytes.",
-			Required:    true,
-		},
-		"digest": {
-			Type:        schema.TypeString,
-			Description: "Digest is hash of the image contents, if applicable.",
-			Computed:    true,
-		},
-		"id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier of the image.",
-			Computed:    true,
-		},
-		"size": {
-			Type:        schema.TypeInt,
-			Description: "Size is total size in bytes.",
-			Computed:    true,
-		},
-		"url": {
-			Type:        schema.TypeString,
-			Description: "URL is URL source of this image, if any.",
-			Computed:    true,
-		},
-		"time_created": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this image was created.",
-			Computed:    true,
-		},
-		"time_modified": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this image was last modified.",
-			Computed:    true,
-		},
 	}
 }
 
-func createImage(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
+// Create creates the resource and sets the initial Terraform state.
+func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan imageResourceModel
 
-	projectId := d.Get("project_id").(string)
-	description := d.Get("description").(string)
-	name := d.Get("name").(string)
-	bs := d.Get("block_size").(int)
-	os := d.Get("os").(string)
-	version := d.Get("version").(string)
-
-	is, err := newImageSource(d)
-	if err != nil {
-		return diag.FromErr(err)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	params := oxideSDK.ImageCreateParams{
-		Project: oxideSDK.NameOrId(projectId),
+		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxideSDK.ImageCreate{
-			Description: description,
-			Name:        oxideSDK.Name(name),
-			BlockSize:   oxideSDK.BlockSize(bs),
-			Os:          os,
-			Version:     version,
-			Source:      is,
+			Description: plan.Description.ValueString(),
+			Name:        oxideSDK.Name(plan.Name.ValueString()),
+			BlockSize:   oxideSDK.BlockSize(plan.BlockSize.ValueInt64()),
+			Os:          plan.OS.ValueString(),
+			Version:     plan.Version.ValueString(),
 		},
 	}
 
-	resp, err := client.ImageCreate(params)
+	is, err := newImageSource(plan)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to parse image source:",
+			err.Error(),
+		)
+		return
 	}
+	params.Body.Source = is
 
-	d.SetId(resp.Id)
-
-	return readImage(ctx, d, meta)
-}
-
-func readImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	imageId := d.Get("id").(string)
-
-	resp, err := client.ImageView(oxideSDK.ImageViewParams{Image: oxideSDK.NameOrId(imageId)})
+	image, err := r.client.ImageCreate(params)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Error creating image",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	if err := imageToState(d, resp); err != nil {
-		return diag.FromErr(err)
-	}
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(image.Id)
+	plan.Size = types.Int64Value(int64(image.Size))
+	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
+	plan.TimeModified = types.StringValue(image.TimeCreated.String())
+	plan.URL = types.StringValue(image.Url)
+	plan.Version = types.StringValue(image.Version)
 
-	return nil
+	// Parse imageResourceDigestModel into types.Object
+	dm := imageResourceDigestModel{
+		Type:  types.StringValue(string(image.Digest.Type)),
+		Value: types.StringValue(image.Digest.Value),
+	}
+	attributeTypes := map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.Digest = digest
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func updateImage(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// TODO: Currently there is no endpoint to update a image. Update this function when such endpoint exists
-	return diag.FromErr(errors.New("the oxide_image resource currently does not support updates"))
+// Read refreshes the Terraform state with the latest data.
+func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state imageResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	image, err := r.client.ImageView(oxideSDK.ImageViewParams{
+		Image: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read image:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	state.BlockSize = types.Int64Value(int64(image.BlockSize))
+	state.Description = types.StringValue(image.Description)
+	state.ID = types.StringValue(image.Id)
+	state.Name = types.StringValue(string(image.Name))
+	state.OS = types.StringValue(image.Os)
+	state.Size = types.Int64Value(int64(image.Size))
+	state.TimeCreated = types.StringValue(image.TimeCreated.String())
+	state.TimeModified = types.StringValue(image.TimeCreated.String())
+	state.URL = types.StringValue(image.Url)
+	state.Version = types.StringValue(image.Version)
+
+	// Parse imageResourceDigestModel into types.Object
+	dm := imageResourceDigestModel{
+		Type:  types.StringValue(string(image.Digest.Type)),
+		Value: types.StringValue(image.Digest.Value),
+	}
+	attributeTypes := map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Digest = digest
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func deleteImage(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	imageId := d.Get("id").(string)
-
-	// NB: This endpoint is not implemented yet
-	params := oxideSDK.ImageDeleteParams{Image: oxideSDK.NameOrId(imageId)}
-	if err := client.ImageDelete(params); err != nil {
-		if is404(err) {
-			d.SetId("")
-			return nil
-		}
-		return diag.FromErr(err)
-	}
-
-	d.SetId("")
-	return nil
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *imageResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError(
+		"Error updating image",
+		"the oxide API currently does not support updating images")
 }
 
-func imageToState(d *schema.ResourceData, image *oxideSDK.Image) error {
-	if err := d.Set("name", image.Name); err != nil {
-		return err
-	}
-	if err := d.Set("description", image.Description); err != nil {
-		return err
-	}
-	if err := d.Set("block_size", image.BlockSize); err != nil {
-		return err
-	}
-	// TODO: Verify if it's necessary to show the type
-	if err := d.Set("digest", image.Digest.Value); err != nil {
-		return err
-	}
-	if err := d.Set("os", image.Os); err != nil {
-		return err
-	}
-	if err := d.Set("version", image.Version); err != nil {
-		return err
-	}
-	if err := d.Set("id", image.Id); err != nil {
-		return err
-	}
-	if err := d.Set("size", image.Size); err != nil {
-		return err
-	}
-	if err := d.Set("url", image.Url); err != nil {
-		return err
-	}
-	if err := d.Set("time_created", image.TimeCreated.String()); err != nil {
-		return err
-	}
-	if err := d.Set("time_modified", image.TimeModified.String()); err != nil {
-		return err
-	}
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *imageResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	resp.Diagnostics.AddError(
+		"Error delete image",
+		"the oxide API currently does not support deleting images")
 
-	return nil
-
+	// TODO: Uncomment once image delete is enabled in the API
+	//
+	//	var state imageResourceModel
+	//
+	//	// Read Terraform prior state data into the model
+	//	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	//	if resp.Diagnostics.HasError() {
+	//		return
+	//	}
+	//
+	//	if err := r.client.ImageDelete(oxideSDK.ImageDeleteParams{
+	//		Image: oxideSDK.NameOrId(state.ID.ValueString()),
+	//	}); err != nil {
+	//
+	//		resp.Diagnostics.AddError(
+	//			"Unable to read image:",
+	//			"API error: "+err.Error(),
+	//		)
+	//		return
+	//	}
 }
 
-func newImageSource(d *schema.ResourceData) (oxideSDK.ImageSource, error) {
+func newImageSource(p imageResourceModel) (oxideSDK.ImageSource, error) {
 	var is = oxideSDK.ImageSource{}
 
-	imageSource := d.Get("image_source").(map[string]interface{})
+	imageSource := p.ImageSource.Elements()
 	if len(imageSource) > 1 {
 		return is, errors.New(
 			"only one of url=<URL>, or snapshot=<snapshot_id> can be set",
@@ -271,18 +310,19 @@ func newImageSource(d *schema.ResourceData) (oxideSDK.ImageSource, error) {
 
 	if source, ok := imageSource["url"]; ok {
 		is = oxideSDK.ImageSource{
-			Url:  source.(string),
+			Url:  source.String(),
 			Type: oxideSDK.ImageSourceTypeUrl,
 		}
 	}
 
 	if source, ok := imageSource["snapshot"]; ok {
 		is = oxideSDK.ImageSource{
-			Id:   source.(string),
+			Id:   source.String(),
 			Type: oxideSDK.ImageSourceTypeSnapshot,
 		}
 	}
 
+	// TODO: For testing only, remove before releasing
 	if _, ok := imageSource["you_can_boot_anything_as_long_as_its_alpine"]; ok {
 		is = oxideSDK.ImageSource{
 			Type: oxideSDK.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine,

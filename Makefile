@@ -1,5 +1,5 @@
 # Build variables
-VERSION ?= 0.1.0-dev
+VERSION ?= $(shell cat $(CURDIR)/VERSION)
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
 OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)

@@ -14,16 +14,18 @@ provider "oxide" {}
 data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "example" {
-  project_id        = data.oxide_projects.project_list.projects.0.id
+  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
   name              = "myinstance3"
   host_name         = "myhost"
   memory            = 1073741824
   ncpus             = 1
-  network_interface {
-    description = "a network interface"
-    name        = "mynetworkinterface"
-    subnet_name = "default"
-    vpc_name    = "default"
-  }
+  network_interface = [
+    {
+      description = "a network interface"
+      name        = "mynetworkinterface"
+      subnet_name = "default"
+      vpc_name    = "default"
+    }
+  ]
 }

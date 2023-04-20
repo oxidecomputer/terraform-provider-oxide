@@ -14,7 +14,7 @@ provider "oxide" {}
 data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "example" {
-  project_id = data.oxide_projects.project_list.projects.0.id
+  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "myattacheddisk1"
   size              = 1073741824
@@ -22,7 +22,7 @@ resource "oxide_disk" "example" {
 }
 
 resource "oxide_disk" "example2" {
-  project_id = data.oxide_projects.project_list.projects.0.id
+  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test disk"
   name              = "myattacheddisk2"
   size              = 1073741824
@@ -30,7 +30,7 @@ resource "oxide_disk" "example2" {
 }
 
 resource "oxide_instance" "example3" {
-  project_id = data.oxide_projects.project_list.projects.0.id
+  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
   name              = "myinstance2"
   host_name         = "myhost"

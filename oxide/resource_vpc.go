@@ -6,231 +6,273 @@ package oxide
 
 import (
 	"context"
-	"fmt"
-	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func vpcResource() *schema.Resource {
-	return &schema.Resource{
-		Description:   "",
-		Schema:        newVPCSchema(),
-		CreateContext: createVPC,
-		ReadContext:   readVPC,
-		UpdateContext: updateVPC,
-		DeleteContext: deleteVPC,
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource              = (*vpcResource)(nil)
+	_ resource.ResourceWithConfigure = (*vpcResource)(nil)
+)
+
+// NewVPCResource is a helper function to simplify the provider implementation.
+func NewVPCResource() resource.Resource {
+	return &vpcResource{}
+}
+
+// vpcResource is the resource implementation.
+type vpcResource struct {
+	client *oxideSDK.Client
+}
+
+type vpcResourceModel struct {
+	Description    types.String `tfsdk:"description"`
+	DNSName        types.String `tfsdk:"dns_name"`
+	ID             types.String `tfsdk:"id"`
+	IPV6Prefix     types.String `tfsdk:"ipv6_prefix"`
+	Name           types.String `tfsdk:"name"`
+	ProjectID      types.String `tfsdk:"project_id"`
+	SystemRouterID types.String `tfsdk:"system_router_id"`
+	TimeCreated    types.String `tfsdk:"time_created"`
+	TimeModified   types.String `tfsdk:"time_modified"`
+}
+
+// Metadata returns the resource type name.
+func (r *vpcResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "oxide_vpc"
+}
+
+// Configure adds the provider configured client to the data source.
+func (r *vpcResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*oxideSDK.Client)
+}
+
+// Schema defines the schema for the resource.
+func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"project_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the project that will contain the VPC.",
+			},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the VPC.",
+			},
+			"description": schema.StringAttribute{
+				Required:    true,
+				Description: "Description for the VPC.",
+			},
+			"dns_name": schema.StringAttribute{
+				Required:    true,
+				Description: "DNS Name of the VPC.",
+			},
+			"ipv6_prefix": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "DNS Name of the VPC.",
+			},
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the VPC.",
+			},
+			"system_router_id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the system router.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this VPC was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this VPC was last modified.",
+			},
 		},
-		Timeouts: &schema.ResourceTimeout{
-			Default: schema.DefaultTimeout(5 * time.Minute),
-		},
-		CustomizeDiff: customdiff.All(
-			customdiff.ValidateChange("ipv6_prefix", func(ctx context.Context, old, new, meta any) error {
-				if old.(string) != "" && new.(string) != old.(string) {
-					return fmt.Errorf("ipv6_prefix of VPC cannot be updated; please revert to: \"%s\"", old.(string))
-				}
-				return nil
-			}),
-		),
 	}
 }
 
-func newVPCSchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		"project_id": {
-			Type:        schema.TypeString,
-			Description: "ID of the project that will contain the VPC.",
-			Required:    true,
-		},
-		"name": {
-			Type:        schema.TypeString,
-			Description: "Name of the VPC.",
-			Required:    true,
-		},
-		"description": {
-			Type:        schema.TypeString,
-			Description: "Description for the VPC.",
-			Required:    true,
-		},
-		"dns_name": {
-			Type:        schema.TypeString,
-			Description: "DNS name of the VPC.",
-			Required:    true,
-		},
-		"ipv6_prefix": {
-			Type:        schema.TypeString,
-			Description: "All IPv6 subnets created from this VPC must be taken from this range, which should be a unique local address in the range `fd00::/48`. The default VPC Subnet will have the first `/64` range from this prefix.",
-			Computed:    true,
-			Optional:    true,
-		},
-		"id": {
-			Type:        schema.TypeString,
-			Description: "Unique, immutable, system-controlled identifier.",
-			Computed:    true,
-		},
-		"system_router_id": {
-			Type:        schema.TypeString,
-			Description: "SystemRouterID is the ID for the system router where subnet default routes are registered.",
-			Computed:    true,
-		},
-		"time_created": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this VPC was created.",
-			Computed:    true,
-		},
-		"time_modified": {
-			Type:        schema.TypeString,
-			Description: "Timestamp of when this VPC was last modified.",
-			Computed:    true,
-		},
+// Create creates the resource and sets the initial Terraform state.
+func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan vpcResourceModel
+
+	// Read Terraform plan data into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-}
-
-func createVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-
-	projectId := d.Get("project_id").(string)
-	description := d.Get("description").(string)
-	name := d.Get("name").(string)
-	dnsName := d.Get("dns_name").(string)
-	ipv6Prefix := d.Get("ipv6_prefix").(string)
 
 	params := oxideSDK.VpcCreateParams{
-		Project: oxideSDK.NameOrId(projectId),
+		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxideSDK.VpcCreate{
-			Description: description,
-			Name:        oxideSDK.Name(name),
-			DnsName:     oxideSDK.Name(dnsName),
+			Description: plan.Description.ValueString(),
+			Name:        oxideSDK.Name(plan.Name.ValueString()),
+			DnsName:     oxideSDK.Name(plan.DNSName.ValueString()),
+			Ipv6Prefix:  oxideSDK.Ipv6Net(plan.IPV6Prefix.ValueString()),
 		},
 	}
-	if ipv6Prefix != "" {
-		params.Body.Ipv6Prefix = oxideSDK.Ipv6Net(ipv6Prefix)
-	}
-
-	resp, err := client.VpcCreate(params)
+	vpc, err := r.client.VpcCreate(params)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Error creating VPC",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	d.SetId(resp.Id)
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(vpc.Id)
+	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
+	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
+	plan.TimeModified = types.StringValue(vpc.TimeCreated.String())
+	// IPV6Prefix is added as well as it is Optional/Computed
+	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
-	return readVPC(ctx, d, meta)
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func readVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	vpcId := d.Get("id").(string)
+// Read refreshes the Terraform state with the latest data.
+func (r *vpcResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state vpcResourceModel
 
-	params := oxideSDK.VpcViewParams{Vpc: oxideSDK.NameOrId(vpcId)}
-	resp, err := client.VpcView(params)
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	vpc, err := r.client.VpcView(oxideSDK.VpcViewParams{
+		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Unable to read VPC:",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	if err := vpcToState(d, resp); err != nil {
-		return diag.FromErr(err)
-	}
+	state.Description = types.StringValue(vpc.Description)
+	state.DNSName = types.StringValue(string(vpc.DnsName))
+	state.ID = types.StringValue(vpc.Id)
+	state.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
+	state.Name = types.StringValue(string(vpc.Name))
+	state.ProjectID = types.StringValue(vpc.ProjectId)
+	state.SystemRouterID = types.StringValue(vpc.SystemRouterId)
+	state.TimeCreated = types.StringValue(vpc.TimeCreated.String())
+	state.TimeModified = types.StringValue(vpc.TimeCreated.String())
 
-	return nil
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func updateVPC(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan vpcResourceModel
+	var state vpcResourceModel
 
-	description := d.Get("description").(string)
-	name := d.Get("name").(string)
-	dnsName := d.Get("dns_name").(string)
-	vpcId := d.Get("id").(string)
+	// Read Terraform plan data into the plan model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read Terraform prior state data into the state model to retrieve ID
+	// which is a computed attribute, so it won't show up in the plan.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// TODO: Look into plan modifiers to see if they are fit for purpose
+	// Check if plan has changed and return error for fields that cannot
+	// be changed
+	if !plan.ProjectID.Equal(state.ProjectID) {
+		resp.Diagnostics.AddError(
+			"Error updating VPC:",
+			"project_id cannot be modified",
+		)
+		return
+	}
+
+	// TODO: This doesn't work the same as the old diff validators.
+	// It registers a change if the user chose not to specify an IPv6
+	// prefix at all. Investigate how to validate this change
+
+	//if !plan.IPV6Prefix.Equal(state.IPV6Prefix) {
+	//	resp.Diagnostics.AddError(
+	//		"Error updating VPC:",
+	//		"ipv6_prefix cannot be modified",
+	//	)
+	//	return
+	// }
 
 	params := oxideSDK.VpcUpdateParams{
-		Vpc: oxideSDK.NameOrId(vpcId),
+		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
 		Body: &oxideSDK.VpcUpdate{
-			Description: description,
-			Name:        oxideSDK.Name(name),
-			DnsName:     oxideSDK.Name(dnsName),
+			Description: plan.Description.ValueString(),
+			Name:        oxideSDK.Name(plan.Name.ValueString()),
+			DnsName:     oxideSDK.Name(plan.DNSName.ValueString()),
 		},
 	}
-	resp, err := client.VpcUpdate(params)
+	vpc, err := r.client.VpcUpdate(params)
 	if err != nil {
-		return diag.FromErr(err)
+		resp.Diagnostics.AddError(
+			"Error updating vpc",
+			"API error: "+err.Error(),
+		)
+		return
 	}
 
-	d.SetId(resp.Id)
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(vpc.Id)
+	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
+	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
+	plan.TimeModified = types.StringValue(vpc.TimeCreated.String())
+	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
-	return readVPC(ctx, d, meta)
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func deleteVPC(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*oxideSDK.Client)
-	vpcId := d.Get("id").(string)
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state vpcResourceModel
 
-	params := oxideSDK.VpcSubnetListParams{
-		Limit:  1000000000,
-		SortBy: oxideSDK.NameOrIdSortModeIdAscending,
-		Vpc:    oxideSDK.NameOrId(vpcId),
-	}
-	res, err := client.VpcSubnetList(params)
-	if err != nil {
-		return diag.FromErr(err)
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	if res != nil {
-		for _, subnet := range res.Items {
-			subnetParams := oxideSDK.VpcSubnetDeleteParams{
-				Subnet: oxideSDK.NameOrId(subnet.Id),
-			}
-			if err := client.VpcSubnetDelete(subnetParams); err != nil {
-				return diag.FromErr(err)
-			}
+	if err := r.client.VpcDelete(oxideSDK.VpcDeleteParams{
+		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
+	}); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting VPC:",
+				"API error: "+err.Error(),
+			)
+			return
 		}
 	}
-
-	deleteParams := oxideSDK.VpcDeleteParams{Vpc: oxideSDK.NameOrId(vpcId)}
-	if err := client.VpcDelete(deleteParams); err != nil {
-		if is404(err) {
-			d.SetId("")
-			return nil
-		}
-		return diag.FromErr(err)
-	}
-
-	d.SetId("")
-	return nil
-}
-
-func vpcToState(d *schema.ResourceData, vpc *oxideSDK.Vpc) error {
-	if err := d.Set("description", vpc.Description); err != nil {
-		return err
-	}
-	if err := d.Set("dns_name", vpc.DnsName); err != nil {
-		return err
-	}
-	if err := d.Set("id", vpc.Id); err != nil {
-		return err
-	}
-	if err := d.Set("ipv6_prefix", vpc.Ipv6Prefix); err != nil {
-		return err
-	}
-	if err := d.Set("name", vpc.Name); err != nil {
-		return err
-	}
-	if err := d.Set("project_id", vpc.ProjectId); err != nil {
-		return err
-	}
-	if err := d.Set("system_router_id", vpc.SystemRouterId); err != nil {
-		return err
-	}
-	if err := d.Set("time_created", vpc.TimeCreated.String()); err != nil {
-		return err
-	}
-	if err := d.Set("time_modified", vpc.TimeModified.String()); err != nil {
-		return err
-	}
-
-	return nil
 }

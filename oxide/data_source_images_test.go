@@ -7,7 +7,7 @@ package oxide
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // NB: The project must be populated with at least one image for this test to pass
@@ -15,8 +15,8 @@ func TestAccDataSourceImages(t *testing.T) {
 	datasourceName := "data.oxide_images.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testDataSourceImagesConfig,
@@ -30,7 +30,7 @@ var testDataSourceImagesConfig = `
 data "oxide_projects" "project_list" {}
 
 data "oxide_images" "test" {
-  project_id = data.oxide_projects.project_list.projects.0.id
+  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
 }
 `
 
@@ -50,7 +50,5 @@ func checkDataSourceImages(dataName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(dataName, "images.0.time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.time_modified"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.version"),
-		// TODO: When the global images resource is developed we should also check that
-		// digest and url are set.
 	}...)
 }

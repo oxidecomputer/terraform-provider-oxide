@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
@@ -18,9 +18,9 @@ func TestAccResourceIpPool(t *testing.T) {
 	resourceName2 := "oxide_ip_pool.test2"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      testAccIpPoolDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccIpPoolDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceIpPoolConfig,
@@ -42,7 +42,7 @@ var testResourceIpPoolConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool"
-  }
+}
 `
 
 func checkResourceIpPool(resourceName string) resource.TestCheckFunc {
@@ -59,7 +59,7 @@ var testResourceIpPoolUpdateConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
 	name              = "terraform-acc-myippool-new"
-  }
+}
 `
 
 func checkResourceIpPoolUpdate(resourceName string) resource.TestCheckFunc {
@@ -76,11 +76,13 @@ var testResourceIpPoolRangesConfig = `
 resource "oxide_ip_pool" "test2" {
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool2"
-	ranges {
+	ranges = [
+    {
 		first_address = "172.20.15.227"
 		last_address  = "172.20.15.239"
 	}
-  }
+  ]
+}
 `
 
 func checkResourceIpPoolRanges(resourceName string) resource.TestCheckFunc {

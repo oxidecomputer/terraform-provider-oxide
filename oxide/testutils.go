@@ -8,19 +8,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 // TODO: Use this prefix + random string for all resource names for uniqueness
 // const accPrefix = "terraform-acc-"
 
-var testAccProviderFactory = map[string]func() (*schema.Provider, error){
-	"oxide": providerFactory,
-}
-
-func providerFactory() (*schema.Provider, error) {
-	return Provider(), nil
+func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"oxide": providerserver.NewProtocol6WithError(New(Version)),
+	}
 }
 
 func testAccPreCheck(t *testing.T) {
