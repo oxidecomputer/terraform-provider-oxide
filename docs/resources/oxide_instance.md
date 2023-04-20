@@ -61,12 +61,14 @@ resource "oxide_instance" "example" {
   host_name         = "<host value>"
   memory            = 1073741824
   ncpus             = 1
-  network_interface {
-    description = "a network interface"
-    name        = "mynetworkinterface"
-    subnet_name = "default"
-    vpc_name    = "default"
-  }
+  network_interface = [
+    {
+      description = "a network interface"
+      name        = "mynetworkinterface"
+      subnet_name = "default"
+      vpc_name    = "default"
+    }
+  ]
 }
 ```
 
