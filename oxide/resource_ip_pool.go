@@ -148,6 +148,7 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 		var body oxideSDK.IpRange
 
 		// TODO: Error checking here can be improved by checking both addresses
+		// TODO: Check if I really need the unquote if I use ValueString() instead
 		firstAddress, err := strconv.Unquote(ipPoolRange.FirstAddress.String())
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -156,6 +157,7 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 			)
 			return
 		}
+		// TODO: Check if I really need the unquote if I use ValueString() instead
 		lastAddress, err := strconv.Unquote(ipPoolRange.LastAddress.String())
 		if err != nil {
 			resp.Diagnostics.AddError(

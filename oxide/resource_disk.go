@@ -328,6 +328,7 @@ func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
 	}
 
 	if source, ok := diskSource["blank"]; ok {
+		// TODO: Check if I really need the unquote if I use ValueString() instead
 		rawBs := source.String()
 		blockSize, err := strconv.Unquote(rawBs)
 		if err != nil {
