@@ -11,7 +11,7 @@ import (
 )
 
 // NB: The project must be populated with at least one image for this test to pass
-func TestAccDataSourceImages(t *testing.T) {
+func TestAccDataSourceImages_full(t *testing.T) {
 	datasourceName := "data.oxide_images.test"
 
 	resource.ParallelTest(t, resource.TestCase{

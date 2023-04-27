@@ -12,13 +12,13 @@ This resource manages IP pools.
 
 ```hcl
 resource "oxide_ip_pool" "example" {
-  description       = "a test ippool"
-  name              = "myippool"
+  description = "a test ippool"
+  name        = "myippool"
   ranges = [
     {
-		  first_address = "172.20.18.227"
-		  last_address  = "172.20.18.239"
-	  }
+      first_address = "172.20.18.227"
+      last_address  = "172.20.18.239"
+    }
   ]
 }
 ```

@@ -28,6 +28,7 @@ type oxideProviderModel struct {
 	Token types.String `tfsdk:"token"`
 }
 
+// New initialises a new provider
 func New(version string) provider.Provider {
 	return &oxideProvider{
 		version: version,
@@ -79,7 +80,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		resp.Diagnostics.AddError(
 			"Missing API Token Configuration",
 			"While configuring the provider, the API token was not found in "+
-				"the OXIDE_TOKEN environment variable or provider "+
+				"the OXIDE_TOKEN environment variable or "+
 				"configuration block token attribute.",
 		)
 	}
@@ -88,7 +89,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		resp.Diagnostics.AddError(
 			"Missing Host Configuration",
 			"While configuring the provider, the host was not found in "+
-				"the OXIDE_HOST environment variable or provider "+
+				"the OXIDE_HOST environment variable or "+
 				"configuration block host attribute.",
 		)
 	}

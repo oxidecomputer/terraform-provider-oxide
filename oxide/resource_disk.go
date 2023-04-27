@@ -367,15 +367,18 @@ func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
 	return ds, nil
 }
 
-func waitForDetachedDisk(client *oxideSDK.Client, diskId oxideSDK.NameOrId, ch chan error) {
+func waitForDetachedDisk(client *oxideSDK.Client, diskID oxideSDK.NameOrId, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.DiskView(oxideSDK.DiskViewParams{Disk: diskId})
+		resp, err := client.DiskView(oxideSDK.DiskViewParams{Disk: diskID})
 		if err != nil {
 			ch <- err
 		}
 		if resp.State.State == "detached" {
 			break
 		}
+
+		// Ignoring linting error for now as this entire function will be removed
+		//lintignore:R018
 		time.Sleep(time.Second)
 	}
 	ch <- nil

@@ -3,6 +3,7 @@ VERSION ?= $(shell cat $(CURDIR)/VERSION)
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
 OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)
+export GOBIN = $(shell pwd)/bin
 
 # Terraform currently does not have a binary for Illumos.
 # The one for Solaris works fine with Illumos, so we'll need
@@ -15,10 +16,14 @@ PROVIDER_PATH ?= registry.terraform.io/oxidecomputer/oxide/$(VERSION)/$(OS_ARCH)
 PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
 
 # Acceptance test variables
-TEST_COUNT ?= 1
+TEST_ACC_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/oxide
-TEST_NAME ?= TestAcc
+TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
+
+# Unit test variables
+TEST_ARGS ?= -timeout 10m -race -cover
+TEST_PACKAGE ?= ./oxide
 
 include Makefile.tools
 
@@ -37,16 +42,20 @@ install: build
 	@ mkdir -p $(PLUGIN_LOCATION)
 	@ cp $(BINARY_LOCATION) $(PLUGIN_LOCATION)
 
+## Run unit tests. Use TEST_ARGS to set `go test` CLI arguments, and TEST_UNIT_DIR to set packages to be tested
+.PHONY: test
+test:
+	@ echo "-> Running unit tests for $(BINARY)..."
+	@ go test $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS)
+
 ## Lints all of the source files
 .PHONY: lint
-lint: golint golangci-lint tfproviderdocs terrafmt configfmt # tfproviderlint
+lint: golint golangci-lint tfproviderdocs terrafmt tfproviderlint # configfmt
 
-# tf providerlint currently has a bug with the latest stable go version (1.18), will uncomment 
-# when this issue is solved https://github.com/bflad/tfproviderlint/issues/255
-# .PHONY: tfproviderlint
-# tfproviderlint: tools
-# 	@ echo "-> Checking source code against terraform provider linters..."
-# 	@ $(GOBIN)/tfproviderlint ./...
+.PHONY: tfproviderlint
+tfproviderlint: tools
+	@ echo "-> Checking source code against terraform provider linters..."
+	@ $(GOBIN)/tfproviderlint ./...
 
 .PHONY: tfproviderdocs
 tfproviderdocs: tools
@@ -66,17 +75,17 @@ golint: tools
 .PHONY: terrafmt
 terrafmt: tools
 	@ echo "-> Checking that the terraform docs codeblocks are formatted..."
-	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt diff -c -q {} \;
+	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt diff -f {} \;
 
 configfmt:
 	@ echo "-> Checking that the terraform .tf files are formatted..."
 	@ terraform fmt -write=false -recursive -check
 
 .PHONY: testacc
-## Runs the Terraform acceptance tests. Use TEST_NAME, TESTARGS, TEST_COUNT and TEST_ACC_PARALLEL to control execution.
+## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
 testacc:
 	@ echo "-> Running terraform acceptance tests..."
-	@ TF_ACC=1 go test $(TEST_ACC) -v -count $(TEST_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TESTARGS) -timeout 20m -run $(TEST_NAME)
+	@ TF_ACC=1 go test $(TEST_ACC) -v -count $(TEST_ACC_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TEST_ACC_ARGS) -timeout 20m -run $(TEST_ACC_NAME)
 
 .PHONY: local-api
 ## Use local API language client

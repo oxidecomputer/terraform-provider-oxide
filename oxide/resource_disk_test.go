@@ -13,7 +13,7 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceDisk(t *testing.T) {
+func TestAccResourceDisk_full(t *testing.T) {
 	resourceName := "oxide_disk.test"
 
 	resource.ParallelTest(t, resource.TestCase{

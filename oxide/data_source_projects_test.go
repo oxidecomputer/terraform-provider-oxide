@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceProjects(t *testing.T) {
+func TestAccDataSourceProjects_full(t *testing.T) {
 	datasourceName := "data.oxide_projects.test"
 
 	resource.ParallelTest(t, resource.TestCase{

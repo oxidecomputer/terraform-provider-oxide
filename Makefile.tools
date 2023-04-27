@@ -2,14 +2,12 @@ OS:=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 VERSION_DIR:=$(GOBIN)/versions
 
 VERSION_GOLINT:=v0.0.0-20210508222113-6edffad5e616
-VERSION_GOLANGCILINT:=v1.46.2
+VERSION_GOLANGCILINT:=v1.52.2
 VERSION_TFPROVIDERDOCS:=v0.9.1
-VERSION_TERRAFMT:=v0.4.0
-VERSION_TFPROVIDERLINT:=v0.28.1
+VERSION_TERRAFMT:=v0.5.2
+VERSION_TFPROVIDERLINT:=v0.29.0
 
-tools: $(GOBIN)/golint $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt 
-# tfproviderlint currently has a bug https://github.com/bflad/tfproviderlint/issues/255 will uncomment when resolved.
-# $(GOBIN)/tfproviderlint
+tools: $(GOBIN)/golint $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint
 
 $(GOBIN):
 	@ mkdir -p $(GOBIN)
@@ -49,10 +47,10 @@ $(GOBIN)/terrafmt: $(VERSION_DIR)/.version-terrafmt-$(VERSION_TERRAFMT) | $(GOBI
 	@ echo "-> Installing terrafmt..."
 	@ go install github.com/katbyte/terrafmt@$(VERSION_TERRAFMT)
 
-# $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT): | $(VERSION_DIR)
-# 	@ rm -f $(VERSION_DIR)/.version-tfproviderlint-*
-# 	@ echo $(VERSION_TFPROVIDERLINT) > $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT)
+$(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT): | $(VERSION_DIR)
+	@ rm -f $(VERSION_DIR)/.version-tfproviderlint-*
+	@ echo $(VERSION_TFPROVIDERLINT) > $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT)
 
-# $(GOBIN)/tfproviderlint: $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT) | $(GOBIN)
-# 	@ echo "-> Installing tfproviderlint..."
-# 	@ go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@$(VERSION_TFPROVIDERLINT)
+$(GOBIN)/tfproviderlint: $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT) | $(GOBIN)
+	@ echo "-> Installing tfproviderlint..."
+	@ go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@$(VERSION_TFPROVIDERLINT)

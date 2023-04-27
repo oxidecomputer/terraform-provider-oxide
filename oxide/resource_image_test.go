@@ -6,7 +6,7 @@ package oxide
 
 // TODO: Restore test when it is possible to delete a global image
 
-// func TestAccResourceImage(t *testing.T) {
+// func TestAccResourceImage_full(t *testing.T) {
 // 	resourceName := "oxide_image.test"
 //
 // 	resource.ParallelTest(t, resource.TestCase{
