@@ -376,6 +376,9 @@ func waitForDetachedDisk(client *oxideSDK.Client, diskID oxideSDK.NameOrId, ch c
 		if resp.State.State == "detached" {
 			break
 		}
+
+		// Ignoring linting error for now as this entire function will be removed
+		//lintignore:R018
 		time.Sleep(time.Second)
 	}
 	ch <- nil

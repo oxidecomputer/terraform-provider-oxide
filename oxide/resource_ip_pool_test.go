@@ -13,7 +13,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceIpPool(t *testing.T) {
+func TestAccResourceIpPool_full(t *testing.T) {
 	resourceName := "oxide_ip_pool.test"
 	resourceName2 := "oxide_ip_pool.test2"
 

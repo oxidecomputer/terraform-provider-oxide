@@ -39,14 +39,14 @@ install: build
 
 ## Lints all of the source files
 .PHONY: lint
-lint: golint golangci-lint tfproviderdocs terrafmt # configfmt tfproviderlint
+lint: golint golangci-lint tfproviderdocs terrafmt tfproviderlint # configfmt
 
 # tf providerlint currently has a bug with the latest stable go version (1.18), will uncomment 
 # when this issue is solved https://github.com/bflad/tfproviderlint/issues/255
-# .PHONY: tfproviderlint
-# tfproviderlint: tools
-# 	@ echo "-> Checking source code against terraform provider linters..."
-# 	@ $(GOBIN)/tfproviderlint ./...
+.PHONY: tfproviderlint
+tfproviderlint: tools
+	@ echo "-> Checking source code against terraform provider linters..."
+	@ $(GOBIN)/tfproviderlint ./...
 
 .PHONY: tfproviderdocs
 tfproviderdocs: tools

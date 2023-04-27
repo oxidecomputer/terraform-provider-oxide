@@ -13,7 +13,7 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceInstance(t *testing.T) {
+func TestAccResourceInstance_full(t *testing.T) {
 	resourceName := "oxide_instance.test"
 	secondResourceName := "oxide_instance.test2"
 	thirdResourceName := "oxide_instance.test3"

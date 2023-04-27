@@ -13,7 +13,7 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceVPC(t *testing.T) {
+func TestAccResourceVPC_full(t *testing.T) {
 	resourceName := "oxide_vpc.test"
 	resourceName2 := "oxide_vpc.test2"
 

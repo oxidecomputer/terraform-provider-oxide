@@ -13,7 +13,7 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceProject(t *testing.T) {
+func TestAccResourceProject_full(t *testing.T) {
 	resourceName := "oxide_project.test"
 
 	resource.ParallelTest(t, resource.TestCase{
