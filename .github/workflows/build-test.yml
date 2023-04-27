@@ -1,0 +1,33 @@
+name: build & test
+on:
+  push:
+    branches: main
+    paths:
+      - "**.go"
+      - .github/workflows/build-test.yml
+      - "go.mod"
+      - "go.sum"
+      - "docs/**"
+      - "examples/**"
+  pull_request:
+    branches: main
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.x"
+      - name: build
+        shell: bash
+        run: |
+          make build
+      - name: test
+        shell: bash
+        run: |
+          make test
+      - name: lint
+        shell: bash
+        run: |
+          make lint
