@@ -3,6 +3,7 @@ VERSION ?= $(shell cat $(CURDIR)/VERSION)
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
 OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)
+export GOBIN = $(shell pwd)/bin
 
 # Terraform currently does not have a binary for Illumos.
 # The one for Solaris works fine with Illumos, so we'll need
