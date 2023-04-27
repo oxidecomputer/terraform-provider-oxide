@@ -20,14 +20,8 @@ jobs:
         with:
           go-version: "1.x"
       - name: build
-        shell: bash
-        run: |
-          make build
+        run: make build
       - name: test
-        shell: bash
-        run: |
-          make test
+        run: make test
       - name: lint
-        shell: bash
-        run: |
-          make lint
+        run: make lint
