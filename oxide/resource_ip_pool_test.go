@@ -20,32 +20,32 @@ func TestAccResourceIpPool(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-		CheckDestroy:             testAccIpPoolDestroy,
+		CheckDestroy:             testAccIPPoolDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceIpPoolConfig,
-				Check:  checkResourceIpPool(resourceName),
+				Config: testResourceIPPoolConfig,
+				Check:  checkResourceIPPool(resourceName),
 			},
 			{
-				Config: testResourceIpPoolUpdateConfig,
-				Check:  checkResourceIpPoolUpdate(resourceName),
+				Config: testResourceIPPoolUpdateConfig,
+				Check:  checkResourceIPPoolUpdate(resourceName),
 			},
 			{
-				Config: testResourceIpPoolRangesConfig,
-				Check:  checkResourceIpPoolRanges(resourceName2),
+				Config: testResourceIPPoolRangesConfig,
+				Check:  checkResourceIPPoolRanges(resourceName2),
 			},
 		},
 	})
 }
 
-var testResourceIpPoolConfig = `
+var testResourceIPPoolConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool"
 }
 `
 
-func checkResourceIpPool(resourceName string) resource.TestCheckFunc {
+func checkResourceIPPool(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test ip_pool"),
@@ -55,14 +55,14 @@ func checkResourceIpPool(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceIpPoolUpdateConfig = `
+var testResourceIPPoolUpdateConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
 	name              = "terraform-acc-myippool-new"
 }
 `
 
-func checkResourceIpPoolUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceIPPoolUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a new description for ip_pool"),
@@ -72,7 +72,7 @@ func checkResourceIpPoolUpdate(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceIpPoolRangesConfig = `
+var testResourceIPPoolRangesConfig = `
 resource "oxide_ip_pool" "test2" {
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool2"
@@ -85,7 +85,7 @@ resource "oxide_ip_pool" "test2" {
 }
 `
 
-func checkResourceIpPoolRanges(resourceName string) resource.TestCheckFunc {
+func checkResourceIPPoolRanges(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test ip_pool"),
@@ -99,7 +99,7 @@ func checkResourceIpPoolRanges(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccIpPoolDestroy(s *terraform.State) error {
+func testAccIPPoolDestroy(s *terraform.State) error {
 	client, err := newTestClient()
 	if err != nil {
 		return err

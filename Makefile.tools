@@ -2,9 +2,9 @@ OS:=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 VERSION_DIR:=$(GOBIN)/versions
 
 VERSION_GOLINT:=v0.0.0-20210508222113-6edffad5e616
-VERSION_GOLANGCILINT:=v1.46.2
+VERSION_GOLANGCILINT:=v1.52.2
 VERSION_TFPROVIDERDOCS:=v0.9.1
-VERSION_TERRAFMT:=v0.4.0
+VERSION_TERRAFMT:=v0.5.2
 VERSION_TFPROVIDERLINT:=v0.28.1
 
 tools: $(GOBIN)/golint $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt 

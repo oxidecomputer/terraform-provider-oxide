@@ -14,12 +14,12 @@ This resource manages instances.
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description       = "a test instance"
-  name              = "myinstance"
-  host_name         = "<host value>"
-  memory            = 1073741824
-  ncpus             = 1
+  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description = "a test instance"
+  name        = "myinstance"
+  host_name   = "<host value>"
+  memory      = 1073741824
+  ncpus       = 1
 }
 ```
 
@@ -27,13 +27,13 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description       = "a test instance"
-  name              = "myinstance"
-  host_name         = "<host value>"
-  memory            = 1073741824
-  ncpus             = 1
-  external_ips      = ["myippool"]
+  project_id   = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description  = "a test instance"
+  name         = "myinstance"
+  host_name    = "<host value>"
+  memory       = 1073741824
+  ncpus        = 1
+  external_ips = ["myippool"]
 }
 ```
 
@@ -41,13 +41,13 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description       = "a test instance"
-  name              = "myinstance"
-  host_name         = "<host value>"
-  memory            = 1073741824
-  ncpus             = 1
-  attach_to_disks   = ["disk1", "disk2"]
+  project_id      = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description     = "a test instance"
+  name            = "myinstance"
+  host_name       = "<host value>"
+  memory          = 1073741824
+  ncpus           = 1
+  attach_to_disks = ["disk1", "disk2"]
 }
 ```
 
@@ -55,12 +55,12 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description       = "a test instance"
-  name              = "myinstance"
-  host_name         = "<host value>"
-  memory            = 1073741824
-  ncpus             = 1
+  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description = "a test instance"
+  name        = "myinstance"
+  host_name   = "<host value>"
+  memory      = 1073741824
+  ncpus       = 1
   network_interface = [
     {
       description = "a network interface"

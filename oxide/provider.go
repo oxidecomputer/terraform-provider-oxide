@@ -28,6 +28,7 @@ type oxideProviderModel struct {
 	Token types.String `tfsdk:"token"`
 }
 
+// New initialises a new provider
 func New(version string) provider.Provider {
 	return &oxideProvider{
 		version: version,

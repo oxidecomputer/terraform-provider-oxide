@@ -367,9 +367,9 @@ func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
 	return ds, nil
 }
 
-func waitForDetachedDisk(client *oxideSDK.Client, diskId oxideSDK.NameOrId, ch chan error) {
+func waitForDetachedDisk(client *oxideSDK.Client, diskID oxideSDK.NameOrId, ch chan error) {
 	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.DiskView(oxideSDK.DiskViewParams{Disk: diskId})
+		resp, err := client.DiskView(oxideSDK.DiskViewParams{Disk: diskID})
 		if err != nil {
 			ch <- err
 		}

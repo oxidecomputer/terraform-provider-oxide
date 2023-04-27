@@ -10,8 +10,8 @@ This resource manages projects.
 
 ```hcl
 resource "oxide_project" "example" {
-  description       = "a test project"
-  name              = "myproject"
+  description = "a test project"
+  name        = "myproject"
 }
 ```
 

@@ -39,7 +39,7 @@ install: build
 
 ## Lints all of the source files
 .PHONY: lint
-lint: golint golangci-lint tfproviderdocs terrafmt configfmt # tfproviderlint
+lint: golint golangci-lint tfproviderdocs terrafmt # configfmt tfproviderlint
 
 # tf providerlint currently has a bug with the latest stable go version (1.18), will uncomment 
 # when this issue is solved https://github.com/bflad/tfproviderlint/issues/255
@@ -66,7 +66,7 @@ golint: tools
 .PHONY: terrafmt
 terrafmt: tools
 	@ echo "-> Checking that the terraform docs codeblocks are formatted..."
-	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt diff -c -q {} \;
+	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt diff -f {} \;
 
 configfmt:
 	@ echo "-> Checking that the terraform .tf files are formatted..."

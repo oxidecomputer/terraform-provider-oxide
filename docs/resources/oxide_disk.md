@@ -12,19 +12,19 @@ This resource manages disks.
 
 ```hcl
 resource "oxide_disk" "example" {
-  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description       = "a test disk"
-  name              = "mydisk"
-  size              = 1073741824
-  disk_source       = { blank = 512 }
+  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description = "a test disk"
+  name        = "mydisk"
+  size        = 1073741824
+  disk_source = { blank = 512 }
 }
 
 resource "oxide_disk" "example2" {
-  project_id        = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description       = "a test disk"
-  name              = "mydisk2"
-  size              = 1073741824
-  disk_source       = { global_image = "611bb17d-6883-45be-b3aa-8a186fdeafe8" }
+  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description = "a test disk"
+  name        = "mydisk2"
+  size        = 1073741824
+  disk_source = { global_image = "611bb17d-6883-45be-b3aa-8a186fdeafe8" }
 }
 ```
 
