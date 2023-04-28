@@ -8,6 +8,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,6 +49,7 @@ type instanceResourceModel struct {
 	TimeCreated         types.String                            `tfsdk:"time_created"`
 	TimeModified        types.String                            `tfsdk:"time_modified"`
 	TimeRunStateUpdated types.String                            `tfsdk:"time_run_state_updated"`
+	Timeouts            timeouts.Value                          `tfsdk:"timeouts"`
 }
 
 type instanceResourceNetworkInterfaceModel struct {
@@ -78,7 +80,7 @@ func (r *instanceResource) Configure(_ context.Context, req resource.ConfigureRe
 }
 
 // Schema defines the schema for the resource.
-func (r *instanceResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
@@ -154,6 +156,13 @@ func (r *instanceResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 					},
 				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				// TODO: Restore once updates are enabled
+				// Update: true,
+				Delete: true,
+			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the instance.",
@@ -188,6 +197,14 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	params := oxideSDK.InstanceCreateParams{
 		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
@@ -321,6 +338,14 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	instance, err := r.client.InstanceView(oxideSDK.InstanceViewParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
@@ -423,6 +448,14 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	_, err := r.client.InstanceStop(oxideSDK.InstanceStopParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),

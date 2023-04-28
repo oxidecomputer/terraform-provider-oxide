@@ -46,6 +46,12 @@ resource "oxide_vpc" "test" {
 	description       = "a test vpc"
 	name              = "terraform-acc-myvpc"
 	dns_name          = "my-vpc-dns"
+	timeouts = {
+		read   = "1m"
+		create = "3m"
+		delete = "2m"
+		update = "4m"
+	}
   }
 `
 
@@ -60,6 +66,10 @@ func checkResourceVPC(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "system_router_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.update", "4m"),
 	}...)
 }
 

@@ -7,6 +7,7 @@ package oxide
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,15 +32,16 @@ type vpcResource struct {
 }
 
 type vpcResourceModel struct {
-	Description    types.String `tfsdk:"description"`
-	DNSName        types.String `tfsdk:"dns_name"`
-	ID             types.String `tfsdk:"id"`
-	IPV6Prefix     types.String `tfsdk:"ipv6_prefix"`
-	Name           types.String `tfsdk:"name"`
-	ProjectID      types.String `tfsdk:"project_id"`
-	SystemRouterID types.String `tfsdk:"system_router_id"`
-	TimeCreated    types.String `tfsdk:"time_created"`
-	TimeModified   types.String `tfsdk:"time_modified"`
+	Description    types.String   `tfsdk:"description"`
+	DNSName        types.String   `tfsdk:"dns_name"`
+	ID             types.String   `tfsdk:"id"`
+	IPV6Prefix     types.String   `tfsdk:"ipv6_prefix"`
+	Name           types.String   `tfsdk:"name"`
+	ProjectID      types.String   `tfsdk:"project_id"`
+	SystemRouterID types.String   `tfsdk:"system_router_id"`
+	TimeCreated    types.String   `tfsdk:"time_created"`
+	TimeModified   types.String   `tfsdk:"time_modified"`
+	Timeouts       timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -57,7 +59,7 @@ func (r *vpcResource) Configure(_ context.Context, req resource.ConfigureRequest
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *vpcResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
@@ -81,6 +83,12 @@ func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				Computed:    true,
 				Description: "DNS Name of the VPC.",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC.",
@@ -110,6 +118,14 @@ func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	params := oxideSDK.VpcCreateParams{
 		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
@@ -153,6 +169,14 @@ func (r *vpcResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	vpc, err := r.client.VpcView(oxideSDK.VpcViewParams{
 		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -199,6 +223,14 @@ func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
 	// TODO: Look into plan modifiers to see if they are fit for purpose
 	// Check if plan has changed and return error for fields that cannot
@@ -263,6 +295,14 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	if err := r.client.VpcDelete(oxideSDK.VpcDeleteParams{
 		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),

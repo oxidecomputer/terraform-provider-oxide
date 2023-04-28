@@ -20,6 +20,11 @@ resource "oxide_instance" "example" {
   host_name   = "<host value>"
   memory      = 1073741824
   ncpus       = 1
+  timeouts = {
+    read   = "1m"
+    create = "3m"
+    delete = "2m"
+  }
 }
 ```
 
@@ -88,7 +93,7 @@ resource "oxide_instance" "example" {
 - `attach_to_disks` (List of String, Optional) Disks to be attached to this instance.
 - `external_ips` (List of String, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses.
 - `network_interface` (List of Object, Optional) Attaches network interfaces to an instance at the time the instance is created. (see [below for nested schema](#nestedblock--network_interface))
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -115,10 +120,12 @@ Read-Only:
 - `subnet_id` (String) ID of the VPC Subnet to which the interface belongs.
 - `vpc_id` (String) ID of the VPC in which to which the interface belongs.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `create` (String, Default `10m`)
+- `delete` (String, Default `10m`)
+- `read` (String, Default `10m`)

@@ -12,6 +12,12 @@ This resource manages projects.
 resource "oxide_project" "example" {
   description = "a test project"
   name        = "myproject"
+  timeouts = {
+    read   = "1m"
+    create = "3m"
+    delete = "2m"
+    update = "2m"
+  }
 }
 ```
 
@@ -24,7 +30,7 @@ resource "oxide_project" "example" {
 
 ### Optional
 
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -32,10 +38,13 @@ resource "oxide_project" "example" {
 - `time_created` (String) Timestamp of when this project was created.
 - `time_modified` (String) Timestamp of when this project was last modified.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `create` (String, Default `10m`)
+- `delete` (String, Default `10m`)
+- `read` (String, Default `10m`)
+- `update` (String, Default `10m`)

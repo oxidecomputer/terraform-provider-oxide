@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -35,19 +36,20 @@ type diskResource struct {
 }
 
 type diskResourceModel struct {
-	BlockSize    types.Int64  `tfsdk:"block_size"`
-	Description  types.String `tfsdk:"description"`
-	DevicePath   types.String `tfsdk:"device_path"`
-	DiskSource   types.Map    `tfsdk:"disk_source"`
-	ID           types.String `tfsdk:"id"`
-	ImageID      types.String `tfsdk:"image_id"`
-	Name         types.String `tfsdk:"name"`
-	ProjectID    types.String `tfsdk:"project_id"`
-	Size         types.Int64  `tfsdk:"size"`
-	State        types.Object `tfsdk:"state"`
-	SnapshotID   types.String `tfsdk:"snapshot_id"`
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
+	BlockSize    types.Int64    `tfsdk:"block_size"`
+	Description  types.String   `tfsdk:"description"`
+	DevicePath   types.String   `tfsdk:"device_path"`
+	DiskSource   types.Map      `tfsdk:"disk_source"`
+	ID           types.String   `tfsdk:"id"`
+	ImageID      types.String   `tfsdk:"image_id"`
+	Name         types.String   `tfsdk:"name"`
+	ProjectID    types.String   `tfsdk:"project_id"`
+	Size         types.Int64    `tfsdk:"size"`
+	State        types.Object   `tfsdk:"state"`
+	SnapshotID   types.String   `tfsdk:"snapshot_id"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
 type diskResourceStateModel struct {
@@ -70,7 +72,7 @@ func (r *diskResource) Configure(_ context.Context, req resource.ConfigureReques
 }
 
 // Schema defines the schema for the resource.
-func (r *diskResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
@@ -94,6 +96,13 @@ func (r *diskResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Optional:    true,
 				Description: "Description for the disk.",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				// TODO: Restore once updates are enabled
+				// Update: true,
+				Delete: true,
+			}),
 			"block_size": schema.Int64Attribute{
 				Computed:    true,
 				Description: "Size of blocks in bytes.",
@@ -149,6 +158,14 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	params := oxideSDK.DiskCreateParams{
 		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
@@ -220,6 +237,14 @@ func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	disk, err := r.client.DiskView(oxideSDK.DiskViewParams{
 		Disk: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
@@ -282,6 +307,14 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// TODO: Update this with detaching instance if state attached
 

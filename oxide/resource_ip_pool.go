@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,6 +41,7 @@ type ipPoolResourceModel struct {
 	Ranges       []ipPoolResourceRangeModel `tfsdk:"ranges"`
 	TimeCreated  types.String               `tfsdk:"time_created"`
 	TimeModified types.String               `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value             `tfsdk:"timeouts"`
 }
 
 type ipPoolResourceRangeModel struct {
@@ -64,7 +66,7 @@ func (r *ipPoolResource) Configure(_ context.Context, req resource.ConfigureRequ
 }
 
 // Schema defines the schema for the resource.
-func (r *ipPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ipPoolResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
@@ -98,6 +100,12 @@ func (r *ipPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					},
 				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the IP Pool.",
@@ -123,6 +131,14 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	params := oxideSDK.IpPoolCreateParams{
 		Body: &oxideSDK.IpPoolCreate{
@@ -222,6 +238,14 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	ipPool, err := r.client.IpPoolView(oxideSDK.IpPoolViewParams{
 		Pool: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
@@ -296,7 +320,6 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -304,10 +327,17 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 	// Read Terraform prior state data into the state model to retrieve ID
 	// which is a computed attribute, so it won't show up in the plan.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
 	// TODO: Support updates here
 	if !reflect.DeepEqual(plan.Ranges, state.Ranges) {
@@ -358,6 +388,14 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// Remove all IP pool ranges first
 	ranges, err := r.client.IpPoolRangeList(

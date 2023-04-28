@@ -38,6 +38,11 @@ resource "oxide_disk" "test" {
   name              = "terraform-acc-mydisk"
   size              = 1073741824
   disk_source       = { blank = 512 }
+  timeouts = {
+    read   = "1m"
+	create = "3m"
+	delete = "2m"
+  }
 }
 `
 
@@ -54,6 +59,9 @@ func checkResourceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
 		// TODO: Eventually we'll want to test creating a disk from images and snapshot
 	}...)
 }

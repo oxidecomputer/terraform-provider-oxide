@@ -20,6 +20,12 @@ resource "oxide_ip_pool" "example" {
       last_address  = "172.20.18.239"
     }
   ]
+  timeouts = {
+    read   = "1m"
+    create = "3m"
+    delete = "2m"
+    update = "2m"
+  }
 }
 ```
 
@@ -33,7 +39,7 @@ resource "oxide_ip_pool" "example" {
 ### Optional
 
 - `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. Can be IPv4 or IPv6. (see [below for nested schema](#nestedblock--ranges))
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -55,10 +61,13 @@ Read-Only:
 - `id` (String) Unique, immutable, system-controlled identifier.
 - `time_created` (String) Timestamp of when this range was added to the IP pool.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `create` (String, Default `10m`)
+- `delete` (String, Default `10m`)
+- `read` (String, Default `10m`)
+- `update` (String, Default `10m`)

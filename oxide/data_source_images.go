@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,6 +33,7 @@ type imagesDataSource struct {
 type imagesDataSourceModel struct {
 	ID        types.String           `tfsdk:"id"`
 	ProjectID types.String           `tfsdk:"project_id"`
+	Timeouts  timeouts.Value         `tfsdk:"timeouts"`
 	Images    []imageDataSourceModel `tfsdk:"images"`
 }
 
@@ -77,6 +79,7 @@ func (d *imagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"images": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -151,6 +154,14 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	// TODO: It would be preferable to us the client.Images.ListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000 results.
@@ -198,8 +209,7 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	}
 
 	// Save state into Terraform state
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

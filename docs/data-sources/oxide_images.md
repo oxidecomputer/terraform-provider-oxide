@@ -20,20 +20,20 @@ data "oxide_images" "example" {}
 
 ### Optional
 
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
 - `images` (List of Object) A list of all global images (see [below for nested schema](#nestedatt--images))
 - `id` (String) The ID of this resource.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `read` (String, Default `10m`)
 
 <a id="nestedatt--images"></a>
 

@@ -37,6 +37,12 @@ var testResourceProjectConfig = `
 resource "oxide_project" "test" {
 	description       = "a test project"
 	name              = "terraform-acc-myproject"
+	timeouts = {
+		read   = "1m"
+		create = "3m"
+		delete = "2m"
+		update = "4m"
+	}
   }
 `
 
@@ -47,6 +53,10 @@ func checkResourceProject(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myproject"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.update", "4m"),
 	}...)
 }
 

@@ -31,12 +31,16 @@ data "oxide_projects" "project_list" {}
 
 data "oxide_images" "test" {
   project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  timeouts = {
+    read = "1m"
+  }
 }
 `
 
 func checkDataSourceImages(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
+		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.block_size"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.description"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.os"),
