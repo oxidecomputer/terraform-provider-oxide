@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,6 +25,7 @@ type projectsDataSource struct {
 
 type projectsDataSourceModel struct {
 	ID       types.String   `tfsdk:"id"`
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
 	Projects []projectModel `tfsdk:"projects"`
 }
 
@@ -59,6 +61,7 @@ func (d *projectsDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"projects": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -92,6 +95,20 @@ func (d *projectsDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 
 func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state projectsDataSourceModel
+
+	// Read Terraform configuration data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// TODO: It would be preferable to us the client.Projects.ListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
@@ -127,8 +144,7 @@ func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	// Save state into Terraform state
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

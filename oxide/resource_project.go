@@ -7,6 +7,7 @@ package oxide
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,11 +32,12 @@ type projectResource struct {
 }
 
 type projectResourceModel struct {
-	Description  types.String `tfsdk:"description"`
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
+	Description  types.String   `tfsdk:"description"`
+	ID           types.String   `tfsdk:"id"`
+	Name         types.String   `tfsdk:"name"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -53,7 +55,7 @@ func (r *projectResource) Configure(_ context.Context, req resource.ConfigureReq
 }
 
 // Schema defines the schema for the resource.
-func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
@@ -64,6 +66,12 @@ func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Required:    true,
 				Description: "Description for the project.",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the project.",
@@ -89,6 +97,14 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	params := oxideSDK.ProjectCreateParams{
 		Body: &oxideSDK.ProjectCreate{
@@ -126,6 +142,14 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	project, err := r.client.ProjectView(oxideSDK.ProjectViewParams{
 		Project: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -169,6 +193,14 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	params := oxideSDK.ProjectUpdateParams{
 		Project: oxideSDK.NameOrId(state.ID.ValueString()),
 		Body: &oxideSDK.ProjectUpdate{
@@ -206,6 +238,14 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	if err := r.client.ProjectDelete(oxideSDK.ProjectDeleteParams{
 		Project: oxideSDK.NameOrId(state.ID.ValueString()),

@@ -16,20 +16,20 @@ data "oxide_projects" "example" {}
 
 ### Optional
 
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 - `projects` (List of Object) A list of all projects (see [below for nested schema](#nestedatt--projects))
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `read` (String, Default `10m`)
 
 <a id="nestedatt--projects"></a>
 

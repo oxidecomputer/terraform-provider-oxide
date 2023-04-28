@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -33,19 +34,20 @@ type imageResource struct {
 }
 
 type imageResourceModel struct {
-	BlockSize    types.Int64  `tfsdk:"block_size"`
-	Description  types.String `tfsdk:"description"`
-	Digest       types.Object `tfsdk:"digest"`
-	ID           types.String `tfsdk:"id"`
-	ImageSource  types.Map    `tfsdk:"image_source"`
-	Name         types.String `tfsdk:"name"`
-	OS           types.String `tfsdk:"os"`
-	ProjectID    types.String `tfsdk:"project_id"`
-	Size         types.Int64  `tfsdk:"size"`
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
-	URL          types.String `tfsdk:"url"`
-	Version      types.String `tfsdk:"version"`
+	BlockSize    types.Int64    `tfsdk:"block_size"`
+	Description  types.String   `tfsdk:"description"`
+	Digest       types.Object   `tfsdk:"digest"`
+	ID           types.String   `tfsdk:"id"`
+	ImageSource  types.Map      `tfsdk:"image_source"`
+	Name         types.String   `tfsdk:"name"`
+	OS           types.String   `tfsdk:"os"`
+	ProjectID    types.String   `tfsdk:"project_id"`
+	Size         types.Int64    `tfsdk:"size"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+	URL          types.String   `tfsdk:"url"`
+	Version      types.String   `tfsdk:"version"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
 type imageResourceDigestModel struct {
@@ -68,7 +70,7 @@ func (r *imageResource) Configure(_ context.Context, req resource.ConfigureReque
 }
 
 // Schema defines the schema for the resource.
-func (r *imageResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
@@ -100,6 +102,13 @@ func (r *imageResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Required:    true,
 				Description: "Size of blocks in bytes.",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				// TODO: Restore once updates and deletes are enabled
+				// Update: true,
+				// Delete: true,
+			}),
 			"digest": schema.SingleNestedAttribute{
 				Computed:    true,
 				Description: "Hash of the image contents, if applicable.",
@@ -146,6 +155,14 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	params := oxideSDK.ImageCreateParams{
 		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
@@ -217,6 +234,14 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	image, err := r.client.ImageView(oxideSDK.ImageViewParams{
 		Image: oxideSDK.NameOrId(state.ID.ValueString()),

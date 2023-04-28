@@ -23,18 +23,22 @@ package oxide
 // }
 //
 // var testResourceImageConfig = `
-// data "oxide_projects" "project_list" {}
+//  data "oxide_projects" "project_list" {}
 //
-// resource "oxide_image" "test" {
-//   project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-//   description  = "a test image"
-//   name         = "terraform-acc-myglobalimage"
-//   image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
-//   block_size   = 512
-//   os           = "alpine"
-//   version      = "propolis-blob"
-// }
-// `
+//  resource "oxide_image" "test" {
+//    project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+//    description  = "a test image"
+//    name         = "terraform-acc-myglobalimage"
+//    image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
+//    block_size   = 512
+//    os           = "alpine"
+//    version      = "propolis-blob"
+//    timeouts = {
+//     read   = "1m"
+// 	   create = "3m"
+//   }
+//  }
+//  `
 //
 // func checkResourceImage(resourceName string) resource.TestCheckFunc {
 // 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -46,6 +50,8 @@ package oxide
 // 		resource.TestCheckResourceAttrSet(resourceName, "size"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+// 		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
+// 		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
 // 		// TODO: Eventually we'll want to test creating a image from URL and snapshot
 // 	}...)
 // }
@@ -57,21 +63,21 @@ package oxide
 // 	}
 //
 // 	for _, rs := range s.RootModule().Resources {
-//      if rs.Type != "oxide_image" {
-//	        continue
-//      }
+// 		if rs.Type != "oxide_image" {
+// 			continue
+// 		}
 //
-//  	res, err := client.ImageView(oxide.ImageViewParams{
-//			Image:   "terraform-acc-myglobalimage",
-//			Project: "test",
-//		})
+// 		res, err := client.ImageView(oxide.ImageViewParams{
+// 			Image:   "terraform-acc-myglobalimage",
+// 			Project: "test",
+// 		})
 //
-//		if err != nil && is404(err) {
-//			continue
-//		}
+// 		if err != nil && is404(err) {
+// 			continue
+// 		}
 //
-//		return fmt.Errorf("image (%v) still exists", &res.Name)
-//	}
+// 		return fmt.Errorf("image (%v) still exists", &res.Name)
+// 	}
 //
-//	return nil
+// 	return nil
 // }

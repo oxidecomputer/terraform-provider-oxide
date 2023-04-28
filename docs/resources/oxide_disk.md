@@ -25,6 +25,11 @@ resource "oxide_disk" "example2" {
   name        = "mydisk2"
   size        = 1073741824
   disk_source = { global_image = "611bb17d-6883-45be-b3aa-8a186fdeafe8" }
+  timeouts = {
+    read   = "1m"
+    create = "3m"
+    delete = "2m"
+  }
 }
 ```
 
@@ -40,7 +45,7 @@ resource "oxide_disk" "example2" {
 ### Optional
 
 - `description` (String) Description for the disk.
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -54,13 +59,15 @@ resource "oxide_disk" "example2" {
 - `time_created` (String) Timestamp of when this disk was created.
 - `time_modified` (String) Timestamp of when this disk was last modified.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `create` (String, Default `10m`)
+- `delete` (String, Default `10m`)
+- `read` (String, Default `10m`)
 
 <a id="nestedatt--state"></a>
 

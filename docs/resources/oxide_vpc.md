@@ -15,6 +15,12 @@ resource "oxide_vpc" "example" {
   name        = "myvpc"
   dns_name    = "my-vpc-dns"
   ipv6_prefix = "fd1e:4947:d4a1::/48"
+  timeouts = {
+    read   = "1m"
+    create = "3m"
+    delete = "2m"
+    update = "2m"
+  }
 }
 ```
 
@@ -30,7 +36,7 @@ resource "oxide_vpc" "example" {
 ### Optional
 
 - `ipv6_prefix` (String, Optional) All IPv6 subnets created from this VPC must be taken from this range, which should be a unique local address in the range `fd00::/48`. The default VPC Subnet will have the first `/64` range from this prefix. If no `ipv6_prefix` is defined, a default one will be set.
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -39,10 +45,13 @@ resource "oxide_vpc" "example" {
 - `time_created` (String) Timestamp of when this VPC was created.
 - `time_modified` (String) Timestamp of when this VPC was last modified.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `create` (String, Default `10m`)
+- `delete` (String, Default `10m`)
+- `read` (String, Default `10m`)
+- `update` (String, Default `10m`)

@@ -7,6 +7,7 @@ package oxide
 import (
 	"net"
 	"strings"
+	"time"
 )
 
 func is404(err error) bool {
@@ -33,4 +34,8 @@ func isIPv4(str string) bool {
 func isIPv6(str string) bool {
 	ip := net.ParseIP(str)
 	return ip != nil && strings.Contains(str, ":")
+}
+
+func defaultTimeout() time.Duration {
+	return 10 * time.Minute
 }

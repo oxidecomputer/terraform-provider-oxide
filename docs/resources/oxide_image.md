@@ -29,6 +29,10 @@ resource "oxide_image" "example2" {
   block_size   = 512
   os           = "ubuntu"
   version      = "20.04"
+  timeouts = {
+    read   = "1m"
+    create = "3m"
+  }
 }
 ```
 
@@ -46,7 +50,7 @@ resource "oxide_image" "example2" {
 
 ### Optional
 
-- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
@@ -57,10 +61,11 @@ resource "oxide_image" "example2" {
 - `time_created` (String) Timestamp of when this image was created.
 - `time_modified` (String) Timestamp of when this image was last modified.
 
-<a id="nestedblock--timeouts"></a>
+<a id="nestedatt--timeouts"></a>
 
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `default` (String)
+- `create` (String, Default `10m`)
+- `read` (String, Default `10m`)

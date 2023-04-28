@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/terraform-plugin-framework v1.2.0
+	github.com/hashicorp/terraform-plugin-framework-timeouts v0.3.1
 	github.com/hashicorp/terraform-plugin-go v0.15.0
 	github.com/hashicorp/terraform-plugin-testing v1.2.0
 	github.com/oxidecomputer/oxide.go v0.0.22-0.20230411045251-335c1187c3bd
