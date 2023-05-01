@@ -8,6 +8,8 @@ This resource manages disks.
 
 !> This resource currently only provides create, read and delete actions. Once update endpoints have been added to the API, that functionality will be added here as well.
 
+!> Disks cannot be deleted while attached to instances. Please detach or delete associated instances before attempting to delete.
+
 ## Example Usage
 
 ```hcl

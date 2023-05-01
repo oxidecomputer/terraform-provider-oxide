@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -321,25 +320,13 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// TODO: Update this with detaching instance if state attached
-
-	// Wait for disk to be detached before attempting to destroy.
 	// TODO: For the time being there is no endpoint to detach disks without
 	// knowing the Instance name first. The Disk get endpoint only retrieves
 	// the attached instance ID, so we can't get the name from there.
 	// This means that we cannot automatically detach disks here.
-	// for a temporary workaround for the acceptance tests we will only check for a `detached`
-	// status for 5 seconds and return an error otherwise.
-	ch := make(chan error)
-	go waitForDetachedDisk(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
-	e := <-ch
-	if e != nil {
-		resp.Diagnostics.AddError(
-			"Unable to delete disk:",
-			"API error: "+e.Error(),
-		)
-		return
-	}
+	//
+	// Users should detach disks directly on the `oxide_instance` resource or
+	// delete any associated instances before attempting to delete disks.
 
 	if err := r.client.DiskDelete(oxideSDK.DiskDeleteParams{
 		Disk: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -403,21 +390,4 @@ func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
 	}
 
 	return ds, nil
-}
-
-func waitForDetachedDisk(client *oxideSDK.Client, diskID oxideSDK.NameOrId, ch chan error) {
-	for start := time.Now(); time.Since(start) < (5 * time.Second); {
-		resp, err := client.DiskView(oxideSDK.DiskViewParams{Disk: diskID})
-		if err != nil {
-			ch <- err
-		}
-		if resp.State.State == "detached" {
-			break
-		}
-
-		// Ignoring linting error for now as this entire function will be removed
-		//lintignore:R018
-		time.Sleep(time.Second)
-	}
-	ch <- nil
 }
