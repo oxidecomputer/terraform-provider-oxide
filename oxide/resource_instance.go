@@ -222,6 +222,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		},
 	}
 
+	// TODO: Perhaps it makes sense to attach after the resource is created instead of
+	// making it part of the create body.
 	var diskAttachements = []oxideSDK.InstanceDiskAttachment{}
 	for _, disk := range plan.AttachToDisks.Elements() {
 		diskName, err := strconv.Unquote(disk.String())
@@ -462,7 +464,40 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	_, err := r.client.InstanceStop(oxideSDK.InstanceStopParams{
+	// Detach any associated disks
+	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
+		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+		Limit:    1000000000,
+	})
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to list attached disks:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	for _, disk := range disks.Items {
+		_, err = r.client.InstanceDiskDetach(
+			oxideSDK.InstanceDiskDetachParams{
+				Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+				Body:     &oxideSDK.DiskPath{Disk: oxideSDK.NameOrId(disk.Id)},
+			},
+		)
+		if err != nil {
+			if !is404(err) {
+				resp.Diagnostics.AddError(
+					"Unable to detach disk:",
+					"API error: "+err.Error(),
+				)
+				return
+			}
+		}
+	}
+
+	_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -474,19 +509,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 	}
-
-	// TODO: Check if I actually need the "wait for stopped instance function"
-	// Wait for instance to be stopped before attempting to destroy
-	//	ch := make(chan error)
-	//	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
-	//	e := <-ch
-	//	if !is404(e) {
-	//		resp.Diagnostics.AddError(
-	//			"Unable to stop instance:",
-	//			"API error: "+e.Error(),
-	//		)
-	//		return
-	//	}
 
 	if err := r.client.InstanceDelete(oxideSDK.InstanceDeleteParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -500,18 +522,3 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		}
 	}
 }
-
-// func waitForStoppedInstance(client *oxideSDK.Client, instanceId oxideSDK.NameOrId, ch chan error) {
-// 	for {
-// 		params := oxideSDK.InstanceViewParams{Instance: instanceId}
-// 		resp, err := client.InstanceView(params)
-// 		if err != nil {
-// 			ch <- err
-// 		}
-// 		if resp.RunState == oxideSDK.InstanceStateStopped {
-// 			break
-// 		}
-// 		time.Sleep(time.Second)
-// 	}
-// 	ch <- nil
-// }
