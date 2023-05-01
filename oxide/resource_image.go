@@ -7,6 +7,7 @@ package oxide
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -199,6 +201,8 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	tflog.Trace(ctx, fmt.Sprintf("created image with ID: %v", image.Id), map[string]any{"success": true})
+
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(image.Id)
 	plan.Size = types.Int64Value(int64(image.Size))
@@ -258,6 +262,8 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		)
 		return
 	}
+
+	tflog.Trace(ctx, fmt.Sprintf("read image with ID: %v", image.Id), map[string]any{"success": true})
 
 	state.BlockSize = types.Int64Value(int64(image.BlockSize))
 	state.Description = types.StringValue(image.Description)

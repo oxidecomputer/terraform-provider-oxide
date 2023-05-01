@@ -6,6 +6,7 @@ package oxide
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -297,6 +299,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	tflog.Trace(ctx, fmt.Sprintf("created instance with ID: %v", instance.Id), map[string]any{"success": true})
+
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
 	plan.RunState = types.StringValue(string(instance.RunState))
@@ -325,6 +329,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 			plan.NetworkInterface[index].SubnetID = types.StringValue(subnet.Id)
 			plan.NetworkInterface[index].VPCID = types.StringValue(subnet.VpcId)
+
+			tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", types.StringValue(subnet.Id)), map[string]any{"success": true})
 		}
 	}
 
@@ -364,6 +370,8 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
+
 	state.Description = types.StringValue(instance.Description)
 	state.HostName = types.StringValue(string(instance.Hostname))
 	state.ID = types.StringValue(instance.Id)
@@ -393,6 +401,9 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		)
 		return
 	}
+
+	tflog.Trace(ctx, fmt.Sprintf("read network interfaces from instance with ID: %v", instance.Id), map[string]any{"success": true})
+
 	for index, item := range nics.Items {
 		nic := instanceResourceNetworkInterfaceModel{
 			Description: types.StringValue(item.Description),
@@ -414,6 +425,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 			)
 			return
 		}
+		tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", item.VpcId), map[string]any{"success": true})
 
 		subnet, err := r.client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
 			Subnet: oxideSDK.NameOrId(item.SubnetId),
@@ -425,6 +437,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 			)
 			return
 		}
+		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", item.SubnetId), map[string]any{"success": true})
 
 		nic.SubnetName = types.StringValue(string(subnet.Name))
 		nic.VPCName = types.StringValue(string(vpc.Name))
@@ -478,6 +491,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("listed all attached disks from instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	for _, disk := range disks.Items {
 		_, err = r.client.InstanceDiskDetach(
@@ -495,6 +509,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 				return
 			}
 		}
+		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", disk.Id), map[string]any{"success": true})
 	}
 
 	_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
@@ -509,6 +524,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	if err := r.client.InstanceDelete(oxideSDK.InstanceDeleteParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -521,4 +537,5 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }

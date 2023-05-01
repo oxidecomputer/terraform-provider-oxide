@@ -6,12 +6,14 @@ package oxide
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -149,6 +151,7 @@ func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, re
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("created VPC with ID: %v", vpc.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpc.Id)
@@ -193,6 +196,7 @@ func (r *vpcResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", vpc.Id), map[string]any{"success": true})
 
 	state.Description = types.StringValue(vpc.Description)
 	state.DNSName = types.StringValue(string(vpc.DnsName))
@@ -276,6 +280,7 @@ func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("updated VPC with ID: %v", vpc.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpc.Id)
@@ -309,6 +314,8 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
+	// TODO: Remove all associated Subnets automatically
+
 	if err := r.client.VpcDelete(oxideSDK.VpcDeleteParams{
 		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
 	}); err != nil {
@@ -320,4 +327,5 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted VPC with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }

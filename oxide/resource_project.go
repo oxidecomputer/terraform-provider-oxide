@@ -6,12 +6,14 @@ package oxide
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -125,6 +127,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("created project with ID: %v", project.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(project.Id)
@@ -166,6 +169,7 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("read project with ID: %v", project.Id), map[string]any{"success": true})
 
 	state.Description = types.StringValue(project.Description)
 	state.ID = types.StringValue(project.Id)
@@ -221,6 +225,7 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("updated project with ID: %v", project.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(project.Id)
@@ -263,4 +268,5 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted project with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
