@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -63,6 +64,10 @@ func (r *ipPoolResource) Configure(_ context.Context, req resource.ConfigureRequ
 	}
 
 	r.client = req.ProviderData.(*oxideSDK.Client)
+}
+
+func (r *ipPoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
@@ -275,6 +280,11 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 			"API error: "+err.Error(),
 		)
 		return
+	}
+
+	// Set the size of the slice to avoid a panic when importing
+	if len(state.Ranges) == 0 && len(ipPoolRanges.Items) != 0 {
+		state.Ranges = make([]ipPoolResourceRangeModel, len(ipPoolRanges.Items))
 	}
 
 	for index, item := range ipPoolRanges.Items {

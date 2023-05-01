@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -67,6 +68,10 @@ func (r *imageResource) Configure(_ context.Context, req resource.ConfigureReque
 	}
 
 	r.client = req.ProviderData.(*oxideSDK.Client)
+}
+
+func (r *imageResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
@@ -259,6 +264,7 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.ID = types.StringValue(image.Id)
 	state.Name = types.StringValue(string(image.Name))
 	state.OS = types.StringValue(image.Os)
+	state.ProjectID = types.StringValue(image.ProjectId)
 	state.Size = types.Int64Value(int64(image.Size))
 	state.TimeCreated = types.StringValue(image.TimeCreated.String())
 	state.TimeModified = types.StringValue(image.TimeCreated.String())

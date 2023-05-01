@@ -29,6 +29,11 @@ func TestAccResourceProject_full(t *testing.T) {
 				Config: testResourceProjectUpdateConfig,
 				Check:  checkResourceProjectUpdate(resourceName),
 			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

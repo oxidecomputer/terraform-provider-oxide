@@ -29,17 +29,37 @@ func TestAccResourceInstance_full(t *testing.T) {
 				Check:  checkResourceInstance(resourceName),
 			},
 			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testResourceInstanceDiskConfig,
 				Check:  checkResourceInstanceDisk(secondResourceName),
+			},
+			{
+				ResourceName:      secondResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			// TODO: Restore when Network interfaces work on simulated omicron again
 			//	{
 			//		Config: testResourceInstanceNetworkInterfaceConfig,
 			//		Check:  checkResourceInstanceNetworkInterface(thirdResourceName),
 			//	},
+			// {
+			// 	ResourceName:      thirdResourceName,
+			// 	ImportState:       true,
+			// 	ImportStateVerify: true,
+			// },
 			{
 				Config: testResourceInstanceExternalIpsConfig,
 				Check:  checkResourceInstanceExternalIps(fourthResourceName),
+			},
+			{
+				ResourceName:      fourthResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
