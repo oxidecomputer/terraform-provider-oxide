@@ -31,8 +31,18 @@ func TestAccResourceVPC_full(t *testing.T) {
 				Check:  checkResourceVPCUpdate(resourceName),
 			},
 			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testResourceVPCIPv6Config,
 				Check:  checkResourceVPCIPv6(resourceName2),
+			},
+			{
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

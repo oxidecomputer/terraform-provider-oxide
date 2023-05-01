@@ -18,27 +18,35 @@ package oxide
 // 				Config: testResourceImageConfig,
 // 				Check:  checkResourceImage(resourceName),
 // 			},
+// 			{
+// 				ResourceName:      resourceName,
+// 				ImportState:       true,
+// 				ImportStateVerify: true,
+// 				// TODO: Remove once https://github.com/oxidecomputer/terraform-provider-oxide/issues/102
+// 				// has been worked on.
+// 				ImportStateVerifyIgnore: []string{"image_source"},
+// 			},
 // 		},
 // 	})
 // }
 //
 // var testResourceImageConfig = `
-//  data "oxide_projects" "project_list" {}
+//   data "oxide_projects" "project_list" {}
 //
-//  resource "oxide_image" "test" {
-//    project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-//    description  = "a test image"
-//    name         = "terraform-acc-myglobalimage"
-//    image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
-//    block_size   = 512
-//    os           = "alpine"
-//    version      = "propolis-blob"
-//    timeouts = {
-//     read   = "1m"
-// 	   create = "3m"
+//   resource "oxide_image" "test" {
+//     project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+//     description  = "a test image"
+//     name         = "terraform-acc-myglobalimage"
+//     image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
+//     block_size   = 512
+//     os           = "alpine"
+//     version      = "propolis-blob"
+//     timeouts = {
+//      read   = "1m"
+//  	   create = "3m"
+//    }
 //   }
-//  }
-//  `
+//   `
 //
 // func checkResourceImage(resourceName string) resource.TestCheckFunc {
 // 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -81,3 +89,4 @@ package oxide
 //
 // 	return nil
 // }
+//

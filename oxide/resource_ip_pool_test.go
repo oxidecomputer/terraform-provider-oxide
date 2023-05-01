@@ -31,8 +31,18 @@ func TestAccResourceIpPool_full(t *testing.T) {
 				Check:  checkResourceIPPoolUpdate(resourceName),
 			},
 			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testResourceIPPoolRangesConfig,
 				Check:  checkResourceIPPoolRanges(resourceName2),
+			},
+			{
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

@@ -25,6 +25,14 @@ func TestAccResourceDisk_full(t *testing.T) {
 				Config: testResourceDiskConfig,
 				Check:  checkResourceDisk(resourceName),
 			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// TODO: Remove once https://github.com/oxidecomputer/terraform-provider-oxide/issues/101
+				// has been worked on.
+				ImportStateVerifyIgnore: []string{"disk_source"},
+			},
 		},
 	})
 }
