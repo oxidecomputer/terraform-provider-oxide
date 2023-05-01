@@ -21,16 +21,14 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	err := providerserver.Serve(
+	if err := providerserver.Serve(
 		context.Background(),
 		func() provider.Provider { return oxide.New(oxide.Version) },
 		providerserver.ServeOpts{
 			Address: "registry.terraform.io/oxidecomputer/oxide",
 			Debug:   debug,
 		},
-	)
-
-	if err != nil {
+	); err != nil {
 		log.Fatal(err.Error())
 	}
 }

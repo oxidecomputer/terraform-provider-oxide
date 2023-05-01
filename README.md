@@ -44,15 +44,6 @@ When trying out the same example with a provider you've recently built with chan
 
 ## Running the linters
 
-Before getting started make sure you've set the `$GOBIN` environment variable to where your go binaries are stored and add it to `$PATH`.
-
-Example:
-
-```console
-export GOBIN=/Users/username/go/bin
-export PATH=${PATH}:/Users/username/go/bin
-```
-
 There is a make target to run the linters. All that's needed is `make lint`.
 
 ## Running acceptance tests
