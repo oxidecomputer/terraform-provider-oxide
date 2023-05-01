@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -159,6 +160,7 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("created IP Pool with ID: %v", ipPool.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
@@ -219,6 +221,7 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 			)
 			return
 		}
+		tflog.Trace(ctx, fmt.Sprintf("added IP Pool range with ID: %v", ipR.Id), map[string]any{"success": true})
 
 		ipPoolRange.ID = types.StringValue(ipR.Id)
 		ipPoolRange.TimeCreated = types.StringValue(ipR.TimeCreated.String())
@@ -261,6 +264,7 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("read IP Pool with ID: %v", ipPool.Id), map[string]any{"success": true})
 
 	state.Description = types.StringValue(ipPool.Description)
 	state.ID = types.StringValue(ipPool.Id)
@@ -281,6 +285,7 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", ipPool.Id), map[string]any{"success": true})
 
 	// Set the size of the slice to avoid a panic when importing
 	if len(state.Ranges) == 0 && len(ipPoolRanges.Items) != 0 {
@@ -367,7 +372,6 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	ipPool, err := r.client.IpPoolUpdate(params)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating IP Pool",
@@ -375,6 +379,7 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("updated IP Pool with ID: %v", ipPool.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
@@ -423,6 +428,7 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	for _, item := range ranges.Items {
 		var ipRange oxideSDK.IpRange
@@ -464,6 +470,12 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 				return
 			}
 		}
+		tflog.Trace(ctx, fmt.Sprintf(
+			"removed IP pool range %v - %v from IP pool with ID: %v",
+			rs["first"].(string),
+			rs["last"].(string),
+			state.ID.ValueString(),
+		), map[string]any{"success": true})
 	}
 
 	if err := r.client.IpPoolDelete(oxideSDK.IpPoolDeleteParams{
@@ -477,4 +489,5 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			return
 		}
 	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted IP pool with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }

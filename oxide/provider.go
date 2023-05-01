@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -59,6 +60,8 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 
 // Configure prepares the Oxide client for data sources and resources.
 func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring Oxide client")
+
 	host := os.Getenv("OXIDE_HOST")
 	token := os.Getenv("OXIDE_TOKEN")
 
@@ -98,6 +101,11 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "host", host)
+	ctx = tflog.SetField(ctx, "token", token)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
+	tflog.Debug(ctx, "Creating Oxide client")
+
 	// TODO: Add provider version to the user agent?
 	client, err := oxideSDK.NewClient(token, "terraform-provider-oxide", host)
 	if err != nil {
@@ -107,6 +115,8 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		)
 		return
 	}
+
+	tflog.Info(ctx, "Configured Oxide client", map[string]any{"success": true})
 
 	resp.DataSourceData = client
 	resp.ResourceData = client

@@ -7,6 +7,7 @@ package oxide
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -199,6 +201,8 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	tflog.Trace(ctx, fmt.Sprintf("created disk with ID: %v", disk.Id), map[string]any{"success": true})
+
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(disk.Id)
 	plan.DevicePath = types.StringValue(disk.DevicePath)
@@ -259,6 +263,7 @@ func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		)
 		return
 	}
+	tflog.Trace(ctx, fmt.Sprintf("read disk with ID: %v", disk.Id), map[string]any{"success": true})
 
 	state.BlockSize = types.Int64Value(int64(disk.BlockSize))
 	state.Description = types.StringValue(disk.Description)
@@ -339,6 +344,8 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 			return
 		}
 	}
+
+	tflog.Trace(ctx, fmt.Sprintf("deleted disk with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
 func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {

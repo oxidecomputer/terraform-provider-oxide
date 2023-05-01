@@ -6,12 +6,14 @@ package oxide
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -179,6 +181,8 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
+
+	tflog.Trace(ctx, fmt.Sprintf("read all images from project: %v", state.ProjectID.ValueString()), map[string]any{"success": true})
 
 	// Set a unique ID for the datasource payload
 	state.ID = types.StringValue(uuid.New().String())
