@@ -270,7 +270,7 @@ func (r *vpcSubnetResource) Update(ctx context.Context, req resource.UpdateReque
 	//}
 
 	params := oxideSDK.VpcSubnetUpdateParams{
-		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
+		Subnet: oxideSDK.NameOrId(state.ID.ValueString()),
 		Body: &oxideSDK.VpcSubnetUpdate{
 			Description: plan.Description.ValueString(),
 			Name:        oxideSDK.Name(plan.Name.ValueString()),
@@ -316,8 +316,6 @@ func (r *vpcSubnetResource) Delete(ctx context.Context, req resource.DeleteReque
 	}
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
-
-	// TODO: Remove all associated Subnets automatically
 
 	if err := r.client.VpcSubnetDelete(oxideSDK.VpcSubnetDeleteParams{
 		Subnet: oxideSDK.NameOrId(state.ID.ValueString()),
