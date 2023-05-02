@@ -54,7 +54,7 @@ resource "oxide_image" "example2" {
 
 ### Read-Only
 
-- `digest` (String) Digest is hash of the image contents, if applicable.
+- `digest` (Object) Hash of the image contents, if applicable (see [below for nested schema](#nestedobject--digest)).
 - `id` (String) Unique, immutable, system-controlled identifier of the image.
 - `size` (Number) Total size in bytes.
 - `url` (String) URL is URL source of this image, if any.
@@ -69,3 +69,10 @@ Optional:
 
 - `create` (String, Default `10m`)
 - `read` (String, Default `10m`)
+
+### Nested Schema for `digest`
+
+Read-Only:
+
+- `type` (String) Digest type.
+- `value` (String) Digest type value.
