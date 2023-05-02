@@ -33,27 +33,27 @@ type imagesDataSource struct {
 }
 
 type imagesDataSourceModel struct {
-	ID        types.String           `tfsdk:"id"`
-	ProjectID types.String           `tfsdk:"project_id"`
-	Timeouts  timeouts.Value         `tfsdk:"timeouts"`
-	Images    []imageDataSourceModel `tfsdk:"images"`
+	ID        types.String   `tfsdk:"id"`
+	ProjectID types.String   `tfsdk:"project_id"`
+	Timeouts  timeouts.Value `tfsdk:"timeouts"`
+	Images    []imageModel   `tfsdk:"images"`
 }
 
-type imageDataSourceModel struct {
-	BlockSize    types.Int64                `tfsdk:"block_size"`
-	Description  types.String               `tfsdk:"description"`
-	Digest       imageDataSourceDigestModel `tfsdk:"digest"`
-	ID           types.String               `tfsdk:"id"`
-	Name         types.String               `tfsdk:"name"`
-	OS           types.String               `tfsdk:"os"`
-	Size         types.Int64                `tfsdk:"size"`
-	TimeCreated  types.String               `tfsdk:"time_created"`
-	TimeModified types.String               `tfsdk:"time_modified"`
-	URL          types.String               `tfsdk:"url"`
-	Version      types.String               `tfsdk:"version"`
+type imageModel struct {
+	BlockSize    types.Int64      `tfsdk:"block_size"`
+	Description  types.String     `tfsdk:"description"`
+	Digest       imageDigestModel `tfsdk:"digest"`
+	ID           types.String     `tfsdk:"id"`
+	Name         types.String     `tfsdk:"name"`
+	OS           types.String     `tfsdk:"os"`
+	Size         types.Int64      `tfsdk:"size"`
+	TimeCreated  types.String     `tfsdk:"time_created"`
+	TimeModified types.String     `tfsdk:"time_modified"`
+	URL          types.String     `tfsdk:"url"`
+	Version      types.String     `tfsdk:"version"`
 }
 
-type imageDataSourceDigestModel struct {
+type imageDigestModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
@@ -189,7 +189,7 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	// Map response body to model
 	for _, image := range images.Items {
-		imageState := imageDataSourceModel{
+		imageState := imageModel{
 			BlockSize:    types.Int64Value(int64(image.BlockSize)),
 			Description:  types.StringValue(image.Description),
 			ID:           types.StringValue(image.Id),
@@ -202,7 +202,7 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			Version:      types.StringValue(image.Version),
 		}
 
-		digestState := imageDataSourceDigestModel{
+		digestState := imageDigestModel{
 			Type:  types.StringValue(string(image.Digest.Type)),
 			Value: types.StringValue(image.Digest.Value),
 		}
