@@ -36,7 +36,6 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	// TODO: Evaluate if we wish to create disks as well, and the implications of this
 	AttachToDisks types.List   `tfsdk:"attach_to_disks"`
 	Description   types.String `tfsdk:"description"`
 	ExternalIPs   types.List   `tfsdk:"external_ips"`
@@ -523,6 +522,16 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			)
 			return
 		}
+	}
+	ch := make(chan error)
+	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
+	e := <-ch
+	if !is404(e) {
+		resp.Diagnostics.AddError(
+			"Unable to stop instance:",
+			"API error: "+e.Error(),
+		)
+		return
 	}
 	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
