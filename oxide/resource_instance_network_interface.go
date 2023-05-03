@@ -416,9 +416,9 @@ func (r *instanceNICResource) Delete(ctx context.Context, req resource.DeleteReq
 	tflog.Trace(ctx, fmt.Sprintf("deleted instance network interface with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
-func waitForStoppedInstance(client *oxideSDK.Client, instanceId oxideSDK.NameOrId, ch chan error) {
+func waitForStoppedInstance(client *oxideSDK.Client, instanceID oxideSDK.NameOrId, ch chan error) {
 	for {
-		params := oxideSDK.InstanceViewParams{Instance: instanceId}
+		params := oxideSDK.InstanceViewParams{Instance: instanceID}
 		resp, err := client.InstanceView(params)
 		if err != nil {
 			ch <- err
@@ -426,6 +426,8 @@ func waitForStoppedInstance(client *oxideSDK.Client, instanceId oxideSDK.NameOrI
 		if resp.RunState == oxideSDK.InstanceStateStopped {
 			break
 		}
+		// Suggested alternatives suggested by linter are not fit for purpose
+		//lintignore:R018
 		time.Sleep(time.Second)
 	}
 	ch <- nil
