@@ -56,27 +56,6 @@ resource "oxide_instance" "example" {
 }
 ```
 
-### Attach a network interface to the instance
-
-```hcl
-resource "oxide_instance" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test instance"
-  name        = "myinstance"
-  host_name   = "<host value>"
-  memory      = 1073741824
-  ncpus       = 1
-  network_interface = [
-    {
-      description = "a network interface"
-      name        = "mynetworkinterface"
-      subnet_name = "default"
-      vpc_name    = "default"
-    }
-  ]
-}
-```
-
 ## Schema
 
 ### Required
@@ -92,7 +71,6 @@ resource "oxide_instance" "example" {
 
 - `attach_to_disks` (List of String, Optional) Disks to be attached to this instance.
 - `external_ips` (List of String, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses.
-- `network_interface` (List of Object, Optional) Attaches network interfaces to an instance at the time the instance is created. (see [below for nested schema](#nestedblock--network_interface))
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
@@ -102,23 +80,6 @@ resource "oxide_instance" "example" {
 - `time_created` (String) Timestamp of when this instance was created.
 - `time_modified` (String) Timestamp of when this instance last modified.
 - `time_run_state_updated` (String) Timestamp of when the run state of this instance was last modified.
-
-<a id="nestedblock--network_interface"></a>
-
-### Nested Schema for `network_interface`
-
-Required:
-
-- `description` (String) Description for the network interface.
-- `name` (String) Name of the network interface.
-- `subnet_name` (String) Name of the VPC Subnet in which to create the network interface.
-- `vpc_name` (String) Name of the VPC in which to create the network interface.
-
-Read-Only:
-
-- `ip` (String) IP address for the network interface.
-- `subnet_id` (String) ID of the VPC Subnet to which the interface belongs.
-- `vpc_id` (String) ID of the VPC in which to which the interface belongs.
 
 <a id="nestedatt--timeouts"></a>
 

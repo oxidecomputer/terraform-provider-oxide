@@ -65,12 +65,6 @@ resource "oxide_instance" "web_instance_1" {
   memory            = var.one_gib
   ncpus             = 2
   attach_to_disks   = [oxide_disk.web_disk_1.name]
-  network_interface {
-    description = "Network interface for web instance"
-    name        = "web-interface-1"
-    subnet_name = "default"
-    vpc_name    = "default"
-  }
 }
 
 resource "oxide_instance" "web_instance_2" {
@@ -81,14 +75,6 @@ resource "oxide_instance" "web_instance_2" {
   memory            = var.one_gib
   ncpus             = 2
   attach_to_disks   = [oxide_disk.web_disk_2.name]
-  network_interface = [
-    {
-      description = "Network interface for web instance"
-      name        = "web-interface-2"
-      subnet_name = "default"
-      vpc_name    = "default"
-    }
-  ]
 }
 
 resource "oxide_instance" "web_instance_3" {
@@ -99,14 +85,6 @@ resource "oxide_instance" "web_instance_3" {
   memory            = var.one_gib
   ncpus             = 2
   attach_to_disks   = [oxide_disk.web_disk_3.name]
-  network_interface = [
-    {
-      description = "Network interface for web instance"
-      name        = "web-interface-3"
-      subnet_name = "default"
-      vpc_name    = "default"
-    }
-  ]
 }
 
 resource "oxide_instance" "db_instance_1" {
@@ -117,14 +95,6 @@ resource "oxide_instance" "db_instance_1" {
   memory            = var.two_gib
   ncpus             = 4
   attach_to_disks   = [oxide_disk.db_disk_1.name]
-  network_interface = [
-    {
-      description = "Network interface for DB instance"
-      name        = "db-interface-1"
-      subnet_name = "default"
-      vpc_name    = "default"
-    }
-  ]
 }
 
 resource "oxide_instance" "db_instance_2" {
@@ -135,12 +105,4 @@ resource "oxide_instance" "db_instance_2" {
   memory            = var.two_gib
   ncpus             = 4
   attach_to_disks   = [oxide_disk.db_disk_2.name]
-  network_interface = [
-    {
-      description = "Network interface for DB instance"
-      name        = "db-interface-2"
-      subnet_name = "default"
-      vpc_name    = "default"
-    }
-  ]
 }
