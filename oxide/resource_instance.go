@@ -36,35 +36,20 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	AttachToDisks types.List   `tfsdk:"attach_to_disks"`
-	Description   types.String `tfsdk:"description"`
-	ExternalIPs   types.List   `tfsdk:"external_ips"`
-	HostName      types.String `tfsdk:"host_name"`
-	ID            types.String `tfsdk:"id"`
-	Memory        types.Int64  `tfsdk:"memory"`
-	Name          types.String `tfsdk:"name"`
-	NCPUs         types.Int64  `tfsdk:"ncpus"`
-	// TODO: This should be plural
-	NetworkInterface    []instanceResourceNetworkInterfaceModel `tfsdk:"network_interface"`
-	ProjectID           types.String                            `tfsdk:"project_id"`
-	RunState            types.String                            `tfsdk:"run_state"`
-	TimeCreated         types.String                            `tfsdk:"time_created"`
-	TimeModified        types.String                            `tfsdk:"time_modified"`
-	TimeRunStateUpdated types.String                            `tfsdk:"time_run_state_updated"`
-	Timeouts            timeouts.Value                          `tfsdk:"timeouts"`
-}
-
-type instanceResourceNetworkInterfaceModel struct {
-	Description types.String `tfsdk:"description"`
-	// TODO: Return the ID of the nic
-	IP       types.String `tfsdk:"ip"`
-	Name     types.String `tfsdk:"name"`
-	SubnetID types.String `tfsdk:"subnet_id"`
-	VPCID    types.String `tfsdk:"vpc_id"`
-	// TODO: We shouldn't need to use these, only IDs.
-	// Fix the API
-	SubnetName types.String `tfsdk:"subnet_name"`
-	VPCName    types.String `tfsdk:"vpc_name"`
+	AttachToDisks       types.List     `tfsdk:"attach_to_disks"`
+	Description         types.String   `tfsdk:"description"`
+	ExternalIPs         types.List     `tfsdk:"external_ips"`
+	HostName            types.String   `tfsdk:"host_name"`
+	ID                  types.String   `tfsdk:"id"`
+	Memory              types.Int64    `tfsdk:"memory"`
+	Name                types.String   `tfsdk:"name"`
+	NCPUs               types.Int64    `tfsdk:"ncpus"`
+	ProjectID           types.String   `tfsdk:"project_id"`
+	RunState            types.String   `tfsdk:"run_state"`
+	TimeCreated         types.String   `tfsdk:"time_created"`
+	TimeModified        types.String   `tfsdk:"time_modified"`
+	TimeRunStateUpdated types.String   `tfsdk:"time_run_state_updated"`
+	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -122,45 +107,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
 				ElementType: types.StringType,
-			},
-			"network_interface": schema.ListNestedAttribute{
-				Optional:    true,
-				Description: "Attaches network interfaces to an instance at the time the instance is created.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the network interface.",
-						},
-						"description": schema.StringAttribute{
-							Required:    true,
-							Description: "Description for the network interface.",
-						},
-						"subnet_name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the VPC Subnet in which to create the network interface.",
-						},
-						"vpc_name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the VPC in which to create the network interface.",
-						},
-						"ip": schema.StringAttribute{
-							// TODO: For the purposes of this demo we will stick to
-							// auto-assigned IP addresses. In the future we will want
-							// this value to be computed/optional or required.
-							Computed:    true,
-							Description: "IP address for the network interface.",
-						},
-						"subnet_id": schema.StringAttribute{
-							Computed:    true,
-							Description: "ID of the VPC Subnet to which the interface belongs.",
-						},
-						"vpc_id": schema.StringAttribute{
-							Computed:    true,
-							Description: "ID of the VPC to which the interface belongs.",
-						},
-					},
-				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -220,6 +166,13 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			Hostname:    plan.HostName.ValueString(),
 			Memory:      oxideSDK.ByteCount(plan.Memory.ValueInt64()),
 			Ncpus:       oxideSDK.InstanceCpuCount(plan.NCPUs.ValueInt64()),
+			// Creating and attaching nics on instance create limits our
+			// ability to perform CRUD actions on them and increases complexity
+			// of the resource. NICs have their own APIs, it makes sense that
+			// they have their own resource at `oxide_instance_network_interface`
+			NetworkInterfaces: oxideSDK.InstanceNetworkInterfaceAttachment{
+				Type: oxideSDK.InstanceNetworkInterfaceAttachmentTypeNone,
+			},
 		},
 	}
 
@@ -267,28 +220,6 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	params.Body.ExternalIps = externalIPs
 
-	var nicAttachment = oxideSDK.InstanceNetworkInterfaceAttachment{}
-	if len(plan.NetworkInterface) < 1 {
-		// When not attaching any nics the API requires that you explicitly declare it
-		nicAttachment.Type = oxideSDK.InstanceNetworkInterfaceAttachmentTypeNone
-	} else {
-		nics := []oxideSDK.InstanceNetworkInterfaceCreate{}
-		for _, nic := range plan.NetworkInterface {
-			nicCreate := oxideSDK.InstanceNetworkInterfaceCreate{
-				Description: nic.Description.ValueString(),
-				Name:        oxideSDK.Name(nic.Name.ValueString()),
-				// TODO: Ideally from the API we should be able to create with IDs, not names
-				SubnetName: oxideSDK.Name(nic.SubnetName.ValueString()),
-				VpcName:    oxideSDK.Name(nic.VPCName.ValueString()),
-			}
-
-			nics = append(nics, nicCreate)
-		}
-		nicAttachment.Params = nics
-		nicAttachment.Type = oxideSDK.InstanceNetworkInterfaceAttachmentTypeCreate
-	}
-	params.Body.NetworkInterfaces = nicAttachment
-
 	instance, err := r.client.InstanceCreate(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -308,30 +239,6 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	// TODO: Would it be problematic to have this reported? Likely changes randomly,
 	// could make for a flaky resource
 	plan.TimeRunStateUpdated = types.StringValue(instance.TimeRunStateUpdated.String())
-
-	// The instance response does not include associated NICs, so we need additional
-	// API calls to retrieve them
-	if len(plan.NetworkInterface) > 1 {
-		for index, nic := range plan.NetworkInterface {
-			subnet, err := r.client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
-				Subnet:  oxideSDK.NameOrId(nic.SubnetName.ValueString()),
-				Vpc:     oxideSDK.NameOrId(nic.VPCName.ValueString()),
-				Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
-			})
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Error reading associated subnet information during create",
-					"API error: "+err.Error(),
-				)
-				return
-			}
-
-			plan.NetworkInterface[index].SubnetID = types.StringValue(subnet.Id)
-			plan.NetworkInterface[index].VPCID = types.StringValue(subnet.VpcId)
-
-			tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", types.StringValue(subnet.Id)), map[string]any{"success": true})
-		}
-	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -386,63 +293,6 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	//state.AttachToDisks = TODO
 	//state.ExternalIPs = TODO
-
-	nics, err := r.client.InstanceNetworkInterfaceList(
-		oxideSDK.InstanceNetworkInterfaceListParams{
-			Instance: oxideSDK.NameOrId(instance.Id),
-			Limit:    1000000000,
-		},
-	)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read network interface attachments:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("read network interfaces from instance with ID: %v", instance.Id), map[string]any{"success": true})
-
-	for index, item := range nics.Items {
-		nic := instanceResourceNetworkInterfaceModel{
-			Description: types.StringValue(item.Description),
-			IP:          types.StringValue(item.Ip),
-			Name:        types.StringValue(string(item.Name)),
-			SubnetID:    types.StringValue(item.SubnetId),
-			VPCID:       types.StringValue(item.VpcId),
-		}
-
-		// Ideally the NetworkInterface struct would contain the names of the VPC and subnet.
-		// For now they only give the ID so we'll retrieve the names separately.
-		vpc, err := r.client.VpcView(oxideSDK.VpcViewParams{
-			Vpc: oxideSDK.NameOrId(item.VpcId),
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read information about corresponding VPC:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", item.VpcId), map[string]any{"success": true})
-
-		subnet, err := r.client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
-			Subnet: oxideSDK.NameOrId(item.SubnetId),
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read information about corresponding subnet:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", item.SubnetId), map[string]any{"success": true})
-
-		nic.SubnetName = types.StringValue(string(subnet.Name))
-		nic.VPCName = types.StringValue(string(vpc.Name))
-
-		state.NetworkInterface[index] = nic
-	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -511,6 +361,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", disk.Id), map[string]any{"success": true})
 	}
 
+	// TODO: Double check if this is necessary
 	_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
@@ -523,6 +374,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 	}
+
 	ch := make(chan error)
 	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
 	e := <-ch
