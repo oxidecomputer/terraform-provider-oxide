@@ -53,6 +53,7 @@ type instanceResourceModel struct {
 	TimeModified        types.String   `tfsdk:"time_modified"`
 	TimeRunStateUpdated types.String   `tfsdk:"time_run_state_updated"`
 	Timeouts            timeouts.Value `tfsdk:"timeouts"`
+	UserData            types.String   `tfsdk:"user_data"`
 }
 
 // Metadata returns the resource type name.
@@ -116,6 +117,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
 				ElementType: types.StringType,
+			},
+			"user_data": schema.StringAttribute{
+				Optional: true,
+				Description: "User data for instance initialization systems (such as cloud-init). " +
+					"Must be a Base64-encoded string, as specified in RFC 4648 § 4 (+ and / characters with padding). " +
+					"Maximum 32 KiB unencoded data.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -186,6 +193,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			NetworkInterfaces: oxideSDK.InstanceNetworkInterfaceAttachment{
 				Type: oxideSDK.InstanceNetworkInterfaceAttachmentTypeNone,
 			},
+			UserData: plan.UserData.ValueString(),
 		},
 	}
 

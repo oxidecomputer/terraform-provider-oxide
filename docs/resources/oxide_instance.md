@@ -43,7 +43,7 @@ resource "oxide_instance" "example" {
 }
 ```
 
-### Attach two disks to the instance
+### Attach two disks to the instance and define user data
 
 ```hcl
 resource "oxide_instance" "example" {
@@ -53,6 +53,7 @@ resource "oxide_instance" "example" {
   host_name       = "<host value>"
   memory          = 1073741824
   ncpus           = 1
+  user_data       = filebase64("path/to/init.sh")
   attach_to_disks = ["disk1", "disk2"]
 }
 ```
@@ -74,6 +75,7 @@ resource "oxide_instance" "example" {
 - `attach_to_disks` (List of String, Optional) Disks to be attached to this instance.
 - `external_ips` (List of String, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
+- `user_data` (String) User data for instance initialization systems (such as cloud-init). Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4) (+ and / characters with padding). Maximum 32 KiB unencoded data.
 
 ### Read-Only
 
