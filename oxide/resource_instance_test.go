@@ -81,11 +81,9 @@ func checkResourceInstance(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_run_state_updated"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
@@ -132,11 +130,9 @@ func checkResourceInstanceDisk(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", "terraform-acc-mydisk1"),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", "terraform-acc-mydisk2"),
-		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_run_state_updated"),
 	}...)
 }
 
@@ -163,11 +159,9 @@ func checkResourceInstanceExternalIps(resourceName string) resource.TestCheckFun
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "default"),
-		resource.TestCheckResourceAttrSet(resourceName, "run_state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_run_state_updated"),
 	}...)
 }
 

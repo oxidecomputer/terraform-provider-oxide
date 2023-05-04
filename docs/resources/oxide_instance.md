@@ -80,10 +80,8 @@ resource "oxide_instance" "example" {
 ### Read-Only
 
 - `id` (String) Unique, immutable, system-controlled identifier of the instance.
-- `run_state` (String) Running state of an Instance (primarily: booted or stopped). This typically reflects whether it's starting, running, stopping, or stopped, but also includes states related to the instance's lifecycle.
 - `time_created` (String) Timestamp of when this instance was created.
 - `time_modified` (String) Timestamp of when this instance last modified.
-- `time_run_state_updated` (String) Timestamp of when the run state of this instance was last modified.
 
 <a id="nestedatt--timeouts"></a>
 

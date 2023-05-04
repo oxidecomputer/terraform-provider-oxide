@@ -38,22 +38,20 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	AttachToDisks       types.List     `tfsdk:"attach_to_disks"`
-	Description         types.String   `tfsdk:"description"`
-	ExternalIPs         types.List     `tfsdk:"external_ips"`
-	HostName            types.String   `tfsdk:"host_name"`
-	ID                  types.String   `tfsdk:"id"`
-	Memory              types.Int64    `tfsdk:"memory"`
-	Name                types.String   `tfsdk:"name"`
-	NCPUs               types.Int64    `tfsdk:"ncpus"`
-	ProjectID           types.String   `tfsdk:"project_id"`
-	RunState            types.String   `tfsdk:"run_state"`
-	StartOnCreate       types.Bool     `tfsdk:"start_on_create"`
-	TimeCreated         types.String   `tfsdk:"time_created"`
-	TimeModified        types.String   `tfsdk:"time_modified"`
-	TimeRunStateUpdated types.String   `tfsdk:"time_run_state_updated"`
-	Timeouts            timeouts.Value `tfsdk:"timeouts"`
-	UserData            types.String   `tfsdk:"user_data"`
+	AttachToDisks types.List     `tfsdk:"attach_to_disks"`
+	Description   types.String   `tfsdk:"description"`
+	ExternalIPs   types.List     `tfsdk:"external_ips"`
+	HostName      types.String   `tfsdk:"host_name"`
+	ID            types.String   `tfsdk:"id"`
+	Memory        types.Int64    `tfsdk:"memory"`
+	Name          types.String   `tfsdk:"name"`
+	NCPUs         types.Int64    `tfsdk:"ncpus"`
+	ProjectID     types.String   `tfsdk:"project_id"`
+	StartOnCreate types.Bool     `tfsdk:"start_on_create"`
+	TimeCreated   types.String   `tfsdk:"time_created"`
+	TimeModified  types.String   `tfsdk:"time_modified"`
+	Timeouts      timeouts.Value `tfsdk:"timeouts"`
+	UserData      types.String   `tfsdk:"user_data"`
 }
 
 // Metadata returns the resource type name.
@@ -135,12 +133,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the instance.",
 			},
-			"run_state": schema.StringAttribute{
-				Computed: true,
-				Description: "Running state of an Instance (primarily: booted or stopped)." +
-					" This typically reflects whether it's starting, running, stopping, or stopped," +
-					" but also includes states related to the instance's lifecycle.",
-			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
 				Description: "Timestamp of when this instance was created.",
@@ -148,10 +140,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
 				Description: "Timestamp of when this instance was last modified.",
-			},
-			"time_run_state_updated": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when the run state of this instance was last modified.",
 			},
 		},
 	}
@@ -254,12 +242,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
-	plan.RunState = types.StringValue(string(instance.RunState))
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeCreated.String())
-	// TODO: Would it be problematic to have this reported? Likely changes randomly,
-	// could make for a flaky resource
-	plan.TimeRunStateUpdated = types.StringValue(instance.TimeRunStateUpdated.String())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -306,11 +290,8 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.Name = types.StringValue(string(instance.Name))
 	state.NCPUs = types.Int64Value(int64(instance.Ncpus))
 	state.ProjectID = types.StringValue(instance.ProjectId)
-	// Should this be something we have as part of the schema? likely to make for a buggy provider
-	state.RunState = types.StringValue(string(instance.RunState))
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeCreated.String())
-	state.TimeRunStateUpdated = types.StringValue(instance.TimeRunStateUpdated.String())
 
 	//state.AttachToDisks = TODO
 	//state.ExternalIPs = TODO
