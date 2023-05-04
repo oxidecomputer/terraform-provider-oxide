@@ -8,11 +8,13 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -46,10 +48,12 @@ type instanceResourceModel struct {
 	NCPUs               types.Int64    `tfsdk:"ncpus"`
 	ProjectID           types.String   `tfsdk:"project_id"`
 	RunState            types.String   `tfsdk:"run_state"`
+	StartOnCreate       types.Bool     `tfsdk:"start_on_create"`
 	TimeCreated         types.String   `tfsdk:"time_created"`
 	TimeModified        types.String   `tfsdk:"time_modified"`
 	TimeRunStateUpdated types.String   `tfsdk:"time_run_state_updated"`
 	Timeouts            timeouts.Value `tfsdk:"timeouts"`
+	UserData            types.String   `tfsdk:"user_data"`
 }
 
 // Metadata returns the resource type name.
@@ -98,6 +102,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Required:    true,
 				Description: "Number of CPUs allocated for this instance.",
 			},
+			"start_on_create": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+				Description: "Starts the instance on creation",
+			},
 			"attach_to_disks": schema.ListAttribute{
 				Optional:    true,
 				Description: "Disks to be attached to this instance.",
@@ -107,6 +117,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
 				ElementType: types.StringType,
+			},
+			"user_data": schema.StringAttribute{
+				Optional: true,
+				Description: "User data for instance initialization systems (such as cloud-init). " +
+					"Must be a Base64-encoded string, as specified in RFC 4648 § 4 (+ and / characters with padding). " +
+					"Maximum 32 KiB unencoded data.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -166,13 +182,18 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			Hostname:    plan.HostName.ValueString(),
 			Memory:      oxideSDK.ByteCount(plan.Memory.ValueInt64()),
 			Ncpus:       oxideSDK.InstanceCpuCount(plan.NCPUs.ValueInt64()),
+			Start:       plan.StartOnCreate.ValueBool(),
 			// Creating and attaching nics on instance create limits our
-			// ability to perform CRUD actions on them and increases complexity
-			// of the resource. NICs have their own APIs, it makes sense that
-			// they have their own resource at `oxide_instance_network_interface`
+			// ability to perform CRUD actions reliably on them (e.g. no information
+			// about the nics is returned on instance creation, so we'd have to
+			// make additional API calls to retrieve that information based
+			// on names instead of IDs) and increases complexity of the resource.
+			// NICs have their own APIs, it makes sense that they have their own
+			// resource at `oxide_instance_network_interface`
 			NetworkInterfaces: oxideSDK.InstanceNetworkInterfaceAttachment{
 				Type: oxideSDK.InstanceNetworkInterfaceAttachmentTypeNone,
 			},
+			UserData: plan.UserData.ValueString(),
 		},
 	}
 
@@ -399,4 +420,21 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		}
 	}
 	tflog.Trace(ctx, fmt.Sprintf("deleted instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+}
+
+func waitForStoppedInstance(client *oxideSDK.Client, instanceID oxideSDK.NameOrId, ch chan error) {
+	for {
+		params := oxideSDK.InstanceViewParams{Instance: instanceID}
+		resp, err := client.InstanceView(params)
+		if err != nil {
+			ch <- err
+		}
+		if resp.RunState == oxideSDK.InstanceStateStopped {
+			break
+		}
+		// Suggested alternatives suggested by linter are not fit for purpose
+		//lintignore:R018
+		time.Sleep(time.Second)
+	}
+	ch <- nil
 }
