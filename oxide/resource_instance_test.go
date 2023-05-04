@@ -58,12 +58,13 @@ var testResourceInstanceConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test instance"
-  name              = "terraform-acc-myinstance"
-  host_name         = "terraform-acc-myhost"
-  memory            = 1073741824
-  ncpus             = 1
+  project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description     = "a test instance"
+  name            = "terraform-acc-myinstance"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
   timeouts = {
     read   = "1m"
 	create = "3m"
@@ -95,29 +96,29 @@ var testResourceInstanceDiskConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "test-instance" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test disk"
-  name              = "terraform-acc-mydisk1"
-  size              = 1073741824
-  disk_source       = { blank = 512 }
+  project_id  = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description = "a test disk"
+  name        = "terraform-acc-mydisk1"
+  size        = 1073741824
+  disk_source = { blank = 512 }
 }
 
 resource "oxide_disk" "test-instance2" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test disk"
-  name              = "terraform-acc-mydisk2"
-  size              = 1073741824
-  disk_source       = { blank = 512 }
+  project_id  = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description = "a test disk"
+  name        = "terraform-acc-mydisk2"
+  size        = 1073741824
+  disk_source = { blank = 512 }
 }
 
 resource "oxide_instance" "test2" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test instance"
-  name              = "terraform-acc-myinstance2"
-  host_name         = "terraform-acc-myhost"
-  memory            = 1073741824
-  ncpus             = 1
-  attach_to_disks   = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
+  project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description     = "a test instance"
+  name            = "terraform-acc-myinstance2"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  attach_to_disks = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
 }
 `
 
@@ -143,13 +144,13 @@ var testResourceInstanceExternalIpsConfig = `
 data "oxide_projects" "project_list" {}
 
 resource "oxide_instance" "test4" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test instance"
-  name              = "terraform-acc-myinstance4"
-  host_name         = "terraform-acc-myhost"
-  memory            = 1073741824
-  ncpus             = 1
-  external_ips   = ["default"]
+  project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description  = "a test instance"
+  name         = "terraform-acc-myinstance4"
+  host_name    = "terraform-acc-myhost"
+  memory       = 1073741824
+  ncpus        = 1
+  external_ips = ["default"]
 }
 `
 

@@ -6,7 +6,7 @@ page_title: "oxide_instance_network_interface Resource - terraform-provider-oxid
 
 This resource manages virtual network interface devices attached to an instance.
 
-!> The associated instance will be stopped while the network interface is attached, and restarted afterwards.
+!> The associated instance must be stopped when the network interface is attached.
 
 ## Example Usage
 
@@ -33,8 +33,8 @@ resource "oxide_instance_network_interface" "example" {
 
 ### Optional
 
-- `ip_address` (String, Optional) IP address for the instance network interface. One will be auto-assigned if not provided.
-- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
+- `ip_address` (String) IP address for the instance network interface. One will be auto-assigned if not provided.
+- `timeouts` (Attribute) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 

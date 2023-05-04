@@ -7,7 +7,6 @@ package oxide
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -173,31 +172,6 @@ func (r *instanceNICResource) Create(ctx context.Context, req resource.CreateReq
 	}
 	tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", plan.SubnetID.ValueString()), map[string]any{"success": true})
 
-	// Stop instance so we can attach network interface
-	_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
-		Instance: oxideSDK.NameOrId(plan.InstanceID.ValueString()),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to stop associated instance:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	// Wait for instance to be stopped before attempting to create NIC
-	ch := make(chan error)
-	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(plan.InstanceID.ValueString()), ch)
-	e := <-ch
-	if !is404(e) {
-		resp.Diagnostics.AddError(
-			"Unable to stop instance:",
-			"API error: "+e.Error(),
-		)
-		return
-	}
-	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", plan.InstanceID.ValueString()), map[string]any{"success": true})
-
 	params := oxideSDK.InstanceNetworkInterfaceCreateParams{
 		Instance: oxideSDK.NameOrId(plan.InstanceID.ValueString()),
 		Body: &oxideSDK.InstanceNetworkInterfaceCreate{
@@ -218,18 +192,19 @@ func (r *instanceNICResource) Create(ctx context.Context, req resource.CreateReq
 	}
 	tflog.Trace(ctx, fmt.Sprintf("created instance network interface with ID: %v", nic.Id), map[string]any{"success": true})
 
+	// TODO: Should there be an option to start the instance after attaching the nic?
 	// Start instance again after attaching NIC
-	_, err = r.client.InstanceStart(oxideSDK.InstanceStartParams{
-		Instance: oxideSDK.NameOrId(plan.InstanceID.ValueString()),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to start associated instance:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-	tflog.Trace(ctx, fmt.Sprintf("started instance with ID: %v", plan.InstanceID.ValueString()), map[string]any{"success": true})
+	//	_, err = r.client.InstanceStart(oxideSDK.InstanceStartParams{
+	//		Instance: oxideSDK.NameOrId(plan.InstanceID.ValueString()),
+	//	})
+	//	if err != nil {
+	//		resp.Diagnostics.AddError(
+	//			"Unable to start associated instance:",
+	//			"API error: "+err.Error(),
+	//		)
+	//		return
+	//	}
+	//	tflog.Trace(ctx, fmt.Sprintf("started instance with ID: %v", plan.InstanceID.ValueString()), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(nic.Id)
@@ -414,21 +389,4 @@ func (r *instanceNICResource) Delete(ctx context.Context, req resource.DeleteReq
 		}
 	}
 	tflog.Trace(ctx, fmt.Sprintf("deleted instance network interface with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
-}
-
-func waitForStoppedInstance(client *oxideSDK.Client, instanceID oxideSDK.NameOrId, ch chan error) {
-	for {
-		params := oxideSDK.InstanceViewParams{Instance: instanceID}
-		resp, err := client.InstanceView(params)
-		if err != nil {
-			ch <- err
-		}
-		if resp.RunState == oxideSDK.InstanceStateStopped {
-			break
-		}
-		// Suggested alternatives suggested by linter are not fit for purpose
-		//lintignore:R018
-		time.Sleep(time.Second)
-	}
-	ch <- nil
 }

@@ -28,17 +28,18 @@ resource "oxide_instance" "example" {
 }
 ```
 
-### Assign an IP pool for the instance
+### Assign an IP pool for the instance and do not start instance on creation
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id   = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description  = "a test instance"
-  name         = "myinstance"
-  host_name    = "<host value>"
-  memory       = 1073741824
-  ncpus        = 1
-  external_ips = ["myippool"]
+  project_id      = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description     = "a test instance"
+  name            = "myinstance"
+  host_name       = "<host value>"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  external_ips    = ["myippool"]
 }
 ```
 
@@ -66,6 +67,7 @@ resource "oxide_instance" "example" {
 - `name` (String) Name of the instance.
 - `ncpus` (Number) Number of CPUs allocated for this instance.
 - `project_id` (String) ID of the project that will contain the instance.
+- `start_on_create` (Boolean, Default `true`) Starts the instance on creation when set to true.
 
 ### Optional
 
