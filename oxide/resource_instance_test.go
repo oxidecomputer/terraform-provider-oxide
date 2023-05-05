@@ -8,59 +8,29 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceInstance_full(t *testing.T) {
-	resourceName := "oxide_instance.test"
-	secondResourceName := "oxide_instance.test2"
-	fourthResourceName := "oxide_instance.test4"
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testResourceInstanceConfig,
-				Check:  checkResourceInstance(resourceName),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testResourceInstanceDiskConfig,
-				Check:  checkResourceInstanceDisk(secondResourceName),
-			},
-			{
-				ResourceName:      secondResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testResourceInstanceExternalIpsConfig,
-				Check:  checkResourceInstanceExternalIps(fourthResourceName),
-			},
-			{
-				ResourceName:      fourthResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+type resourceInstanceConfig struct {
+	BlockName        string
+	InstanceName     string
+	SupportBlockName string
+	DiskBlockName    string
+	DiskName         string
+	DiskBlockName2   string
+	DiskName2        string
 }
 
-var testResourceInstanceConfig = `
-data "oxide_projects" "project_list" {}
+var resourceInstanceConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
 
-resource "oxide_instance" "test" {
-  project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
   description     = "a test instance"
-  name            = "terraform-acc-myinstance"
+  name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
@@ -73,14 +43,115 @@ resource "oxide_instance" "test" {
 }
 `
 
-func checkResourceInstance(resourceName string) resource.TestCheckFunc {
+var resourceInstanceFullConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+resource "oxide_disk" "test-instance" {
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "terraform-acc-mydisk1"
+  size        = 1073741824
+  disk_source = { blank = 512 }
+}
+
+resource "oxide_disk" "test-instance2" {
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "terraform-acc-mydisk2"
+  size        = 1073741824
+  disk_source = { blank = 512 }
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description     = "a test instance"
+  name            = "terraform-acc-myinstance2"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  external_ips    = ["default"]
+  attach_to_disks = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
+}
+`
+
+func TestAccResourceInstance_full(t *testing.T) {
+	instanceName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	blockName := fmt.Sprintf("acc-resource-instance-%s", uuid.New())
+	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	blockName2 := fmt.Sprintf("acc-resource-instance-%s", uuid.New())
+	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	diskName2 := diskName + "-2"
+	instanceName2 := instanceName + "-2"
+	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
+	config2, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName2,
+			InstanceName:     instanceName2,
+			DiskName:         diskName,
+			DiskBlockName:    fmt.Sprintf("acc-resource-instance-%s", uuid.New()),
+			DiskName2:        diskName2,
+			DiskBlockName2:   fmt.Sprintf("acc-resource-instance-%s", uuid.New()),
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceFullConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstance(resourceName, instanceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+			{
+				Config: config2,
+				Check:  checkResourceInstanceFull(resourceName2, instanceName2, diskName, diskName2),
+			},
+			{
+				ResourceName:            resourceName2,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func checkResourceInstance(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -90,75 +161,18 @@ func checkResourceInstance(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceInstanceDiskConfig = `
-data "oxide_projects" "project_list" {}
-
-resource "oxide_disk" "test-instance" {
-  project_id  = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description = "a test disk"
-  name        = "terraform-acc-mydisk1"
-  size        = 1073741824
-  disk_source = { blank = 512 }
-}
-
-resource "oxide_disk" "test-instance2" {
-  project_id  = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description = "a test disk"
-  name        = "terraform-acc-mydisk2"
-  size        = 1073741824
-  disk_source = { blank = 512 }
-}
-
-resource "oxide_instance" "test2" {
-  project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description     = "a test instance"
-  name            = "terraform-acc-myinstance2"
-  host_name       = "terraform-acc-myhost"
-  memory          = 1073741824
-  ncpus           = 1
-  attach_to_disks = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
-}
-`
-
-func checkResourceInstanceDisk(resourceName string) resource.TestCheckFunc {
+func checkResourceInstanceFull(resourceName, instanceName, diskName, diskName2 string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance2"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", "terraform-acc-mydisk1"),
-		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", "terraform-acc-mydisk2"),
-		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-	}...)
-}
-
-var testResourceInstanceExternalIpsConfig = `
-data "oxide_projects" "project_list" {}
-
-resource "oxide_instance" "test4" {
-  project_id   = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description  = "a test instance"
-  name         = "terraform-acc-myinstance4"
-  host_name    = "terraform-acc-myhost"
-  memory       = 1073741824
-  ncpus        = 1
-  external_ips = ["default"]
-}
-`
-
-func checkResourceInstanceExternalIps(resourceName string) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myinstance4"),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
-		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
-		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", diskName),
+		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", diskName2),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "default"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -177,8 +191,7 @@ func testAccInstanceDestroy(s *terraform.State) error {
 		}
 
 		params := oxideSDK.InstanceViewParams{
-			Instance: "terraform-acc-myinstance",
-			Project:  "test",
+			Instance: oxideSDK.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.InstanceView(params)
 		if err != nil && is404(err) {

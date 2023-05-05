@@ -8,53 +8,25 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceVPC_full(t *testing.T) {
-	resourceName := "oxide_vpc.test"
-	resourceName2 := "oxide_vpc.test2"
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-		CheckDestroy:             testAccVPCDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testResourceVPCConfig,
-				Check:  checkResourceVPC(resourceName),
-			},
-			{
-				Config: testResourceVPCUpdateConfig,
-				Check:  checkResourceVPCUpdate(resourceName),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testResourceVPCIPv6Config,
-				Check:  checkResourceVPCIPv6(resourceName2),
-			},
-			{
-				ResourceName:      resourceName2,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+type resourceVPCConfig struct {
+	BlockName        string
+	SupportBlockName string
+	VPCName          string
 }
 
-var testResourceVPCConfig = `
-data "oxide_projects" "project_list" {}
+var resourceVPCConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
 
-resource "oxide_vpc" "test" {
-	project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+resource "oxide_vpc" "{{.BlockName}}" {
+	project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
 	description       = "a test vpc"
-	name              = "terraform-acc-myvpc"
+	name              = "{{.VPCName}}"
 	dns_name          = "my-vpc-dns"
 	timeouts = {
 		read   = "1m"
@@ -65,11 +37,110 @@ resource "oxide_vpc" "test" {
   }
 `
 
-func checkResourceVPC(resourceName string) resource.TestCheckFunc {
+var resourceVPCUpdateConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+resource "oxide_vpc" "{{.BlockName}}" {
+	project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+	description       = "a test vopac"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-donas"
+  }
+`
+
+var resourceVPCIPv6ConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+resource "oxide_vpc" "{{.BlockName}}" {
+	project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
+	ipv6_prefix       = "fd1e:4947:d4a1::/48"
+  }
+`
+
+func TestAccResourceVPC_full(t *testing.T) {
+	vpcName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	blockName := fmt.Sprintf("acc-resource-vpc-%s", uuid.New())
+	resourceName := fmt.Sprintf("oxide_vpc.%s", blockName)
+	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+	config, err := parsedAccConfig(
+		resourceVPCConfig{
+			BlockName:        blockName,
+			VPCName:          vpcName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceVPCConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	vpcNameUpdated := vpcName + "-updated"
+	configUpdate, err := parsedAccConfig(
+		resourceVPCConfig{
+			BlockName:        blockName,
+			VPCName:          vpcNameUpdated,
+			SupportBlockName: supportBlockName,
+		},
+		resourceVPCUpdateConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	blockName2 := fmt.Sprintf("acc-resource-vpc-%s", uuid.New())
+	resourceName2 := fmt.Sprintf("oxide_vpc.%s", blockName2)
+	vpcName2 := vpcName + "-2"
+	config2, err := parsedAccConfig(
+		resourceVPCConfig{
+			BlockName:        blockName2,
+			VPCName:          vpcName2,
+			SupportBlockName: supportBlockName,
+		},
+		resourceVPCIPv6ConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccVPCDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceVPC(resourceName, vpcName),
+			},
+			{
+				Config: configUpdate,
+				Check:  checkResourceVPCUpdate(resourceName, vpcNameUpdated),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: config2,
+				Check:  checkResourceVPCIPv6(resourceName2, vpcName2),
+			},
+			{
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func checkResourceVPC(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc"),
+		resource.TestCheckResourceAttr(resourceName, "name", vpcName),
 		resource.TestCheckResourceAttr(resourceName, "dns_name", "my-vpc-dns"),
 		resource.TestCheckResourceAttrSet(resourceName, "ipv6_prefix"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -83,22 +154,11 @@ func checkResourceVPC(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceVPCUpdateConfig = `
-data "oxide_projects" "project_list" {}
-
-resource "oxide_vpc" "test" {
-	project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-	description       = "a test vopac"
-	name              = "terraform-acc-myvpc-new"
-	dns_name          = "my-vpc-donas"
-  }
-`
-
-func checkResourceVPCUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceVPCUpdate(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vopac"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc-new"),
+		resource.TestCheckResourceAttr(resourceName, "name", vpcName),
 		resource.TestCheckResourceAttr(resourceName, "dns_name", "my-vpc-donas"),
 		resource.TestCheckResourceAttrSet(resourceName, "ipv6_prefix"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -108,23 +168,11 @@ func checkResourceVPCUpdate(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceVPCIPv6Config = `
-data "oxide_projects" "project_list" {}
-
-resource "oxide_vpc" "test2" {
-	project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-	description       = "a test vpc"
-	name              = "terraform-acc-myvpc2"
-	dns_name          = "my-vpc-dns"
-	ipv6_prefix       = "fd1e:4947:d4a1::/48"
-  }
-`
-
-func checkResourceVPCIPv6(resourceName string) resource.TestCheckFunc {
+func checkResourceVPCIPv6(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myvpc2"),
+		resource.TestCheckResourceAttr(resourceName, "name", vpcName),
 		resource.TestCheckResourceAttr(resourceName, "dns_name", "my-vpc-dns"),
 		resource.TestCheckResourceAttr(resourceName, "ipv6_prefix", "fd1e:4947:d4a1::/48"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -146,8 +194,7 @@ func testAccVPCDestroy(s *terraform.State) error {
 		}
 
 		params := oxideSDK.VpcViewParams{
-			Project: "test",
-			Vpc:     "terraform-acc-myvpc",
+			Vpc: oxideSDK.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.VpcView(params)
 		if err != nil && is404(err) {

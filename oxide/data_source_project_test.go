@@ -29,7 +29,7 @@ data "oxide_project" "{{.BlockName}}" {
 `
 
 func TestAccDataSourceProject_full(t *testing.T) {
-	blockName := fmt.Sprintf("acc-datasource-project-full-%s", uuid.New())
+	blockName := fmt.Sprintf("acc-datasource-project-%s", uuid.New())
 	config, err := parsedAccConfig(
 		dataSourceProjectConfig{
 			BlockName:        blockName,

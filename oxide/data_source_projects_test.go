@@ -5,33 +5,50 @@
 package oxide
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+type dataSourceProjectsConfig struct {
+	BlockName string
+}
+
+var dataSourceProjectsConfigTpl = `
+data "oxide_projects" "{{.BlockName}}" {
+  timeouts = {
+    read = "1m"
+  }
+}
+`
+
 func TestAccDataSourceProjects_full(t *testing.T) {
-	datasourceName := "data.oxide_projects.test"
+	blockName := fmt.Sprintf("acc-datasource-projects-%s", uuid.New())
+	config, err := parsedAccConfig(
+		dataSourceProjectsConfig{
+			BlockName: blockName,
+		},
+		dataSourceProjectsConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDataSourceProjectsConfig,
-				Check:  checkDataSourceProjects(datasourceName),
+				Config: config,
+				Check: checkDataSourceProjects(
+					fmt.Sprintf("data.oxide_projects.%s", blockName),
+				),
 			},
 		},
 	})
 }
-
-var testDataSourceProjectsConfig = `
-data "oxide_projects" "test" {
-  timeouts = {
-    read = "1m"
-  }
-}
-`
 
 func checkDataSourceProjects(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -39,10 +56,6 @@ func checkDataSourceProjects(dataName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.description"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.id"),
-		// Ideally we would like to test that a project has the name we want set with:
-		// resource.TestCheckResourceAttr(dataName, "projects.0.name", "test"),
-		// Unfortunately, for now we can't guarantee that the projects will be in the
-		// same order for everyone who runs the tests. This means we'll only check that it's set.
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.name"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.time_modified"),

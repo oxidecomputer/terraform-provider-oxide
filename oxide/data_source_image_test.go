@@ -5,48 +5,63 @@
 package oxide
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+type dataSourceImageConfig struct {
+	BlockName         string
+	SupportBlockName1 string
+	SupportBlockName2 string
+}
+
+var dataSourceImageConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName1}}" {}
+
+data "oxide_images" "{{.SupportBlockName2}}" {
+  project_id = element(tolist(data.oxide_projects.{{.SupportBlockName1}}.projects[*].id), 0)
+}
+
+data "oxide_image" "{{.BlockName}}" {
+  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName1}}.projects[*].name), 0)
+  name = element(tolist(data.oxide_images.{{.SupportBlockName2}}.images[*].name), 0)
+  timeouts = {
+    read = "1m"
+  }
+}
+`
+
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccDataSourceImage_full(t *testing.T) {
-	datasourceName := "data.oxide_image.test"
+	blockName := fmt.Sprintf("acc-datasource-image-%s", uuid.New())
+	config, err := parsedAccConfig(
+		dataSourceImageConfig{
+			BlockName:         blockName,
+			SupportBlockName1: fmt.Sprintf("acc-support-%s", uuid.New()),
+			SupportBlockName2: fmt.Sprintf("acc-support-%s", uuid.New()),
+		},
+		dataSourceImageConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDataSourceImageConfig,
-				Check:  checkDataSourceImage(datasourceName),
+				Config: config,
+				Check: checkDataSourceImage(
+					fmt.Sprintf("data.oxide_image.%s", blockName),
+				),
 			},
 		},
 	})
 }
-
-type dataSourceImageConfig struct {
-	BlockName  string
-	BlockName2 string
-	BlockName3 string
-}
-
-var testDataSourceImageConfig = `
-data "oxide_projects" "project_list" {}
-
-data "oxide_images" "image_list" {
-  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-}
-
-data "oxide_image" "test" {
-  project_name = element(tolist(data.oxide_projects.project_list.projects[*].name), 0)
-  name = element(tolist(data.oxide_images.image_list.images[*].name), 0)
-  timeouts = {
-    read = "1m"
-  }
-}
-`
 
 func checkDataSourceImage(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{

@@ -8,13 +8,50 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
+type resourceDiskConfig struct {
+	BlockName        string
+	DiskName         string
+	SupportBlockName string
+}
+
+var resourceDiskConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+resource "oxide_disk" "{{.BlockName}}" {
+  project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description       = "a test disk"
+  name              = "{{.DiskName}}"
+  size              = 1073741824
+  disk_source       = { blank = 512 }
+  timeouts = {
+    read   = "1m"
+	create = "3m"
+	delete = "2m"
+  }
+}
+`
+
 func TestAccResourceDisk_full(t *testing.T) {
-	resourceName := "oxide_disk.test"
+	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	blockName := fmt.Sprintf("acc-resource-disk-%s", uuid.New())
+	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
+	config, err := parsedAccConfig(
+		resourceDiskConfig{
+			BlockName:        blockName,
+			DiskName:         diskName,
+			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
+		},
+		resourceDiskConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -22,8 +59,8 @@ func TestAccResourceDisk_full(t *testing.T) {
 		CheckDestroy:             testAccDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceDiskConfig,
-				Check:  checkResourceDisk(resourceName),
+				Config: config,
+				Check:  checkResourceDisk(resourceName, diskName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -37,30 +74,13 @@ func TestAccResourceDisk_full(t *testing.T) {
 	})
 }
 
-var testResourceDiskConfig = `
-data "oxide_projects" "project_list" {}
-
-resource "oxide_disk" "test" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test disk"
-  name              = "terraform-acc-mydisk"
-  size              = 1073741824
-  disk_source       = { blank = 512 }
-  timeouts = {
-    read   = "1m"
-	create = "3m"
-	delete = "2m"
-  }
-}
-`
-
-func checkResourceDisk(resourceName string) resource.TestCheckFunc {
+func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test disk"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-mydisk"),
+		resource.TestCheckResourceAttr(resourceName, "name", diskName),
 		resource.TestCheckResourceAttr(resourceName, "size", "1073741824"),
-		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/terraform-acc-mydisk"),
+		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/"+diskName),
 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
 		resource.TestCheckResourceAttr(resourceName, "disk_source.blank", "512"),
 		resource.TestCheckResourceAttrSet(resourceName, "state.state"),
@@ -86,8 +106,7 @@ func testAccDiskDestroy(s *terraform.State) error {
 		}
 
 		params := oxideSDK.DiskViewParams{
-			Project: "test",
-			Disk:    "terraform-acc-mydisk",
+			Disk: oxideSDK.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.DiskView(params)
 

@@ -8,17 +8,88 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// TODO: Currently the simulated omicron never reports a "stopped" state for an instance.
-// This means that the following test never runs successfully. Find out what is happening
-// and restore this test.
+type resourceInstanceNICConfig struct {
+	BlockName         string
+	NICName           string
+	SupportBlockName  string
+	InstanceBlockName string
+	InstanceName      string
+	SubnetBlockName   string
+	SubnetName        string
+	VPCBlockName      string
+	VPCName           string
+}
+
+var resourceInstanceNICConfigTpl = `
+ data "oxide_projects" "{{.SupportBlockName}}" {}
+
+ resource "oxide_vpc" "{{.VPCBlockName}}" {
+ 	project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+ 	description = "a test vpc"
+ 	name        = "{{.VPCName}}"
+ 	dns_name    = "my-vpc-dns"
+ }
+
+ resource "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+ 	vpc_id      = oxide_vpc.{{.VPCBlockName}}.id
+ 	description = "a test vpc subnet"
+ 	name        = "{{.SubnetName}}"
+ 	ipv4_block  = "192.168.1.0/24"
+ }
+
+ resource "oxide_instance" "{{.InstanceBlockName}}" {
+   project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+   description     = "a test instance"
+   name            = "{{.InstanceName}}"
+   host_name       = "terraform-acc-myhost"
+   memory          = 1073741824
+   ncpus           = 1
+   start_on_create = false
+ }
+
+ resource "oxide_instance_network_interface" "test" {
+   instance_id = oxide_instance.{{.InstanceBlockName}}.id
+   subnet_id   = oxide_vpc_subnet.{{.SubnetBlockName}}.id
+   vpc_id      = oxide_vpc.{{.VPCBlockName}}.id
+   description = "a test nic"
+   name        = "{{.NICName}}"
+ }
+ `
 
 func TestAccResourceInstanceNIC_full(t *testing.T) {
-	resourceName := "oxide_instance_network_interface.test"
+	nicName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	subnetName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	vpcName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	instanceName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	blockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
+	vpcBlockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
+	subnetBlockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
+	instanceBlockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
+	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+	resourceName := fmt.Sprintf("oxide_instance_network_interface.%s", blockName)
+	config, err := parsedAccConfig(
+		resourceInstanceNICConfig{
+			BlockName:         blockName,
+			NICName:           nicName,
+			VPCBlockName:      vpcBlockName,
+			VPCName:           vpcName,
+			SubnetBlockName:   subnetBlockName,
+			SubnetName:        subnetName,
+			InstanceBlockName: instanceBlockName,
+			InstanceName:      instanceName,
+			SupportBlockName:  supportBlockName,
+		},
+		resourceInstanceNICConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -26,8 +97,8 @@ func TestAccResourceInstanceNIC_full(t *testing.T) {
 		CheckDestroy:             testAccInstanceNICDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceInstanceNICConfig,
-				Check:  checkResourceInstanceNIC(resourceName),
+				Config: config,
+				Check:  checkResourceInstanceNIC(resourceName, nicName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -38,49 +109,13 @@ func TestAccResourceInstanceNIC_full(t *testing.T) {
 	})
 }
 
-var testResourceInstanceNICConfig = `
- data "oxide_projects" "project_list" {}
-
- resource "oxide_vpc" "test_nic" {
- 	project_id  = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
- 	description = "a test vpc"
- 	name        = "terraform-acc-myvpc-nic"
- 	dns_name    = "my-vpc-dns"
- }
-
- resource "oxide_vpc_subnet" "test_nic" {
- 	vpc_id      = oxide_vpc.test_nic.id
- 	description = "a test vpc subnet"
- 	name        = "terraform-acc-mysubnet-nic"
- 	ipv4_block  = "192.168.1.0/24"
- }
-
- resource "oxide_instance" "test_nic" {
-   project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-   description     = "a test instance"
-   name            = "terraform-acc-myinstance-nic"
-   host_name       = "terraform-acc-myhost"
-   memory          = 1073741824
-   ncpus           = 1
-   start_on_create = false
- }
-
- resource "oxide_instance_network_interface" "test" {
-   instance_id = oxide_instance.test_nic.id
-   subnet_id   = oxide_vpc_subnet.test_nic.id
-   vpc_id      = oxide_vpc.test_nic.id
-   description = "a test nic"
-   name        = "terraform-acc-myinic"
- }
- `
-
-func checkResourceInstanceNIC(resourceName string) resource.TestCheckFunc {
+func checkResourceInstanceNIC(resourceName, nicName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "instance_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "subnet_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test nic"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-mynic"),
+		resource.TestCheckResourceAttr(resourceName, "name", nicName),
 		resource.TestCheckResourceAttrSet(resourceName, "ip_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "mac_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "primary"),
@@ -104,9 +139,7 @@ func testAccInstanceNICDestroy(s *terraform.State) error {
 		}
 
 		params := oxideSDK.InstanceNetworkInterfaceViewParams{
-			Interface: "terraform-acc-mynic",
-			Instance:  "terraform-acc-myinstance-nic",
-			Project:   "test",
+			Interface: oxideSDK.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.InstanceNetworkInterfaceView(params)
 		if err != nil && is404(err) {

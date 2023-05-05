@@ -5,37 +5,56 @@
 package oxide
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+type dataSourceImagesConfig struct {
+	BlockName        string
+	SupportBlockName string
+}
+
+var dataSourceImagesConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+data "oxide_images" "{{.BlockName}}" {
+  project_id = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  timeouts = {
+    read = "1m"
+  }
+}
+`
+
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccDataSourceImages_full(t *testing.T) {
-	datasourceName := "data.oxide_images.test"
+	blockName := fmt.Sprintf("acc-datasource-images-%s", uuid.New())
+	config, err := parsedAccConfig(
+		dataSourceImagesConfig{
+			BlockName:        blockName,
+			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
+		},
+		dataSourceImagesConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDataSourceImagesConfig,
-				Check:  checkDataSourceImages(datasourceName),
+				Config: config,
+				Check: checkDataSourceImages(
+					fmt.Sprintf("data.oxide_images.%s", blockName),
+				),
 			},
 		},
 	})
 }
-
-var testDataSourceImagesConfig = `
-data "oxide_projects" "project_list" {}
-
-data "oxide_images" "test" {
-  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  timeouts = {
-    read = "1m"
-  }
-}
-`
 
 func checkDataSourceImages(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -45,10 +64,6 @@ func checkDataSourceImages(dataName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(dataName, "images.0.description"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.os"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.id"),
-		// Ideally we would like to test that a global image has the name we want set with:
-		// resource.TestCheckResourceAttr(dataName, "images.0.name", "alpine"),
-		// Unfortunately, for now we can't guarantee that the global images will be in the
-		// same order for everyone who runs the tests. This means we'll only check that it's set.
 		resource.TestCheckResourceAttrSet(dataName, "images.0.name"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.size"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.time_created"),
