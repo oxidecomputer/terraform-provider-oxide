@@ -5,36 +5,55 @@
 package oxide
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+type dataSourceProjectConfig struct {
+	BlockName        string
+	SupportBlockName string
+}
+
+var dataSourceProjectConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+data "oxide_project" "{{.BlockName}}" {
+  name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  timeouts = {
+    read = "1m"
+  }
+}
+`
+
 func TestAccDataSourceProject_full(t *testing.T) {
-	datasourceName := "data.oxide_project.test"
+	blockName := fmt.Sprintf("acc-datasource-project-%s", uuid.New())
+	config, err := parsedAccConfig(
+		dataSourceProjectConfig{
+			BlockName:        blockName,
+			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
+		},
+		dataSourceProjectConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDataSourceProjectConfig,
-				Check:  checkDataSourceProject(datasourceName),
+				Config: config,
+				Check: checkDataSourceProject(
+					fmt.Sprintf("data.oxide_project.%s", blockName),
+				),
 			},
 		},
 	})
 }
-
-var testDataSourceProjectConfig = `
-data "oxide_projects" "project_list" {}
-
-data "oxide_project" "test" {
-  name = element(tolist(data.oxide_projects.project_list.projects[*].name), 0)
-  timeouts = {
-    read = "1m"
-  }
-}
-`
 
 func checkDataSourceProject(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{

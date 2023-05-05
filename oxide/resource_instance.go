@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -345,6 +344,13 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	tflog.Trace(ctx, fmt.Sprintf("listed all attached disks from instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	for _, disk := range disks.Items {
+		// TODO: Fix API bug:
+		// HTTP 400 (http://127.0.0.1:12220/v1/instances/12738335-69d1-4509-90af-a919db84bd46/disks/detach)
+		// BODY -> {
+		//   "request_id": "fd44bedf-b1de-43a3-aa99-5507d77ce7f8",
+		//   "error_code": "InvalidRequest",
+		//   "message": "when providing disk as an ID project should not be specified"
+		// }
 		_, err = r.client.InstanceDiskDetach(
 			oxideSDK.InstanceDiskDetachParams{
 				Instance: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -377,16 +383,18 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		}
 	}
 
-	ch := make(chan error)
-	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
-	e := <-ch
-	if !is404(e) {
-		resp.Diagnostics.AddError(
-			"Unable to stop instance:",
-			"API error: "+e.Error(),
-		)
-		return
-	}
+	// TODO: Double check if this is necessary
+	// instance appears to stay in "stopping" state indefinitely
+	//	ch := make(chan error)
+	//	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
+	//	e := <-ch
+	//	if !is404(e) {
+	//		resp.Diagnostics.AddError(
+	//			"Unable to stop instance:",
+	//			"API error: "+e.Error(),
+	//		)
+	//		return
+	//	}
 	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	if err := r.client.InstanceDelete(oxideSDK.InstanceDeleteParams{
@@ -403,19 +411,19 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	tflog.Trace(ctx, fmt.Sprintf("deleted instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
-func waitForStoppedInstance(client *oxideSDK.Client, instanceID oxideSDK.NameOrId, ch chan error) {
-	for {
-		params := oxideSDK.InstanceViewParams{Instance: instanceID}
-		resp, err := client.InstanceView(params)
-		if err != nil {
-			ch <- err
-		}
-		if resp.RunState == oxideSDK.InstanceStateStopped {
-			break
-		}
-		// Suggested alternatives suggested by linter are not fit for purpose
-		//lintignore:R018
-		time.Sleep(time.Second)
-	}
-	ch <- nil
-}
+// func waitForStoppedInstance(client *oxideSDK.Client, instanceID oxideSDK.NameOrId, ch chan error) {
+// 	for {
+// 		params := oxideSDK.InstanceViewParams{Instance: instanceID}
+// 		resp, err := client.InstanceView(params)
+// 		if err != nil {
+// 			ch <- err
+// 		}
+// 		if resp.RunState == oxideSDK.InstanceStateStopped {
+// 			break
+// 		}
+// 		// Suggested alternatives suggested by linter are not fit for purpose
+// 		//lintignore:R018
+// 		time.Sleep(time.Second)
+// 	}
+// 	ch <- nil
+// }
