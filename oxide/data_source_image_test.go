@@ -26,6 +26,12 @@ func TestAccDataSourceImage_full(t *testing.T) {
 	})
 }
 
+type dataSourceImageConfig struct {
+	BlockName  string
+	BlockName2 string
+	BlockName3 string
+}
+
 var testDataSourceImageConfig = `
 data "oxide_projects" "project_list" {}
 

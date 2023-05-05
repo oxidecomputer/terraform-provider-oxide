@@ -5,6 +5,8 @@
 package oxide
 
 import (
+	"bytes"
+	"html/template"
 	"os"
 	"testing"
 
@@ -41,6 +43,17 @@ func newTestClient() (*oxideSDK.Client, error) {
 
 	return client, nil
 
+}
+
+func parsedAccConfig(config any, tpl string) (string, error) {
+	var buf bytes.Buffer
+	tmpl, _ := template.New("test").Parse(tpl)
+	err := tmpl.Execute(&buf, config)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func setAccFromEnvVar() (string, string) {
