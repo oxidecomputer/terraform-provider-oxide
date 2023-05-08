@@ -129,6 +129,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 	return []func() datasource.DataSource{
 		NewImageDataSource,
 		NewImagesDataSource,
+		NewInstanceExternalIPsDataSource,
 		NewProjectDataSource,
 		NewProjectsDataSource,
 	}
