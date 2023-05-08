@@ -46,18 +46,18 @@ resource "oxide_instance" "{{.BlockName}}" {
 var resourceInstanceFullConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
 
-resource "oxide_disk" "test-instance" {
+resource "oxide_disk" "{{.DiskBlockName}}" {
   project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
   description = "a test disk"
-  name        = "terraform-acc-mydisk1"
+  name        = "{{.DiskName}}"
   size        = 1073741824
   disk_source = { blank = 512 }
 }
 
-resource "oxide_disk" "test-instance2" {
+resource "oxide_disk" "{{.DiskBlockName2}}" {
   project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
   description = "a test disk"
-  name        = "terraform-acc-mydisk2"
+  name        = "{{.DiskName2}}"
   size        = 1073741824
   disk_source = { blank = 512 }
 }
@@ -65,12 +65,12 @@ resource "oxide_disk" "test-instance2" {
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
   description     = "a test instance"
-  name            = "terraform-acc-myinstance2"
+  name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   external_ips    = ["default"]
-  attach_to_disks = ["terraform-acc-mydisk1", "terraform-acc-mydisk2"]
+  attach_to_disks = ["{{.DiskName}}", "{{.DiskName2}}"]
 }
 `
 
@@ -189,6 +189,8 @@ func testAccInstanceDestroy(s *terraform.State) error {
 		if rs.Type != "oxide_instance" {
 			continue
 		}
+
+		// TODO: check for block name
 
 		params := oxideSDK.InstanceViewParams{
 			Instance: oxideSDK.NameOrId(rs.Primary.Attributes["id"]),
