@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -72,6 +74,9 @@ func (r *vpcResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the project that will contain the VPC.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -89,6 +94,9 @@ func (r *vpcResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp
 				Optional:    true,
 				Computed:    true,
 				Description: "DNS Name of the VPC.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -240,29 +248,6 @@ func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
-
-	// TODO: Look into plan modifiers to see if they are fit for purpose
-	// Check if plan has changed and return error for fields that cannot
-	// be changed
-	if !plan.ProjectID.Equal(state.ProjectID) {
-		resp.Diagnostics.AddError(
-			"Error updating VPC:",
-			"project_id cannot be modified",
-		)
-		return
-	}
-
-	// TODO: This doesn't work the same as the old diff validators.
-	// It registers a change if the user chose not to specify an IPv6
-	// prefix at all. Investigate how to validate this change
-
-	//if !plan.IPV6Prefix.Equal(state.IPV6Prefix) {
-	//	resp.Diagnostics.AddError(
-	//		"Error updating VPC:",
-	//		"ipv6_prefix cannot be modified",
-	//	)
-	//	return
-	// }
 
 	params := oxideSDK.VpcUpdateParams{
 		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),

@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -74,6 +76,9 @@ func (r *instanceNICResource) Schema(ctx context.Context, _ resource.SchemaReque
 			"instance_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the instance to which the network interface will belong to.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -86,16 +91,25 @@ func (r *instanceNICResource) Schema(ctx context.Context, _ resource.SchemaReque
 			"subnet_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the VPC subnet in which to create the instance network interface.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"vpc_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the VPC in which to create the instance network interface",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"ip_address": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
 				Description: "IP address for the instance network interface. " +
 					"One will be auto-assigned if not provided.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -299,35 +313,6 @@ func (r *instanceNICResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
-
-	// TODO: Look into plan modifiers to see if they are fit for purpose
-	// Check if plan has changed and return error for fields that cannot
-	// be changed
-	if !plan.VPCID.Equal(state.VPCID) {
-		resp.Diagnostics.AddError(
-			"Error updating instance network interface:",
-			"vpc_id cannot be modified",
-		)
-		return
-	}
-	if !plan.SubnetID.Equal(state.SubnetID) {
-		resp.Diagnostics.AddError(
-			"Error updating instance network interface:",
-			"subnet_id cannot be modified",
-		)
-		return
-	}
-	// TODO: This doesn't work the same as the old diff validators.
-	// It registers a change if the user chose not to specify an IPv6
-	// prefix at all. Investigate how to validate this change
-
-	//if !plan.IPAddr.Equal(state.IPAddr) {
-	//	resp.Diagnostics.AddError(
-	//		"Error updating instance network interface::",
-	//		"ip_address cannot be modified",
-	//	)
-	//	return
-	// }
 
 	params := oxideSDK.InstanceNetworkInterfaceUpdateParams{
 		Interface: oxideSDK.NameOrId(state.ID.ValueString()),

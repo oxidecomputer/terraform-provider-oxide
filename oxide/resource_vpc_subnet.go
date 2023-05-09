@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -71,6 +73,9 @@ func (r *vpcSubnetResource) Schema(ctx context.Context, _ resource.SchemaRequest
 			"vpc_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the VPC that will contain the subnet.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -85,6 +90,9 @@ func (r *vpcSubnetResource) Schema(ctx context.Context, _ resource.SchemaRequest
 				Description: "IPv4 address range for this VPC subnet. " +
 					"It must be allocated from an RFC 1918 private address range, " +
 					"and must not overlap with any other existing subnet in the VPC.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"ipv6_block": schema.StringAttribute{
 				Optional: true,
@@ -94,6 +102,9 @@ func (r *vpcSubnetResource) Schema(ctx context.Context, _ resource.SchemaRequest
 					"with the prefix equal to the parent VPC's prefix. " +
 					"A random `/64` block will be assigned if one is not provided. " +
 					"It must not overlap with any existing subnet in the VPC.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -239,35 +250,6 @@ func (r *vpcSubnetResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
-
-	// TODO: Look into plan modifiers to see if they are fit for purpose
-	// Check if plan has changed and return error for fields that cannot
-	// be changed
-	if !plan.VPCID.Equal(state.VPCID) {
-		resp.Diagnostics.AddError(
-			"Error updating VPC subnet:",
-			"vpc_id cannot be modified",
-		)
-		return
-	}
-	if !plan.IPV4Block.Equal(state.IPV4Block) {
-		resp.Diagnostics.AddError(
-			"Error updating VPC subnet:",
-			"ipv4_block cannot be modified",
-		)
-		return
-	}
-
-	// TODO: This doesn't work the same as the old diff validators.
-	// It registers a change if the user chose not to specify an IPv6
-	// prefix at all. Investigate how to validate this change
-	//if !plan.IPV6Block.Equal(state.IPV6Block) {
-	//	resp.Diagnostics.AddError(
-	//		"Error updating VPC subnet:",
-	//		"ipv4_block cannot be modified",
-	//	)
-	//	return
-	//}
 
 	params := oxideSDK.VpcSubnetUpdateParams{
 		Subnet: oxideSDK.NameOrId(state.ID.ValueString()),
