@@ -14,6 +14,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -78,48 +83,79 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the project that will contain the instance.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the instance.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
 				Description: "Description for the instance.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"host_name": schema.StringAttribute{
 				Required:    true,
 				Description: "Host name of the instance",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"memory": schema.Int64Attribute{
 				Required:    true,
 				Description: "Instance memory in bytes.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"ncpus": schema.Int64Attribute{
 				Required:    true,
 				Description: "Number of CPUs allocated for this instance.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"start_on_create": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Description: "Starts the instance on creation",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"attach_to_disks": schema.ListAttribute{
 				Optional:    true,
 				Description: "Disks to be attached to this instance.",
 				ElementType: types.StringType,
+				// TODO: Remove with https://github.com/oxidecomputer/terraform-provider-oxide/issues/82
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
+				},
 			},
 			"external_ips": schema.ListAttribute{
 				Optional:    true,
 				Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
 				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
+				},
 			},
 			"user_data": schema.StringAttribute{
 				Optional: true,
 				Description: "User data for instance initialization systems (such as cloud-init). " +
 					"Must be a Base64-encoded string, as specified in RFC 4648 § 4 (+ and / characters with padding). " +
 					"Maximum 32 KiB unencoded data.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -293,7 +329,6 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeModified = types.StringValue(instance.TimeCreated.String())
 
 	//state.AttachToDisks = TODO
-	//state.ExternalIPs = TODO
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -344,13 +379,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	tflog.Trace(ctx, fmt.Sprintf("listed all attached disks from instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	for _, disk := range disks.Items {
-		// TODO: Fix API bug:
-		// HTTP 400 (http://127.0.0.1:12220/v1/instances/12738335-69d1-4509-90af-a919db84bd46/disks/detach)
-		// BODY -> {
-		//   "request_id": "fd44bedf-b1de-43a3-aa99-5507d77ce7f8",
-		//   "error_code": "InvalidRequest",
-		//   "message": "when providing disk as an ID project should not be specified"
-		// }
 		_, err = r.client.InstanceDiskDetach(
 			oxideSDK.InstanceDiskDetachParams{
 				Instance: oxideSDK.NameOrId(state.ID.ValueString()),
