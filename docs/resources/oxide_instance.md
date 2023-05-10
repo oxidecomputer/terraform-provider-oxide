@@ -47,13 +47,13 @@ resource "oxide_instance" "example" {
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id      = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description     = "a test instance"
-  name            = "myinstance"
-  host_name       = "<host value>"
-  memory          = 1073741824
-  ncpus           = 1
-  user_data       = filebase64("path/to/init.sh")
+  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description = "a test instance"
+  name        = "myinstance"
+  host_name   = "<host value>"
+  memory      = 1073741824
+  ncpus       = 1
+  user_data   = filebase64("path/to/init.sh")
 }
 ```
 

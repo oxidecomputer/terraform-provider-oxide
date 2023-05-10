@@ -13,11 +13,12 @@ import (
 )
 
 type resourceInstanceDiskAttachmentConfig struct {
-	BlockName        string
-	InstanceName     string
-	SupportBlockName string
-	DiskBlockName    string
-	DiskName         string
+	BlockName         string
+	InstanceName      string
+	InstanceBlockName string
+	SupportBlockName  string
+	DiskBlockName     string
+	DiskName          string
 }
 
 var resourceInstanceDiskAttachmentConfigTpl = `
@@ -58,11 +59,12 @@ func TestAccResourceInstanceDiskAttachment_full(t *testing.T) {
 	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
 	config, err := parsedAccConfig(
 		resourceInstanceDiskAttachmentConfig{
-			BlockName:        blockName,
-			InstanceName:     fmt.Sprintf("acc-terraform-%s", uuid.New()),
-			DiskName:         diskName,
-			DiskBlockName:    fmt.Sprintf("acc-resource-instance-disk-attachment-%s", uuid.New()),
-			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
+			BlockName:         blockName,
+			InstanceName:      fmt.Sprintf("acc-terraform-%s", uuid.New()),
+			InstanceBlockName: fmt.Sprintf("acc-resource-instance-disk-attachment-%s", uuid.New()),
+			DiskName:          diskName,
+			DiskBlockName:     fmt.Sprintf("acc-resource-instance-disk-attachment-%s", uuid.New()),
+			SupportBlockName:  fmt.Sprintf("acc-support-%s", uuid.New()),
 		},
 		resourceInstanceDiskAttachmentConfigTpl,
 	)
