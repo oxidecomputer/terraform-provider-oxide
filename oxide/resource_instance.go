@@ -234,9 +234,9 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		}
 		ds := oxideSDK.InstanceDiskAttachment{
 			Name: oxideSDK.Name(diskName),
-			// TODO: For now we are only attaching. Verify if it makes sense to create
-			// as well. Probably not, there would be no way to delete that disk via
-			// TF
+			// We will only be attaching through terraform
+			// any disk creation should be done through
+			// the `oxide_disk` resource
 			Type: oxideSDK.InstanceDiskAttachmentTypeAttach,
 		}
 
@@ -397,19 +397,19 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", disk.Id), map[string]any{"success": true})
 	}
 
-	// TODO: Double check if this is necessary
-	_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
-		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
-	})
-	if err != nil {
-		if !is404(err) {
-			resp.Diagnostics.AddError(
-				"Unable to stop instance:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-	}
+	// TODO: Double check if this is necessary, could be an optional feature?
+	//_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
+	//	Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+	//})
+	//if err != nil {
+	//	if !is404(err) {
+	//		resp.Diagnostics.AddError(
+	//			"Unable to stop instance:",
+	//			"API error: "+err.Error(),
+	//		)
+	//		return
+	//	}
+	//}
 
 	// TODO: Double check if this is necessary
 	// instance appears to stay in "stopping" state indefinitely
@@ -423,7 +423,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	//		)
 	//		return
 	//	}
-	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	// tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	if err := r.client.InstanceDelete(oxideSDK.InstanceDeleteParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),

@@ -299,40 +299,6 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// TODO: Ideally we don't want default subnets, but dealing with them here for now.
-	// Otherwise the API fails on delete because default subnet still exists.
-	subnets, err := r.client.VpcSubnetList(oxideSDK.VpcSubnetListParams{
-		Vpc:    oxideSDK.NameOrId(state.ID.ValueString()),
-		Limit:  1000000000,
-		SortBy: oxideSDK.NameOrIdSortModeIdAscending,
-	})
-	if err != nil {
-		if !is404(err) {
-			resp.Diagnostics.AddError(
-				"Error reading VPC subnets:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-	}
-	tflog.Trace(ctx, fmt.Sprintf("read all subnets from VPC with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
-	for _, subnet := range subnets.Items {
-		if subnet.Name == "default" {
-			if err := r.client.VpcSubnetDelete(oxideSDK.VpcSubnetDeleteParams{
-				Subnet: oxideSDK.NameOrId(subnet.Id),
-			}); err != nil {
-				if !is404(err) {
-					resp.Diagnostics.AddError(
-						"Error deleting subnet:",
-						"API error: "+err.Error(),
-					)
-					return
-				}
-			}
-			tflog.Trace(ctx, fmt.Sprintf("deleted VPC subnet `%v` with ID: %v", subnet.Name, subnet.Id), map[string]any{"success": true})
-		}
-	}
-
 	if err := r.client.VpcDelete(oxideSDK.VpcDeleteParams{
 		Vpc: oxideSDK.NameOrId(state.ID.ValueString()),
 	}); err != nil {
