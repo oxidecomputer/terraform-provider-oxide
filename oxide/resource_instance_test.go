@@ -69,6 +69,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   host_name       = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
+  start_on_create = false
   external_ips    = ["default"]
   attach_to_disks = ["{{.DiskName}}", "{{.DiskName2}}"]
 }
@@ -172,7 +173,7 @@ func checkResourceInstanceFull(resourceName, instanceName, diskName, diskName2 s
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", diskName),
 		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", diskName2),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "default"),
-		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
