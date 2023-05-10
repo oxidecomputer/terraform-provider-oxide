@@ -67,6 +67,11 @@ resource "oxide_instance" "web_instance_1" {
   attach_to_disks   = [oxide_disk.web_disk_1.name]
 }
 
+resource "oxide_instance_disk_attachment" "web_instance_attach_1" {
+  disk_id     = oxide_disk.web_disk_1.id
+  instance_id = oxide_instance.web_instance_1.id
+}
+
 resource "oxide_instance" "web_instance_2" {
   project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "Web instance"
@@ -77,6 +82,11 @@ resource "oxide_instance" "web_instance_2" {
   attach_to_disks   = [oxide_disk.web_disk_2.name]
 }
 
+resource "oxide_instance_disk_attachment" "web_instance_attach_2" {
+  disk_id     = oxide_disk.web_disk_2.id
+  instance_id = oxide_instance.web_instance_2.id
+}
+
 resource "oxide_instance" "web_instance_3" {
   project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "Web instance"
@@ -84,7 +94,12 @@ resource "oxide_instance" "web_instance_3" {
   host_name         = "web-instance-3"
   memory            = var.one_gib
   ncpus             = 2
-  attach_to_disks   = [oxide_disk.web_disk_3.name]
+  start_on_create   = false
+}
+
+resource "oxide_instance_disk_attachment" "web_instance_attach_3" {
+  disk_id     = oxide_disk.web_disk_3.id
+  instance_id = oxide_instance.web_instance_3.id
 }
 
 resource "oxide_instance" "db_instance_1" {
@@ -94,7 +109,12 @@ resource "oxide_instance" "db_instance_1" {
   host_name         = "db-instance-1"
   memory            = var.two_gib
   ncpus             = 4
-  attach_to_disks   = [oxide_disk.db_disk_1.name]
+  start_on_create   = false
+}
+
+resource "oxide_instance_disk_attachment" "db_instance_attach_1" {
+  disk_id     = oxide_disk.db_disk_1.id
+  instance_id = oxide_instance.db_instance_1.id
 }
 
 resource "oxide_instance" "db_instance_2" {
@@ -104,5 +124,10 @@ resource "oxide_instance" "db_instance_2" {
   host_name         = "db-instance-2"
   memory            = var.two_gib
   ncpus             = 4
-  attach_to_disks   = [oxide_disk.db_disk_2.name]
+  start_on_create   = false
+}
+
+resource "oxide_instance_disk_attachment" "db_instance_attach_2" {
+  disk_id     = oxide_disk.db_disk_2.id
+  instance_id = oxide_instance.db_instance_2.id
 }

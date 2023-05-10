@@ -122,8 +122,6 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	resp.ResourceData = client
 }
 
-// TODO: Implement custom timeouts with https://github.com/hashicorp/terraform-plugin-framework-timeouts
-
 // DataSources defines the data sources implemented in the provider.
 func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
@@ -141,6 +139,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewDiskResource,
 		NewImageResource,
 		NewInstanceResource,
+		NewInstanceDiskAttachmentResource,
 		NewInstanceNetworkInterfaceResource,
 		NewProjectResource,
 		NewVPCResource,

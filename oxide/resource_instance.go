@@ -42,7 +42,6 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	AttachToDisks types.List     `tfsdk:"attach_to_disks"`
 	Description   types.String   `tfsdk:"description"`
 	ExternalIPs   types.List     `tfsdk:"external_ips"`
 	HostName      types.String   `tfsdk:"host_name"`
@@ -131,15 +130,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
-			"attach_to_disks": schema.ListAttribute{
-				Optional:    true,
-				Description: "Disks to be attached to this instance.",
-				ElementType: types.StringType,
-				// TODO: Remove with https://github.com/oxidecomputer/terraform-provider-oxide/issues/82
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
-				},
-			},
 			"external_ips": schema.ListAttribute{
 				Optional:    true,
 				Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
@@ -219,30 +209,6 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			UserData: plan.UserData.ValueString(),
 		},
 	}
-
-	// TODO: Perhaps it makes sense to attach after the resource is created instead of
-	// making it part of the create body.
-	var diskAttachements = []oxideSDK.InstanceDiskAttachment{}
-	for _, disk := range plan.AttachToDisks.Elements() {
-		diskName, err := strconv.Unquote(disk.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error attaching instance to disk",
-				"IP pool name parse error: "+err.Error(),
-			)
-			return
-		}
-		ds := oxideSDK.InstanceDiskAttachment{
-			Name: oxideSDK.Name(diskName),
-			// We will only be attaching through terraform
-			// any disk creation should be done through
-			// the `oxide_disk` resource
-			Type: oxideSDK.InstanceDiskAttachmentTypeAttach,
-		}
-
-		diskAttachements = append(diskAttachements, ds)
-	}
-	params.Body.Disks = diskAttachements
 
 	var externalIPs = []oxideSDK.ExternalIpCreate{}
 	for _, ip := range plan.ExternalIPs.Elements() {
@@ -328,8 +294,6 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeCreated.String())
 
-	//state.AttachToDisks = TODO
-
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -362,41 +326,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// Detach any associated disks
-	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
-		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
-		Limit:    1000000000,
-	})
-	if err != nil {
-		if !is404(err) {
-			resp.Diagnostics.AddError(
-				"Unable to list attached disks:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-	}
-	tflog.Trace(ctx, fmt.Sprintf("listed all attached disks from instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
-
-	for _, disk := range disks.Items {
-		_, err = r.client.InstanceDiskDetach(
-			oxideSDK.InstanceDiskDetachParams{
-				Instance: oxideSDK.NameOrId(state.ID.ValueString()),
-				Body:     &oxideSDK.DiskPath{Disk: oxideSDK.NameOrId(disk.Id)},
-			},
-		)
-		if err != nil {
-			if !is404(err) {
-				resp.Diagnostics.AddError(
-					"Unable to detach disk:",
-					"API error: "+err.Error(),
-				)
-				return
-			}
-		}
-		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", disk.Id), map[string]any{"success": true})
-	}
-
 	// TODO: Double check if this is necessary, could be an optional feature?
 	//_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
 	//	Instance: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -410,9 +339,7 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	//		return
 	//	}
 	//}
-
-	// TODO: Double check if this is necessary
-	// instance appears to stay in "stopping" state indefinitely
+	//
 	//	ch := make(chan error)
 	//	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
 	//	e := <-ch
