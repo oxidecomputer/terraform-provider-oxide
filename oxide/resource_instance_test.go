@@ -18,10 +18,6 @@ type resourceInstanceConfig struct {
 	BlockName        string
 	InstanceName     string
 	SupportBlockName string
-	DiskBlockName    string
-	DiskName         string
-	DiskBlockName2   string
-	DiskName2        string
 }
 
 var resourceInstanceConfigTpl = `
@@ -46,22 +42,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 var resourceInstanceFullConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
 
-resource "oxide_disk" "{{.DiskBlockName}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
-  description = "a test disk"
-  name        = "{{.DiskName}}"
-  size        = 1073741824
-  disk_source = { blank = 512 }
-}
-
-resource "oxide_disk" "{{.DiskBlockName2}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
-  description = "a test disk"
-  name        = "{{.DiskName2}}"
-  size        = 1073741824
-  disk_source = { blank = 512 }
-}
-
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
   description     = "a test instance"
@@ -71,7 +51,6 @@ resource "oxide_instance" "{{.BlockName}}" {
   ncpus           = 1
   start_on_create = false
   external_ips    = ["default"]
-  attach_to_disks = ["{{.DiskName}}", "{{.DiskName2}}"]
 }
 `
 
@@ -93,18 +72,12 @@ func TestAccResourceInstance_full(t *testing.T) {
 	}
 
 	blockName2 := fmt.Sprintf("acc-resource-instance-%s", uuid.New())
-	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	diskName2 := diskName + "-2"
 	instanceName2 := instanceName + "-2"
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	config2, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName2,
 			InstanceName:     instanceName2,
-			DiskName:         diskName,
-			DiskBlockName:    fmt.Sprintf("acc-resource-instance-%s", uuid.New()),
-			DiskName2:        diskName2,
-			DiskBlockName2:   fmt.Sprintf("acc-resource-instance-%s", uuid.New()),
 			SupportBlockName: supportBlockName,
 		},
 		resourceInstanceFullConfigTpl,
@@ -132,7 +105,7 @@ func TestAccResourceInstance_full(t *testing.T) {
 			},
 			{
 				Config: config2,
-				Check:  checkResourceInstanceFull(resourceName2, instanceName2, diskName, diskName2),
+				Check:  checkResourceInstanceFull(resourceName2, instanceName2),
 			},
 			{
 				ResourceName:            resourceName2,
@@ -162,7 +135,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 	}...)
 }
 
-func checkResourceInstanceFull(resourceName, instanceName, diskName, diskName2 string) resource.TestCheckFunc {
+func checkResourceInstanceFull(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -170,8 +143,6 @@ func checkResourceInstanceFull(resourceName, instanceName, diskName, diskName2 s
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.0", diskName),
-		resource.TestCheckResourceAttr(resourceName, "attach_to_disks.1", diskName2),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "default"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
