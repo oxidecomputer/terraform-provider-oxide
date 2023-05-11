@@ -6,19 +6,18 @@ package oxide
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -42,25 +41,18 @@ type diskResource struct {
 }
 
 type diskResourceModel struct {
-	BlockSize    types.Int64    `tfsdk:"block_size"`
-	Description  types.String   `tfsdk:"description"`
-	DevicePath   types.String   `tfsdk:"device_path"`
-	DiskSource   types.Map      `tfsdk:"disk_source"`
-	ID           types.String   `tfsdk:"id"`
-	ImageID      types.String   `tfsdk:"image_id"`
-	Name         types.String   `tfsdk:"name"`
-	ProjectID    types.String   `tfsdk:"project_id"`
-	Size         types.Int64    `tfsdk:"size"`
-	State        types.Object   `tfsdk:"state"`
-	SnapshotID   types.String   `tfsdk:"snapshot_id"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
-}
-
-type diskResourceStateModel struct {
-	State    types.String `tfsdk:"state"`
-	Instance types.String `tfsdk:"instance"`
+	BlockSize        types.Int64    `tfsdk:"block_size"`
+	Description      types.String   `tfsdk:"description"`
+	DevicePath       types.String   `tfsdk:"device_path"`
+	ID               types.String   `tfsdk:"id"`
+	SourceImageID    types.String   `tfsdk:"source_image_id"`
+	Name             types.String   `tfsdk:"name"`
+	ProjectID        types.String   `tfsdk:"project_id"`
+	Size             types.Int64    `tfsdk:"size"`
+	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
+	TimeCreated      types.String   `tfsdk:"time_created"`
+	TimeModified     types.String   `tfsdk:"time_modified"`
+	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -99,14 +91,6 @@ func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"disk_source": schema.MapAttribute{
-				Required:    true,
-				Description: "Source of a disk. Can be one of `blank = <block_size>`, `image = <image_id>`, `global_image = <image_id>`, or `snapshot = <snapshot_id>`.",
-				ElementType: types.StringType,
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.RequiresReplace(),
-				},
-			},
 			"size": schema.Int64Attribute{
 				Required:    true,
 				Description: "Size of the disk in bytes.",
@@ -115,10 +99,56 @@ func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"description": schema.StringAttribute{
-				Optional:    true,
+				Required:    true,
 				Description: "Description for the disk.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"source_image_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "Image ID of the disk source if applicable.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("block_size"),
+					}...),
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_snapshot_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"source_snapshot_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "Snapshot ID of the disk source if applicable.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("block_size"),
+					}...),
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_image_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"block_size": schema.Int64Attribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Size of blocks in bytes.",
+				Validators: []validator.Int64{
+					int64validator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_image_id"),
+					}...),
+					int64validator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_snapshot_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
@@ -128,10 +158,6 @@ func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				// Update: true,
 				Delete: true,
 			}),
-			"block_size": schema.Int64Attribute{
-				Computed:    true,
-				Description: "Size of blocks in bytes.",
-			},
 			"device_path": schema.StringAttribute{
 				Computed:    true,
 				Description: "Path of the disk.",
@@ -139,29 +165,6 @@ func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the image.",
-			},
-			"image_id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Image ID of the disk source if applicable.",
-			},
-			"snapshot_id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Snapshot ID of the disk source if applicable.",
-			},
-
-			"state": schema.SingleNestedAttribute{
-				Computed:    true,
-				Description: "State of a Disk (primarily: attached or not).",
-				Attributes: map[string]schema.Attribute{
-					"state": schema.StringAttribute{
-						Description: "State of the disk.",
-						Computed:    true,
-					},
-					"instance": schema.StringAttribute{
-						Description: "Associated instance.",
-						Computed:    true,
-					},
-				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
@@ -201,13 +204,16 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 		},
 	}
 
-	ds, err := newDiskSource(plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to parse disk source:",
-			err.Error(),
-		)
-		return
+	ds := oxideSDK.DiskSource{}
+	if !plan.SourceImageID.IsNull() {
+		ds.ImageId = plan.SourceImageID.ValueString()
+		ds.Type = oxideSDK.DiskSourceTypeImage
+	} else if !plan.SourceSnapshotID.IsNull() {
+		ds.SnapshotId = plan.SourceSnapshotID.ValueString()
+		ds.Type = oxideSDK.DiskSourceTypeSnapshot
+	} else if !plan.BlockSize.IsNull() {
+		ds.BlockSize = oxideSDK.BlockSize(plan.BlockSize.ValueInt64())
+		ds.Type = oxideSDK.DiskSourceTypeBlank
 	}
 	params.Body.DiskSource = ds
 
@@ -226,26 +232,8 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 	plan.ID = types.StringValue(disk.Id)
 	plan.DevicePath = types.StringValue(disk.DevicePath)
 	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
-	plan.ImageID = types.StringValue(disk.ImageId)
-	plan.SnapshotID = types.StringValue(disk.SnapshotId)
 	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
 	plan.TimeModified = types.StringValue(disk.TimeCreated.String())
-
-	// Parse diskResourceStateModel into types.Object
-	sm := diskResourceStateModel{
-		State:    types.StringValue(string(disk.State.State)),
-		Instance: types.StringValue(disk.State.Instance),
-	}
-	attributeTypes := map[string]attr.Type{
-		"state":    types.StringType,
-		"instance": types.StringType,
-	}
-	state, diags := types.ObjectValueFrom(ctx, attributeTypes, sm)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	plan.State = state
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -288,29 +276,19 @@ func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.Description = types.StringValue(disk.Description)
 	state.DevicePath = types.StringValue(disk.DevicePath)
 	state.ID = types.StringValue(disk.Id)
-	state.ImageID = types.StringValue(disk.ImageId)
 	state.Name = types.StringValue(string(disk.Name))
 	state.ProjectID = types.StringValue(disk.ProjectId)
 	state.Size = types.Int64Value(int64(disk.Size))
-	state.SnapshotID = types.StringValue(disk.SnapshotId)
 	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
 	state.TimeModified = types.StringValue(disk.TimeCreated.String())
 
-	// Parse diskResourceStateModel into types.Object
-	sm := diskResourceStateModel{
-		State:    types.StringValue(string(disk.State.State)),
-		Instance: types.StringValue(disk.State.Instance),
+	// Only set SourceImageID and SourceSnapshotID if they've been set to avoid unintentional drift
+	if disk.ImageId != "" {
+		state.SourceImageID = types.StringValue(disk.ImageId)
 	}
-	attributeTypes := map[string]attr.Type{
-		"state":    types.StringType,
-		"instance": types.StringType,
+	if disk.SnapshotId != "" {
+		state.SourceSnapshotID = types.StringValue(disk.SnapshotId)
 	}
-	diskState, diags := types.ObjectValueFrom(ctx, attributeTypes, sm)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	state.State = diskState
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -344,14 +322,6 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// TODO: For the time being there is no endpoint to detach disks without
-	// knowing the Instance name first. The Disk get endpoint only retrieves
-	// the attached instance ID, so we can't get the name from there.
-	// This means that we cannot automatically detach disks here.
-	//
-	// Users should detach disks directly on the `oxide_instance` resource or
-	// delete any associated instances before attempting to delete disks.
-
 	if err := r.client.DiskDelete(oxideSDK.DiskDeleteParams{
 		Disk: oxideSDK.NameOrId(state.ID.ValueString()),
 	}); err != nil {
@@ -365,55 +335,4 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("deleted disk with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
-}
-
-func newDiskSource(p diskResourceModel) (oxideSDK.DiskSource, error) {
-	var ds = oxideSDK.DiskSource{}
-
-	diskSource := p.DiskSource.Elements()
-	if len(diskSource) > 1 {
-		return ds, errors.New(
-			"only one of blank = <block_size>, image = <image_id>, " +
-				"global_image = <image_id>, or snapshot = <snapshot_id> can be set",
-		)
-	}
-
-	if source, ok := diskSource["blank"]; ok {
-		rawBs := source.String()
-		blockSize, err := strconv.Unquote(rawBs)
-		if err != nil {
-			return ds, err
-		}
-		bs, err := strconv.Atoi(blockSize)
-		if err != nil {
-			return ds, err
-		}
-		ds = oxideSDK.DiskSource{
-			BlockSize: oxideSDK.BlockSize(bs),
-			Type:      oxideSDK.DiskSourceTypeBlank,
-		}
-	}
-
-	if source, ok := diskSource["snapshot"]; ok {
-		ds = oxideSDK.DiskSource{
-			SnapshotId: source.String(),
-			Type:       oxideSDK.DiskSourceTypeSnapshot,
-		}
-	}
-
-	if source, ok := diskSource["image"]; ok {
-		ds = oxideSDK.DiskSource{
-			ImageId: source.String(),
-			Type:    oxideSDK.DiskSourceTypeImage,
-		}
-	}
-
-	if source, ok := diskSource["global_image"]; ok {
-		ds = oxideSDK.DiskSource{
-			ImageId: source.String(),
-			Type:    oxideSDK.DiskSourceTypeGlobalImage,
-		}
-	}
-
-	return ds, nil
 }

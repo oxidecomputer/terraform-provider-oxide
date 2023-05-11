@@ -24,11 +24,11 @@ var resourceDiskConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
 
 resource "oxide_disk" "{{.BlockName}}" {
-  project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
-  description       = "a test disk"
-  name              = "{{.DiskName}}"
-  size              = 1073741824
-  disk_source       = { blank = 512 }
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
   timeouts = {
     read   = "1m"
 	create = "3m"
@@ -66,9 +66,6 @@ func TestAccResourceDisk_full(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
-				// TODO: Remove once https://github.com/oxidecomputer/terraform-provider-oxide/issues/101
-				// has been worked on.
-				ImportStateVerifyIgnore: []string{"disk_source"},
 			},
 		},
 	})
@@ -82,8 +79,6 @@ func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "size", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/"+diskName),
 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
-		resource.TestCheckResourceAttr(resourceName, "disk_source.blank", "512"),
-		resource.TestCheckResourceAttrSet(resourceName, "state.state"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

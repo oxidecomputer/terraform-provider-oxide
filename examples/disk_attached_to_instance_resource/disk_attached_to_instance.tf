@@ -18,7 +18,7 @@ resource "oxide_disk" "sample_disk" {
   description = "a test disk"
   name        = "disk-test-1"
   size        = 1073741824
-  disk_source = { blank = 512 }
+  block_size  = 512
 }
 
 resource "oxide_instance" "sample_instance" {
