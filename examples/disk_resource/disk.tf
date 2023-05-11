@@ -16,17 +16,17 @@ data "oxide_global_images" "image_example" {}
 data "oxide_projects" "project_list" {}
 
 resource "oxide_disk" "example" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test disk"
-  name              = "mydisk"
-  size              = 1073741824
-  disk_source       = { blank = 512 }
+  project_id  = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description = "a test disk"
+  name        = "mydisk"
+  size        = 1073741824
+  block_size  = 512
 }
 
 resource "oxide_disk" "example2" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-  description       = "a test disk"
-  name              = "mydisk2"
-  size              = 1073741824
-  disk_source       = { global_image = data.oxide_global_images.image_example.global_images.0.id }
+  project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  description     = "a test disk"
+  name            = "mydisk2"
+  size            = 1073741824
+  source_image_id = data.oxide_global_images.image_example.global_images.0.id
 }

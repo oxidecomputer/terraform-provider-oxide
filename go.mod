@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/terraform-plugin-framework v1.2.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.3.1
+	github.com/hashicorp/terraform-plugin-framework-validators v0.10.0
 	github.com/hashicorp/terraform-plugin-go v0.15.0
 	github.com/hashicorp/terraform-plugin-log v0.8.0
 	github.com/hashicorp/terraform-plugin-testing v1.2.0

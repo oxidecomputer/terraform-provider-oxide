@@ -6,7 +6,7 @@ page_title: "oxide_image Resource - terraform-provider-oxide"
 
 This resource manages images.
 
-!> This resource currently only provides create and read actions. Once update and delete endpoints have been added to the API, that functionality will be added here as well.
+!> This resource does not support updates or deletes
 
 ## Example Usage
 
