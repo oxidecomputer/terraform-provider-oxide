@@ -4,7 +4,7 @@
 
 package oxide
 
-// TODO: Restore test when it is possible to delete images
+// TODO: Restore test when it is possible to delete images, otherwise tests always fail
 
 // type resourceImageConfig struct {
 // 	BlockName        string
@@ -13,22 +13,22 @@ package oxide
 // }
 //
 // var resourceImageConfigTpl = `
-// data "oxide_projects" "{{.SupportBlockName}}" {}
+//  data "oxide_projects" "{{.SupportBlockName}}" {}
 //
-// resource "oxide_image" "{{.BlockName}}" {
-//   project_id   = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
-//   description  = "a test image"
-//   name         = "{{.ImageName}}"
-//   image_source = { you_can_boot_anything_as_long_as_its_alpine = "noop" }
-//   block_size   = 512
-//   os           = "alpine"
-//   version      = "propolis-blob"
-//   timeouts = {
-//    read   = "1m"
-//    create = "3m"
-//   }
-// }
-// `
+//  resource "oxide_image" "{{.BlockName}}" {
+//    project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+//    description = "a test image"
+//    name        = "{{.ImageName}}"
+//    source_url  = "you_can_boot_anything_as_long_as_its_alpine"
+//    block_size  = 512
+//    os          = "alpine"
+//    version     = "propolis-blob"
+//    timeouts = {
+//     read   = "1m"
+//     create = "3m"
+//    }
+//  }
+//  `
 //
 // func TestAccResourceImage_full(t *testing.T) {
 // 	imageName := fmt.Sprintf("acc-terraform-%s", uuid.New())
@@ -59,9 +59,9 @@ package oxide
 // 				ResourceName:      resourceName,
 // 				ImportState:       true,
 // 				ImportStateVerify: true,
-// 				// TODO: Remove once https://github.com/oxidecomputer/terraform-provider-oxide/issues/102
-// 				// has been worked on.
-// 				ImportStateVerifyIgnore: []string{"image_source"},
+// 				// TODO: Remove once 'you_can_boot_anything_as_long_as_its_alpine'
+// 				// is removed
+// 				ImportStateVerifyIgnore: []string{"source_url"},
 // 			},
 // 		},
 // 	})
@@ -73,7 +73,7 @@ package oxide
 // 		resource.TestCheckResourceAttr(resourceName, "description", "a test image"),
 // 		resource.TestCheckResourceAttr(resourceName, "name", imageName),
 // 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
-// 		resource.TestCheckResourceAttrSet(resourceName, "image_source.you_can_boot_anything_as_long_as_its_alpine"),
+// 		resource.TestCheckResourceAttr(resourceName, "source_url", "you_can_boot_anything_as_long_as_its_alpine"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "size"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 // 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
