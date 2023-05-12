@@ -271,7 +271,7 @@ func (r *vpcSubnetResource) Update(ctx context.Context, req resource.UpdateReque
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(subnet.Id)
 	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(subnet.TimeCreated.String())
+	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
 	plan.IPV6Block = types.StringValue(string(subnet.Ipv6Block))
 
 	// Save plan into Terraform state

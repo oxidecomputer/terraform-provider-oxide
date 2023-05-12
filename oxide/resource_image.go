@@ -84,13 +84,6 @@ func (r *imageResource) ImportState(ctx context.Context, req resource.ImportStat
 func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"project_id": schema.StringAttribute{
-				Required:    true,
-				Description: "ID of the project that will contain the image.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the image.",
@@ -124,6 +117,13 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 				Description: "Size of blocks in bytes.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"project_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "ID of the project that will contain the image.",
+				PlanModifiers: []planmodifier.String{
+					ProjectIDImagePlanModifier(),
 				},
 			},
 			"source_snapshot_id": schema.StringAttribute{
@@ -207,6 +207,14 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
+
+	if plan.ProjectID.IsNull() {
+		resp.Diagnostics.AddError(
+			"Error creating image",
+			"`project_id` must be set to create an image",
+		)
+		return
+	}
 
 	params := oxideSDK.ImageCreateParams{
 		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
@@ -316,13 +324,15 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.ID = types.StringValue(image.Id)
 	state.Name = types.StringValue(string(image.Name))
 	state.OS = types.StringValue(image.Os)
-	state.ProjectID = types.StringValue(image.ProjectId)
 	state.Size = types.Int64Value(int64(image.Size))
 	state.TimeCreated = types.StringValue(image.TimeCreated.String())
 	state.TimeModified = types.StringValue(image.TimeCreated.String())
 	state.Version = types.StringValue(image.Version)
 
-	// Only set SourceURL if it exists to avoid unintentional drift
+	// Only set ProjectID and SourceURL if they exist to avoid unintentional drift
+	if image.ProjectId != "" {
+		state.ProjectID = types.StringValue(image.ProjectId)
+	}
 	if image.Url != "" {
 		state.SourceURL = types.StringValue(image.Url)
 	}
@@ -352,9 +362,87 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *imageResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError(
-		"Error updating image",
-		"the oxide API currently does not support updating images")
+	var plan imageResourceModel
+	var state imageResourceModel
+
+	// Read Terraform plan data into the plan model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read Terraform prior state data into the state model to retrieve ID
+	// which is a computed attribute, so it won't show up in the plan.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
+	var image *oxideSDK.Image
+	var err error
+	if plan.ProjectID.IsNull() {
+		image, err = r.client.ImagePromote(oxideSDK.ImagePromoteParams{
+			Image: oxideSDK.NameOrId(state.ID.ValueString()),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error updating image",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("promoted image with ID: %v to silo visibility", image.Id), map[string]any{"success": true})
+	} else {
+		image, err = r.client.ImageDemote(oxideSDK.ImageDemoteParams{
+			Image:   oxideSDK.NameOrId(state.ID.ValueString()),
+			Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error updating image",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("demoted image with ID: %v to single project visibility", image.Id), map[string]any{"success": true})
+	}
+
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(image.Id)
+	plan.Size = types.Int64Value(int64(image.Size))
+	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
+	plan.TimeModified = types.StringValue(image.TimeModified.String())
+	plan.Version = types.StringValue(image.Version)
+
+	// Parse imageResourceDigestModel into types.Object
+	dm := imageResourceDigestModel{
+		Type:  types.StringValue(string(image.Digest.Type)),
+		Value: types.StringValue(image.Digest.Value),
+	}
+	attributeTypes := map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.Digest = digest
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -383,4 +471,51 @@ func (r *imageResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	//		)
 	//		return
 	//	}
+}
+
+// ProjectIDImagePlanModifier is a helper function to simplify the provider implementation.
+func ProjectIDImagePlanModifier() planmodifier.String {
+	return &projectIDPlanModifier{}
+}
+
+type projectIDPlanModifier struct{}
+
+func (d *projectIDPlanModifier) Description(ctx context.Context) string {
+	return "Ensures that `project_id` can only be modified from UUID -> null and null -> UUID."
+}
+
+func (d *projectIDPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return d.Description(ctx)
+}
+
+func (d *projectIDPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	var planProjectID types.String
+
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("project_id"), &planProjectID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var stateProjectID types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("project_id"), &stateProjectID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Do nothing if there are no changes
+	if stateProjectID.Equal(planProjectID) {
+		return
+	}
+
+	// Only allow the following changes for ProjectID: UUID -> null and null -> UUID.
+	// We cannot move images from one project to another directly yet
+	if !stateProjectID.IsNull() && !planProjectID.IsNull() {
+		resp.Diagnostics.AddError(
+			"Unable to update image:",
+			fmt.Sprintf("Please change the value for `project_id`,"+
+				" '%v' is not a valid value. The only allowed updates for `project_id`"+
+				" are: UUID -> null and null -> UUID", planProjectID.ValueString()),
+		)
+		return
+	}
 }
