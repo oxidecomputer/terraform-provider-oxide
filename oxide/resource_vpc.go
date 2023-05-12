@@ -271,7 +271,7 @@ func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	plan.ID = types.StringValue(vpc.Id)
 	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
 	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpc.TimeCreated.String())
+	plan.TimeModified = types.StringValue(vpc.TimeModified.String())
 	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
 	// Save plan into Terraform state

@@ -230,7 +230,7 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(project.Id)
 	plan.TimeCreated = types.StringValue(project.TimeCreated.String())
-	plan.TimeModified = types.StringValue(project.TimeCreated.String())
+	plan.TimeModified = types.StringValue(project.TimeModified.String())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

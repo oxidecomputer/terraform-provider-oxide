@@ -6,11 +6,14 @@ page_title: "oxide_image Resource - terraform-provider-oxide"
 
 This resource manages images.
 
-To create an image it's necessary to set one of `source_url` or `source_snapshot_id`.
-
-!> This resource does not support updates or deletes.
+!> This resource does not support deletes.
 
 ## Example Usage
+
+All images must be created within the scope of a project. This means that when first creating an image,
+the `project_id` field must be set to the ID of the project that will contain it.
+
+To create an image it's necessary to set one of `source_url` or `source_snapshot_id`.
 
 ```hcl
 resource "oxide_image" "example" {
@@ -38,11 +41,30 @@ resource "oxide_image" "example2" {
 }
 ```
 
+### Updating visibility scope of an image
+
+To update an image so that it is accesible across projects, the `project_id` field should be unset.
+
+```hcl
+resource "oxide_image" "example" {
+  description = "a test image"
+  name        = "myimage"
+  source_url  = "myimage.example.com"
+  block_size  = 512
+  os          = "alpine"
+  version     = "3.15"
+}
+```
+
+Likewise, when demoting an image back to the scope of a single project, set the `project_id` field to the
+ID of the selected project.
+
+-> Images cannot be moved across projects directly, Only visibility scope can be changed.
+
 ## Schema
 
 ### Required
 
-- `project_id` (String) ID of the project that will contain the instance.
 - `description` (String) Description for the image.
 - `os` (String) OS image distribution. Example: "alpine".
 - `version` (String) OS image version. Example: "3.16".
@@ -51,6 +73,7 @@ resource "oxide_image" "example2" {
 
 ### Optional
 
+- `project_id` (String) ID of the project that will contain the image. Required when creating an image.
 - `source_snapshot_id` (String) Snapshot ID of the image source if applicable. To be set only when creating an image from a snapshot.
 - `source_url` (String) "URL of the image source if applicable. To be set only when creating an image from a URL.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
