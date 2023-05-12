@@ -6,18 +6,18 @@ package oxide
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -41,20 +41,20 @@ type imageResource struct {
 }
 
 type imageResourceModel struct {
-	BlockSize    types.Int64    `tfsdk:"block_size"`
-	Description  types.String   `tfsdk:"description"`
-	Digest       types.Object   `tfsdk:"digest"`
-	ID           types.String   `tfsdk:"id"`
-	ImageSource  types.Map      `tfsdk:"image_source"`
-	Name         types.String   `tfsdk:"name"`
-	OS           types.String   `tfsdk:"os"`
-	ProjectID    types.String   `tfsdk:"project_id"`
-	Size         types.Int64    `tfsdk:"size"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	URL          types.String   `tfsdk:"url"`
-	Version      types.String   `tfsdk:"version"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	BlockSize        types.Int64    `tfsdk:"block_size"`
+	Description      types.String   `tfsdk:"description"`
+	Digest           types.Object   `tfsdk:"digest"`
+	ID               types.String   `tfsdk:"id"`
+	Name             types.String   `tfsdk:"name"`
+	OS               types.String   `tfsdk:"os"`
+	ProjectID        types.String   `tfsdk:"project_id"`
+	Size             types.Int64    `tfsdk:"size"`
+	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
+	SourceURL        types.String   `tfsdk:"source_url"`
+	TimeCreated      types.String   `tfsdk:"time_created"`
+	TimeModified     types.String   `tfsdk:"time_modified"`
+	Version          types.String   `tfsdk:"version"`
+	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
 type imageResourceDigestModel struct {
@@ -105,14 +105,6 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"image_source": schema.MapAttribute{
-				Required:    true,
-				Description: "Source of an image. Can be one of `url = <URL>` or `snapshot = <snapshot_id>`",
-				ElementType: types.StringType,
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.RequiresReplace(),
-				},
-			},
 			"os": schema.StringAttribute{
 				Required:    true,
 				Description: "OS image distribution. Example: alpine",
@@ -132,6 +124,30 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 				Description: "Size of blocks in bytes.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"source_snapshot_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "Snapshot ID of the image source if applicable.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_url"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"source_url": schema.StringAttribute{
+				Optional:    true,
+				Description: "URL source of this image, if applicable.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_snapshot_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
@@ -171,10 +187,6 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 				Computed:    true,
 				Description: "Timestamp of when this image was last modified.",
 			},
-			"url": schema.StringAttribute{
-				Computed:    true,
-				Description: "URL source of this image, if any.",
-			},
 		},
 	}
 }
@@ -207,11 +219,21 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		},
 	}
 
-	is, err := newImageSource(plan)
-	if err != nil {
+	is := oxideSDK.ImageSource{}
+	if !plan.SourceSnapshotID.IsNull() {
+		is.Id = plan.SourceSnapshotID.ValueString()
+		is.Type = oxideSDK.ImageSourceTypeSnapshot
+	} else if !plan.SourceURL.IsNull() {
+		is.Id = plan.SourceURL.ValueString()
+		is.Type = oxideSDK.ImageSourceTypeUrl
+		// TODO: Remove before releasing, for testing purposes only
+		if plan.SourceURL.Equal(types.StringValue("you_can_boot_anything_as_long_as_its_alpine")) {
+			is.Type = oxideSDK.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine
+		}
+	} else {
 		resp.Diagnostics.AddError(
-			"Unable to parse image source:",
-			err.Error(),
+			"Error creating image",
+			"One of `source_url` or `source_snapshot_id` must be set",
 		)
 		return
 	}
@@ -233,7 +255,6 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.Size = types.Int64Value(int64(image.Size))
 	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
 	plan.TimeModified = types.StringValue(image.TimeCreated.String())
-	plan.URL = types.StringValue(image.Url)
 	plan.Version = types.StringValue(image.Version)
 
 	// Parse imageResourceDigestModel into types.Object
@@ -299,8 +320,12 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.Size = types.Int64Value(int64(image.Size))
 	state.TimeCreated = types.StringValue(image.TimeCreated.String())
 	state.TimeModified = types.StringValue(image.TimeCreated.String())
-	state.URL = types.StringValue(image.Url)
 	state.Version = types.StringValue(image.Version)
+
+	// Only set SourceURL if it exists to avoid unintentional drift
+	if image.Url != "" {
+		state.SourceURL = types.StringValue(image.Url)
+	}
 
 	// Parse imageResourceDigestModel into types.Object
 	dm := imageResourceDigestModel{
@@ -358,38 +383,4 @@ func (r *imageResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	//		)
 	//		return
 	//	}
-}
-
-func newImageSource(p imageResourceModel) (oxideSDK.ImageSource, error) {
-	var is = oxideSDK.ImageSource{}
-
-	imageSource := p.ImageSource.Elements()
-	if len(imageSource) > 1 {
-		return is, errors.New(
-			"only one of url=<URL>, or snapshot=<snapshot_id> can be set",
-		)
-	}
-
-	if source, ok := imageSource["url"]; ok {
-		is = oxideSDK.ImageSource{
-			Url:  source.String(),
-			Type: oxideSDK.ImageSourceTypeUrl,
-		}
-	}
-
-	if source, ok := imageSource["snapshot"]; ok {
-		is = oxideSDK.ImageSource{
-			Id:   source.String(),
-			Type: oxideSDK.ImageSourceTypeSnapshot,
-		}
-	}
-
-	// TODO: For testing only, remove before releasing
-	if _, ok := imageSource["you_can_boot_anything_as_long_as_its_alpine"]; ok {
-		is = oxideSDK.ImageSource{
-			Type: oxideSDK.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine,
-		}
-	}
-
-	return is, nil
 }
