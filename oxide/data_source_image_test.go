@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -36,12 +35,12 @@ data "oxide_image" "{{.BlockName}}" {
 
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccDataSourceImage_full(t *testing.T) {
-	blockName := fmt.Sprintf("acc-datasource-image-%s", uuid.New())
+	blockName := newBlockName("datasource-image")
 	config, err := parsedAccConfig(
 		dataSourceImageConfig{
 			BlockName:         blockName,
-			SupportBlockName1: fmt.Sprintf("acc-support-%s", uuid.New()),
-			SupportBlockName2: fmt.Sprintf("acc-support-%s", uuid.New()),
+			SupportBlockName1: newBlockName("support"),
+			SupportBlockName2: newBlockName("support"),
 		},
 		dataSourceImageConfigTpl,
 	)

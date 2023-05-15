@@ -29,7 +29,7 @@ resource "oxide_disk" "{{.DiskBlockName}}" {
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824
-  disk_source = { blank = 512 }
+  block_size  = 512
 }
 
 resource "oxide_instance" "{{.InstanceBlockName}}" {
@@ -54,16 +54,16 @@ resource "oxide_instance_disk_attachment" "{{.BlockName}}" {
 `
 
 func TestAccResourceInstanceDiskAttachment_full(t *testing.T) {
-	blockName := fmt.Sprintf("acc-resource-instance-disk-attachment-%s", uuid.New())
+	blockName := newBlockName("instance-disk-attachment")
 	resourceName := fmt.Sprintf("oxide_instance_disk_attachment.%s", blockName)
-	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
+	diskName := newResourceName()
 	config, err := parsedAccConfig(
 		resourceInstanceDiskAttachmentConfig{
 			BlockName:         blockName,
-			InstanceName:      fmt.Sprintf("acc-terraform-%s", uuid.New()),
-			InstanceBlockName: fmt.Sprintf("acc-resource-instance-disk-attachment-%s", uuid.New()),
+			InstanceName:      newResourceName(),
+			InstanceBlockName: newBlockName("instance-disk-attachment"),
 			DiskName:          diskName,
-			DiskBlockName:     fmt.Sprintf("acc-resource-instance-disk-attachment-%s", uuid.New()),
+			DiskBlockName:     newBlockName("instance-disk-attachment"),
 			SupportBlockName:  fmt.Sprintf("acc-support-%s", uuid.New()),
 		},
 		resourceInstanceDiskAttachmentConfigTpl,

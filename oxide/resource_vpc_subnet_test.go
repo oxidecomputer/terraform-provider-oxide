@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
@@ -93,11 +92,11 @@ resource "oxide_vpc_subnet" "{{.BlockName}}" {
 `
 
 func TestAccResourceVPCSubnet_full(t *testing.T) {
-	subnetName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	vpcName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	blockName := fmt.Sprintf("acc-resource-subnet-%s", uuid.New())
-	vpcBlockName := fmt.Sprintf("acc-resource-subnet-%s", uuid.New())
-	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+	subnetName := newResourceName()
+	vpcName := newResourceName()
+	blockName := newBlockName("subnet")
+	vpcBlockName := newBlockName("subnet")
+	supportBlockName := newBlockName("support")
 	resourceName := fmt.Sprintf("oxide_vpc_subnet.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceVPCSubnetConfig{
@@ -128,7 +127,7 @@ func TestAccResourceVPCSubnet_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	blockName2 := fmt.Sprintf("acc-resource-subnet-%s", uuid.New())
+	blockName2 := newBlockName("subnet")
 	resourceName2 := fmt.Sprintf("oxide_vpc_subnet.%s", blockName2)
 	subnetName2 := subnetName + "-2"
 	config2, err := parsedAccConfig(

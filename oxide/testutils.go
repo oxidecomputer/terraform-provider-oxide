@@ -6,10 +6,12 @@ package oxide
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 
@@ -76,4 +78,12 @@ func setAccFromEnvVar() (string, string) {
 	}
 
 	return host, token
+}
+
+func newResourceName() string {
+	return fmt.Sprintf("acc-terraform-%s", uuid.New())
+}
+
+func newBlockName(resource string) string {
+	return fmt.Sprintf("acc-%s-%s", resource, uuid.New())
 }

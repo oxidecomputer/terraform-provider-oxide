@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
@@ -55,9 +54,9 @@ resource "oxide_instance" "{{.BlockName}}" {
 `
 
 func TestAccResourceInstance_full(t *testing.T) {
-	instanceName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	blockName := fmt.Sprintf("acc-resource-instance-%s", uuid.New())
-	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+	instanceName := newResourceName()
+	blockName := newBlockName("instance")
+	supportBlockName := newBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceInstanceConfig{
@@ -71,7 +70,7 @@ func TestAccResourceInstance_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	blockName2 := fmt.Sprintf("acc-resource-instance-%s", uuid.New())
+	blockName2 := newBlockName("instance")
 	instanceName2 := instanceName + "-2"
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	config2, err := parsedAccConfig(

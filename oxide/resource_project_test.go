@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
@@ -40,8 +39,8 @@ resource "oxide_project" "{{.BlockName}}" {
 `
 
 func TestAccResourceProject_full(t *testing.T) {
-	projectName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	blockName := fmt.Sprintf("acc-resource-project-%s", uuid.New())
+	projectName := newResourceName()
+	blockName := newBlockName("project")
 	resourceName := fmt.Sprintf("oxide_project.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceProjectConfig{
