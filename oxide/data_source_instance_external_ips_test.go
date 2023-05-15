@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -42,13 +41,13 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
 `
 
 func TestAccDataSourceInstanceExternalIPs_full(t *testing.T) {
-	blockName := fmt.Sprintf("acc-datasource-instance-external-ips-%s", uuid.New())
+	blockName := newBlockName("datasource-instance-external-ips")
 	config, err := parsedAccConfig(
 		dataSourceInstanceExternalIPConfig{
 			BlockName:         blockName,
-			SupportBlockName:  fmt.Sprintf("acc-support-%s", uuid.New()),
-			InstanceName:      fmt.Sprintf("acc-terraform-%s", uuid.New()),
-			InstanceBlockName: fmt.Sprintf("acc-resource-instance-%s", uuid.New()),
+			SupportBlockName:  newBlockName("support"),
+			InstanceName:      newResourceName(),
+			InstanceBlockName: newBlockName("instance"),
 		},
 		datasourceInstanceExternalIPsConfigTpl,
 	)

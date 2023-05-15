@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
@@ -63,15 +62,15 @@ var resourceInstanceNICConfigTpl = `
  `
 
 func TestAccResourceInstanceNIC_full(t *testing.T) {
-	nicName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	subnetName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	vpcName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	instanceName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	blockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
-	vpcBlockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
-	subnetBlockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
-	instanceBlockName := fmt.Sprintf("acc-resource-nic-%s", uuid.New())
-	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+	nicName := newResourceName()
+	subnetName := newResourceName()
+	vpcName := newResourceName()
+	instanceName := newResourceName()
+	blockName := newBlockName("nic")
+	vpcBlockName := newBlockName("nic")
+	subnetBlockName := newBlockName("nic")
+	instanceBlockName := newBlockName("nic")
+	supportBlockName := newBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance_network_interface.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceInstanceNICConfig{

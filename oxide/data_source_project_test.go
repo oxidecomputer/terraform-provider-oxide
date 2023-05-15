@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -29,11 +28,11 @@ data "oxide_project" "{{.BlockName}}" {
 `
 
 func TestAccDataSourceProject_full(t *testing.T) {
-	blockName := fmt.Sprintf("acc-datasource-project-%s", uuid.New())
+	blockName := newBlockName("datasource-project")
 	config, err := parsedAccConfig(
 		dataSourceProjectConfig{
 			BlockName:        blockName,
-			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
+			SupportBlockName: newBlockName("support"),
 		},
 		dataSourceProjectConfigTpl,
 	)

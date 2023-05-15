@@ -52,9 +52,9 @@ resource "oxide_snapshot" "{{.BlockName}}" {
 `
 
 func TestAccResourceSnapshot_full(t *testing.T) {
-	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	snapshotName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	blockName := fmt.Sprintf("acc-resource-snapshot-%s", uuid.New())
+	diskName := newResourceName()
+	snapshotName := newResourceName()
+	blockName := newBlockName("snapshot")
 	resourceName := fmt.Sprintf("oxide_snapshot.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceSnapshotConfig{

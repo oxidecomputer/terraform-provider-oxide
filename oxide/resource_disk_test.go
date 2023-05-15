@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
@@ -38,14 +37,14 @@ resource "oxide_disk" "{{.BlockName}}" {
 `
 
 func TestAccResourceDisk_full(t *testing.T) {
-	diskName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-	blockName := fmt.Sprintf("acc-resource-disk-%s", uuid.New())
+	diskName := newResourceName()
+	blockName := newBlockName("disk")
 	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceDiskConfig{
 			BlockName:        blockName,
 			DiskName:         diskName,
-			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
+			SupportBlockName: newBlockName("support"),
 		},
 		resourceDiskConfigTpl,
 	)

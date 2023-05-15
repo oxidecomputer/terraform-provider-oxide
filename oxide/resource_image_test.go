@@ -44,9 +44,9 @@ package oxide
 // `
 //
 // func TestAccResourceImage_full(t *testing.T) {
-// 	imageName := fmt.Sprintf("acc-terraform-%s", uuid.New())
-// 	blockName := fmt.Sprintf("acc-resource-image-%s", uuid.New())
-// 	supportBlockName := fmt.Sprintf("acc-support-%s", uuid.New())
+// 	imageName := newResourceName()
+// 	blockName := newBlockName("image")
+// 	supportBlockName := newBlockName("support")
 // 	resourceName := fmt.Sprintf("oxide_image.%s", blockName)
 // 	config, err := parsedAccConfig(
 // 		resourceImageConfig{
