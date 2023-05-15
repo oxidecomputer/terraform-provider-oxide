@@ -10,22 +10,9 @@ This resource manages images.
 
 ## Example Usage
 
-All images must be created within the scope of a project. This means that when first creating an image,
-the `project_id` field must be set to the ID of the project that will contain it.
-
-To create an image it's necessary to set one of `source_url` or `source_snapshot_id`.
+To create an image it's necessary to define its source by setting one of `source_url` or `source_snapshot_id`.
 
 ```hcl
-resource "oxide_image" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test image"
-  name        = "myimage"
-  source_url  = "myimage.example.com"
-  block_size  = 512
-  os          = "alpine"
-  version     = "3.15"
-}
-
 resource "oxide_image" "example2" {
   project_id         = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description        = "a test image"
@@ -38,6 +25,21 @@ resource "oxide_image" "example2" {
     read   = "1m"
     create = "3m"
   }
+}
+```
+
+To create an image within the scope of a project, the `project_id` field must be set to
+the ID of the project that will contain it.
+
+```hcl
+resource "oxide_image" "example" {
+  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description = "a test image"
+  name        = "myimage"
+  source_url  = "myimage.example.com"
+  block_size  = 512
+  os          = "alpine"
+  version     = "3.15"
 }
 ```
 
@@ -73,7 +75,7 @@ ID of the selected project.
 
 ### Optional
 
-- `project_id` (String) ID of the project that will contain the image. Required when creating an image.
+- `project_id` (String) ID of the project that will contain the image.
 - `source_snapshot_id` (String) Snapshot ID of the image source if applicable. To be set only when creating an image from a snapshot.
 - `source_url` (String) "URL of the image source if applicable. To be set only when creating an image from a URL.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))

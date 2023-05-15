@@ -208,14 +208,6 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	if plan.ProjectID.IsNull() {
-		resp.Diagnostics.AddError(
-			"Error creating image",
-			"`project_id` must be set to create an image",
-		)
-		return
-	}
-
 	params := oxideSDK.ImageCreateParams{
 		Project: oxideSDK.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxideSDK.ImageCreate{
