@@ -244,7 +244,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
-	plan.TimeModified = types.StringValue(instance.TimeCreated.String())
+	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -292,7 +292,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.NCPUs = types.Int64Value(int64(instance.Ncpus))
 	state.ProjectID = types.StringValue(instance.ProjectId)
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
-	state.TimeModified = types.StringValue(instance.TimeCreated.String())
+	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

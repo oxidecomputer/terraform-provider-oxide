@@ -168,7 +168,7 @@ func (r *vpcSubnetResource) Create(ctx context.Context, req resource.CreateReque
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(subnet.Id)
 	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(subnet.TimeCreated.String())
+	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
 	// IPV6Block is added as well as it is Optional/Computed
 	plan.IPV6Block = types.StringValue(string(subnet.Ipv6Block))
 
@@ -216,7 +216,7 @@ func (r *vpcSubnetResource) Read(ctx context.Context, req resource.ReadRequest, 
 	state.Name = types.StringValue(string(subnet.Name))
 	state.VPCID = types.StringValue(subnet.VpcId)
 	state.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	state.TimeModified = types.StringValue(subnet.TimeCreated.String())
+	state.TimeModified = types.StringValue(subnet.TimeModified.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

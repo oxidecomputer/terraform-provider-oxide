@@ -254,7 +254,7 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.ID = types.StringValue(image.Id)
 	plan.Size = types.Int64Value(int64(image.Size))
 	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
-	plan.TimeModified = types.StringValue(image.TimeCreated.String())
+	plan.TimeModified = types.StringValue(image.TimeModified.String())
 	plan.Version = types.StringValue(image.Version)
 
 	// Parse imageResourceDigestModel into types.Object
@@ -318,7 +318,7 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.OS = types.StringValue(image.Os)
 	state.Size = types.Int64Value(int64(image.Size))
 	state.TimeCreated = types.StringValue(image.TimeCreated.String())
-	state.TimeModified = types.StringValue(image.TimeCreated.String())
+	state.TimeModified = types.StringValue(image.TimeModified.String())
 	state.Version = types.StringValue(image.Version)
 
 	// Only set ProjectID and SourceURL if they exist to avoid unintentional drift

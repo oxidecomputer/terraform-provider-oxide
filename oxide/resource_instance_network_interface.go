@@ -226,7 +226,7 @@ func (r *instanceNICResource) Create(ctx context.Context, req resource.CreateReq
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(nic.Id)
 	plan.TimeCreated = types.StringValue(nic.TimeCreated.String())
-	plan.TimeModified = types.StringValue(nic.TimeCreated.String())
+	plan.TimeModified = types.StringValue(nic.TimeModified.String())
 	plan.MAC = types.StringValue(string(nic.Mac))
 	plan.Primary = types.BoolValue(nic.Primary)
 	// Setting IPAddress as it is both computed and optional
@@ -278,7 +278,7 @@ func (r *instanceNICResource) Read(ctx context.Context, req resource.ReadRequest
 	state.Primary = types.BoolValue(nic.Primary)
 	state.SubnetID = types.StringValue(nic.SubnetId)
 	state.TimeCreated = types.StringValue(nic.TimeCreated.String())
-	state.TimeModified = types.StringValue(nic.TimeCreated.String())
+	state.TimeModified = types.StringValue(nic.TimeModified.String())
 	state.VPCID = types.StringValue(nic.VpcId)
 
 	// Save updated data into Terraform state
@@ -334,7 +334,7 @@ func (r *instanceNICResource) Update(ctx context.Context, req resource.UpdateReq
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(nic.Id)
 	plan.TimeCreated = types.StringValue(nic.TimeCreated.String())
-	plan.TimeModified = types.StringValue(nic.TimeCreated.String())
+	plan.TimeModified = types.StringValue(nic.TimeModified.String())
 	plan.MAC = types.StringValue(string(nic.Mac))
 	plan.Primary = types.BoolValue(nic.Primary)
 	// Setting IPAddress as it is both computed and optional
