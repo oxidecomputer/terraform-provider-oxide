@@ -25,8 +25,6 @@ TEST_ACC_PARALLEL = 6
 TEST_ARGS ?= -timeout 10m -race -cover
 TEST_PACKAGE ?= ./oxide
 
-#include Makefile.tools
-
 ### Build targets
 
 ## Builds the source code and saves the binary to bin/.
