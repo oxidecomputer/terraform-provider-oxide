@@ -165,7 +165,7 @@ func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, re
 	plan.ID = types.StringValue(vpc.Id)
 	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
 	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpc.TimeCreated.String())
+	plan.TimeModified = types.StringValue(vpc.TimeModified.String())
 	// IPV6Prefix is added as well as it is Optional/Computed
 	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
@@ -214,7 +214,7 @@ func (r *vpcResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.ProjectID = types.StringValue(vpc.ProjectId)
 	state.SystemRouterID = types.StringValue(vpc.SystemRouterId)
 	state.TimeCreated = types.StringValue(vpc.TimeCreated.String())
-	state.TimeModified = types.StringValue(vpc.TimeCreated.String())
+	state.TimeModified = types.StringValue(vpc.TimeModified.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

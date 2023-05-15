@@ -233,7 +233,7 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 	plan.DevicePath = types.StringValue(disk.DevicePath)
 	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
 	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
-	plan.TimeModified = types.StringValue(disk.TimeCreated.String())
+	plan.TimeModified = types.StringValue(disk.TimeModified.String())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -280,7 +280,7 @@ func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.ProjectID = types.StringValue(disk.ProjectId)
 	state.Size = types.Int64Value(int64(disk.Size))
 	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
-	state.TimeModified = types.StringValue(disk.TimeCreated.String())
+	state.TimeModified = types.StringValue(disk.TimeModified.String())
 
 	// Only set SourceImageID and SourceSnapshotID if they've been set to avoid unintentional drift
 	if disk.ImageId != "" {
