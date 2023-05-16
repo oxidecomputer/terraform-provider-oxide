@@ -39,3 +39,7 @@ func isIPv6(str string) bool {
 func defaultTimeout() time.Duration {
 	return 10 * time.Minute
 }
+
+func newBoolPointer(b bool) *bool {
+	return &b
+}

@@ -151,8 +151,8 @@ github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/oxidecomputer/oxide.go v0.0.22-0.20230511221945-8606042dcf0f h1:skdqXfvCT0boP2Ucdr4koPhVQ6E5NaU+e4sPgvgtpOQ=
-github.com/oxidecomputer/oxide.go v0.0.22-0.20230511221945-8606042dcf0f/go.mod h1:+9yvaeoCBxYGtFZnvU5S0Nk/vVgecCNuNUABNfsAqh0=
+github.com/oxidecomputer/oxide.go v0.0.22-0.20230516043219-0657e19ed854 h1:0HqAthGuHzdcSCHLyjz+G8kwuEZ+ldLf73JMQqrIpik=
+github.com/oxidecomputer/oxide.go v0.0.22-0.20230516043219-0657e19ed854/go.mod h1:+9yvaeoCBxYGtFZnvU5S0Nk/vVgecCNuNUABNfsAqh0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
