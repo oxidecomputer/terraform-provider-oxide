@@ -195,7 +195,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			Hostname:    plan.HostName.ValueString(),
 			Memory:      oxideSDK.ByteCount(plan.Memory.ValueInt64()),
 			Ncpus:       oxideSDK.InstanceCpuCount(plan.NCPUs.ValueInt64()),
-			Start:       plan.StartOnCreate.ValueBool(),
+			Start:       plan.StartOnCreate.ValueBoolPointer(),
 			// Creating and attaching nics on instance create limits our
 			// ability to perform CRUD actions reliably on them (e.g. no information
 			// about the nics is returned on instance creation, so we'd have to

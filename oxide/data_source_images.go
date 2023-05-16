@@ -169,9 +169,10 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000 results.
 	// Seems unlikely anyone will have more than one billion images.
 	params := oxideSDK.ImageListParams{
-		Project: oxideSDK.NameOrId(state.ProjectID.ValueString()),
-		Limit:   1000000000,
-		SortBy:  oxideSDK.NameOrIdSortModeIdAscending,
+		Project:           oxideSDK.NameOrId(state.ProjectID.ValueString()),
+		Limit:             1000000000,
+		SortBy:            oxideSDK.NameOrIdSortModeIdAscending,
+		IncludeSiloImages: newBoolPointer(false),
 	}
 	images, err := d.client.ImageList(params)
 	if err != nil {

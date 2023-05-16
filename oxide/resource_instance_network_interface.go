@@ -228,7 +228,7 @@ func (r *instanceNICResource) Create(ctx context.Context, req resource.CreateReq
 	plan.TimeCreated = types.StringValue(nic.TimeCreated.String())
 	plan.TimeModified = types.StringValue(nic.TimeModified.String())
 	plan.MAC = types.StringValue(string(nic.Mac))
-	plan.Primary = types.BoolValue(nic.Primary)
+	plan.Primary = types.BoolPointerValue(nic.Primary)
 	// Setting IPAddress as it is both computed and optional
 	plan.IPAddr = types.StringValue(nic.Ip)
 
@@ -275,7 +275,7 @@ func (r *instanceNICResource) Read(ctx context.Context, req resource.ReadRequest
 	state.InstanceID = types.StringValue(nic.InstanceId)
 	state.MAC = types.StringValue(nic.Id)
 	state.Name = types.StringValue(string(nic.Name))
-	state.Primary = types.BoolValue(nic.Primary)
+	state.Primary = types.BoolPointerValue(nic.Primary)
 	state.SubnetID = types.StringValue(nic.SubnetId)
 	state.TimeCreated = types.StringValue(nic.TimeCreated.String())
 	state.TimeModified = types.StringValue(nic.TimeModified.String())
@@ -336,7 +336,7 @@ func (r *instanceNICResource) Update(ctx context.Context, req resource.UpdateReq
 	plan.TimeCreated = types.StringValue(nic.TimeCreated.String())
 	plan.TimeModified = types.StringValue(nic.TimeModified.String())
 	plan.MAC = types.StringValue(string(nic.Mac))
-	plan.Primary = types.BoolValue(nic.Primary)
+	plan.Primary = types.BoolPointerValue(nic.Primary)
 	// Setting IPAddress as it is both computed and optional
 	plan.IPAddr = types.StringValue(nic.Ip)
 
