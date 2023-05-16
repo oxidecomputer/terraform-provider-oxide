@@ -22,11 +22,11 @@ data "oxide_image" "example" {
 
 ### Required
 
-- `project_name` (String) Name of the project that contains the image.
 - `name` (String) Name of the image.
 
 ### Optional
 
+- `project_name` (String) Name of the project that contains the image. Necessary if the image visibility is scoped to a single project.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
