@@ -61,7 +61,7 @@ resource "oxide_image" "example" {
 Likewise, when demoting an image back to the scope of a single project, set the `project_id` field to the
 ID of the selected project.
 
--> Images cannot be moved across projects directly, Only visibility scope can be changed.
+-> Images cannot be moved across projects directly, only visibility scope can be changed.
 
 ## Schema
 

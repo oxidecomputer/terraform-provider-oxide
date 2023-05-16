@@ -6,7 +6,7 @@ page_title: "oxide_snapshot Resource - terraform-provider-oxide"
 
 This resource manages snapshots.
 
--> This resource currently only provides create, read and delete actions. An update requires a resource replacement
+-> This resource currently only provides create, read and delete actions. An update requires a resource replacement.
 
 ## Example Usage
 

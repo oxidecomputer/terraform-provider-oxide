@@ -69,13 +69,13 @@ func (d *imageDataSource) Configure(_ context.Context, req datasource.ConfigureR
 func (d *imageDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"project_name": schema.StringAttribute{
-				Required:    true,
-				Description: "Name of the project which contains the images",
-			},
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the image.",
+			},
+			"project_name": schema.StringAttribute{
+				Optional:    true,
+				Description: "Name of the project which contains the images",
 			},
 			"timeouts": timeouts.Attributes(ctx),
 			"block_size": schema.Int64Attribute{

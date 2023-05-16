@@ -75,7 +75,7 @@ func (d *imagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "ID of the project which contains the images",
 			},
 			"id": schema.StringAttribute{
