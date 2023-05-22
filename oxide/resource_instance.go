@@ -7,6 +7,7 @@ package oxide
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -42,19 +43,20 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	Description   types.String   `tfsdk:"description"`
-	ExternalIPs   types.List     `tfsdk:"external_ips"`
-	HostName      types.String   `tfsdk:"host_name"`
-	ID            types.String   `tfsdk:"id"`
-	Memory        types.Int64    `tfsdk:"memory"`
-	Name          types.String   `tfsdk:"name"`
-	NCPUs         types.Int64    `tfsdk:"ncpus"`
-	ProjectID     types.String   `tfsdk:"project_id"`
-	StartOnCreate types.Bool     `tfsdk:"start_on_create"`
-	TimeCreated   types.String   `tfsdk:"time_created"`
-	TimeModified  types.String   `tfsdk:"time_modified"`
-	Timeouts      timeouts.Value `tfsdk:"timeouts"`
-	UserData      types.String   `tfsdk:"user_data"`
+	Description     types.String   `tfsdk:"description"`
+	DiskAttachments types.List     `tfsdk:"disk_attachments"`
+	ExternalIPs     types.List     `tfsdk:"external_ips"`
+	HostName        types.String   `tfsdk:"host_name"`
+	ID              types.String   `tfsdk:"id"`
+	Memory          types.Int64    `tfsdk:"memory"`
+	Name            types.String   `tfsdk:"name"`
+	NCPUs           types.Int64    `tfsdk:"ncpus"`
+	ProjectID       types.String   `tfsdk:"project_id"`
+	StartOnCreate   types.Bool     `tfsdk:"start_on_create"`
+	TimeCreated     types.String   `tfsdk:"time_created"`
+	TimeModified    types.String   `tfsdk:"time_modified"`
+	Timeouts        timeouts.Value `tfsdk:"timeouts"`
+	UserData        types.String   `tfsdk:"user_data"`
 }
 
 // Metadata returns the resource type name.
@@ -129,6 +131,14 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 				},
+			},
+			"disk_attachments": schema.ListAttribute{
+				Optional:    true,
+				Description: "Disks to be attached to the instance.",
+				ElementType: types.StringType,
+				//	PlanModifiers: []planmodifier.List{
+				//		listplanmodifier.RequiresReplace(),
+				//	},
 			},
 			"external_ips": schema.ListAttribute{
 				Optional:    true,
@@ -210,6 +220,38 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		},
 	}
 
+	// Retrieve names of all disks based on their provided IDs
+	var disks = []oxideSDK.InstanceDiskAttachment{}
+	for _, diskAttch := range plan.DiskAttachments.Elements() {
+		diskID, err := strconv.Unquote(diskAttch.String())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error retrieving disk information",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return
+		}
+
+		disk, err := r.client.DiskView(oxideSDK.DiskViewParams{
+			Disk: oxideSDK.NameOrId(diskID),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error retrieving disk information",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+
+		da := oxideSDK.InstanceDiskAttachment{
+			Name: disk.Name,
+			// Only allow attach (no disk create on instance create)
+			Type: oxideSDK.InstanceDiskAttachmentTypeAttach,
+		}
+		disks = append(disks, da)
+	}
+	params.Body.Disks = disks
+
 	var externalIPs = []oxideSDK.ExternalIpCreate{}
 	for _, ip := range plan.ExternalIPs.Elements() {
 		poolName, err := strconv.Unquote(ip.String())
@@ -245,6 +287,17 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	plan.ID = types.StringValue(instance.Id)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
+	// Save sorted disks to state to avoid drift
+	diskAttchs := plan.DiskAttachments.Elements()
+	sort.Slice(diskAttchs, func(i, j int) bool {
+		return diskAttchs[i].String() < diskAttchs[j].String()
+	})
+	diskList, diags := types.ListValueFrom(ctx, types.StringType, diskAttchs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.DiskAttachments = diskList
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -293,6 +346,31 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.ProjectID = types.StringValue(instance.ProjectId)
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
+
+	// Retrieve attached disks
+	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
+		Limit:    1000000000,
+		SortBy:   oxideSDK.NameOrIdSortModeIdAscending,
+		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to list attached disks:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	d := []string{}
+	for _, disk := range disks.Items {
+		d = append(d, disk.Id)
+	}
+	diskList, diags := types.ListValueFrom(ctx, types.StringType, d)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.DiskAttachments = diskList
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
