@@ -50,17 +50,17 @@ func newBoolPointer(b bool) *bool {
 // This function is a bit expensive, but given the fact that
 // the expected number of elements is relatively slow
 // it's not a big deal.
-func difference(a, b []attr.Value) []string {
-	mb := make(map[string]struct{}, len(b))
+func difference(a, b []attr.Value) []attr.Value {
+	mb := make(map[attr.Value]struct{}, len(b))
 	for _, x := range b {
-		mb[x.String()] = struct{}{}
+		mb[x] = struct{}{}
 	}
 	// Should I return a []attr.Value instead?
-	var diff []string
+	var diff []attr.Value
 	for _, x := range a {
-		if _, found := mb[x.String()]; !found {
+		if _, found := mb[x]; !found {
 			// TODO: Should this be returned already parsed?
-			diff = append(diff, x.String())
+			diff = append(diff, x)
 		}
 	}
 	return diff

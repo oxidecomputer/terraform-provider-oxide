@@ -86,7 +86,7 @@ func Test_difference(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []string
+		want []attr.Value
 	}{
 		{
 			name: "success",
@@ -100,7 +100,10 @@ func Test_difference(t *testing.T) {
 					types.StringValue("one"),
 				},
 			},
-			want: []string{"\"two\"", "\"three\""},
+			want: []attr.Value{
+				types.StringValue("two"),
+				types.StringValue("three"),
+			},
 		},
 		{
 			name: "retrieves multiple items if there are duplicate entries",
@@ -115,7 +118,11 @@ func Test_difference(t *testing.T) {
 					types.StringValue("one"),
 				},
 			},
-			want: []string{"\"two\"", "\"two\"", "\"three\""},
+			want: []attr.Value{
+				types.StringValue("two"),
+				types.StringValue("two"),
+				types.StringValue("three"),
+			},
 		},
 	}
 	for _, tt := range tests {

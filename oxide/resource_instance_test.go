@@ -19,6 +19,78 @@ type resourceInstanceConfig struct {
 	SupportBlockName string
 }
 
+type resourceInstanceDiskConfig struct {
+	BlockName        string
+	DiskBlockName    string
+	DiskBlockName2   string
+	DiskName         string
+	DiskName2        string
+	InstanceName     string
+	SupportBlockName string
+}
+
+var resourceInstanceDiskConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_disk" "{{.DiskBlockName2}}" {
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "{{.DiskName2}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id, oxide_disk.{{.DiskBlockName2}}.id]
+}
+`
+
+var resourceInstanceDiskConfigUpdateTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_disk" "{{.DiskBlockName2}}" {
+  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description = "a test disk"
+  name        = "{{.DiskName2}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+}
+`
+
 var resourceInstanceConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
 
@@ -38,7 +110,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-var resourceInstanceFullConfigTpl = `
+var resourceInstanceExternalIPConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
 
 resource "oxide_instance" "{{.BlockName}}" {
@@ -70,6 +142,44 @@ func TestAccResourceInstance_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
+	instanceDiskName := newResourceName()
+	diskName := newResourceName()
+	diskName2 := newResourceName()
+	blockNameInstance := newBlockName("instance")
+	blockNameInstanceDisk := newBlockName("instance-disk")
+	blockNameInstanceDisk2 := newBlockName("instance-disk-2")
+	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
+	configDisk, err := parsedAccConfig(
+		resourceInstanceDiskConfig{
+			BlockName:        blockNameInstance,
+			DiskBlockName:    blockNameInstanceDisk,
+			DiskBlockName2:   blockNameInstanceDisk2,
+			DiskName:         diskName,
+			DiskName2:        diskName2,
+			InstanceName:     instanceDiskName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceDiskConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configDiskUpdate, err := parsedAccConfig(
+		resourceInstanceDiskConfig{
+			BlockName:        blockNameInstance,
+			DiskBlockName:    blockNameInstanceDisk,
+			DiskBlockName2:   blockNameInstanceDisk2,
+			DiskName:         diskName,
+			DiskName2:        diskName2,
+			InstanceName:     instanceDiskName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceDiskConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
 	blockName2 := newBlockName("instance")
 	instanceName2 := instanceName + "-2"
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
@@ -79,7 +189,7 @@ func TestAccResourceInstance_full(t *testing.T) {
 			InstanceName:     instanceName2,
 			SupportBlockName: supportBlockName,
 		},
-		resourceInstanceFullConfigTpl,
+		resourceInstanceExternalIPConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -90,6 +200,20 @@ func TestAccResourceInstance_full(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
+			{
+				Config: configDisk,
+				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				// Detach a disk
+				Config: configDiskUpdate,
+				Check:  checkResourceInstanceDiskUpdate(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				// Reattach disk
+				Config: configDisk,
+				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
 			{
 				Config: config,
 				Check:  checkResourceInstance(resourceName, instanceName),
@@ -104,7 +228,7 @@ func TestAccResourceInstance_full(t *testing.T) {
 			},
 			{
 				Config: config2,
-				Check:  checkResourceInstanceFull(resourceName2, instanceName2),
+				Check:  checkResourceInstanceIP(resourceName2, instanceName2),
 			},
 			{
 				ResourceName:            resourceName2,
@@ -134,7 +258,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 	}...)
 }
 
-func checkResourceInstanceFull(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceInstanceIP(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -144,6 +268,40 @@ func checkResourceInstanceFull(resourceName, instanceName string) resource.TestC
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "default"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.1"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
+		resource.TestCheckNoResourceAttr(resourceName, "disk_attachments.1"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

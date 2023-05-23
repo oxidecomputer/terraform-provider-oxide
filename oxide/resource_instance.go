@@ -136,9 +136,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "Disks to be attached to the instance.",
 				ElementType: types.StringType,
-				//	PlanModifiers: []planmodifier.List{
-				//		listplanmodifier.RequiresReplace(),
-				//	},
 			},
 			"external_ips": schema.ListAttribute{
 				Optional:    true,
@@ -299,7 +296,10 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	plan.DiskAttachments = diskList
+	// Only set the disk list if there are disk attachments
+	if len(diskList.Elements()) > 0 {
+		plan.DiskAttachments = diskList
+	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -351,8 +351,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	// Retrieve attached disks
 	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
-		Limit: 1000000000,
-		//SortBy:   oxideSDK.NameOrIdSortModeIdAscending,
+		Limit:    1000000000,
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -376,7 +375,10 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.DiskAttachments = diskList
+	// Only set the disk list if there are disk attachments
+	if len(diskList.Elements()) > 0 {
+		state.DiskAttachments = diskList
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -409,7 +411,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// Check plan and if it has an ID that the state doesn't then attach it
 	disksToAttach := difference(planDisks, stateDisks)
 	for _, v := range disksToAttach {
-		diskID, err := strconv.Unquote(v)
+		diskID, err := strconv.Unquote(v.String())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error attaching disk",
@@ -436,7 +438,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// Check state and if it has an ID that the plan doesn't then detach it
 	disksToDetach := difference(stateDisks, planDisks)
 	for _, v := range disksToDetach {
-		diskID, err := strconv.Unquote(v)
+		diskID, err := strconv.Unquote(v.String())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error detaching disk",
@@ -482,8 +484,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Retrieve attached disks
 	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
-		Limit: 1000000000,
-		//SortBy:   oxideSDK.NameOrIdSortModeIdAscending,
+		Limit:    1000000000,
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -494,7 +495,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// TODO: looks like the sorting isn't done the same way. Sort with go std library here as well
+	// Sort with go std library because sorting with through the Oxide API is a little different
 	d := []string{}
 	for _, disk := range disks.Items {
 		d = append(d, disk.Id)
@@ -508,7 +509,10 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	plan.DiskAttachments = diskList
+	// Only set the disk list if there are disk attachments
+	if len(diskList.Elements()) > 0 {
+		plan.DiskAttachments = diskList
+	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -561,7 +565,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		}
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
 	}
-	// TODO: check that all disks are detached?
 
 	// TODO: Double check if this is necessary, could be an optional feature?
 	//_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
