@@ -43,3 +43,22 @@ func defaultTimeout() time.Duration {
 func newBoolPointer(b bool) *bool {
 	return &b
 }
+
+// sliceDiff returns a string slice of the elements in `a` that aren't in `b`.
+// This function is a bit expensive, but given the fact that
+// the expected number of elements is relatively slow
+// it's not a big deal.
+func sliceDiff[S []E, E any](a, b S) S {
+	mb := make(map[any]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+
+	var diff S
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
