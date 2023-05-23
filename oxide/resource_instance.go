@@ -287,6 +287,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	plan.ID = types.StringValue(instance.Id)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
+	// TODO: This sorting is horrendous, it's probably better to add a validation
+	// rule that ignores placement differences
 	// Save sorted disks to state to avoid drift
 	diskAttchs := plan.DiskAttachments.Elements()
 	sort.Slice(diskAttchs, func(i, j int) bool {
@@ -349,8 +351,8 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	// Retrieve attached disks
 	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
-		Limit:    1000000000,
-		SortBy:   oxideSDK.NameOrIdSortModeIdAscending,
+		Limit: 1000000000,
+		//SortBy:   oxideSDK.NameOrIdSortModeIdAscending,
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -365,6 +367,10 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	for _, disk := range disks.Items {
 		d = append(d, disk.Id)
 	}
+	// Save sorted disks to state to avoid drift
+	sort.Slice(d, func(i, j int) bool {
+		return d[i] < d[j]
+	})
 	diskList, diags := types.ListValueFrom(ctx, types.StringType, d)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -381,9 +387,134 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *instanceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError(
-		"Error updating instance",
-		"the oxide API currently does not support updating instances")
+	var plan instanceResourceModel
+	var state instanceResourceModel
+
+	// Read Terraform plan data into the plan model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read Terraform prior state data into the state model to retrieve ID
+	// which is a computed attribute, so it won't show up in the plan.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	planDisks := plan.DiskAttachments.Elements()
+	stateDisks := state.DiskAttachments.Elements()
+
+	// Check plan and if it has an ID that the state doesn't then attach it
+	disksToAttach := difference(planDisks, stateDisks)
+	for _, v := range disksToAttach {
+		diskID, err := strconv.Unquote(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error attaching disk",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return
+		}
+		_, err = r.client.InstanceDiskAttach(oxideSDK.InstanceDiskAttachParams{
+			Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+			Body: &oxideSDK.DiskPath{
+				Disk: oxideSDK.NameOrId(diskID),
+			},
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error attaching disk",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("attached disk with ID: %v", v), map[string]any{"success": true})
+	}
+
+	// Check state and if it has an ID that the plan doesn't then detach it
+	disksToDetach := difference(stateDisks, planDisks)
+	for _, v := range disksToDetach {
+		diskID, err := strconv.Unquote(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error detaching disk",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return
+		}
+		_, err = r.client.InstanceDiskDetach(oxideSDK.InstanceDiskDetachParams{
+			Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+			Body: &oxideSDK.DiskPath{
+				Disk: oxideSDK.NameOrId(diskID),
+			},
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error detaching disk",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", v), map[string]any{"success": true})
+	}
+
+	// Read instance to retrieve modified time value
+	instance, err := r.client.InstanceView(oxideSDK.InstanceViewParams{
+		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read instance:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
+
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(instance.Id)
+	plan.ProjectID = types.StringValue(instance.ProjectId)
+	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
+	plan.TimeModified = types.StringValue(instance.TimeModified.String())
+
+	// Retrieve attached disks
+	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
+		Limit: 1000000000,
+		//SortBy:   oxideSDK.NameOrIdSortModeIdAscending,
+		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to list attached disks:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	// TODO: looks like the sorting isn't done the same way. Sort with go std library here as well
+	d := []string{}
+	for _, disk := range disks.Items {
+		d = append(d, disk.Id)
+	}
+	// Save sorted disks to state to avoid drift
+	sort.Slice(d, func(i, j int) bool {
+		return d[i] < d[j]
+	})
+	diskList, diags := types.ListValueFrom(ctx, types.StringType, d)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.DiskAttachments = diskList
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -403,6 +534,34 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
+
+	// Detach all disks
+	for _, diskAttch := range state.DiskAttachments.Elements() {
+		diskID, err := strconv.Unquote(diskAttch.String())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error detaching disk",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return
+		}
+
+		_, err = r.client.InstanceDiskDetach(oxideSDK.InstanceDiskDetachParams{
+			Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+			Body: &oxideSDK.DiskPath{
+				Disk: oxideSDK.NameOrId(diskID),
+			},
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error detaching disk",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
+	}
+	// TODO: check that all disks are detached?
 
 	// TODO: Double check if this is necessary, could be an optional feature?
 	//_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{

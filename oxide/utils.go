@@ -8,6 +8,8 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 )
 
 func is404(err error) bool {
@@ -42,4 +44,24 @@ func defaultTimeout() time.Duration {
 
 func newBoolPointer(b bool) *bool {
 	return &b
+}
+
+// difference returns a string slice of the elements in `a` that aren't in `b`.
+// This function is a bit expensive, but given the fact that
+// the expected number of elements is relatively slow
+// it's not a big deal.
+func difference(a, b []attr.Value) []string {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x.String()] = struct{}{}
+	}
+	// Should I return a []attr.Value instead?
+	var diff []string
+	for _, x := range a {
+		if _, found := mb[x.String()]; !found {
+			// TODO: Should this be returned already parsed?
+			diff = append(diff, x.String())
+		}
+	}
+	return diff
 }

@@ -7,6 +7,8 @@ package oxide
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,6 +73,54 @@ func Test_isIPv6(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := isIPv6(tt.args.str)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_difference(t *testing.T) {
+	type args struct {
+		a []attr.Value
+		b []attr.Value
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "success",
+			args: args{
+				a: []attr.Value{
+					types.StringValue("one"),
+					types.StringValue("two"),
+					types.StringValue("three"),
+				},
+				b: []attr.Value{
+					types.StringValue("one"),
+				},
+			},
+			want: []string{"\"two\"", "\"three\""},
+		},
+		{
+			name: "retrieves multiple items if there are duplicate entries",
+			args: args{
+				a: []attr.Value{
+					types.StringValue("one"),
+					types.StringValue("two"),
+					types.StringValue("two"),
+					types.StringValue("three"),
+				},
+				b: []attr.Value{
+					types.StringValue("one"),
+				},
+			},
+			want: []string{"\"two\"", "\"two\"", "\"three\""},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := difference(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 	}
