@@ -388,7 +388,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	stateDisks := state.DiskAttachments.Elements()
 
 	// Check plan and if it has an ID that the state doesn't then attach it
-	disksToAttach := difference(planDisks, stateDisks)
+	disksToAttach := sliceDiff(planDisks, stateDisks)
 	for _, v := range disksToAttach {
 		diskID, err := strconv.Unquote(v.String())
 		if err != nil {
@@ -415,7 +415,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Check state and if it has an ID that the plan doesn't then detach it
-	disksToDetach := difference(stateDisks, planDisks)
+	disksToDetach := sliceDiff(stateDisks, planDisks)
 	for _, v := range disksToDetach {
 		diskID, err := strconv.Unquote(v.String())
 		if err != nil {

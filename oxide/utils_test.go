@@ -78,7 +78,7 @@ func Test_isIPv6(t *testing.T) {
 	}
 }
 
-func Test_difference(t *testing.T) {
+func Test_sliceDiff(t *testing.T) {
 	type args struct {
 		a []attr.Value
 		b []attr.Value
@@ -127,7 +127,34 @@ func Test_difference(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := difference(tt.args.a, tt.args.b)
+			got := sliceDiff(tt.args.a, tt.args.b)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_sliceDiff_int(t *testing.T) {
+	type args struct {
+		a []int
+		b []int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []int
+	}{
+		{
+			name: "success",
+			args: args{
+				a: []int{1, 2, 3},
+				b: []int{1},
+			},
+			want: []int{2, 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 	}
