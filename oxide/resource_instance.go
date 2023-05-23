@@ -133,7 +133,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			},
 			"disk_attachments": schema.SetAttribute{
 				Optional:    true,
-				Description: "Disks to be attached to the instance.",
+				Description: "IDs of the disks to be attached to the instance.",
 				ElementType: types.StringType,
 			},
 			"external_ips": schema.ListAttribute{

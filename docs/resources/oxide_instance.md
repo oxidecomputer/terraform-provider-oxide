@@ -6,20 +6,21 @@ page_title: "oxide_instance Resource - terraform-provider-oxide"
 
 This resource manages instances.
 
--> This resource currently only provides create, read and delete actions. An update requires a resource replacement
+!> Instances must be stopped before updating disk attachments and deleting
 
 ## Example Usage
 
-### Basic instance
+### Basic instance with attached disks
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test instance"
-  name        = "myinstance"
-  host_name   = "<host value>"
-  memory      = 1073741824
-  ncpus       = 1
+  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description      = "a test instance"
+  name             = "myinstance"
+  host_name        = "<host value>"
+  memory           = 1073741824
+  ncpus            = 1
+  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8", "1aa748cb-26f0-4bf5-8faf-b202dc74d698"]
   timeouts = {
     read   = "1m"
     create = "3m"
@@ -71,6 +72,7 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
+- `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
 - `external_ips` (List of String, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 - `user_data` (String) User data for instance initialization systems (such as cloud-init). Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4) (+ and / characters with padding). Maximum 32 KiB unencoded data.
