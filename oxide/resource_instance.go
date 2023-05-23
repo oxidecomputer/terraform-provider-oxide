@@ -7,7 +7,6 @@ package oxide
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -44,7 +43,7 @@ type instanceResource struct {
 
 type instanceResourceModel struct {
 	Description     types.String   `tfsdk:"description"`
-	DiskAttachments types.List     `tfsdk:"disk_attachments"`
+	DiskAttachments types.Set      `tfsdk:"disk_attachments"`
 	ExternalIPs     types.List     `tfsdk:"external_ips"`
 	HostName        types.String   `tfsdk:"host_name"`
 	ID              types.String   `tfsdk:"id"`
@@ -132,7 +131,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
-			"disk_attachments": schema.ListAttribute{
+			"disk_attachments": schema.SetAttribute{
 				Optional:    true,
 				Description: "Disks to be attached to the instance.",
 				ElementType: types.StringType,
@@ -284,22 +283,6 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	plan.ID = types.StringValue(instance.Id)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
-	// TODO: This sorting is horrendous, it's probably better to add a validation
-	// rule that ignores placement differences
-	// Save sorted disks to state to avoid drift
-	diskAttchs := plan.DiskAttachments.Elements()
-	sort.Slice(diskAttchs, func(i, j int) bool {
-		return diskAttchs[i].String() < diskAttchs[j].String()
-	})
-	diskList, diags := types.ListValueFrom(ctx, types.StringType, diskAttchs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	// Only set the disk list if there are disk attachments
-	if len(diskList.Elements()) > 0 {
-		plan.DiskAttachments = diskList
-	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -366,11 +349,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	for _, disk := range disks.Items {
 		d = append(d, disk.Id)
 	}
-	// Save sorted disks to state to avoid drift
-	sort.Slice(d, func(i, j int) bool {
-		return d[i] < d[j]
-	})
-	diskList, diags := types.ListValueFrom(ctx, types.StringType, d)
+	diskList, diags := types.SetValueFrom(ctx, types.StringType, d)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -500,11 +479,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	for _, disk := range disks.Items {
 		d = append(d, disk.Id)
 	}
-	// Save sorted disks to state to avoid drift
-	sort.Slice(d, func(i, j int) bool {
-		return d[i] < d[j]
-	})
-	diskList, diags := types.ListValueFrom(ctx, types.StringType, d)
+	diskList, diags := types.SetValueFrom(ctx, types.StringType, d)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
