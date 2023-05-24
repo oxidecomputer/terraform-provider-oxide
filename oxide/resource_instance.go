@@ -10,6 +10,8 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -332,31 +334,14 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	// Retrieve attached disks
-	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
-		Limit:    1000000000,
-		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to list attached disks:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	d := []string{}
-	for _, disk := range disks.Items {
-		d = append(d, disk.Id)
-	}
-	diskList, diags := types.SetValueFrom(ctx, types.StringType, d)
+	diskSet, diags := newAttachedDisksSet(r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	// Only set the disk list if there are disk attachments
-	if len(diskList.Elements()) > 0 {
-		state.DiskAttachments = diskList
+	if len(diskSet.Elements()) > 0 {
+		state.DiskAttachments = diskSet
 	}
 
 	// Save updated data into Terraform state
@@ -462,31 +447,14 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// Retrieve attached disks
-	disks, err := r.client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
-		Limit:    1000000000,
-		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to list attached disks:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	// Sort with go std library because sorting with through the Oxide API is a little different
-	d := []string{}
-	for _, disk := range disks.Items {
-		d = append(d, disk.Id)
-	}
-	diskList, diags := types.SetValueFrom(ctx, types.StringType, d)
+	diskSet, diags := newAttachedDisksSet(r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	// Only set the disk list if there are disk attachments
-	if len(diskList.Elements()) > 0 {
-		plan.DiskAttachments = diskList
+	if len(diskSet.Elements()) > 0 {
+		plan.DiskAttachments = diskSet
 	}
 
 	// Save plan into Terraform state
@@ -597,3 +565,32 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 // 	}
 // 	ch <- nil
 // }
+
+func newAttachedDisksSet(client *oxideSDK.Client, instanceID string) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	disks, err := client.InstanceDiskList(oxideSDK.InstanceDiskListParams{
+		Limit:    1000000000,
+		Instance: oxideSDK.NameOrId(instanceID),
+	})
+	if err != nil {
+		diags.AddError(
+			"Unable to list attached disks:",
+			"API error: "+err.Error(),
+		)
+		return types.SetNull(types.StringType), diags
+	}
+
+	d := []attr.Value{}
+	for _, disk := range disks.Items {
+		id := types.StringValue(disk.Id)
+		d = append(d, id)
+	}
+	diskSet, diags := types.SetValue(types.StringType, d)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return types.SetNull(types.StringType), diags
+	}
+
+	return diskSet, diags
+}
