@@ -62,18 +62,16 @@ type instanceResourceModel struct {
 }
 
 type instanceResourceNICModel struct {
-	Description types.String `tfsdk:"description"`
-	ID          types.String `tfsdk:"id"`
-	IPAddr      types.String `tfsdk:"ip_address"`
-	// InstanceID   types.String   `tfsdk:"instance_id"`
+	Description  types.String `tfsdk:"description"`
+	ID           types.String `tfsdk:"id"`
+	IPAddr       types.String `tfsdk:"ip_address"`
 	MAC          types.String `tfsdk:"mac_address"`
 	Name         types.String `tfsdk:"name"`
 	Primary      types.Bool   `tfsdk:"primary"`
 	SubnetID     types.String `tfsdk:"subnet_id"`
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
-	//Timeouts     timeouts.Value `tfsdk:"timeouts"`
-	VPCID types.String `tfsdk:"vpc_id"`
+	VPCID        types.String `tfsdk:"vpc_id"`
 }
 
 // Metadata returns the resource type name.
@@ -233,8 +231,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
-				// TODO: Restore once updates are enabled
-				// Update: true,
+				Update: true,
 				Delete: true,
 			}),
 			"id": schema.StringAttribute{
