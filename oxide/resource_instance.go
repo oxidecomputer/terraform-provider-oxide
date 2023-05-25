@@ -160,10 +160,18 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 						"name": schema.StringAttribute{
 							Required:    true,
 							Description: "Name of the instance network interface.",
+							// TODO: Remove once update is implemented
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 						"description": schema.StringAttribute{
 							Required:    true,
 							Description: "Description for the instance network interface.",
+							// TODO: Remove once update is implemented
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplace(),
+							},
 						},
 						"subnet_id": schema.StringAttribute{
 							Required:    true,
@@ -356,32 +364,30 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// Populate NIC information
-	if len(plan.NetworkInterfaces) > 0 {
-		for i := range plan.NetworkInterfaces {
-			nic, err := r.client.InstanceNetworkInterfaceView(oxideSDK.InstanceNetworkInterfaceViewParams{
-				Interface: oxideSDK.NameOrId(plan.NetworkInterfaces[i].Name.ValueString()),
-				Instance:  oxideSDK.NameOrId(instance.Id),
-			})
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Unable to read instance network interface:",
-					"API error: "+err.Error(),
-				)
-				// Don't return here as the instance has already been created.
-				// Otherwise the state won't be saved.
-				continue
-			}
-			tflog.Trace(ctx, fmt.Sprintf("read instance network interface with ID: %v", nic.Id), map[string]any{"success": true})
-
-			// Map response body to schema and populate Computed attribute values
-			plan.NetworkInterfaces[i].ID = types.StringValue(nic.Id)
-			plan.NetworkInterfaces[i].TimeCreated = types.StringValue(nic.TimeCreated.String())
-			plan.NetworkInterfaces[i].TimeModified = types.StringValue(nic.TimeModified.String())
-			plan.NetworkInterfaces[i].MAC = types.StringValue(string(nic.Mac))
-			plan.NetworkInterfaces[i].Primary = types.BoolPointerValue(nic.Primary)
-			// Setting IPAddress as it is both computed and optional
-			plan.NetworkInterfaces[i].IPAddr = types.StringValue(nic.Ip)
+	for i := range plan.NetworkInterfaces {
+		nic, err := r.client.InstanceNetworkInterfaceView(oxideSDK.InstanceNetworkInterfaceViewParams{
+			Interface: oxideSDK.NameOrId(plan.NetworkInterfaces[i].Name.ValueString()),
+			Instance:  oxideSDK.NameOrId(instance.Id),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read instance network interface:",
+				"API error: "+err.Error(),
+			)
+			// Don't return here as the instance has already been created.
+			// Otherwise the state won't be saved.
+			continue
 		}
+		tflog.Trace(ctx, fmt.Sprintf("read instance network interface with ID: %v", nic.Id), map[string]any{"success": true})
+
+		// Map response body to schema and populate Computed attribute values
+		plan.NetworkInterfaces[i].ID = types.StringValue(nic.Id)
+		plan.NetworkInterfaces[i].TimeCreated = types.StringValue(nic.TimeCreated.String())
+		plan.NetworkInterfaces[i].TimeModified = types.StringValue(nic.TimeModified.String())
+		plan.NetworkInterfaces[i].MAC = types.StringValue(string(nic.Mac))
+		plan.NetworkInterfaces[i].Primary = types.BoolPointerValue(nic.Primary)
+		// Setting IPAddress as it is both computed and optional
+		plan.NetworkInterfaces[i].IPAddr = types.StringValue(nic.Ip)
 	}
 
 	// Save plan into Terraform state
@@ -442,22 +448,15 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		state.DiskAttachments = diskSet
 	}
 
-	//	nics, err := r.client.InstanceNetworkInterfaceList(oxideSDK.InstanceNetworkInterfaceListParams{
-	//		Instance: oxideSDK.NameOrId(instance.Id),
-	//		Limit:    1000000000,
-	//	})
-	//	if err != nil {
-	//		resp.Diagnostics.AddError(
-	//			"Unable to read instance network interfaces:",
-	//			"API error: "+err.Error(),
-	//		)
-	//		return
-	//	}
-	//	n := []attr.Value{}
-	//	for _, nic := range nics.Items {
-	//		id := types.StringValue(nic.Id)
-	//		n = append(n, id)
-	//	}
+	nicSet, diags := newAttachedNetworkInterfacesSet(r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Only populate NICs if there are associated NICs to avoid drift
+	if len(nicSet) > 0 {
+		state.NetworkInterfaces = nicSet
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -747,7 +746,8 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxideSDK.Client,
 			)
 			return oxideSDK.InstanceNetworkInterfaceAttachment{}, diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", planNIC.SubnetID.ValueString()), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", planNIC.SubnetID.ValueString()),
+			map[string]any{"success": true})
 
 		nic := oxideSDK.InstanceNetworkInterfaceCreate{
 			Description: planNIC.Description.ValueString(),
@@ -765,3 +765,46 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxideSDK.Client,
 	}
 	return nicAttachment, diags
 }
+
+func newAttachedNetworkInterfacesSet(client *oxideSDK.Client, instanceID string) (
+	[]instanceResourceNICModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	nics, err := client.InstanceNetworkInterfaceList(oxideSDK.InstanceNetworkInterfaceListParams{
+		Instance: oxideSDK.NameOrId(instanceID),
+		Limit:    1000000000,
+	})
+	if err != nil {
+		diags.AddError(
+			"Unable to read instance network interfaces:",
+			"API error: "+err.Error(),
+		)
+		return []instanceResourceNICModel{}, diags
+	}
+
+	nicSet := []instanceResourceNICModel{}
+	for _, nic := range nics.Items {
+		n := instanceResourceNICModel{
+			Description: types.StringValue(nic.Description),
+			ID:          types.StringValue(nic.Id),
+			IPAddr:      types.StringValue(nic.Ip),
+			MAC:         types.StringValue(string(nic.Mac)),
+			Name:        types.StringValue(string(nic.Name)),
+			// TODO: Should I check for nil before assigning this one?
+			Primary:      types.BoolValue(*nic.Primary),
+			SubnetID:     types.StringValue(nic.SubnetId),
+			TimeCreated:  types.StringValue(nic.TimeCreated.String()),
+			TimeModified: types.StringValue(nic.TimeModified.String()),
+			VPCID:        types.StringValue(nic.VpcId),
+		}
+		nicSet = append(nicSet, n)
+	}
+
+	return nicSet, diags
+}
+
+func createNICs() {}
+
+func deleteNICs() {}
+
+//func updateNICs() {}
