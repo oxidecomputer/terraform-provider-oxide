@@ -332,56 +332,12 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	params.Body.ExternalIps = externalIPs
 
-	//NICs
-	nics := oxideSDK.InstanceNetworkInterfaceAttachment{}
-	if len(plan.NetworkInterfaces) > 0 {
-		nics.Type = oxideSDK.InstanceNetworkInterfaceAttachmentTypeCreate
-	} else {
-		nics.Type = oxideSDK.InstanceNetworkInterfaceAttachmentTypeNone
+	nics, diags := newNetworkInterfaceAttachment(ctx, r.client, plan.NetworkInterfaces)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	nicParams := []oxideSDK.InstanceNetworkInterfaceCreate{}
-	for _, planNIC := range plan.NetworkInterfaces {
-		// This is an unfortunate result of having the create body use names as identifiers
-		// but the body return IDs. making two API calls to retrieve VPC and subnet names
-		// Using IDs only for the provider schema as names are mutable.
-		vpc, err := r.client.VpcView(oxideSDK.VpcViewParams{
-			Vpc: oxideSDK.NameOrId(planNIC.VPCID.ValueString()),
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read information about corresponding VPC:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", planNIC.VPCID.ValueString()), map[string]any{"success": true})
-
-		subnet, err := r.client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
-			Subnet: oxideSDK.NameOrId(planNIC.SubnetID.ValueString()),
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read information about corresponding subnet:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", planNIC.SubnetID.ValueString()), map[string]any{"success": true})
-
-		nic := oxideSDK.InstanceNetworkInterfaceCreate{
-			Description: planNIC.Description.ValueString(),
-			Ip:          planNIC.IPAddr.ValueString(),
-			Name:        oxideSDK.Name(planNIC.Name.ValueString()),
-			SubnetName:  subnet.Name,
-			VpcName:     vpc.Name,
-		}
-		nicParams = append(nicParams, nic)
-	}
-	nics.Params = nicParams
-
 	params.Body.NetworkInterfaces = nics
-	//
 
 	instance, err := r.client.InstanceCreate(params)
 	if err != nil {
@@ -752,4 +708,60 @@ func newAttachedDisksSet(client *oxideSDK.Client, instanceID string) (types.Set,
 	}
 
 	return diskSet, diags
+}
+
+func newNetworkInterfaceAttachment(ctx context.Context, client *oxideSDK.Client, model []instanceResourceNICModel) (
+	oxideSDK.InstanceNetworkInterfaceAttachment, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if len(model) == 0 {
+		return oxideSDK.InstanceNetworkInterfaceAttachment{
+			Type: oxideSDK.InstanceNetworkInterfaceAttachmentTypeNone,
+		}, diags
+	}
+
+	var nicParams []oxideSDK.InstanceNetworkInterfaceCreate
+	for _, planNIC := range model {
+		// This is an unfortunate result of having the create body use names as identifiers
+		// but the body return IDs. making two API calls to retrieve VPC and subnet names.
+		// Using IDs only for the provider schema as names are mutable.
+		vpc, err := client.VpcView(oxideSDK.VpcViewParams{
+			Vpc: oxideSDK.NameOrId(planNIC.VPCID.ValueString()),
+		})
+		if err != nil {
+			diags.AddError(
+				"Unable to read information about corresponding VPC:",
+				"API error: "+err.Error(),
+			)
+			return oxideSDK.InstanceNetworkInterfaceAttachment{}, diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", planNIC.VPCID.ValueString()), map[string]any{"success": true})
+
+		subnet, err := client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
+			Subnet: oxideSDK.NameOrId(planNIC.SubnetID.ValueString()),
+		})
+		if err != nil {
+			diags.AddError(
+				"Unable to read information about corresponding subnet:",
+				"API error: "+err.Error(),
+			)
+			return oxideSDK.InstanceNetworkInterfaceAttachment{}, diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", planNIC.SubnetID.ValueString()), map[string]any{"success": true})
+
+		nic := oxideSDK.InstanceNetworkInterfaceCreate{
+			Description: planNIC.Description.ValueString(),
+			Ip:          planNIC.IPAddr.ValueString(),
+			Name:        oxideSDK.Name(planNIC.Name.ValueString()),
+			SubnetName:  subnet.Name,
+			VpcName:     vpc.Name,
+		}
+		nicParams = append(nicParams, nic)
+	}
+
+	nicAttachment := oxideSDK.InstanceNetworkInterfaceAttachment{
+		Type:   oxideSDK.InstanceNetworkInterfaceAttachmentTypeCreate,
+		Params: nicParams,
+	}
+	return nicAttachment, diags
 }
