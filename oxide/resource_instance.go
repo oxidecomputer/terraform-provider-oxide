@@ -540,6 +540,23 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", v), map[string]any{"success": true})
 	}
 
+	planNICs := plan.NetworkInterfaces
+	stateNICs := state.NetworkInterfaces
+
+	// Check plan and if it has an ID that the state doesn't then attach it
+	nicsToCreate := sliceDiff(planNICs, stateNICs)
+	resp.Diagnostics.Append(createNICs(ctx, r.client, nicsToCreate, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Check state and if it has an ID that the plan doesn't then delete it
+	nicsToDelete := sliceDiff(stateNICs, planNICs)
+	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Read instance to retrieve modified time value
 	instance, err := r.client.InstanceView(oxideSDK.InstanceViewParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -569,6 +586,16 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// Only set the disk list if there are disk attachments
 	if len(diskSet.Elements()) > 0 {
 		plan.DiskAttachments = diskSet
+	}
+
+	nicSet, diags := newAttachedNetworkInterfacesSet(r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Only populate NICs if there are associated NICs to avoid drift
+	if len(nicSet) > 0 {
+		state.NetworkInterfaces = nicSet
 	}
 
 	// Save plan into Terraform state
@@ -706,7 +733,7 @@ func newAttachedDisksSet(client *oxideSDK.Client, instanceID string) (types.Set,
 		return types.SetNull(types.StringType), diags
 	}
 
-	return diskSet, diags
+	return diskSet, nil
 }
 
 func newNetworkInterfaceAttachment(ctx context.Context, client *oxideSDK.Client, model []instanceResourceNICModel) (
@@ -721,40 +748,19 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxideSDK.Client,
 
 	var nicParams []oxideSDK.InstanceNetworkInterfaceCreate
 	for _, planNIC := range model {
-		// This is an unfortunate result of having the create body use names as identifiers
-		// but the body return IDs. making two API calls to retrieve VPC and subnet names.
-		// Using IDs only for the provider schema as names are mutable.
-		vpc, err := client.VpcView(oxideSDK.VpcViewParams{
-			Vpc: oxideSDK.NameOrId(planNIC.VPCID.ValueString()),
-		})
-		if err != nil {
-			diags.AddError(
-				"Unable to read information about corresponding VPC:",
-				"API error: "+err.Error(),
-			)
+		names, diags := retrieveVPCandSubnetNames(ctx, client, planNIC.VPCID.ValueString(),
+			planNIC.SubnetID.ValueString())
+		diags.Append(diags...)
+		if diags.HasError() {
 			return oxideSDK.InstanceNetworkInterfaceAttachment{}, diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", planNIC.VPCID.ValueString()), map[string]any{"success": true})
-
-		subnet, err := client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
-			Subnet: oxideSDK.NameOrId(planNIC.SubnetID.ValueString()),
-		})
-		if err != nil {
-			diags.AddError(
-				"Unable to read information about corresponding subnet:",
-				"API error: "+err.Error(),
-			)
-			return oxideSDK.InstanceNetworkInterfaceAttachment{}, diags
-		}
-		tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", planNIC.SubnetID.ValueString()),
-			map[string]any{"success": true})
 
 		nic := oxideSDK.InstanceNetworkInterfaceCreate{
 			Description: planNIC.Description.ValueString(),
 			Ip:          planNIC.IPAddr.ValueString(),
 			Name:        oxideSDK.Name(planNIC.Name.ValueString()),
-			SubnetName:  subnet.Name,
-			VpcName:     vpc.Name,
+			SubnetName:  oxideSDK.Name(names.subnet),
+			VpcName:     oxideSDK.Name(names.vpc),
 		}
 		nicParams = append(nicParams, nic)
 	}
@@ -763,7 +769,7 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxideSDK.Client,
 		Type:   oxideSDK.InstanceNetworkInterfaceAttachmentTypeCreate,
 		Params: nicParams,
 	}
-	return nicAttachment, diags
+	return nicAttachment, nil
 }
 
 func newAttachedNetworkInterfacesSet(client *oxideSDK.Client, instanceID string) (
@@ -800,11 +806,105 @@ func newAttachedNetworkInterfacesSet(client *oxideSDK.Client, instanceID string)
 		nicSet = append(nicSet, n)
 	}
 
-	return nicSet, diags
+	return nicSet, nil
 }
 
-func createNICs() {}
+type vpcAndSubnetNames struct {
+	vpc    string
+	subnet string
+}
 
-func deleteNICs() {}
+func retrieveVPCandSubnetNames(ctx context.Context, client *oxideSDK.Client, vpcID, subnetID string) (
+	vpcAndSubnetNames, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	// This is an unfortunate result of having the create body use names as identifiers
+	// but the body return IDs. making two API calls to retrieve VPC and subnet names.
+	// Using IDs only for the provider schema as names are mutable.
+	vpc, err := client.VpcView(oxideSDK.VpcViewParams{
+		Vpc: oxideSDK.NameOrId(vpcID),
+	})
+	if err != nil {
+		diags.AddError(
+			"Unable to read information about corresponding VPC:",
+			"API error: "+err.Error(),
+		)
+		return vpcAndSubnetNames{}, diags
+	}
+	tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", vpcID), map[string]any{"success": true})
 
-//func updateNICs() {}
+	subnet, err := client.VpcSubnetView(oxideSDK.VpcSubnetViewParams{
+		Subnet: oxideSDK.NameOrId(subnetID),
+	})
+	if err != nil {
+		diags.AddError(
+			"Unable to read information about corresponding subnet:",
+			"API error: "+err.Error(),
+		)
+		return vpcAndSubnetNames{}, diags
+	}
+	tflog.Trace(ctx, fmt.Sprintf("read subnet with ID: %v", subnetID),
+		map[string]any{"success": true})
+
+	return vpcAndSubnetNames{
+		vpc:    string(vpc.Name),
+		subnet: string(subnet.Name),
+	}, nil
+}
+
+func createNICs(ctx context.Context, client *oxideSDK.Client, models []instanceResourceNICModel, instanceID string) diag.Diagnostics {
+	for _, model := range models {
+		names, diags := retrieveVPCandSubnetNames(ctx, client, model.VPCID.ValueString(),
+			model.SubnetID.ValueString())
+		diags.Append(diags...)
+		if diags.HasError() {
+			return diags
+		}
+
+		params := oxideSDK.InstanceNetworkInterfaceCreateParams{
+			Instance: oxideSDK.NameOrId(instanceID),
+			Body: &oxideSDK.InstanceNetworkInterfaceCreate{
+				Description: model.Description.ValueString(),
+				Ip:          model.IPAddr.ValueString(),
+				Name:        oxideSDK.Name(model.Name.ValueString()),
+				SubnetName:  oxideSDK.Name(names.subnet),
+				VpcName:     oxideSDK.Name(names.vpc),
+			},
+		}
+
+		nic, err := client.InstanceNetworkInterfaceCreate(params)
+		if err != nil {
+			diags.AddError(
+				"Error creating instance network interface",
+				"API error: "+err.Error(),
+			)
+			return diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("created instance network interface with ID: %v", nic.Id),
+			map[string]any{"success": true})
+	}
+
+	return nil
+}
+
+func deleteNICs(ctx context.Context, client *oxideSDK.Client, models []instanceResourceNICModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, model := range models {
+		if err := client.InstanceNetworkInterfaceDelete(oxideSDK.InstanceNetworkInterfaceDeleteParams{
+			Interface: oxideSDK.NameOrId(model.ID.ValueString()),
+		}); err != nil {
+			if !is404(err) {
+				diags.AddError(
+					"Error deleting instance network interface:",
+					"API error: "+err.Error(),
+				)
+				// TODO: Should this be a return or a continue?
+				return diags
+			}
+		}
+		tflog.Trace(ctx, fmt.Sprintf("deleted instance network interface with ID: %v", model.ID.ValueString()),
+			map[string]any{"success": true})
+	}
+
+	return nil
+}

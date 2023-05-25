@@ -196,9 +196,7 @@ func (r *instanceNICResource) Create(ctx context.Context, req resource.CreateReq
 			VpcName:     vpc.Name,
 		},
 	}
-	// TODO: Possible bug with API.
-	// Error message: "Instance must be stopped to attach a new network interface"
-	// When instance was created with `start` set to false.
+
 	nic, err := r.client.InstanceNetworkInterfaceCreate(params)
 	if err != nil {
 		resp.Diagnostics.AddError(

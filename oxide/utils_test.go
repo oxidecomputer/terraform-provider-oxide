@@ -159,3 +159,39 @@ func Test_sliceDiff_int(t *testing.T) {
 		})
 	}
 }
+
+func Test_sliceDiff_model(t *testing.T) {
+	type args struct {
+		a []instanceResourceNICModel
+		b []instanceResourceNICModel
+	}
+	tests := []struct {
+		name string
+		args args
+		want []instanceResourceNICModel
+	}{
+		{
+			name: "success",
+			args: args{
+				a: []instanceResourceNICModel{
+					{Name: types.StringValue("bib")},
+					{Name: types.StringValue("bob")},
+					{Name: types.StringValue("bub")},
+				},
+				b: []instanceResourceNICModel{
+					{Name: types.StringValue("bub")},
+				},
+			},
+			want: []instanceResourceNICModel{
+				{Name: types.StringValue("bib")},
+				{Name: types.StringValue("bob")},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sliceDiff(tt.args.a, tt.args.b)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
