@@ -10,7 +10,7 @@ This resource manages instances.
 
 ## Example Usage
 
-### Basic instance with attached disks
+### Basic instance with attached disks and a network interface
 
 ```hcl
 resource "oxide_instance" "example" {
@@ -21,6 +21,14 @@ resource "oxide_instance" "example" {
   memory           = 1073741824
   ncpus            = 1
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8", "1aa748cb-26f0-4bf5-8faf-b202dc74d698"]
+  network_interfaces = [
+    {
+      subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
+      vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
+      description = "a sample nic"
+      name        = "mynic"
+    },
+  ]
   timeouts = {
     read   = "1m"
     create = "3m"
@@ -74,6 +82,7 @@ resource "oxide_instance" "example" {
 
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
 - `external_ips` (List of String, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses.
+- `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 - `user_data` (String) User data for instance initialization systems (such as cloud-init). Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4) (+ and / characters with padding). Maximum 32 KiB unencoded data.
 
@@ -82,6 +91,29 @@ resource "oxide_instance" "example" {
 - `id` (String) Unique, immutable, system-controlled identifier of the instance.
 - `time_created` (String) Timestamp of when this instance was created.
 - `time_modified` (String) Timestamp of when this instance last modified.
+
+<a id="nestedatt--nics"></a>
+
+### Nested Schema for `network_interfaces`
+
+### Required
+
+- `description` (String) Description for the network interface.
+- `name` (String) Name of the network interface.
+- `subnet_id` (String) ID of the VPC subnet in which to create the network interface.
+- `vpc_id` (String) ID of the VPC in which to create the network interface.
+
+### Optional
+
+- `ip_address` (String) IP address for the network interface. One will be auto-assigned if not provided.
+
+### Read-Only
+
+- `id` (String) Unique, immutable, system-controlled identifier of the network interface.
+- `mac_address` (String) MAC address assigned to the network interface.
+- `primary` (Boolean) True if this is the primary network interface for the instance to which it's attached to.
+- `time_created` (String) Timestamp of when this network interface was created.
+- `time_modified` (String) Timestamp of when this network interface was last modified.
 
 <a id="nestedatt--timeouts"></a>
 

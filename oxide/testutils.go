@@ -18,9 +18,6 @@ import (
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// TODO: Use this prefix + random string for all resource names for uniqueness
-// const accPrefix = "terraform-acc-"
-
 func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"oxide": providerserver.NewProtocol6WithError(New(Version)),
