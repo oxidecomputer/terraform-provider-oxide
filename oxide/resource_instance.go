@@ -162,7 +162,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 							Description: "Name of the instance network interface.",
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
+								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
 							},
 						},
 						"description": schema.StringAttribute{
@@ -170,21 +170,21 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 							Description: "Description for the instance network interface.",
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
+								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
 							},
 						},
 						"subnet_id": schema.StringAttribute{
 							Required:    true,
 							Description: "ID of the VPC subnet in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
+								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
 							},
 						},
 						"vpc_id": schema.StringAttribute{
 							Required:    true,
 							Description: "ID of the VPC in which to create the instance network interface",
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
+								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
 							},
 						},
 						"ip_address": schema.StringAttribute{
@@ -595,7 +595,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 	// Only populate NICs if there are associated NICs to avoid drift
 	if len(nicSet) > 0 {
-		state.NetworkInterfaces = nicSet
+		plan.NetworkInterfaces = nicSet
 	}
 
 	// Save plan into Terraform state

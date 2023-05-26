@@ -29,6 +29,9 @@ type resourceInstanceDiskConfig struct {
 	SupportBlockName string
 }
 
+// TODO: Write acceptance tests for NICs once the `oxide_vpc` and `oxide_subnet`
+// datasources have been implemented to be able to easily retrieve their IDs.
+
 var resourceInstanceDiskConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
 
