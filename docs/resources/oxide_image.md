@@ -6,7 +6,7 @@ page_title: "oxide_image Resource - terraform-provider-oxide"
 
 This resource manages images.
 
-!> This resource does not support deletes.
+!> This resource does not support updates or deletes.
 
 ## Example Usage
 
@@ -28,9 +28,6 @@ resource "oxide_image" "example2" {
 }
 ```
 
-To create an image within the scope of a project, the `project_id` field must be set to
-the ID of the project that will contain it.
-
 ```hcl
 resource "oxide_image" "example" {
   project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
@@ -43,39 +40,19 @@ resource "oxide_image" "example" {
 }
 ```
 
-### Updating visibility scope of an image
-
-To update an image so that it is accesible across projects, the `project_id` field should be unset.
-
-```hcl
-resource "oxide_image" "example" {
-  description = "a test image"
-  name        = "myimage"
-  source_url  = "myimage.example.com"
-  block_size  = 512
-  os          = "alpine"
-  version     = "3.15"
-}
-```
-
-Likewise, when demoting an image back to the scope of a single project, set the `project_id` field to the
-ID of the selected project.
-
--> Images cannot be moved across projects directly, only visibility scope can be changed.
-
 ## Schema
 
 ### Required
 
 - `description` (String) Description for the image.
 - `os` (String) OS image distribution. Example: "alpine".
+- `project_id` (String) ID of the project that will contain the image.
 - `version` (String) OS image version. Example: "3.16".
 - `name` (String) Name of the image.
 - `block_size` (Number) Size of blocks in bytes.
 
 ### Optional
 
-- `project_id` (String) ID of the project that will contain the image.
 - `source_snapshot_id` (String) Snapshot ID of the image source if applicable. To be set only when creating an image from a snapshot.
 - `source_url` (String) "URL of the image source if applicable. To be set only when creating an image from a URL.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
