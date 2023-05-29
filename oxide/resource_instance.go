@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -23,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -162,7 +164,9 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 							Description: "Name of the instance network interface.",
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
+								stringplanmodifier.RequiresReplaceIf(
+									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+								),
 							},
 						},
 						"description": schema.StringAttribute{
@@ -170,21 +174,27 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 							Description: "Description for the instance network interface.",
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
+								stringplanmodifier.RequiresReplaceIf(
+									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+								),
 							},
 						},
 						"subnet_id": schema.StringAttribute{
 							Required:    true,
 							Description: "ID of the VPC subnet in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
+								stringplanmodifier.RequiresReplaceIf(
+									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+								),
 							},
 						},
 						"vpc_id": schema.StringAttribute{
 							Required:    true,
 							Description: "ID of the VPC in which to create the instance network interface",
 							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIf(RequiresReplaceUnlessEmptyStringOrNull(), "", ""),
+								stringplanmodifier.RequiresReplaceIf(
+									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+								),
 							},
 						},
 						"ip_address": schema.StringAttribute{
@@ -419,6 +429,8 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
+		// TODO: recreate on manually deleted resource
+		// this works a little different with the new tf framework
 		resp.Diagnostics.AddError(
 			"Unable to read instance:",
 			"API error: "+err.Error(),
@@ -641,40 +653,36 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			},
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error detaching disk",
-				"API error: "+err.Error(),
-			)
-			return
+			if !is404(err) {
+				resp.Diagnostics.AddError(
+					"Error detaching disk",
+					"API error: "+err.Error(),
+				)
+				return
+			}
+			continue
 		}
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
 	}
 
-	// TODO: Double check if this is necessary, could be an optional feature?
-	//_, err = r.client.InstanceStop(oxideSDK.InstanceStopParams{
-	//	Instance: oxideSDK.NameOrId(state.ID.ValueString()),
-	//})
-	//if err != nil {
-	//	if !is404(err) {
-	//		resp.Diagnostics.AddError(
-	//			"Unable to stop instance:",
-	//			"API error: "+err.Error(),
-	//		)
-	//		return
-	//	}
-	//}
-	//
-	//	ch := make(chan error)
-	//	go waitForStoppedInstance(r.client, oxideSDK.NameOrId(state.ID.ValueString()), ch)
-	//	e := <-ch
-	//	if !is404(e) {
-	//		resp.Diagnostics.AddError(
-	//			"Unable to stop instance:",
-	//			"API error: "+e.Error(),
-	//		)
-	//		return
-	//	}
-	// tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	_, err := r.client.InstanceStop(oxideSDK.InstanceStopParams{
+		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to stop instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	diags = waitForInstanceStop(ctx, r.client, deleteTimeout, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if err := r.client.InstanceDelete(oxideSDK.InstanceDeleteParams{
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
@@ -690,22 +698,47 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	tflog.Trace(ctx, fmt.Sprintf("deleted instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
-// func waitForStoppedInstance(client *oxideSDK.Client, instanceID oxideSDK.NameOrId, ch chan error) {
-// 	for {
-// 		params := oxideSDK.InstanceViewParams{Instance: instanceID}
-// 		resp, err := client.InstanceView(params)
-// 		if err != nil {
-// 			ch <- err
-// 		}
-// 		if resp.RunState == oxideSDK.InstanceStateStopped {
-// 			break
-// 		}
-// 		// Suggested alternatives suggested by linter are not fit for purpose
-// 		//lintignore:R018
-// 		time.Sleep(time.Second)
-// 	}
-// 	ch <- nil
-// }
+func waitForInstanceStop(ctx context.Context, client *oxideSDK.Client, timeout time.Duration, instanceID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	stateConfig := retry.StateChangeConf{
+		PollInterval: time.Second,
+		Delay:        time.Second,
+		Pending: []string{
+			string(oxideSDK.InstanceStateCreating),
+			string(oxideSDK.InstanceStateStarting),
+			string(oxideSDK.InstanceStateStopping),
+			string(oxideSDK.InstanceStateRebooting),
+		},
+		Target:  []string{string(oxideSDK.InstanceStateStopped)},
+		Timeout: timeout,
+		Refresh: func() (interface{}, string, error) {
+			tflog.Info(ctx, fmt.Sprintf("checking on state of instance: %v", instanceID))
+			instance, err := client.InstanceView(oxideSDK.InstanceViewParams{
+				Instance: oxideSDK.NameOrId(instanceID),
+			})
+			if err != nil {
+				if !is404(err) {
+					return nil, "nil", fmt.Errorf("while polling for the status of instance %v: %v", instanceID, err)
+				}
+				return instance, "", nil
+			}
+			tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instanceID), map[string]any{"success": true})
+			return instance, string(instance.RunState), nil
+		},
+	}
+	if _, err := stateConfig.WaitForStateContext(ctx); err != nil {
+		if !is404(err) {
+			diags.AddError(
+				"Error stopping instance",
+				"API error: "+err.Error(),
+			)
+		}
+		return diags
+	}
+
+	return nil
+}
 
 func newAttachedDisksSet(client *oxideSDK.Client, instanceID string) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
