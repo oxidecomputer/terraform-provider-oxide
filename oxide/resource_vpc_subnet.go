@@ -201,6 +201,11 @@ func (r *vpcSubnetResource) Read(ctx context.Context, req resource.ReadRequest, 
 		Subnet: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
+		if is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to read VPC subnet:",
 			"API error: "+err.Error(),

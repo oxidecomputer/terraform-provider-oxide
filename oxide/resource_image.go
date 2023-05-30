@@ -299,6 +299,11 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		Image: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
+		if is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to read image:",
 			"API error: "+err.Error(),

@@ -163,6 +163,11 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		Project: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
+		if is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to read project:",
 			"API error: "+err.Error(),

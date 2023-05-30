@@ -207,6 +207,11 @@ func (r *snapshotResource) Read(ctx context.Context, req resource.ReadRequest, r
 		Snapshot: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
+		if is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to read snapshot:",
 			"API error: "+err.Error(),
