@@ -429,8 +429,11 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		Instance: oxideSDK.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
-		// TODO: recreate on manually deleted resource
-		// this works a little different with the new tf framework
+		if is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to read instance:",
 			"API error: "+err.Error(),
