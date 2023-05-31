@@ -297,55 +297,17 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		},
 	}
 
-	// Retrieve names of all disks based on their provided IDs
-	var disks = []oxide.InstanceDiskAttachment{}
-	for _, diskAttch := range plan.DiskAttachments.Elements() {
-		diskID, err := strconv.Unquote(diskAttch.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error retrieving disk information",
-				"Disk ID parse error: "+err.Error(),
-			)
-			return
-		}
-
-		disk, err := r.client.DiskView(oxide.DiskViewParams{
-			Disk: oxide.NameOrId(diskID),
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error retrieving disk information",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-
-		da := oxide.InstanceDiskAttachment{
-			Name: disk.Name,
-			// Only allow attach (no disk create on instance create)
-			Type: oxide.InstanceDiskAttachmentTypeAttach,
-		}
-		disks = append(disks, da)
+	disks, diags := newDiskAttachmentsOnCreate(r.client, plan.DiskAttachments)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	params.Body.Disks = disks
 
-	var externalIPs = []oxide.ExternalIpCreate{}
-	for _, ip := range plan.ExternalIPs.Elements() {
-		poolName, err := strconv.Unquote(ip.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating external IP addresses",
-				"IP pool name parse error: "+err.Error(),
-			)
-			return
-		}
-		eIP := oxide.ExternalIpCreate{
-			PoolName: oxide.Name(poolName),
-			// TODO: Implement other types when these are supported.
-			Type: oxide.ExternalIpCreateTypeEphemeral,
-		}
-
-		externalIPs = append(externalIPs, eIP)
+	externalIPs, diags := newExternalIPsOnCreate(plan.ExternalIPs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	params.Body.ExternalIps = externalIPs
 
@@ -462,7 +424,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		state.DiskAttachments = diskSet
 	}
 
-	nicSet, diags := newAttachedNetworkInterfacesSet(r.client, state.ID.ValueString())
+	nicSet, diags := newAttachedNetworkInterfacesModel(r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -502,56 +464,16 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Check plan and if it has an ID that the state doesn't then attach it
 	disksToAttach := sliceDiff(planDisks, stateDisks)
-	for _, v := range disksToAttach {
-		diskID, err := strconv.Unquote(v.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error attaching disk",
-				"Disk ID parse error: "+err.Error(),
-			)
-			return
-		}
-		_, err = r.client.InstanceDiskAttach(oxide.InstanceDiskAttachParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-			Body: &oxide.DiskPath{
-				Disk: oxide.NameOrId(diskID),
-			},
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error attaching disk",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("attached disk with ID: %v", v), map[string]any{"success": true})
+	resp.Diagnostics.Append(attachDisks(ctx, r.client, disksToAttach, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Check state and if it has an ID that the plan doesn't then detach it
 	disksToDetach := sliceDiff(stateDisks, planDisks)
-	for _, v := range disksToDetach {
-		diskID, err := strconv.Unquote(v.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error detaching disk",
-				"Disk ID parse error: "+err.Error(),
-			)
-			return
-		}
-		_, err = r.client.InstanceDiskDetach(oxide.InstanceDiskDetachParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-			Body: &oxide.DiskPath{
-				Disk: oxide.NameOrId(diskID),
-			},
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error detaching disk",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", v), map[string]any{"success": true})
+	resp.Diagnostics.Append(detachDisks(ctx, r.client, disksToDetach, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	planNICs := plan.NetworkInterfaces
@@ -602,14 +524,14 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		plan.DiskAttachments = diskSet
 	}
 
-	nicSet, diags := newAttachedNetworkInterfacesSet(r.client, state.ID.ValueString())
+	nicModel, diags := newAttachedNetworkInterfacesModel(r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	// Only populate NICs if there are associated NICs to avoid drift
-	if len(nicSet) > 0 {
-		plan.NetworkInterfaces = nicSet
+	if len(nicModel) > 0 {
+		plan.NetworkInterfaces = nicModel
 	}
 
 	// Save plan into Terraform state
@@ -807,7 +729,7 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, mo
 	return nicAttachment, nil
 }
 
-func newAttachedNetworkInterfacesSet(client *oxide.Client, instanceID string) (
+func newAttachedNetworkInterfacesModel(client *oxide.Client, instanceID string) (
 	[]instanceResourceNICModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -886,6 +808,66 @@ func retrieveVPCandSubnetNames(ctx context.Context, client *oxide.Client, vpcID,
 	}, nil
 }
 
+func newDiskAttachmentsOnCreate(client *oxide.Client, diskIDs types.Set) ([]oxide.InstanceDiskAttachment, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var disks = []oxide.InstanceDiskAttachment{}
+	for _, diskAttch := range diskIDs.Elements() {
+		diskID, err := strconv.Unquote(diskAttch.String())
+		if err != nil {
+			diags.AddError(
+				"Error retrieving disk information",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return []oxide.InstanceDiskAttachment{}, diags
+		}
+
+		disk, err := client.DiskView(oxide.DiskViewParams{
+			Disk: oxide.NameOrId(diskID),
+		})
+		if err != nil {
+			diags.AddError(
+				"Error retrieving disk information",
+				"API error: "+err.Error(),
+			)
+			return []oxide.InstanceDiskAttachment{}, diags
+		}
+
+		da := oxide.InstanceDiskAttachment{
+			Name: disk.Name,
+			// Only allow attach (no disk create on instance create)
+			Type: oxide.InstanceDiskAttachmentTypeAttach,
+		}
+		disks = append(disks, da)
+	}
+
+	return disks, diags
+}
+
+func newExternalIPsOnCreate(externalIPs types.List) ([]oxide.ExternalIpCreate, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var ips []oxide.ExternalIpCreate
+
+	for _, ip := range externalIPs.Elements() {
+		poolName, err := strconv.Unquote(ip.String())
+		if err != nil {
+			diags.AddError(
+				"Error creating external IP addresses",
+				"IP pool name parse error: "+err.Error(),
+			)
+			return []oxide.ExternalIpCreate{}, diags
+		}
+		eIP := oxide.ExternalIpCreate{
+			PoolName: oxide.Name(poolName),
+			// TODO: Implement other types when these are supported.
+			Type: oxide.ExternalIpCreateTypeEphemeral,
+		}
+
+		ips = append(ips, eIP)
+	}
+
+	return ips, nil
+}
+
 func createNICs(ctx context.Context, client *oxide.Client, models []instanceResourceNICModel, instanceID string) diag.Diagnostics {
 	for _, model := range models {
 		names, diags := retrieveVPCandSubnetNames(ctx, client, model.VPCID.ValueString(),
@@ -939,6 +921,70 @@ func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 		}
 		tflog.Trace(ctx, fmt.Sprintf("deleted instance network interface with ID: %v", model.ID.ValueString()),
 			map[string]any{"success": true})
+	}
+
+	return nil
+}
+
+func attachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, instanceID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, v := range disks {
+		diskID, err := strconv.Unquote(v.String())
+		if err != nil {
+			diags.AddError(
+				"Error attaching disk",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return diags
+		}
+		_, err = client.InstanceDiskAttach(oxide.InstanceDiskAttachParams{
+			Instance: oxide.NameOrId(instanceID),
+			Body: &oxide.DiskPath{
+				Disk: oxide.NameOrId(diskID),
+			},
+		})
+		if err != nil {
+			diags.AddError(
+				"Error attaching disk",
+				"API error: "+err.Error(),
+			)
+			// TODO: Should this return here or should I continue trying to attach the other disks?
+			return diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("attached disk with ID: %v", v), map[string]any{"success": true})
+	}
+
+	return nil
+}
+
+func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, instanceID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, v := range disks {
+		diskID, err := strconv.Unquote(v.String())
+		if err != nil {
+			diags.AddError(
+				"Error detaching disk",
+				"Disk ID parse error: "+err.Error(),
+			)
+			return diags
+		}
+		_, err = client.InstanceDiskDetach(oxide.InstanceDiskDetachParams{
+			Instance: oxide.NameOrId(instanceID),
+			Body: &oxide.DiskPath{
+				Disk: oxide.NameOrId(diskID),
+			},
+		})
+		if err != nil {
+			diags.AddError(
+				"Error detaching disk",
+				"API error: "+err.Error(),
+			)
+			// TODO: Should this return here or should I continue trying to detach the other disks?
+			return diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", v), map[string]any{"success": true})
 	}
 
 	return nil
