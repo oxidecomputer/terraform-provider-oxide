@@ -23,7 +23,7 @@ TEST_ACC_PARALLEL = 6
 
 # Unit test variables
 TEST_ARGS ?= -timeout 10m -race -cover
-TEST_PACKAGE ?= ./oxide
+TEST_PACKAGE ?= ./internal/...
 
 ### Build targets
 

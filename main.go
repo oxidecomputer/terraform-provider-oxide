@@ -9,9 +9,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/oxidecomputer/terraform-provider-oxide/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 
-	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
@@ -23,7 +22,7 @@ func main() {
 
 	if err := providerserver.Serve(
 		context.Background(),
-		func() provider.Provider { return oxide.New(oxide.Version) },
+		provider.New,
 		providerserver.ServeOpts{
 			Address: "registry.terraform.io/oxidecomputer/oxide",
 			Debug:   debug,
