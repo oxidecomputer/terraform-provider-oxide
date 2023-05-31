@@ -29,8 +29,14 @@ type resourceInstanceDiskConfig struct {
 	SupportBlockName string
 }
 
-// TODO: Write acceptance tests for NICs once the `oxide_vpc` and `oxide_subnet`
-// datasources have been implemented to be able to easily retrieve their IDs.
+type resourceInstanceNicConfig struct {
+	BlockName        string
+	VPCBlockName     string
+	SubnetBlockName  string
+	NicName          string
+	InstanceName     string
+	SupportBlockName string
+}
 
 var resourceInstanceDiskConfigTpl = `
 data "oxide_projects" "{{.SupportBlockName}}" {}
@@ -128,6 +134,64 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
+var resourceInstanceNicConfigTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+  
+data "oxide_vpc" "{{.VPCBlockName}}" {
+  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  name         = "default"
+}
+  
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  vpc_name     = "default"
+  name         = "default"
+}
+  
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  host_name        = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc.{{.VPCBlockName}}.id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+    },
+  ]
+}
+`
+
+var resourceInstanceNicConfigUpdateTpl = `
+data "oxide_projects" "{{.SupportBlockName}}" {}
+  
+data "oxide_vpc" "{{.VPCBlockName}}" {
+  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  name         = "default"
+}
+  
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  vpc_name     = "default"
+  name         = "default"
+}
+  
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  host_name        = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+}
+`
+
 func TestAccResourceInstance_full(t *testing.T) {
 	instanceName := newResourceName()
 	blockName := newBlockName("instance")
@@ -198,6 +262,41 @@ func TestAccResourceInstance_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
+	instanceNicName := newResourceName()
+	nicName := newResourceName()
+	blockNameVPC := newBlockName("instance-nic-vpc")
+	blockNameSubnet := newBlockName("instance-nic-subnet")
+	blockNameInstanceNic := newBlockName("instance-nic")
+	resourceNameInstanceNic := fmt.Sprintf("oxide_instance.%s", blockNameInstanceNic)
+	configNic, err := parsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:        blockNameInstanceNic,
+			VPCBlockName:     blockNameVPC,
+			SubnetBlockName:  blockNameSubnet,
+			InstanceName:     instanceNicName,
+			NicName:          nicName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceNicConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configNicUpdate, err := parsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:        blockNameInstanceNic,
+			VPCBlockName:     blockNameVPC,
+			SubnetBlockName:  blockNameSubnet,
+			InstanceName:     instanceNicName,
+			NicName:          nicName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceNicConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
@@ -216,6 +315,36 @@ func TestAccResourceInstance_full(t *testing.T) {
 				// Reattach disk
 				Config: configDisk,
 				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+			{
+				Config: configNic,
+				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+			},
+			{
+				// Delete a nic
+				Config: configNicUpdate,
+				Check:  checkResourceInstanceNicUpdate(resourceNameInstanceNic, instanceNicName),
+			},
+			{
+				// Recreate a nic
+				Config: configNic,
+				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
 			},
 			{
 				Config: config,
@@ -305,6 +434,47 @@ func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
 		resource.TestCheckNoResourceAttr(resourceName, "disk_attachments.1"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceNic(resourceName, instanceName, nicName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.mac_address"),
+		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.name", nicName),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.primary"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.subnet_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "network_interfaces.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

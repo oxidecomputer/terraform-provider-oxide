@@ -513,7 +513,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	// Retrieve attached disks
+	// TODO: should I do this or read from the newly created ones?
 	diskSet, diags := newAttachedDisksSet(r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -524,6 +524,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		plan.DiskAttachments = diskSet
 	}
 
+	// TODO: should I do this or read from the newly created ones?
 	nicModel, diags := newAttachedNetworkInterfacesModel(r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
