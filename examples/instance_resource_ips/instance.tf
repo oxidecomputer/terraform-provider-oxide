@@ -20,5 +20,9 @@ resource "oxide_instance" "example" {
   host_name         = "myhost"
   memory            = 1073741824
   ncpus             = 1
-  external_ips      = ["mypool"]
+  external_ips      = [
+    {
+      ip_pool_name = "default"
+    }
+  ]
 }

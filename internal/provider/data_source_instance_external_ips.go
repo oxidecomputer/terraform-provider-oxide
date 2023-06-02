@@ -31,14 +31,14 @@ type instanceExternalIPsDataSource struct {
 	client *oxide.Client
 }
 
-type instanceExternalIPsModel struct {
-	ID          types.String      `tfsdk:"id"`
-	InstanceID  types.String      `tfsdk:"instance_id"`
-	Timeouts    timeouts.Value    `tfsdk:"timeouts"`
-	ExternalIPs []externalIPModel `tfsdk:"external_ips"`
+type instanceExternalIPsDatasourceModel struct {
+	ID          types.String                `tfsdk:"id"`
+	InstanceID  types.String                `tfsdk:"instance_id"`
+	Timeouts    timeouts.Value              `tfsdk:"timeouts"`
+	ExternalIPs []externalIPDatasourceModel `tfsdk:"external_ips"`
 }
 
-type externalIPModel struct {
+type externalIPDatasourceModel struct {
 	IP   types.String `tfsdk:"ip"`
 	Kind types.String `tfsdk:"kind"`
 }
@@ -87,7 +87,7 @@ func (d *instanceExternalIPsDataSource) Schema(ctx context.Context, req datasour
 }
 
 func (d *instanceExternalIPsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state instanceExternalIPsModel
+	var state instanceExternalIPsDatasourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -123,7 +123,7 @@ func (d *instanceExternalIPsDataSource) Read(ctx context.Context, req datasource
 
 	// Map response body to model
 	for _, ip := range ips.Items {
-		externalIPState := externalIPModel{
+		externalIPState := externalIPDatasourceModel{
 			IP:   types.StringValue(ip.Ip),
 			Kind: types.StringValue(string(ip.Kind)),
 		}

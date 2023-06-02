@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -19,9 +20,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -45,21 +48,21 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	Description       types.String               `tfsdk:"description"`
-	DiskAttachments   types.Set                  `tfsdk:"disk_attachments"`
-	ExternalIPs       types.List                 `tfsdk:"external_ips"`
-	HostName          types.String               `tfsdk:"host_name"`
-	ID                types.String               `tfsdk:"id"`
-	Memory            types.Int64                `tfsdk:"memory"`
-	Name              types.String               `tfsdk:"name"`
-	NetworkInterfaces []instanceResourceNICModel `tfsdk:"network_interfaces"`
-	NCPUs             types.Int64                `tfsdk:"ncpus"`
-	ProjectID         types.String               `tfsdk:"project_id"`
-	StartOnCreate     types.Bool                 `tfsdk:"start_on_create"`
-	TimeCreated       types.String               `tfsdk:"time_created"`
-	TimeModified      types.String               `tfsdk:"time_modified"`
-	Timeouts          timeouts.Value             `tfsdk:"timeouts"`
-	UserData          types.String               `tfsdk:"user_data"`
+	Description       types.String                      `tfsdk:"description"`
+	DiskAttachments   types.Set                         `tfsdk:"disk_attachments"`
+	ExternalIPs       []instanceResourceExternalIPModel `tfsdk:"external_ips"`
+	HostName          types.String                      `tfsdk:"host_name"`
+	ID                types.String                      `tfsdk:"id"`
+	Memory            types.Int64                       `tfsdk:"memory"`
+	Name              types.String                      `tfsdk:"name"`
+	NetworkInterfaces []instanceResourceNICModel        `tfsdk:"network_interfaces"`
+	NCPUs             types.Int64                       `tfsdk:"ncpus"`
+	ProjectID         types.String                      `tfsdk:"project_id"`
+	StartOnCreate     types.Bool                        `tfsdk:"start_on_create"`
+	TimeCreated       types.String                      `tfsdk:"time_created"`
+	TimeModified      types.String                      `tfsdk:"time_modified"`
+	Timeouts          timeouts.Value                    `tfsdk:"timeouts"`
+	UserData          types.String                      `tfsdk:"user_data"`
 }
 
 type instanceResourceNICModel struct {
@@ -73,6 +76,11 @@ type instanceResourceNICModel struct {
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 	VPCID        types.String `tfsdk:"vpc_id"`
+}
+
+type instanceResourceExternalIPModel struct {
+	IPPoolName types.String `tfsdk:"ip_pool_name"`
+	Type       types.String `tfsdk:"type"`
 }
 
 // Metadata returns the resource type name.
@@ -228,12 +236,32 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					},
 				},
 			},
-			"external_ips": schema.ListAttribute{
+			"external_ips": schema.SetNestedAttribute{
 				Optional:    true,
-				Description: "External IP addresses provided to this instance. List of IP pools from which to draw addresses.",
-				ElementType: types.StringType,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
+				Description: "External IP addresses provided to this instance. IP pools from which to draw addresses.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"ip_pool_name": schema.StringAttribute{
+							Description: "Name of the IP pool to retrieve addresses from.",
+							Computed:    true,
+							Optional:    true,
+							Default:     stringdefault.StaticString("default"),
+						},
+						"type": schema.StringAttribute{
+							Description: "Type of external IP. Currently, only `ephemeral` is supported.",
+							Computed:    true,
+							Optional:    true,
+							Default:     stringdefault.StaticString(string(oxide.ExternalIpCreateTypeEphemeral)),
+							Validators: []validator.String{
+								// TODO: Update list of available types of addresses once these are implemented in the
+								// control plane
+								stringvalidator.OneOf(string(oxide.ExternalIpCreateTypeEphemeral)),
+							},
+						},
+					},
+				},
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
 				},
 			},
 			"user_data": schema.StringAttribute{
@@ -304,11 +332,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	params.Body.Disks = disks
 
-	externalIPs, diags := newExternalIPsOnCreate(plan.ExternalIPs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	externalIPs := newExternalIPsOnCreate(plan.ExternalIPs)
 	params.Body.ExternalIps = externalIPs
 
 	nics, diags := newNetworkInterfaceAttachment(ctx, r.client, plan.NetworkInterfaces)
@@ -844,29 +868,19 @@ func newDiskAttachmentsOnCreate(client *oxide.Client, diskIDs types.Set) ([]oxid
 	return disks, diags
 }
 
-func newExternalIPsOnCreate(externalIPs types.List) ([]oxide.ExternalIpCreate, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
 	var ips []oxide.ExternalIpCreate
 
-	for _, ip := range externalIPs.Elements() {
-		poolName, err := strconv.Unquote(ip.String())
-		if err != nil {
-			diags.AddError(
-				"Error creating external IP addresses",
-				"IP pool name parse error: "+err.Error(),
-			)
-			return []oxide.ExternalIpCreate{}, diags
-		}
+	for _, ip := range externalIPs {
 		eIP := oxide.ExternalIpCreate{
-			PoolName: oxide.Name(poolName),
-			// TODO: Implement other types when these are supported.
-			Type: oxide.ExternalIpCreateTypeEphemeral,
+			PoolName: oxide.Name(ip.IPPoolName.ValueString()),
+			Type:     oxide.ExternalIpCreateType(ip.Type.ValueString()),
 		}
 
 		ips = append(ips, eIP)
 	}
 
-	return ips, nil
+	return ips
 }
 
 func createNICs(ctx context.Context, client *oxide.Client, models []instanceResourceNICModel, instanceID string) diag.Diagnostics {
