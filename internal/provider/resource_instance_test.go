@@ -130,7 +130,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips    = ["default"]
+  external_ips    = [{}]
 }
 `
 
