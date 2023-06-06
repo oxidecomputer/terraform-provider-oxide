@@ -39,10 +39,12 @@ type resourceInstanceNicConfig struct {
 }
 
 var resourceInstanceDiskConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_disk" "{{.DiskBlockName}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824
@@ -50,7 +52,7 @@ resource "oxide_disk" "{{.DiskBlockName}}" {
 }
 
 resource "oxide_disk" "{{.DiskBlockName2}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test disk"
   name        = "{{.DiskName2}}"
   size        = 1073741824
@@ -58,7 +60,7 @@ resource "oxide_disk" "{{.DiskBlockName2}}" {
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
@@ -70,10 +72,12 @@ resource "oxide_instance" "{{.BlockName}}" {
 `
 
 var resourceInstanceDiskConfigUpdateTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_disk" "{{.DiskBlockName}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824
@@ -81,7 +85,7 @@ resource "oxide_disk" "{{.DiskBlockName}}" {
 }
 
 resource "oxide_disk" "{{.DiskBlockName2}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test disk"
   name        = "{{.DiskName2}}"
   size        = 1073741824
@@ -89,7 +93,7 @@ resource "oxide_disk" "{{.DiskBlockName2}}" {
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
@@ -101,10 +105,12 @@ resource "oxide_instance" "{{.BlockName}}" {
 `
 
 var resourceInstanceConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
@@ -120,10 +126,12 @@ resource "oxide_instance" "{{.BlockName}}" {
 `
 
 var resourceInstanceExternalIPConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
@@ -135,21 +143,23 @@ resource "oxide_instance" "{{.BlockName}}" {
 `
 
 var resourceInstanceNicConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
   
 data "oxide_vpc" "{{.VPCBlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
   name         = "default"
 }
   
 data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
   vpc_name     = "default"
   name         = "default"
 }
   
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id       = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
   host_name        = "terraform-acc-myhost"
@@ -168,21 +178,23 @@ resource "oxide_instance" "{{.BlockName}}" {
 `
 
 var resourceInstanceNicConfigUpdateTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
   
 data "oxide_vpc" "{{.VPCBlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
   name         = "default"
 }
   
 data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
   vpc_name     = "default"
   name         = "default"
 }
   
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id       = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
   host_name        = "terraform-acc-myhost"
@@ -303,28 +315,6 @@ func TestAccResourceInstance_full(t *testing.T) {
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configDisk,
-				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
-			},
-			{
-				// Detach a disk
-				Config: configDiskUpdate,
-				Check:  checkResourceInstanceDiskUpdate(resourceNameInstanceDisk, instanceDiskName),
-			},
-			{
-				// Reattach disk
-				Config: configDisk,
-				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// This option is only relevant for create, this means that it will
-				// never be imported
-				ImportStateVerifyIgnore: []string{"start_on_create"},
-			},
-			{
 				Config: configNic,
 				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
 			},
@@ -339,7 +329,7 @@ func TestAccResourceInstance_full(t *testing.T) {
 				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
 			},
 			{
-				ResourceName:      resourceName,
+				ResourceName:      resourceNameInstanceNic,
 				ImportState:       true,
 				ImportStateVerify: true,
 				// This option is only relevant for create, this means that it will
@@ -351,11 +341,9 @@ func TestAccResourceInstance_full(t *testing.T) {
 				Check:  checkResourceInstance(resourceName, instanceName),
 			},
 			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// This option is only relevant for create, this means that it will
-				// never be imported
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"start_on_create"},
 			},
 			{
@@ -363,9 +351,32 @@ func TestAccResourceInstance_full(t *testing.T) {
 				Check:  checkResourceInstanceIP(resourceName2, instanceName2),
 			},
 			{
-				ResourceName:            resourceName2,
-				ImportState:             true,
-				ImportStateVerify:       true,
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// External IPs cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+			},
+			{
+				Config: configDisk,
+				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				// Detach a disk
+				Config: configDiskUpdate,
+				Check:  checkResourceInstanceDiskUpdate(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				// Reattach disk
+				Config: configDisk,
+				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				ResourceName:      resourceNameInstanceDisk,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
 				ImportStateVerifyIgnore: []string{"start_on_create"},
 			},
 		},
@@ -398,7 +409,8 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0", "default"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.ip_pool_name", "default"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),

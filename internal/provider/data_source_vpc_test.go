@@ -17,10 +17,8 @@ type dataSourceVPCConfig struct {
 }
 
 var dataSourceVPCConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
-
 data "oxide_vpc" "{{.BlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  project_name = "tf-acc-test"
   name         = "default"
   timeouts = {
     read = "1m"

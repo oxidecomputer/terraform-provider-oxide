@@ -17,10 +17,8 @@ type dataSourceProjectConfig struct {
 }
 
 var dataSourceProjectConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
-
 data "oxide_project" "{{.BlockName}}" {
-  name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  name = "tf-acc-test"
   timeouts = {
     read = "1m"
   }

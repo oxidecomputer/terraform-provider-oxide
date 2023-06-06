@@ -17,10 +17,8 @@ type dataSourceVPCSubnetConfig struct {
 }
 
 var dataSourceVPCSubnetConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
-
 data "oxide_vpc_subnet" "{{.BlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].name), 0)
+  project_name = "tf-acc-test"
   vpc_name     = "default"
   name         = "default"
   timeouts = {

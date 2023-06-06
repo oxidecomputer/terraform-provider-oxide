@@ -13,19 +13,21 @@ import (
 
 type dataSourceImageConfig struct {
 	BlockName         string
-	SupportBlockName1 string
+	SupportBlockName  string
 	SupportBlockName2 string
 }
 
 var dataSourceImageConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName1}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 data "oxide_images" "{{.SupportBlockName2}}" {
-  project_id = element(tolist(data.oxide_projects.{{.SupportBlockName1}}.projects[*].id), 0)
+  project_id = data.oxide_project.{{.SupportBlockName}}.id
 }
 
 data "oxide_image" "{{.BlockName}}" {
-  project_name = element(tolist(data.oxide_projects.{{.SupportBlockName1}}.projects[*].name), 0)
+  project_name = "tf-acc-test"
   name = element(tolist(data.oxide_images.{{.SupportBlockName2}}.images[*].name), 0)
   timeouts = {
     read = "1m"
@@ -39,7 +41,7 @@ func TestAccDataSourceImage_full(t *testing.T) {
 	config, err := parsedAccConfig(
 		dataSourceImageConfig{
 			BlockName:         blockName,
-			SupportBlockName1: newBlockName("support"),
+			SupportBlockName:  newBlockName("support"),
 			SupportBlockName2: newBlockName("support"),
 		},
 		dataSourceImageConfigTpl,

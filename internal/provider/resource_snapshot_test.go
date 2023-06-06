@@ -23,10 +23,12 @@ type resourceSnapshotConfig struct {
 }
 
 var resourceSnapshotConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_disk" "{{.DiskBlockName}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824
@@ -39,7 +41,7 @@ resource "oxide_disk" "{{.DiskBlockName}}" {
 }
 
 resource "oxide_snapshot" "{{.BlockName}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test snapshot"
   name        = "{{.SnapshotName}}"
   disk_id     = oxide_disk.{{.DiskBlockName}}.id
