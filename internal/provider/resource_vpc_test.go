@@ -20,10 +20,12 @@ type resourceVPCConfig struct {
 }
 
 var resourceVPCConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_vpc" "{{.BlockName}}" {
-	project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
 	description       = "a test vpc"
 	name              = "{{.VPCName}}"
 	dns_name          = "my-vpc-dns"
@@ -37,10 +39,12 @@ resource "oxide_vpc" "{{.BlockName}}" {
 `
 
 var resourceVPCUpdateConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_vpc" "{{.BlockName}}" {
-	project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
 	description       = "a test vopac"
 	name              = "{{.VPCName}}"
 	dns_name          = "my-vpc-donas"
@@ -48,10 +52,12 @@ resource "oxide_vpc" "{{.BlockName}}" {
 `
 
 var resourceVPCIPv6ConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_vpc" "{{.BlockName}}" {
-	project_id        = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
 	description       = "a test vpc"
 	name              = "{{.VPCName}}"
 	dns_name          = "my-vpc-dns"

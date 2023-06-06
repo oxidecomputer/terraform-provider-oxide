@@ -13,22 +13,24 @@ package provider
 // }
 //
 // var resourceImageConfigTpl = `
-//    data "oxide_projects" "{{.SupportBlockName}}" {}
+// data "oxide_project" "{{.SupportBlockName}}" {
+// 	name = "tf-acc-test"
+// }
 //
-//    resource "oxide_image" "{{.BlockName}}" {
-//      project_id  = "19fd4232-b804-4dd3-a204-602b0f006fd6"
-//      description = "a test image"
-//      name        = "{{.ImageName}}"
-//      source_url  = "you_can_boot_anything_as_long_as_its_alpine"
-//      block_size  = 512
-//      os          = "alpine"
-//      version     = "propolis-blob"
-//      timeouts = {
-//       read   = "1m"
-//       create = "3m"
-//      }
-//    }
-//  `
+// resource "oxide_image" "{{.BlockName}}" {
+//   project_id  = data.oxide_project.{{.SupportBlockName}}.id
+//   description = "a test image"
+//   name        = "{{.ImageName}}"
+//   source_url  = "you_can_boot_anything_as_long_as_its_alpine"
+//   block_size  = 512
+//   os          = "alpine"
+//   version     = "propolis-blob"
+//   timeouts = {
+//    read   = "1m"
+//    create = "3m"
+//   }
+// }
+// `
 //
 // func TestAccResourceImage_full(t *testing.T) {
 // 	imageName := newResourceName()
@@ -109,4 +111,3 @@ package provider
 //
 // 	return nil
 // }
-//

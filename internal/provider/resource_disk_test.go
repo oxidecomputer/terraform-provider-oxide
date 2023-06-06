@@ -20,10 +20,12 @@ type resourceDiskConfig struct {
 }
 
 var resourceDiskConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_disk" "{{.BlockName}}" {
-  project_id  = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824

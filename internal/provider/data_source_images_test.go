@@ -17,10 +17,12 @@ type dataSourceImagesConfig struct {
 }
 
 var dataSourceImagesConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 data "oxide_images" "{{.BlockName}}" {
-  project_id = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id = data.oxide_project.{{.SupportBlockName}}.id
   timeouts = {
     read = "1m"
   }

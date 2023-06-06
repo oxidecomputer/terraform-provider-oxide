@@ -19,17 +19,19 @@ type dataSourceInstanceExternalIPConfig struct {
 }
 
 var datasourceInstanceExternalIPsConfigTpl = `
-data "oxide_projects" "{{.SupportBlockName}}" {}
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
 
 resource "oxide_instance" "{{.InstanceBlockName}}" {
-  project_id      = element(tolist(data.oxide_projects.{{.SupportBlockName}}.projects[*].id), 0)
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips    = ["default"]
+  external_ips    = [{}]
 }
 
 data "oxide_instance_external_ips" "{{.BlockName}}" {
