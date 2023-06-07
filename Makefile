@@ -95,7 +95,7 @@ unset-local-api:
 ## Creates a changelog prior to a release
 changelog:
 	@ echo "-> Creating changelog"
-	@ $(GOBIN)/whatsit changelog create --repository oxidecomputer/terraform-provider-oxide --new-version v$(RELEASE_VERSION)
+	@ $(GOBIN)/whatsit changelog create --repository oxidecomputer/terraform-provider-oxide --new-version $(RELEASE_VERSION)
 
 # The following installs the necessary tools within the local /bin directory.
 # This way linting tools don't need to be downloaded/installed every time you
