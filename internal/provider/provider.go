@@ -20,6 +20,8 @@ import (
 var _ provider.Provider = (*oxideProvider)(nil)
 
 type oxideProvider struct {
+	// TODO: This variable should be updated to the non-dev version
+	// during the release process. Double check.
 	version string
 }
 
