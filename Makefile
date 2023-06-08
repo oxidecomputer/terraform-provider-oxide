@@ -3,6 +3,7 @@ VERSION ?= $(shell cat $(CURDIR)/VERSION)
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
 OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)
+RELEASE_VERSION ?= $(shell cat $(CURDIR)/VERSION | sed s/-dev//g)
 export GOBIN = $(shell pwd)/bin
 
 # Terraform currently does not have a binary for Illumos.
@@ -90,6 +91,12 @@ local-api:
 unset-local-api:
 	@ go mod edit -dropreplace=github.com/oxidecomputer/oxide.go
 
+.PHONY: changelog
+## Creates a changelog prior to a release
+changelog:
+	@ echo "-> Creating changelog"
+	@ $(GOBIN)/whatsit changelog create --repository oxidecomputer/terraform-provider-oxide --new-version $(RELEASE_VERSION)
+
 # The following installs the necessary tools within the local /bin directory.
 # This way linting tools don't need to be downloaded/installed every time you
 # want to run the linters.
@@ -98,8 +105,11 @@ VERSION_GOLANGCILINT:=v1.52.2
 VERSION_TFPROVIDERDOCS:=v0.9.1
 VERSION_TERRAFMT:=v0.5.2
 VERSION_TFPROVIDERLINT:=v0.29.0
+VERSION_WHATSIT:=0.0.1
 
-tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint
+tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint 
+
+tools-private: $(GOBIN)/whatsit
 
 $(GOBIN):
 	@ mkdir -p $(GOBIN)
@@ -138,3 +148,13 @@ $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT): | $(VERSION_DI
 $(GOBIN)/tfproviderlint: $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT) | $(GOBIN)
 	@ echo "-> Installing tfproviderlint..."
 	@ go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@$(VERSION_TFPROVIDERLINT)
+
+$(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT): | $(VERSION_DIR)
+	@ rm -f $(VERSION_DIR)/.version-whatsit-*
+	@ echo $(VERSION_WHATSIT) > $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT)
+
+# TODO: actually release a version of whatsit to use the tag flag
+$(GOBIN)/whatsit: $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT) | $(GOBIN)
+	@ echo "-> Installing whatsit..."
+	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git --branch main --root ./
+

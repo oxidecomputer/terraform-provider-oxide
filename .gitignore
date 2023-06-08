@@ -4,3 +4,5 @@ terraform.tfstate
 terraform.tfstate.backup
 bin/
 tf/
+.crates.toml
+.crates2.json
