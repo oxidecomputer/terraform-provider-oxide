@@ -1,0 +1,19 @@
+[[bugs]]
+title = "Bug here"
+description = "Thing broke"
+
+[[bugs]]
+title = "Some other bug"
+description = "Fixed the bug"
+
+[[features]]
+title = "A new thing"
+description = "This new thing is great"
+
+[[enhancements]]
+title = "Made a thing better"
+description = "This thing is faster now"
+
+[[breaking]]
+title = "Big change that users should know about"
+description = "You can no longer use this thing!!"
