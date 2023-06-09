@@ -93,9 +93,9 @@ unset-local-api:
 
 .PHONY: changelog
 ## Creates a changelog prior to a release
-changelog:
+changelog: tools-private
 	@ echo "-> Creating changelog"
-	@ $(GOBIN)/whatsit changelog create --repository oxidecomputer/terraform-provider-oxide --new-version $(RELEASE_VERSION)
+	@ $(GOBIN)/whatsit changelog create --repository oxidecomputer/terraform-provider-oxide -n $(RELEASE_VERSION) -c ./.changelog/$(RELEASE_VERSION).toml
 
 # The following installs the necessary tools within the local /bin directory.
 # This way linting tools don't need to be downloaded/installed every time you
@@ -105,7 +105,7 @@ VERSION_GOLANGCILINT:=v1.52.2
 VERSION_TFPROVIDERDOCS:=v0.9.1
 VERSION_TERRAFMT:=v0.5.2
 VERSION_TFPROVIDERLINT:=v0.29.0
-VERSION_WHATSIT:=0.0.1
+VERSION_WHATSIT:=7fd2b385f
 
 tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint 
 
@@ -156,5 +156,5 @@ $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT): | $(VERSION_DIR)
 # TODO: actually release a version of whatsit to use the tag flag
 $(GOBIN)/whatsit: $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT) | $(GOBIN)
 	@ echo "-> Installing whatsit..."
-	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git --branch main --root ./
+	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git#$(VERSION_WHATSIT) --branch main --root ./ 
 
