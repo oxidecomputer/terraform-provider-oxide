@@ -160,6 +160,11 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "IDs of the disks to be attached to the instance.",
 				ElementType: types.StringType,
+				// TODO: Remove once https://github.com/oxidecomputer/omicron/issues/3224 has been fixed,
+				// and it's clear which disk is the boot disk to not remove by accident
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
+				},
 			},
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,
@@ -584,6 +589,26 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
+	_, err := r.client.InstanceStop(oxide.InstanceStopParams{
+		Instance: oxide.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to stop instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	diags = waitForInstanceStop(ctx, r.client, deleteTimeout, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
 	// Detach all disks
 	for _, diskAttch := range state.DiskAttachments.Elements() {
 		diskID, err := strconv.Unquote(diskAttch.String())
@@ -612,25 +637,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			continue
 		}
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
-	}
-
-	_, err := r.client.InstanceStop(oxide.InstanceStopParams{
-		Instance: oxide.NameOrId(state.ID.ValueString()),
-	})
-	if err != nil {
-		if !is404(err) {
-			resp.Diagnostics.AddError(
-				"Unable to stop instance:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-	}
-
-	diags = waitForInstanceStop(ctx, r.client, deleteTimeout, state.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
 	}
 
 	if err := r.client.InstanceDelete(oxide.InstanceDeleteParams{
