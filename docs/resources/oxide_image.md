@@ -18,7 +18,6 @@ resource "oxide_image" "example2" {
   description        = "a test image"
   name               = "myimage2"
   source_snapshot_id = "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"
-  block_size         = 512
   os                 = "ubuntu"
   version            = "20.04"
   timeouts = {
@@ -49,10 +48,10 @@ resource "oxide_image" "example" {
 - `project_id` (String) ID of the project that will contain the image.
 - `version` (String) OS image version. Example: "3.16".
 - `name` (String) Name of the image.
-- `block_size` (Number) Size of blocks in bytes.
 
 ### Optional
 
+- `block_size` (Number) Size of blocks in bytes. Used and required only to create image from URL.
 - `source_snapshot_id` (String) Snapshot ID of the image source if applicable. To be set only when creating an image from a snapshot.
 - `source_url` (String) "URL of the image source if applicable. To be set only when creating an image from a URL.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))

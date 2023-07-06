@@ -119,7 +119,7 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 				},
 			},
 			"block_size": schema.Int64Attribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Size of blocks in bytes.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
@@ -133,6 +133,9 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 						path.MatchRoot("source_url"),
 						path.MatchRoot("source_snapshot_id"),
 					}...),
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("block_size"),
+					}...),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -141,7 +144,11 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 			"source_url": schema.StringAttribute{
 				Optional:    true,
 				Description: "URL source of this image, if applicable.",
-				Validators:  []validator.String{},
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(path.Expressions{
+						path.MatchRoot("block_size"),
+					}...),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -209,7 +216,6 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		Body: &oxide.ImageCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			BlockSize:   oxide.BlockSize(plan.BlockSize.ValueInt64()),
 			Os:          plan.OS.ValueString(),
 			Version:     plan.Version.ValueString(),
 		},
@@ -226,6 +232,7 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		if plan.SourceURL.Equal(types.StringValue("you_can_boot_anything_as_long_as_its_alpine")) {
 			is.Type = oxide.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine
 		}
+		is.BlockSize = oxide.BlockSize(plan.BlockSize.ValueInt64())
 	} else {
 		resp.Diagnostics.AddError(
 			"Error creating image",

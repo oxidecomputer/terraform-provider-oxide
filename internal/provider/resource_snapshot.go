@@ -158,7 +158,7 @@ func (r *snapshotResource) Create(ctx context.Context, req resource.CreateReques
 		Body: &oxide.SnapshotCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Disk:        disk.Name,
+			Disk:        oxide.NameOrId(disk.Name),
 		},
 	}
 	snapshot, err := r.client.SnapshotCreate(params)

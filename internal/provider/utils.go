@@ -40,6 +40,7 @@ func defaultTimeout() time.Duration {
 	return 10 * time.Minute
 }
 
+//nolint:golint,unused
 func newBoolPointer(b bool) *bool {
 	return &b
 }
