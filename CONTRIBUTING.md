@@ -28,6 +28,7 @@ To try out the provider you'll need to follow these steps:
   }
   ```
 - Pick an example From the `examples/` directory and cd into it, or create your own Terraform configuration file. You can change the values of the fields of the example files to work with your environment.
+- If you want to try out your local changes, make sure you set the version to the one you just built. This will generally be the current version with "-dev" appended (e.g. `version = "0.1.0-beta-dev"`).
 - Run `terraform init` and `terraform apply` from within the chosen example directory. This will create resources or read data sources based on a Terraform configuration file.
 - To remove all created resources run `terraform destroy`.
 
