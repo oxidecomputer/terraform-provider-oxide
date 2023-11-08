@@ -34,20 +34,6 @@ resource "oxide_ssh_key" "{{.BlockName}}" {
 }
 `
 
-var resourceSSHKeyUpdateConfigTpl = `
-resource "oxide_ssh_key" "{{.BlockName}}" {
-  name        = "{{.Name}}"
-  description = "{{.Description}}"
-  public_key  = "{{.PublicKey}}"
-  timeouts = {
-    read   = "1m"
-    create = "3m"
-    delete = "2m"
-    update = "4m"
-  }
-}
-`
-
 func TestAccResourceSSHKey_full(t *testing.T) {
 	sshKeyName := newResourceName()
 	description := "An SSH key."
