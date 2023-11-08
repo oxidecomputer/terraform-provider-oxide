@@ -131,6 +131,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewInstanceExternalIPsDataSource,
 		NewProjectDataSource,
 		NewProjectsDataSource,
+		NewSSHKeyDataSource,
 		NewVPCDataSource,
 		NewVPCSubnetDataSource,
 	}
@@ -144,6 +145,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewInstanceResource,
 		NewProjectResource,
 		NewSnapshotResource,
+		NewSSHKeyResource,
 		NewVPCResource,
 		NewVPCSubnetResource,
 	}
