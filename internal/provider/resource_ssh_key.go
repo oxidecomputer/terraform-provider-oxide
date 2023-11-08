@@ -222,6 +222,10 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 // attributes. If an update API is created in the future this method should be
 // implemented.
 func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.AddError(
+		"Error updating SSH key",
+		"the oxide API currently does not support updating SSH keys",
+	)
 }
 
 // Delete deletes the resource and removes the Terraform state on success.

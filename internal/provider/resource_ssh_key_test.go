@@ -67,20 +67,6 @@ func TestAccResourceSSHKey_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	sshKeyNameUpdated := sshKeyName + "-updated"
-	configUpdate, err := parsedAccConfig(
-		resourceSSHKeyConfig{
-			BlockName:   blockName,
-			Name:        sshKeyNameUpdated,
-			Description: description,
-			PublicKey:   publicKey,
-		},
-		resourceSSHKeyUpdateConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
@@ -89,10 +75,6 @@ func TestAccResourceSSHKey_full(t *testing.T) {
 			{
 				Config: config,
 				Check:  checkResourceSSHKey(resourceName, sshKeyName),
-			},
-			{
-				Config: configUpdate,
-				Check:  checkResourceSSHKeyUpdate(resourceName, sshKeyNameUpdated),
 			},
 			{
 				ResourceName:      resourceName,
@@ -116,18 +98,6 @@ func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc
 		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.update", "4m"),
-	}...)
-}
-
-func checkResourceSSHKeyUpdate(resourceName, sshKeyName string) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "name", sshKeyName),
-		resource.TestCheckResourceAttr(resourceName, "description", "An updated SSH key."),
-		resource.TestCheckResourceAttr(resourceName, "public_key", "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1clIQrzlQNqxgvpCCUFFOcTTFDOaqV+aocfsDZvxqB"),
-		resource.TestCheckResourceAttrSet(resourceName, "silo_user_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
 }
 
