@@ -118,7 +118,7 @@ func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadReques
 		Limit:  1000000000,
 		SortBy: oxide.NameOrIdSortModeNameDescending,
 	}
-	projects, err := d.client.ProjectList(params)
+	projects, err := d.client.ProjectList(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read projects:",

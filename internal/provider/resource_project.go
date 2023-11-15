@@ -118,7 +118,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 			Name:        oxide.Name(plan.Name.ValueString()),
 		},
 	}
-	project, err := r.client.ProjectCreate(params)
+	project, err := r.client.ProjectCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating project",
@@ -158,9 +158,10 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	project, err := r.client.ProjectView(oxide.ProjectViewParams{
+	params := oxide.ProjectViewParams{
 		Project: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	project, err := r.client.ProjectView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -221,7 +222,7 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 			Name:        oxide.Name(plan.Name.ValueString()),
 		},
 	}
-	project, err := r.client.ProjectUpdate(params)
+	project, err := r.client.ProjectUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating project",
@@ -261,9 +262,10 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.ProjectDelete(oxide.ProjectDeleteParams{
+	params := oxide.ProjectDeleteParams{
 		Project: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.ProjectDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting project:",

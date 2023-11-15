@@ -126,11 +126,12 @@ func (d *vpcSubnetDataSource) Read(ctx context.Context, req datasource.ReadReque
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	subnet, err := d.client.VpcSubnetView(oxide.VpcSubnetViewParams{
+	params := oxide.VpcSubnetViewParams{
 		Subnet:  oxide.NameOrId(state.Name.ValueString()),
 		Vpc:     oxide.NameOrId(state.VPCName.ValueString()),
 		Project: oxide.NameOrId(state.ProjectName.ValueString()),
-	})
+	}
+	subnet, err := d.client.VpcSubnetView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read VPC subnet:",

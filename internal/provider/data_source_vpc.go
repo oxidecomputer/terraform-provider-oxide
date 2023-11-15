@@ -122,10 +122,11 @@ func (d *vpcDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	vpc, err := d.client.VpcView(oxide.VpcViewParams{
+	params := oxide.VpcViewParams{
 		Vpc:     oxide.NameOrId(state.Name.ValueString()),
 		Project: oxide.NameOrId(state.ProjectName.ValueString()),
-	})
+	}
+	vpc, err := d.client.VpcView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read VPC:",

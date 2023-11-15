@@ -5,8 +5,10 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -101,7 +103,12 @@ func testAccSSHKeyDestroy(s *terraform.State) error {
 		params := oxide.CurrentUserSshKeyViewParams{
 			SshKey: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
-		res, err := client.CurrentUserSshKeyView(params)
+
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		res, err := client.CurrentUserSshKeyView(ctx, params)
 		if err != nil && is404(err) {
 			continue
 		}

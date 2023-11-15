@@ -330,7 +330,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		},
 	}
 
-	disks, diags := newDiskAttachmentsOnCreate(r.client, plan.DiskAttachments)
+	disks, diags := newDiskAttachmentsOnCreate(ctx, r.client, plan.DiskAttachments)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -347,7 +347,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	params.Body.NetworkInterfaces = nics
 
-	instance, err := r.client.InstanceCreate(params)
+	instance, err := r.client.InstanceCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating instance",
@@ -365,10 +365,11 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Populate NIC information
 	for i := range plan.NetworkInterfaces {
-		nic, err := r.client.InstanceNetworkInterfaceView(oxide.InstanceNetworkInterfaceViewParams{
+		params := oxide.InstanceNetworkInterfaceViewParams{
 			Interface: oxide.NameOrId(plan.NetworkInterfaces[i].Name.ValueString()),
 			Instance:  oxide.NameOrId(instance.Id),
-		})
+		}
+		nic, err := r.client.InstanceNetworkInterfaceView(ctx, params)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to read instance network interface:",
@@ -415,9 +416,10 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	instance, err := r.client.InstanceView(oxide.InstanceViewParams{
+	params := oxide.InstanceViewParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	instance, err := r.client.InstanceView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -443,7 +445,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	diskSet, diags := newAttachedDisksSet(r.client, state.ID.ValueString())
+	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -453,7 +455,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		state.DiskAttachments = diskSet
 	}
 
-	nicSet, diags := newAttachedNetworkInterfacesModel(r.client, state.ID.ValueString())
+	nicSet, diags := newAttachedNetworkInterfacesModel(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -523,9 +525,10 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Read instance to retrieve modified time value
-	instance, err := r.client.InstanceView(oxide.InstanceViewParams{
+	params := oxide.InstanceViewParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	instance, err := r.client.InstanceView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read instance:",
@@ -543,7 +546,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// TODO: should I do this or read from the newly created ones?
-	diskSet, diags := newAttachedDisksSet(r.client, state.ID.ValueString())
+	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -554,7 +557,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// TODO: should I do this or read from the newly created ones?
-	nicModel, diags := newAttachedNetworkInterfacesModel(r.client, state.ID.ValueString())
+	nicModel, diags := newAttachedNetworkInterfacesModel(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -589,9 +592,10 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	_, err := r.client.InstanceStop(oxide.InstanceStopParams{
+	params := oxide.InstanceStopParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	_, err := r.client.InstanceStop(ctx, params)
 	if err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
@@ -620,12 +624,13 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 
-		_, err = r.client.InstanceDiskDetach(oxide.InstanceDiskDetachParams{
+		params := oxide.InstanceDiskDetachParams{
 			Instance: oxide.NameOrId(state.ID.ValueString()),
 			Body: &oxide.DiskPath{
 				Disk: oxide.NameOrId(diskID),
 			},
-		})
+		}
+		_, err = r.client.InstanceDiskDetach(ctx, params)
 		if err != nil {
 			if !is404(err) {
 				resp.Diagnostics.AddError(
@@ -639,9 +644,10 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
 	}
 
-	if err := r.client.InstanceDelete(oxide.InstanceDeleteParams{
+	params2 := oxide.InstanceDeleteParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.InstanceDelete(ctx, params2); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to delete instance:",
@@ -669,9 +675,10 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 		Timeout: timeout,
 		Refresh: func() (interface{}, string, error) {
 			tflog.Info(ctx, fmt.Sprintf("checking on state of instance: %v", instanceID))
-			instance, err := client.InstanceView(oxide.InstanceViewParams{
+			params := oxide.InstanceViewParams{
 				Instance: oxide.NameOrId(instanceID),
-			})
+			}
+			instance, err := client.InstanceView(ctx, params)
 			if err != nil {
 				if !is404(err) {
 					return nil, "nil", fmt.Errorf("while polling for the status of instance %v: %v", instanceID, err)
@@ -695,13 +702,14 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 	return nil
 }
 
-func newAttachedDisksSet(client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
+func newAttachedDisksSet(ctx context.Context, client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	disks, err := client.InstanceDiskList(oxide.InstanceDiskListParams{
+	params := oxide.InstanceDiskListParams{
 		Limit:    1000000000,
 		Instance: oxide.NameOrId(instanceID),
-	})
+	}
+	disks, err := client.InstanceDiskList(ctx, params)
 	if err != nil {
 		diags.AddError(
 			"Unable to list attached disks:",
@@ -760,14 +768,15 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, mo
 	return nicAttachment, nil
 }
 
-func newAttachedNetworkInterfacesModel(client *oxide.Client, instanceID string) (
+func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client, instanceID string) (
 	[]instanceResourceNICModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	nics, err := client.InstanceNetworkInterfaceList(oxide.InstanceNetworkInterfaceListParams{
+	params := oxide.InstanceNetworkInterfaceListParams{
 		Instance: oxide.NameOrId(instanceID),
 		Limit:    1000000000,
-	})
+	}
+	nics, err := client.InstanceNetworkInterfaceList(ctx, params)
 	if err != nil {
 		diags.AddError(
 			"Unable to read instance network interfaces:",
@@ -808,9 +817,10 @@ func retrieveVPCandSubnetNames(ctx context.Context, client *oxide.Client, vpcID,
 	// This is an unfortunate result of having the create body use names as identifiers
 	// but the body return IDs. making two API calls to retrieve VPC and subnet names.
 	// Using IDs only for the provider schema as names are mutable.
-	vpc, err := client.VpcView(oxide.VpcViewParams{
+	params := oxide.VpcViewParams{
 		Vpc: oxide.NameOrId(vpcID),
-	})
+	}
+	vpc, err := client.VpcView(ctx, params)
 	if err != nil {
 		diags.AddError(
 			"Unable to read information about corresponding VPC:",
@@ -820,9 +830,10 @@ func retrieveVPCandSubnetNames(ctx context.Context, client *oxide.Client, vpcID,
 	}
 	tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", vpcID), map[string]any{"success": true})
 
-	subnet, err := client.VpcSubnetView(oxide.VpcSubnetViewParams{
+	params2 := oxide.VpcSubnetViewParams{
 		Subnet: oxide.NameOrId(subnetID),
-	})
+	}
+	subnet, err := client.VpcSubnetView(ctx, params2)
 	if err != nil {
 		diags.AddError(
 			"Unable to read information about corresponding subnet:",
@@ -839,7 +850,7 @@ func retrieveVPCandSubnetNames(ctx context.Context, client *oxide.Client, vpcID,
 	}, nil
 }
 
-func newDiskAttachmentsOnCreate(client *oxide.Client, diskIDs types.Set) ([]oxide.InstanceDiskAttachment, diag.Diagnostics) {
+func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskIDs types.Set) ([]oxide.InstanceDiskAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var disks = []oxide.InstanceDiskAttachment{}
 	for _, diskAttch := range diskIDs.Elements() {
@@ -852,9 +863,10 @@ func newDiskAttachmentsOnCreate(client *oxide.Client, diskIDs types.Set) ([]oxid
 			return []oxide.InstanceDiskAttachment{}, diags
 		}
 
-		disk, err := client.DiskView(oxide.DiskViewParams{
+		params := oxide.DiskViewParams{
 			Disk: oxide.NameOrId(diskID),
-		})
+		}
+		disk, err := client.DiskView(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error retrieving disk information",
@@ -909,7 +921,7 @@ func createNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 			},
 		}
 
-		nic, err := client.InstanceNetworkInterfaceCreate(params)
+		nic, err := client.InstanceNetworkInterfaceCreate(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error creating instance network interface",
@@ -928,9 +940,10 @@ func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 	var diags diag.Diagnostics
 
 	for _, model := range models {
-		if err := client.InstanceNetworkInterfaceDelete(oxide.InstanceNetworkInterfaceDeleteParams{
+		params := oxide.InstanceNetworkInterfaceDeleteParams{
 			Interface: oxide.NameOrId(model.ID.ValueString()),
-		}); err != nil {
+		}
+		if err := client.InstanceNetworkInterfaceDelete(ctx, params); err != nil {
 			if !is404(err) {
 				diags.AddError(
 					"Error deleting instance network interface:",
@@ -959,12 +972,14 @@ func attachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 			)
 			return diags
 		}
-		_, err = client.InstanceDiskAttach(oxide.InstanceDiskAttachParams{
+
+		params := oxide.InstanceDiskAttachParams{
 			Instance: oxide.NameOrId(instanceID),
 			Body: &oxide.DiskPath{
 				Disk: oxide.NameOrId(diskID),
 			},
-		})
+		}
+		_, err = client.InstanceDiskAttach(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error attaching disk",
@@ -991,12 +1006,14 @@ func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 			)
 			return diags
 		}
-		_, err = client.InstanceDiskDetach(oxide.InstanceDiskDetachParams{
+
+		params := oxide.InstanceDiskDetachParams{
 			Instance: oxide.NameOrId(instanceID),
 			Body: &oxide.DiskPath{
 				Disk: oxide.NameOrId(diskID),
 			},
-		})
+		}
+		_, err = client.InstanceDiskDetach(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error detaching disk",

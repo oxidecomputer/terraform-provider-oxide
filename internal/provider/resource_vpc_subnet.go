@@ -154,7 +154,7 @@ func (r *vpcSubnetResource) Create(ctx context.Context, req resource.CreateReque
 			Ipv6Block:   oxide.Ipv6Net(plan.IPV6Block.ValueString()),
 		},
 	}
-	subnet, err := r.client.VpcSubnetCreate(params)
+	subnet, err := r.client.VpcSubnetCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating VPC subnet",
@@ -196,9 +196,10 @@ func (r *vpcSubnetResource) Read(ctx context.Context, req resource.ReadRequest, 
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	subnet, err := r.client.VpcSubnetView(oxide.VpcSubnetViewParams{
+	params := oxide.VpcSubnetViewParams{
 		Subnet: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	subnet, err := r.client.VpcSubnetView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -262,7 +263,7 @@ func (r *vpcSubnetResource) Update(ctx context.Context, req resource.UpdateReque
 			Name:        oxide.Name(plan.Name.ValueString()),
 		},
 	}
-	subnet, err := r.client.VpcSubnetUpdate(params)
+	subnet, err := r.client.VpcSubnetUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating VPC subnet",
@@ -303,9 +304,10 @@ func (r *vpcSubnetResource) Delete(ctx context.Context, req resource.DeleteReque
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.VpcSubnetDelete(oxide.VpcSubnetDeleteParams{
+	params := oxide.VpcSubnetDeleteParams{
 		Subnet: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.VpcSubnetDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting VPC subnet:",

@@ -103,11 +103,10 @@ func (d *instanceExternalIPsDataSource) Read(ctx context.Context, req datasource
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	ips, err := d.client.InstanceExternalIpList(
-		oxide.InstanceExternalIpListParams{
-			Instance: oxide.NameOrId(state.InstanceID.ValueString()),
-		},
-	)
+	params := oxide.InstanceExternalIpListParams{
+		Instance: oxide.NameOrId(state.InstanceID.ValueString()),
+	}
+	ips, err := d.client.InstanceExternalIpList(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read external ips:",

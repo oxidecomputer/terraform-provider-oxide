@@ -98,9 +98,14 @@ package provider
 // 			continue
 // 		}
 //
-// 		res, err := client.ImageView(oxide.ImageViewParams{
+//		ctx := context.Background()
+//      ctx, cancel := context.WithTimeout(ctx, time.Minute)
+//      defer cancel()
+//
+//		params := oxide.ImageViewParams{
 // 			Image: oxide.NameOrId(rs.Primary.Attributes["id"]),
-// 		})
+// 		}
+// 		res, err := client.ImageView(ctx, params)
 //
 // 		if err != nil && is404(err) {
 // 			continue

@@ -141,9 +141,10 @@ func (r *snapshotResource) Create(ctx context.Context, req resource.CreateReques
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	disk, err := r.client.DiskView(oxide.DiskViewParams{
+	params := oxide.DiskViewParams{
 		Disk: oxide.NameOrId(plan.DiskID.ValueString()),
-	})
+	}
+	disk, err := r.client.DiskView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error retrieving information from disk",
@@ -153,7 +154,7 @@ func (r *snapshotResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	tflog.Trace(ctx, fmt.Sprintf("read information about disk with ID: %v", disk.Id), map[string]any{"success": true})
 
-	params := oxide.SnapshotCreateParams{
+	params2 := oxide.SnapshotCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.SnapshotCreate{
 			Description: plan.Description.ValueString(),
@@ -161,7 +162,7 @@ func (r *snapshotResource) Create(ctx context.Context, req resource.CreateReques
 			Disk:        oxide.NameOrId(disk.Name),
 		},
 	}
-	snapshot, err := r.client.SnapshotCreate(params)
+	snapshot, err := r.client.SnapshotCreate(ctx, params2)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating snapshot",
@@ -202,9 +203,10 @@ func (r *snapshotResource) Read(ctx context.Context, req resource.ReadRequest, r
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	snapshot, err := r.client.SnapshotView(oxide.SnapshotViewParams{
+	params := oxide.SnapshotViewParams{
 		Snapshot: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	snapshot, err := r.client.SnapshotView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -260,9 +262,10 @@ func (r *snapshotResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.SnapshotDelete(oxide.SnapshotDeleteParams{
+	params := oxide.SnapshotDeleteParams{
 		Snapshot: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.SnapshotDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting snapshot:",

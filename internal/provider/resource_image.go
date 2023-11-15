@@ -242,7 +242,7 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 	params.Body.Source = is
 
-	image, err := r.client.ImageCreate(params)
+	image, err := r.client.ImageCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating image",
@@ -301,9 +301,10 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	image, err := r.client.ImageView(oxide.ImageViewParams{
+	params := oxide.ImageViewParams{
 		Image: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	image, err := r.client.ImageView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh

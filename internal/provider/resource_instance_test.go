@@ -5,8 +5,10 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -506,10 +508,14 @@ func testAccInstanceDestroy(s *terraform.State) error {
 
 		// TODO: check for block name
 
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
 		params := oxide.InstanceViewParams{
 			Instance: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
-		res, err := client.InstanceView(params)
+		res, err := client.InstanceView(ctx, params)
 		if err != nil && is404(err) {
 			continue
 		}
