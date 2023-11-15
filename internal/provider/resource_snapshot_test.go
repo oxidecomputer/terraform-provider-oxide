@@ -5,8 +5,10 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -121,7 +123,12 @@ func testAccSnapshotDestroy(s *terraform.State) error {
 		params := oxide.SnapshotViewParams{
 			Snapshot: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
-		res, err := client.SnapshotView(params)
+
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		res, err := client.SnapshotView(ctx, params)
 
 		if err != nil && is404(err) {
 			continue

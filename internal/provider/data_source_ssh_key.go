@@ -112,9 +112,10 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	sshKey, err := d.client.CurrentUserSshKeyView(oxide.CurrentUserSshKeyViewParams{
+	params := oxide.CurrentUserSshKeyViewParams{
 		SshKey: oxide.NameOrId(state.Name.ValueString()),
-	})
+	}
+	sshKey, err := d.client.CurrentUserSshKeyView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read SSH key:",

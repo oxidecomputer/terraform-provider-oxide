@@ -216,7 +216,7 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	params.Body.DiskSource = ds
 
-	disk, err := r.client.DiskCreate(params)
+	disk, err := r.client.DiskCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating disk",
@@ -259,9 +259,10 @@ func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	disk, err := r.client.DiskView(oxide.DiskViewParams{
+	params := oxide.DiskViewParams{
 		Disk: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	disk, err := r.client.DiskView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -326,9 +327,10 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.DiskDelete(oxide.DiskDeleteParams{
+	params := oxide.DiskDeleteParams{
 		Disk: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.DiskDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to delete disk:",

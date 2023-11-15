@@ -152,12 +152,11 @@ func (d *imageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	image, err := d.client.ImageView(
-		oxide.ImageViewParams{
-			Image:   oxide.NameOrId(state.Name.ValueString()),
-			Project: oxide.NameOrId(state.ProjectName.ValueString()),
-		},
-	)
+	params := oxide.ImageViewParams{
+		Image:   oxide.NameOrId(state.Name.ValueString()),
+		Project: oxide.NameOrId(state.ProjectName.ValueString()),
+	}
+	image, err := d.client.ImageView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read image:",

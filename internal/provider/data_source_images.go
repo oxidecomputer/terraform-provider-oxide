@@ -172,7 +172,7 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		Limit:   1000000000,
 		SortBy:  oxide.NameOrIdSortModeIdAscending,
 	}
-	images, err := d.client.ImageList(params)
+	images, err := d.client.ImageList(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read images:",

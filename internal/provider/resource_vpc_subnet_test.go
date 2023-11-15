@@ -5,8 +5,10 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -238,7 +240,12 @@ func testAccVPCSubnetDestroy(s *terraform.State) error {
 		params := oxide.VpcSubnetViewParams{
 			Subnet: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
-		res, err := client.VpcSubnetView(params)
+
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		res, err := client.VpcSubnetView(ctx, params)
 		if err != nil && is404(err) {
 			continue
 		}

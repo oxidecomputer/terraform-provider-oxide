@@ -5,8 +5,10 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -201,7 +203,12 @@ func testAccVPCDestroy(s *terraform.State) error {
 		params := oxide.VpcViewParams{
 			Vpc: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
-		res, err := client.VpcView(params)
+
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		res, err := client.VpcView(ctx, params)
 		if err != nil && is404(err) {
 			continue
 		}

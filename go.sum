@@ -114,8 +114,8 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/oxidecomputer/oxide.go v0.1.0-beta1 h1:nYL0dv72SaYvKIQiq1cChj1k8Qwsh5j4baHRKRNJbsw=
-github.com/oxidecomputer/oxide.go v0.1.0-beta1/go.mod h1:grbwF1v2ELt8WV2KqYVLK/WHszQ0PRCMviHYMbLE5NI=
+github.com/oxidecomputer/oxide.go v0.0.0-20231115030250-e20dc58ad410 h1:jam4TLFFIvQqGAmHE0Cw21Z9HLY7ETMvYkkJFY9xH+Q=
+github.com/oxidecomputer/oxide.go v0.0.0-20231115030250-e20dc58ad410/go.mod h1:LjXJRucc4g2xRNDLE33hvJtiEBnxSukgdGjHXgZrcQ4=
 github.com/pjbgf/sha1cd v0.3.0 h1:4D5XXmUUBUl/xQ6IjCkEAbqXskkq/4O7LmGn0AqMDs4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

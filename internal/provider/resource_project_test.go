@@ -5,8 +5,10 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -122,9 +124,14 @@ func testAccProjectDestroy(s *terraform.State) error {
 			continue
 		}
 
-		res, err := client.ProjectView(oxide.ProjectViewParams{
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		params := oxide.ProjectViewParams{
 			Project: oxide.NameOrId(rs.Primary.Attributes["id"]),
-		})
+		}
+		res, err := client.ProjectView(ctx, params)
 		if err != nil && is404(err) {
 			continue
 		}

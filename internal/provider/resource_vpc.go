@@ -150,7 +150,7 @@ func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, re
 			Ipv6Prefix:  oxide.Ipv6Net(plan.IPV6Prefix.ValueString()),
 		},
 	}
-	vpc, err := r.client.VpcCreate(params)
+	vpc, err := r.client.VpcCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating VPC",
@@ -193,9 +193,10 @@ func (r *vpcResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	vpc, err := r.client.VpcView(oxide.VpcViewParams{
+	params := oxide.VpcViewParams{
 		Vpc: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	vpc, err := r.client.VpcView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -261,7 +262,7 @@ func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			DnsName:     oxide.Name(plan.DNSName.ValueString()),
 		},
 	}
-	vpc, err := r.client.VpcUpdate(params)
+	vpc, err := r.client.VpcUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating vpc",
@@ -303,9 +304,10 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.VpcDelete(oxide.VpcDeleteParams{
+	params := oxide.VpcDeleteParams{
 		Vpc: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.VpcDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting VPC:",

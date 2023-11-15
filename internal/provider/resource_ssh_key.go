@@ -143,7 +143,7 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		},
 	}
 
-	sshKey, err := r.client.CurrentUserSshKeyCreate(params)
+	sshKey, err := r.client.CurrentUserSshKeyCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating SSH key",
@@ -184,9 +184,10 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	sshKey, err := r.client.CurrentUserSshKeyView(oxide.CurrentUserSshKeyViewParams{
+	params := oxide.CurrentUserSshKeyViewParams{
 		SshKey: oxide.NameOrId(state.ID.ValueString()),
-	})
+	}
+	sshKey, err := r.client.CurrentUserSshKeyView(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -246,9 +247,10 @@ func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	_, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.CurrentUserSshKeyDelete(oxide.CurrentUserSshKeyDeleteParams{
+	params := oxide.CurrentUserSshKeyDeleteParams{
 		SshKey: oxide.NameOrId(state.ID.ValueString()),
-	}); err != nil {
+	}
+	if err := r.client.CurrentUserSshKeyDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting SSH key:",

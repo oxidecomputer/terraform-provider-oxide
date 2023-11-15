@@ -95,11 +95,10 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	project, err := d.client.ProjectView(
-		oxide.ProjectViewParams{
-			Project: oxide.NameOrId(state.Name.ValueString()),
-		},
-	)
+	params := oxide.ProjectViewParams{
+		Project: oxide.NameOrId(state.Name.ValueString()),
+	}
+	project, err := d.client.ProjectView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read project:",
