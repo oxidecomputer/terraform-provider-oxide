@@ -11,11 +11,7 @@ import (
 )
 
 func is404(err error) bool {
-	if strings.Contains(err.Error(), "HTTP 404") ||
-		strings.Contains(err.Error(), "404 Not Found") {
-		return true
-	}
-	return false
+	return strings.Contains(err.Error(), "Status: 404")
 }
 
 // Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
