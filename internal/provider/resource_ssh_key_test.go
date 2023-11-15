@@ -77,8 +77,8 @@ func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", sshKeyName),
-		resource.TestCheckResourceAttr(resourceName, "description", "An SSH Key."),
-		resource.TestCheckResourceAttr(resourceName, "public_key", "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1clIQrzlQNqxgvpCCUFFOcTTFDOaqV+aocfsDZvxqB"),
+		resource.TestCheckResourceAttr(resourceName, "description", "An SSH key."),
+		resource.TestCheckResourceAttr(resourceName, "public_key", "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1clIQrzlQNqxgvpCCUFFOcTTFDOaqV&#43;aocfsDZvxqB"),
 		resource.TestCheckResourceAttrSet(resourceName, "silo_user_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

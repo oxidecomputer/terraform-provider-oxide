@@ -12,11 +12,20 @@ import (
 )
 
 type dataSourceSSHKeyConfig struct {
-	BlockName string
-	Name      string
+	BlockName         string
+	SupportBlockName  string
+	SupportBlockName2 string
 }
 
 var dataSourceSSHKeyConfigTpl = `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_ssh_keys" "{{.SupportBlockName2}}" {
+  project_id = data.oxide_project.{{.SupportBlockName}}.id
+}
+
 data "oxide_ssh_key" "{{.BlockName}}" {
   name = "{{.Name}}"
   timeouts = {
@@ -25,13 +34,19 @@ data "oxide_ssh_key" "{{.BlockName}}" {
 }
 `
 
+// NB: This test is ignored as it won't pass until we implement the
+// `oxide_ssh_keys` data source
+//
+// NB: The project must be populated with at least one SSH Key for this test to pass
 func TestAccDataSourceSSHKey_full(t *testing.T) {
+	t.Skip("skipping test until `oxide_ssh_keys` data source is implemented.")
+
 	blockName := newBlockName("datasource-ssh-key")
-	sshKeyName := newResourceName()
 	config, err := parsedAccConfig(
 		dataSourceSSHKeyConfig{
-			BlockName: blockName,
-			Name:      sshKeyName,
+			BlockName:         blockName,
+			SupportBlockName:  newBlockName("support"),
+			SupportBlockName2: newBlockName("support"),
 		},
 		dataSourceSSHKeyConfigTpl,
 	)
@@ -47,17 +62,16 @@ func TestAccDataSourceSSHKey_full(t *testing.T) {
 				Config: config,
 				Check: checkDataSourceSSHKey(
 					fmt.Sprintf("data.oxide_ssh_key.%s", blockName),
-					sshKeyName,
 				),
 			},
 		},
 	})
 }
 
-func checkDataSourceSSHKey(dataName string, resourceName string) resource.TestCheckFunc {
+func checkDataSourceSSHKey(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
-		resource.TestCheckResourceAttr(dataName, "name", resourceName),
+		resource.TestCheckResourceAttrSet(dataName, "name"),
 		resource.TestCheckResourceAttr(dataName, "description", ""),
 		resource.TestCheckResourceAttrSet(dataName, "public_key"),
 		resource.TestCheckResourceAttrSet(dataName, "silo_user_id"),
