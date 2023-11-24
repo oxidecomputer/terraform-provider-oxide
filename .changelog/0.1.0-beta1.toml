@@ -1,7 +1,11 @@
-[[bugs]]
+[[features]]
+title = "New resource"
+description = "`oxide_ssh_key` [#211](https://github.com/oxidecomputer/terraform-provider-oxide/pull/211)"
 
 [[features]]
+title = "New data source"
+description = "`oxide_ssh_key` [#211](https://github.com/oxidecomputer/terraform-provider-oxide/pull/211)"
 
 [[enhancements]]
-
-[[breaking]]
+title = "Documentation"
+description = "Various documentation clarifications [#185](https://github.com/oxidecomputer/terraform-provider-oxide/pull/185), [#218](https://github.com/oxidecomputer/terraform-provider-oxide/pull/218)"
