@@ -6,6 +6,8 @@ page_title: "oxide_project Resource - terraform-provider-oxide"
 
 This resource manages projects.
 
+!> A default VPC is created within each project. Before deleting a project, this VPC must be removed.
+
 ## Example Usage
 
 ```hcl

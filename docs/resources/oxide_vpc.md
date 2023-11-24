@@ -6,6 +6,8 @@ page_title: "oxide_vpc Resource - terraform-provider-oxide"
 
 This resource manages VPCs.
 
+!> A default subnet is created within each VPC. Before deleting a VPC, this subnet must be removed.
+
 ## Example Usage
 
 ```hcl
