@@ -301,7 +301,7 @@ func (r *vpcSubnetResource) Delete(ctx context.Context, req resource.DeleteReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
 	params := oxide.VpcSubnetDeleteParams{

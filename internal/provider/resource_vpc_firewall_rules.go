@@ -1,0 +1,472 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package provider
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/oxidecomputer/oxide.go/oxide"
+)
+
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource              = (*vpcFirewallRulesResource)(nil)
+	_ resource.ResourceWithConfigure = (*vpcFirewallRulesResource)(nil)
+)
+
+// NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
+func NewVPCFirewallRulesResource() resource.Resource {
+	return &vpcFirewallRulesResource{}
+}
+
+// vpcFirewallRulesResource is the resource implementation.
+type vpcFirewallRulesResource struct {
+	client *oxide.Client
+}
+
+type vpcFirewallRulesResourceModel struct {
+	// This ID is specific to Terraform only
+	ID       types.String                        `tfsdk:"id"`
+	Rules    []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
+	Timeouts timeouts.Value                      `tfsdk:"timeouts"`
+	VPCID    types.String                        `tfsdk:"vpc_id"`
+}
+
+type vpcFirewallRulesResourceRuleModel struct {
+	Action       types.String                              `tfsdk:"action"`
+	Description  types.String                              `tfsdk:"description"`
+	Direction    types.String                              `tfsdk:"direction"`
+	Filters      *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
+	ID           types.String                              `tfsdk:"id"`
+	Name         types.String                              `tfsdk:"name"`
+	Priority     types.Int64                               `tfsdk:"priority"`
+	Status       types.String                              `tfsdk:"status"`
+	Targets      []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
+	TimeCreated  types.String                              `tfsdk:"time_created"`
+	TimeModified types.String                              `tfsdk:"time_modified"`
+}
+
+type vpcFirewallRulesResourceRuleTargetModel struct {
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
+}
+
+type vpcFirewallRulesResourceRuleFiltersModel struct {
+	Hosts     []vpcFirewallRuleHostFilterModel `tfsdk:"hosts"`
+	Ports     types.Set                        `tfsdk:"ports"`
+	Protocols types.Set                        `tfsdk:"protocols"`
+}
+
+type vpcFirewallRuleHostFilterModel struct {
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
+}
+
+// Metadata returns the resource type name.
+func (r *vpcFirewallRulesResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "oxide_vpc_firewall_rules"
+}
+
+// Configure adds the provider configured client to the resource.
+func (r *vpcFirewallRulesResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*oxide.Client)
+}
+
+// For now it is not possible to import Firewall rules as there is not a single identifier for the list of rules
+// TODO: Can I use VPC ID???
+// func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+// 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// }
+
+// Schema defines the schema for the resource.
+func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	// TODO: Make sure users can define a single block per VPC ID, not many, is this even possible?
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"vpc_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the VPC that will have the firewall rules applied to.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"rules": schema.SetNestedAttribute{
+				Required:    true,
+				Description: "Associated firewall rules.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"action": schema.StringAttribute{
+							Required:    true,
+							Description: "Whether traffic matching the rule should be allowed or dropped. Possible values are: allow or deny",
+						},
+						"description": schema.StringAttribute{
+							Required:    true,
+							Description: "Description for the VPC firewall rule.",
+						},
+						"direction": schema.StringAttribute{
+							Required:    true,
+							Description: "Whether this rule is for incoming or outgoing traffic. Possible values are: inbound or outbound",
+						},
+						"filters": schema.SingleNestedAttribute{
+							Required:    true,
+							Description: "Reductions on the scope of the rule.",
+						},
+						"name": schema.StringAttribute{
+							Required:    true,
+							Description: "Name of the VPC firewall rule.",
+						},
+						"priority": schema.Int64Attribute{
+							Required:    true,
+							Description: "The relative priority of this rule.",
+						},
+						"status": schema.StringAttribute{
+							Required:    true,
+							Description: "Whether this rule is in effect. Possible values are: enabled or disabled",
+						},
+						"targets": schema.SetNestedAttribute{
+							Required:    true,
+							Description: "Sets of instances that the rule applies to.",
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "The rule applies to a single or all instances of this type, or specific IPs. Possible values: vpc, subnet, instance, ip, ip_net",
+										Required:    true,
+										Validators: []validator.String{
+											stringvalidator.OneOf(
+												string(oxide.VpcFirewallRuleTargetTypeInstance),
+												string(oxide.VpcFirewallRuleTargetTypeIp),
+												string(oxide.VpcFirewallRuleTargetTypeIpNet),
+												string(oxide.VpcFirewallRuleTargetTypeSubnet),
+												string(oxide.VpcFirewallRuleTargetTypeVpc),
+											),
+										},
+									},
+									"value": schema.StringAttribute{
+										// Important, if the name of the associated instance is changed Terraform will not be able to sync
+										Description: "Depending on the type, it will be one of the following:" +
+											"- `vpc`: Name of the VPC " +
+											"- `subnet`: Name of the VPC subnet " +
+											"- `instance`: Name of the instance " +
+											"- `ip`: IP address " +
+											"- `ip_net`: IPv4 or IPv6 subnet",
+										Required: true,
+									},
+								},
+							},
+						},
+						"id": schema.StringAttribute{
+							Computed:    true,
+							Description: "Unique, immutable, system-controlled identifier of the instance network interface.",
+						},
+						"time_created": schema.StringAttribute{
+							Computed:    true,
+							Description: "Timestamp of when this instance network interface was created.",
+						},
+						"time_modified": schema.StringAttribute{
+							Computed:    true,
+							Description: "Timestamp of when this instance network interface was last modified.",
+						},
+					},
+				},
+			},
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the firewall rules.",
+			},
+		},
+	}
+}
+
+// Create creates the resource and sets the initial Terraform state.
+func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan vpcFirewallRulesResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
+	params := oxide.VpcFirewallRulesUpdateParams{
+		Vpc:  oxide.NameOrId(plan.VPCID.ValueString()),
+		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
+	}
+
+	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating firewall rules",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	if firewallRules != nil && len(firewallRules.Rules) > 0 {
+		tflog.Trace(ctx, fmt.Sprintf("created firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId), map[string]any{"success": true})
+	}
+
+	// Response does not include single ID for the set of rules.
+	// This means we'll set it here solely for Terraform.
+	plan.ID = types.StringValue(uuid.New().String())
+
+	// The order of the response is not guaranteed to be the same as the one set
+	// by the tf files. We will be populating all values, not just computed ones
+	plan.Rules = newVPCFirewallRulesModel(firewallRules.Rules)
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state vpcFirewallRulesResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	params := oxide.VpcFirewallRulesViewParams{
+		Vpc: oxide.NameOrId(state.VPCID.ValueString()),
+	}
+	firewallRules, err := r.client.VpcFirewallRulesView(ctx, params)
+	if err != nil {
+		if is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		resp.Diagnostics.AddError(
+			"Unable to read firewall rules:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	if firewallRules != nil && len(firewallRules.Rules) > 0 {
+		tflog.Trace(ctx, fmt.Sprintf("read firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId), map[string]any{"success": true})
+
+		// We do not set ID as this was created solely for Terraform
+		state.VPCID = types.StringValue(firewallRules.Rules[0].VpcId)
+	}
+
+	state.Rules = newVPCFirewallRulesModel(firewallRules.Rules)
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan vpcFirewallRulesResourceModel
+	var state vpcFirewallRulesResourceModel
+
+	// Read Terraform plan data into the plan model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read Terraform prior state data into the state model to retrieve ID
+	// which is a computed attribute, so it won't show up in the plan.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
+	params := oxide.VpcFirewallRulesUpdateParams{
+		Vpc:  oxide.NameOrId(state.VPCID.ValueString()),
+		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
+	}
+	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC firewall rules",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	if firewallRules != nil && len(firewallRules.Rules) > 0 {
+		tflog.Trace(ctx, fmt.Sprintf("updated firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId), map[string]any{"success": true})
+	}
+
+	// Map response body to schema and populate Computed attribute values
+
+	// We do not set ID as this was created solely for Terraform
+
+	// The order of the response is not guaranteed to be the same as the one set
+	// by the tf files. We will be populating all values, not just computed ones
+	plan.Rules = newVPCFirewallRulesModel(firewallRules.Rules)
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state vpcFirewallRulesResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	// There is no delete endpoint; to delete we pass an empty body to the update endpoint
+	params := oxide.VpcFirewallRulesUpdateParams{
+		Vpc:  oxide.NameOrId(state.VPCID.ValueString()),
+		Body: &oxide.VpcFirewallRuleUpdateParams{},
+	}
+	_, err := r.client.VpcFirewallRulesUpdate(ctx, params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting VPC firewall rules",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("deleted firewall rules for VPC with ID: %v", state.VPCID.ValueString()), map[string]any{"success": true})
+}
+
+func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
+	var updateRules []oxide.VpcFirewallRuleUpdate
+	body := new(oxide.VpcFirewallRuleUpdateParams)
+
+	if rules == nil {
+		return body
+	}
+
+	for _, rule := range rules {
+		r := oxide.VpcFirewallRuleUpdate{
+			Action:      oxide.VpcFirewallRuleAction(rule.Action.ValueString()),
+			Description: rule.Description.ValueString(),
+			Direction:   oxide.VpcFirewallRuleDirection(rule.Direction.ValueString()),
+			Name:        oxide.Name(rule.Name.ValueString()),
+			Priority:    int(rule.Priority.ValueInt64()),
+			Status:      oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
+			Filters:     newFilterTypeFromModel(rule.Filters),
+			Targets:     newTargetTypeFromModel(rule.Targets),
+		}
+
+		updateRules = append(updateRules, r)
+	}
+
+	body.Rules = updateRules
+	return body
+}
+
+func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) []vpcFirewallRulesResourceRuleModel {
+	var model []vpcFirewallRulesResourceRuleModel
+
+	for i := range rules {
+		m := vpcFirewallRulesResourceRuleModel{
+			Action:       types.StringValue(string(rules[i].Action)),
+			Description:  types.StringValue(rules[i].Description),
+			Direction:    types.StringValue(string(rules[i].Direction)),
+			Filters:      newFiltersModelFromResponse(rules[i].Filters),
+			ID:           types.StringValue(rules[i].Id),
+			Name:         types.StringValue(string(rules[i].Name)),
+			Priority:     types.Int64Value(int64(rules[i].Priority)),
+			Status:       types.StringValue(string(rules[i].Status)),
+			Targets:      newTargetsModelFromResponse(rules[i].Targets),
+			TimeCreated:  types.StringValue(rules[i].TimeCreated.String()),
+			TimeModified: types.StringValue(rules[i].TimeModified.String()),
+		}
+
+		model = append(model, m)
+	}
+
+	return model
+}
+
+func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) *vpcFirewallRulesResourceRuleFiltersModel {
+	model := new(vpcFirewallRulesResourceRuleFiltersModel)
+
+	// TODO: Map out response
+
+	return model
+}
+
+func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFirewallRulesResourceRuleTargetModel {
+	var model []vpcFirewallRulesResourceRuleTargetModel
+
+	// TODO: Map out response
+
+	return model
+}
+
+func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxide.VpcFirewallRuleFilter {
+	var filter oxide.VpcFirewallRuleFilter
+
+	// TODO: Map out model
+
+	return filter
+}
+
+func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) []oxide.VpcFirewallRuleTarget {
+	var target []oxide.VpcFirewallRuleTarget
+
+	// TODO: Map out model
+
+	return target
+}

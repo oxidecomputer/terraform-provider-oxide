@@ -244,7 +244,7 @@ func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
 	params := oxide.CurrentUserSshKeyDeleteParams{
