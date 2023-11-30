@@ -7,10 +7,14 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -125,8 +129,61 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 							Description: "Whether this rule is for incoming or outgoing traffic. Possible values are: inbound or outbound",
 						},
 						"filters": schema.SingleNestedAttribute{
+							// TODO: Should this be optional even if the spec says required?
 							Required:    true,
 							Description: "Reductions on the scope of the rule.",
+							Attributes: map[string]schema.Attribute{
+								"hosts": schema.SetNestedAttribute{
+									Optional:    true,
+									Description: "If present, the sources (if incoming) or destinations (if outgoing) this rule applies to.",
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"type": schema.StringAttribute{
+												Description: "The rule applies to a single or all instances of this type, or specific IPs. Possible values: vpc, subnet, instance, ip, ip_net",
+												Required:    true,
+												Validators: []validator.String{
+													stringvalidator.OneOf(
+														string(oxide.VpcFirewallRuleHostFilterTypeInstance),
+														string(oxide.VpcFirewallRuleHostFilterTypeIp),
+														string(oxide.VpcFirewallRuleHostFilterTypeIpNet),
+														string(oxide.VpcFirewallRuleHostFilterTypeSubnet),
+														string(oxide.VpcFirewallRuleHostFilterTypeVpc),
+													),
+												},
+											},
+											"value": schema.StringAttribute{
+												// Important, if the name of the associated instance is changed Terraform will not be able to sync
+												Description: "Depending on the type, it will be one of the following:" +
+													"- `vpc`: Name of the VPC " +
+													"- `subnet`: Name of the VPC subnet " +
+													"- `instance`: Name of the instance " +
+													"- `ip`: IP address " +
+													"- `ip_net`: IPv4 or IPv6 subnet",
+												Required: true,
+											},
+										},
+									},
+								},
+								"protocols": schema.SetAttribute{
+									Description: "If present, the networking protocols this rule applies to.",
+									Optional:    true,
+									ElementType: types.StringType,
+									Validators: []validator.Set{
+										setvalidator.ValueStringsAre(stringvalidator.Any(
+											stringvalidator.OneOf(
+												string(oxide.VpcFirewallRuleProtocolTcp),
+												string(oxide.VpcFirewallRuleProtocolUdp),
+												string(oxide.VpcFirewallRuleProtocolIcmp),
+											),
+										)),
+									},
+								},
+								"ports": schema.SetAttribute{
+									Description: "If present, the destination ports this rule applies to.",
+									Optional:    true,
+									ElementType: types.StringType,
+								},
+							},
 						},
 						"name": schema.StringAttribute{
 							Required:    true,
@@ -186,6 +243,12 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 					},
 				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the firewall rules.",
@@ -235,7 +298,11 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 
 	// The order of the response is not guaranteed to be the same as the one set
 	// by the tf files. We will be populating all values, not just computed ones
-	plan.Rules = newVPCFirewallRulesModel(firewallRules.Rules)
+	plan.Rules, diags = newVPCFirewallRulesModel(firewallRules.Rules)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -286,7 +353,13 @@ func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRe
 		state.VPCID = types.StringValue(firewallRules.Rules[0].VpcId)
 	}
 
-	state.Rules = newVPCFirewallRulesModel(firewallRules.Rules)
+	rules, diags := newVPCFirewallRulesModel(firewallRules.Rules)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state.Rules = rules
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -340,11 +413,16 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 
 	// Map response body to schema and populate Computed attribute values
 
-	// We do not set ID as this was created solely for Terraform
+	// We do not set ID from the response as this was created solely for Terraform
+	plan.ID = state.ID
 
 	// The order of the response is not guaranteed to be the same as the one set
 	// by the tf files. We will be populating all values, not just computed ones
-	plan.Rules = newVPCFirewallRulesModel(firewallRules.Rules)
+	plan.Rules, diags = newVPCFirewallRulesModel(firewallRules.Rules)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -415,7 +493,7 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 	return body
 }
 
-func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) []vpcFirewallRulesResourceRuleModel {
+func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
 	var model []vpcFirewallRulesResourceRuleModel
 
 	for i := range rules {
@@ -423,7 +501,6 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) []vpcFirewallRulesR
 			Action:       types.StringValue(string(rules[i].Action)),
 			Description:  types.StringValue(rules[i].Description),
 			Direction:    types.StringValue(string(rules[i].Direction)),
-			Filters:      newFiltersModelFromResponse(rules[i].Filters),
 			ID:           types.StringValue(rules[i].Id),
 			Name:         types.StringValue(string(rules[i].Name)),
 			Priority:     types.Int64Value(int64(rules[i].Priority)),
@@ -433,40 +510,117 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) []vpcFirewallRulesR
 			TimeModified: types.StringValue(rules[i].TimeModified.String()),
 		}
 
+		filters, diags := newFiltersModelFromResponse(rules[i].Filters)
+		diags.Append(diags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		m.Filters = filters
+
+		model = append(model, m)
+	}
+
+	return model, nil
+}
+
+func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewallRulesResourceRuleFiltersModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var hostsModel = []vpcFirewallRuleHostFilterModel{}
+	for _, h := range filter.Hosts {
+		m := vpcFirewallRuleHostFilterModel{
+			Type:  types.StringValue(string(h.Type)),
+			Value: types.StringValue(string(h.Value)),
+		}
+
+		hostsModel = append(hostsModel, m)
+	}
+
+	var ports = []attr.Value{}
+	for _, port := range filter.Ports {
+		ports = append(ports, types.StringValue(string(port)))
+	}
+	portSet, diags := types.SetValue(types.StringType, ports)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	var protocols = []attr.Value{}
+	for _, protocol := range filter.Protocols {
+		protocols = append(protocols, types.StringValue(string(protocol)))
+	}
+	protocolSet, diags := types.SetValue(types.StringType, protocols)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	model := vpcFirewallRulesResourceRuleFiltersModel{
+		Hosts:     hostsModel,
+		Ports:     portSet,
+		Protocols: protocolSet,
+	}
+
+	return &model, nil
+}
+
+func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFirewallRulesResourceRuleTargetModel {
+	var model []vpcFirewallRulesResourceRuleTargetModel
+
+	for _, t := range target {
+		m := vpcFirewallRulesResourceRuleTargetModel{
+			Type:  types.StringValue(string(t.Type)),
+			Value: types.StringValue(string(t.Value)),
+		}
+
 		model = append(model, m)
 	}
 
 	return model
 }
 
-func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) *vpcFirewallRulesResourceRuleFiltersModel {
-	model := new(vpcFirewallRulesResourceRuleFiltersModel)
-
-	// TODO: Map out response
-
-	return model
-}
-
-func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFirewallRulesResourceRuleTargetModel {
-	var model []vpcFirewallRulesResourceRuleTargetModel
-
-	// TODO: Map out response
-
-	return model
-}
-
 func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxide.VpcFirewallRuleFilter {
-	var filter oxide.VpcFirewallRuleFilter
+	var hosts []oxide.VpcFirewallRuleHostFilter
+	for _, host := range model.Hosts {
+		h := oxide.VpcFirewallRuleHostFilter{
+			Type: oxide.VpcFirewallRuleHostFilterType(host.Type.ValueString()),
+			// Note: This `Name` is a quirk from the SDK which should be fixed
+			Value: oxide.Name(host.Value.ValueString()),
+		}
 
-	// TODO: Map out model
+		hosts = append(hosts, h)
+	}
 
-	return filter
+	ports := []oxide.L4PortRange{}
+	for _, port := range model.Ports.Elements() {
+		p, _ := strconv.Unquote(port.String())
+		ports = append(ports, oxide.L4PortRange(p))
+	}
+
+	protocols := []oxide.VpcFirewallRuleProtocol{}
+	for _, protocol := range model.Protocols.Elements() {
+		p, _ := strconv.Unquote(protocol.String())
+		protocols = append(protocols, oxide.VpcFirewallRuleProtocol(p))
+	}
+
+	return oxide.VpcFirewallRuleFilter{
+		Hosts:     hosts,
+		Ports:     ports,
+		Protocols: protocols,
+	}
 }
 
 func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) []oxide.VpcFirewallRuleTarget {
 	var target []oxide.VpcFirewallRuleTarget
 
-	// TODO: Map out model
+	for _, m := range model {
+		t := oxide.VpcFirewallRuleTarget{
+			Type:  oxide.VpcFirewallRuleTargetType(m.Type.ValueString()),
+			Value: oxide.Name(m.Value.ValueString()),
+		}
+		target = append(target, t)
+	}
 
 	return target
 }
