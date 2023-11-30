@@ -43,24 +43,32 @@ type vpcFirewallRulesResource struct {
 
 type vpcFirewallRulesResourceModel struct {
 	// This ID is specific to Terraform only
-	ID       types.String                        `tfsdk:"id"`
-	Rules    []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
-	Timeouts timeouts.Value                      `tfsdk:"timeouts"`
-	VPCID    types.String                        `tfsdk:"vpc_id"`
+	ID           types.String                        `tfsdk:"id"`
+	Rules        []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
+	Timeouts     timeouts.Value                      `tfsdk:"timeouts"`
+	VPCID        types.String                        `tfsdk:"vpc_id"`
+	TimeCreated  types.String                        `tfsdk:"time_created"`
+	TimeModified types.String                        `tfsdk:"time_modified"`
 }
 
 type vpcFirewallRulesResourceRuleModel struct {
-	Action       types.String                              `tfsdk:"action"`
-	Description  types.String                              `tfsdk:"description"`
-	Direction    types.String                              `tfsdk:"direction"`
-	Filters      *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
-	ID           types.String                              `tfsdk:"id"`
-	Name         types.String                              `tfsdk:"name"`
-	Priority     types.Int64                               `tfsdk:"priority"`
-	Status       types.String                              `tfsdk:"status"`
-	Targets      []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
-	TimeCreated  types.String                              `tfsdk:"time_created"`
-	TimeModified types.String                              `tfsdk:"time_modified"`
+	Action      types.String                              `tfsdk:"action"`
+	Description types.String                              `tfsdk:"description"`
+	Direction   types.String                              `tfsdk:"direction"`
+	Filters     *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
+	Name        types.String                              `tfsdk:"name"`
+	Priority    types.Int64                               `tfsdk:"priority"`
+	Status      types.String                              `tfsdk:"status"`
+	Targets     []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
+	// NB: We do not include ID, TimeCreated or TimeModified as only values that
+	// were marked as unknown in the planned value are allowed to change during
+	// the apply operation. Normally this wouldn't be an issue, but when adding
+	// or removing rules, Terraform thinks the other rules are going to remain unchanged.
+	// This is not the case with these three fields, and the provider errors out.
+	// I considered using `RequiresReplace()`, but unfortunately we don't have a delete endpoint yet.
+	//
+	// Related code:
+	// https://github.com/hashicorp/terraform/blob/94b3242/internal/terraform/node_resource_abstract_instance.go#L2541-L2545
 }
 
 type vpcFirewallRulesResourceRuleTargetModel struct {
@@ -228,26 +236,23 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 								},
 							},
 						},
-						"id": schema.StringAttribute{
-							Computed:    true,
-							Description: "Unique, immutable, system-controlled identifier of the instance network interface.",
-						},
-						"time_created": schema.StringAttribute{
-							Computed:    true,
-							Description: "Timestamp of when this instance network interface was created.",
-						},
-						"time_modified": schema.StringAttribute{
-							Computed:    true,
-							Description: "Timestamp of when this instance network interface was last modified.",
-						},
 					},
 				},
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this VPC firewall rule was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this VPC firewall rule was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
 				Update: true,
-				Delete: true,
+				// TODO: Uncomment when deletes are supported
+				// Delete: true,
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -295,6 +300,8 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	// Response does not include single ID for the set of rules.
 	// This means we'll set it here solely for Terraform.
 	plan.ID = types.StringValue(uuid.New().String())
+	plan.TimeCreated = types.StringValue(firewallRules.Rules[0].TimeCreated.String())
+	plan.TimeModified = types.StringValue(firewallRules.Rules[0].TimeModified.String())
 
 	// The order of the response is not guaranteed to be the same as the one set
 	// by the tf files. We will be populating all values, not just computed ones
@@ -395,7 +402,7 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 	defer cancel()
 
 	params := oxide.VpcFirewallRulesUpdateParams{
-		Vpc:  oxide.NameOrId(state.VPCID.ValueString()),
+		Vpc:  oxide.NameOrId(plan.VPCID.ValueString()),
 		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
 	}
 	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
@@ -415,6 +422,8 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 
 	// We do not set ID from the response as this was created solely for Terraform
 	plan.ID = state.ID
+	plan.TimeCreated = types.StringValue(firewallRules.Rules[0].TimeCreated.String())
+	plan.TimeModified = types.StringValue(firewallRules.Rules[0].TimeModified.String())
 
 	// The order of the response is not guaranteed to be the same as the one set
 	// by the tf files. We will be populating all values, not just computed ones
@@ -433,37 +442,9 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state vpcFirewallRulesResourceModel
-
-	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
-	defer cancel()
-
-	// There is no delete endpoint; to delete we pass an empty body to the update endpoint
-	params := oxide.VpcFirewallRulesUpdateParams{
-		Vpc:  oxide.NameOrId(state.VPCID.ValueString()),
-		Body: &oxide.VpcFirewallRuleUpdateParams{},
-	}
-	_, err := r.client.VpcFirewallRulesUpdate(ctx, params)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting VPC firewall rules",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("deleted firewall rules for VPC with ID: %v", state.VPCID.ValueString()), map[string]any{"success": true})
+	resp.Diagnostics.AddError(
+		"Error deleting VPC firewall rules",
+		"the oxide API currently does not support deleting VPC firewall rules")
 }
 
 func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
@@ -496,21 +477,18 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
 	var model []vpcFirewallRulesResourceRuleModel
 
-	for i := range rules {
+	for _, rule := range rules {
 		m := vpcFirewallRulesResourceRuleModel{
-			Action:       types.StringValue(string(rules[i].Action)),
-			Description:  types.StringValue(rules[i].Description),
-			Direction:    types.StringValue(string(rules[i].Direction)),
-			ID:           types.StringValue(rules[i].Id),
-			Name:         types.StringValue(string(rules[i].Name)),
-			Priority:     types.Int64Value(int64(rules[i].Priority)),
-			Status:       types.StringValue(string(rules[i].Status)),
-			Targets:      newTargetsModelFromResponse(rules[i].Targets),
-			TimeCreated:  types.StringValue(rules[i].TimeCreated.String()),
-			TimeModified: types.StringValue(rules[i].TimeModified.String()),
+			Action:      types.StringValue(string(rule.Action)),
+			Description: types.StringValue(rule.Description),
+			Direction:   types.StringValue(string(rule.Direction)),
+			Name:        types.StringValue(string(rule.Name)),
+			Priority:    types.Int64Value(int64(rule.Priority)),
+			Status:      types.StringValue(string(rule.Status)),
+			Targets:     newTargetsModelFromResponse(rule.Targets),
 		}
 
-		filters, diags := newFiltersModelFromResponse(rules[i].Filters)
+		filters, diags := newFiltersModelFromResponse(rule.Filters)
 		diags.Append(diags...)
 		if diags.HasError() {
 			return nil, diags
