@@ -442,9 +442,39 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError(
-		"Error deleting VPC firewall rules",
-		"the oxide API currently does not support deleting VPC firewall rules")
+	var state vpcFirewallRulesResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	// There is no delete endpoint; to delete we pass an empty body to the update endpoint
+	params := oxide.VpcFirewallRulesUpdateParams{
+		Vpc: oxide.NameOrId(state.VPCID.ValueString()),
+		Body: &oxide.VpcFirewallRuleUpdateParams{
+			Rules: []oxide.VpcFirewallRuleUpdate{},
+		},
+	}
+	_, err := r.client.VpcFirewallRulesUpdate(ctx, params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting VPC firewall rules",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("deleted firewall rules for VPC with ID: %v", state.VPCID.ValueString()), map[string]any{"success": true})
 }
 
 func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
