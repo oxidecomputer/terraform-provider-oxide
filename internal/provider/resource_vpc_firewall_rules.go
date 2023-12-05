@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -43,32 +44,24 @@ type vpcFirewallRulesResource struct {
 
 type vpcFirewallRulesResourceModel struct {
 	// This ID is specific to Terraform only
-	ID           types.String                        `tfsdk:"id"`
-	Rules        []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
-	Timeouts     timeouts.Value                      `tfsdk:"timeouts"`
-	VPCID        types.String                        `tfsdk:"vpc_id"`
-	TimeCreated  types.String                        `tfsdk:"time_created"`
-	TimeModified types.String                        `tfsdk:"time_modified"`
+	ID       types.String                        `tfsdk:"id"`
+	Rules    []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
+	Timeouts timeouts.Value                      `tfsdk:"timeouts"`
+	VPCID    types.String                        `tfsdk:"vpc_id"`
 }
 
 type vpcFirewallRulesResourceRuleModel struct {
-	Action      types.String                              `tfsdk:"action"`
-	Description types.String                              `tfsdk:"description"`
-	Direction   types.String                              `tfsdk:"direction"`
-	Filters     *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
-	Name        types.String                              `tfsdk:"name"`
-	Priority    types.Int64                               `tfsdk:"priority"`
-	Status      types.String                              `tfsdk:"status"`
-	Targets     []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
-	// NB: We do not include ID, TimeCreated or TimeModified as only values that
-	// were marked as unknown in the planned value are allowed to change during
-	// the apply operation. Normally this wouldn't be an issue, but when adding
-	// or removing rules, Terraform thinks the other rules are going to remain unchanged.
-	// This is not the case with these three fields, and the provider errors out.
-	// I considered using `RequiresReplace()`, but unfortunately we don't have a delete endpoint yet.
-	//
-	// Related code:
-	// https://github.com/hashicorp/terraform/blob/94b3242/internal/terraform/node_resource_abstract_instance.go#L2541-L2545
+	Action       types.String                              `tfsdk:"action"`
+	Description  types.String                              `tfsdk:"description"`
+	Direction    types.String                              `tfsdk:"direction"`
+	Filters      *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
+	ID           types.String                              `tfsdk:"id"`
+	Name         types.String                              `tfsdk:"name"`
+	Priority     types.Int64                               `tfsdk:"priority"`
+	Status       types.String                              `tfsdk:"status"`
+	Targets      []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
+	TimeCreated  types.String                              `tfsdk:"time_created"`
+	TimeModified types.String                              `tfsdk:"time_modified"`
 }
 
 type vpcFirewallRulesResourceRuleTargetModel struct {
@@ -122,6 +115,9 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 			"rules": schema.SetNestedAttribute{
 				Required:    true,
 				Description: "Associated firewall rules.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"action": schema.StringAttribute{
@@ -193,6 +189,10 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 								},
 							},
 						},
+						"id": schema.StringAttribute{
+							Computed:    true,
+							Description: "Unique, immutable, system-controlled identifier of the firewall rules.",
+						},
 						"name": schema.StringAttribute{
 							Required:    true,
 							Description: "Name of the VPC firewall rule.",
@@ -236,23 +236,22 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 								},
 							},
 						},
+						"time_created": schema.StringAttribute{
+							Computed:    true,
+							Description: "Timestamp of when this VPC firewall rule was created.",
+						},
+						"time_modified": schema.StringAttribute{
+							Computed:    true,
+							Description: "Timestamp of when this VPC firewall rule was last modified.",
+						},
 					},
 				},
-			},
-			"time_created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this VPC firewall rule was created.",
-			},
-			"time_modified": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this VPC firewall rule was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
 				Update: true,
-				// TODO: Uncomment when deletes are supported
-				// Delete: true,
+				Delete: true,
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -300,8 +299,6 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	// Response does not include single ID for the set of rules.
 	// This means we'll set it here solely for Terraform.
 	plan.ID = types.StringValue(uuid.New().String())
-	plan.TimeCreated = types.StringValue(firewallRules.Rules[0].TimeCreated.String())
-	plan.TimeModified = types.StringValue(firewallRules.Rules[0].TimeModified.String())
 
 	// The order of the response is not guaranteed to be the same as the one set
 	// by the tf files. We will be populating all values, not just computed ones
@@ -422,8 +419,6 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 
 	// We do not set ID from the response as this was created solely for Terraform
 	plan.ID = state.ID
-	plan.TimeCreated = types.StringValue(firewallRules.Rules[0].TimeCreated.String())
-	plan.TimeModified = types.StringValue(firewallRules.Rules[0].TimeModified.String())
 
 	// The order of the response is not guaranteed to be the same as the one set
 	// by the tf files. We will be populating all values, not just computed ones
@@ -509,13 +504,16 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRules
 
 	for _, rule := range rules {
 		m := vpcFirewallRulesResourceRuleModel{
-			Action:      types.StringValue(string(rule.Action)),
-			Description: types.StringValue(rule.Description),
-			Direction:   types.StringValue(string(rule.Direction)),
-			Name:        types.StringValue(string(rule.Name)),
-			Priority:    types.Int64Value(int64(rule.Priority)),
-			Status:      types.StringValue(string(rule.Status)),
-			Targets:     newTargetsModelFromResponse(rule.Targets),
+			Action:       types.StringValue(string(rule.Action)),
+			Description:  types.StringValue(rule.Description),
+			Direction:    types.StringValue(string(rule.Direction)),
+			ID:           types.StringValue(rule.Id),
+			Name:         types.StringValue(string(rule.Name)),
+			Priority:     types.Int64Value(int64(rule.Priority)),
+			Status:       types.StringValue(string(rule.Status)),
+			Targets:      newTargetsModelFromResponse(rule.Targets),
+			TimeCreated:  types.StringValue(rule.TimeCreated.String()),
+			TimeModified: types.StringValue(rule.TimeModified.String()),
 		}
 
 		filters, diags := newFiltersModelFromResponse(rule.Filters)
