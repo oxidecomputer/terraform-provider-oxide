@@ -9,3 +9,7 @@ description = "`oxide_ssh_key` [#211](https://github.com/oxidecomputer/terraform
 [[enhancements]]
 title = "Documentation"
 description = "Various documentation clarifications [#185](https://github.com/oxidecomputer/terraform-provider-oxide/pull/185), [#218](https://github.com/oxidecomputer/terraform-provider-oxide/pull/218)"
+
+[[features]]
+title = "New resource"
+description = "`oxide_vpc_firewall_rules` [#220](https://github.com/oxidecomputer/terraform-provider-oxide/pull/220)"
