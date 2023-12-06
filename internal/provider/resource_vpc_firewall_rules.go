@@ -122,6 +122,12 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 						"action": schema.StringAttribute{
 							Required:    true,
 							Description: "Whether traffic matching the rule should be allowed or dropped. Possible values are: allow or deny",
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									string(oxide.VpcFirewallRuleActionAllow),
+									string(oxide.VpcFirewallRuleActionDeny),
+								),
+							},
 						},
 						"description": schema.StringAttribute{
 							Required:    true,
@@ -130,9 +136,14 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 						"direction": schema.StringAttribute{
 							Required:    true,
 							Description: "Whether this rule is for incoming or outgoing traffic. Possible values are: inbound or outbound",
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									string(oxide.VpcFirewallRuleDirectionInbound),
+									string(oxide.VpcFirewallRuleDirectionOutbound),
+								),
+							},
 						},
 						"filters": schema.SingleNestedAttribute{
-							// TODO: Should this be optional even if the spec says required?
 							Required:    true,
 							Description: "Reductions on the scope of the rule.",
 							Attributes: map[string]schema.Attribute{
@@ -168,7 +179,7 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 									},
 								},
 								"protocols": schema.SetAttribute{
-									Description: "If present, the networking protocols this rule applies to.",
+									Description: "If present, the networking protocols this rule applies to. Possible values are: TCP, UDP and ICMP.",
 									Optional:    true,
 									ElementType: types.StringType,
 									Validators: []validator.Set{
@@ -190,7 +201,7 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 						},
 						"id": schema.StringAttribute{
 							Computed:    true,
-							Description: "Unique, immutable, system-controlled identifier of the firewall rules.",
+							Description: "Unique, immutable, system-controlled identifier of the firewall rule.",
 						},
 						"name": schema.StringAttribute{
 							Required:    true,
@@ -203,6 +214,12 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 						"status": schema.StringAttribute{
 							Required:    true,
 							Description: "Whether this rule is in effect. Possible values are: enabled or disabled",
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									string(oxide.VpcFirewallRuleStatusDisabled),
+									string(oxide.VpcFirewallRuleStatusEnabled),
+								),
+							},
 						},
 						"targets": schema.SetNestedAttribute{
 							Required:    true,
@@ -254,7 +271,7 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the firewall rules.",
+				Description: "Unique, immutable, system-controlled identifier of the firewall rules. Specific only to Terraform.",
 			},
 		},
 	}
