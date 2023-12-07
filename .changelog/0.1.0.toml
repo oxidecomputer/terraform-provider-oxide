@@ -24,4 +24,4 @@ description = "Deletes are now supported [#228](https://github.com/oxidecomputer
 
 [[enhancements]]
 title = "VPC and project resources"
-description = "System created default VPCs and subnets are now removed automatically when deleting a VPC or project [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "System created default VPCs and subnets are now removed automatically when deleting a VPC or project [#229](https://github.com/oxidecomputer/terraform-provider-oxide/pull/229)"
