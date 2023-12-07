@@ -50,8 +50,11 @@ resource "oxide_instance" "example" {
   start_on_create = false
   external_ips = [
     {
-      ip_pool_name = "default"
-      type         = "ephemeral"
+      type = "ephemeral"
+    },
+    {
+      name = "my-floating-ip"
+      type = "floating"
     }
   ]
 }
@@ -85,7 +88,7 @@ resource "oxide_instance" "example" {
 ### Optional
 
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
-- `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. List of IP pools from which to draw addresses. (see [below for nested schema](#nestedatt--ips))
+- `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--ips))
 - `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))
 - `start_on_create` (Boolean, Default `true`) Starts the instance on creation when set to true.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
@@ -103,8 +106,8 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
-- `ip_pool_name` (String, Default `"default"`) Name of the IP pool to retrieve addresses from..
-- `type` (String, Default `"ephemeral"`) Type of external IP. Currently, only `ephemeral` is supported.
+- `name` (String, Default `"default"`) If type is ephemeral, name of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, name of the floating IP.
+- `type` (String, Default `"ephemeral"`) Type of external IP. Possible values are: ephemeral or floating.
 
 <a id="nestedatt--nics"></a>
 
@@ -138,3 +141,4 @@ Optional:
 - `create` (String, Default `10m`)
 - `delete` (String, Default `10m`)
 - `read` (String, Default `10m`)
+- `update` (String, Default `10m`)
