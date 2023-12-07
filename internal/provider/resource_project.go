@@ -262,6 +262,38 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
+	// Delete VPC and subnet that were created automatically by the system
+	paramsSubnet := oxide.VpcSubnetDeleteParams{
+		Project: oxide.NameOrId(state.ID.ValueString()),
+		Vpc:     oxide.NameOrId("default"),
+		Subnet:  oxide.NameOrId("default"),
+	}
+	if err := r.client.VpcSubnetDelete(ctx, paramsSubnet); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting default subnet:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted default subnet from project with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
+	paramsVPC := oxide.VpcDeleteParams{
+		Project: oxide.NameOrId(state.ID.ValueString()),
+		Vpc:     oxide.NameOrId("default"),
+	}
+	if err := r.client.VpcDelete(ctx, paramsVPC); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting default VPC:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted default VPC from project with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
 	params := oxide.ProjectDeleteParams{
 		Project: oxide.NameOrId(state.ID.ValueString()),
 	}

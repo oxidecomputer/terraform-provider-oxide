@@ -304,6 +304,22 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
+	// Delete subnets that were created automatically by the system
+	paramsSubnet := oxide.VpcSubnetDeleteParams{
+		Vpc:    oxide.NameOrId(state.ID.ValueString()),
+		Subnet: oxide.NameOrId("default"),
+	}
+	if err := r.client.VpcSubnetDelete(ctx, paramsSubnet); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting default subnet:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted default subnet from VPC with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
 	params := oxide.VpcDeleteParams{
 		Vpc: oxide.NameOrId(state.ID.ValueString()),
 	}
