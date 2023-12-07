@@ -25,3 +25,7 @@ description = "Deletes are now supported [#228](https://github.com/oxidecomputer
 [[enhancements]]
 title = "VPC and project resources"
 description = "System created default VPCs and subnets are now removed automatically when deleting a VPC or project [#229](https://github.com/oxidecomputer/terraform-provider-oxide/pull/229)"
+
+[[breaking]]
+title = "Instance resource"
+description = "Support floating IPs as external IP addresses provided to the instance. The `ip_pool_name` attribute within the `external_ips` block has been modified to `name`. [#230](https://github.com/oxidecomputer/terraform-provider-oxide/pull/230)"

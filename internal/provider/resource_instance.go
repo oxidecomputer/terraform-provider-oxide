@@ -22,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -79,11 +78,11 @@ type instanceResourceNICModel struct {
 }
 
 type instanceResourceExternalIPModel struct {
-	IPPoolName types.String `tfsdk:"ip_pool_name"`
-	Type       types.String `tfsdk:"type"`
+	Name types.String `tfsdk:"name"`
+	Type types.String `tfsdk:"type"`
 }
 
-// Metadata returns the resource type name.
+// MetaIf ephemeral, nata returns the resource type name.
 func (r *instanceResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "oxide_instance"
 }
@@ -243,24 +242,21 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			},
 			"external_ips": schema.SetNestedAttribute{
 				Optional:    true,
-				Description: "External IP addresses provided to this instance. IP pools from which to draw addresses.",
+				Description: "External IP addresses provided to this instance.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"ip_pool_name": schema.StringAttribute{
-							Description: "Name of the IP pool to retrieve addresses from.",
-							Computed:    true,
+						"name": schema.StringAttribute{
+							Description: "If type is ephemeral, name of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, name of the floating IP",
 							Optional:    true,
-							Default:     stringdefault.StaticString("default"),
 						},
 						"type": schema.StringAttribute{
 							Description: "Type of external IP. Currently, only `ephemeral` is supported.",
-							Computed:    true,
 							Optional:    true,
-							Default:     stringdefault.StaticString(string(oxide.ExternalIpCreateTypeEphemeral)),
 							Validators: []validator.String{
-								// TODO: Update list of available types of addresses once these are implemented in the
-								// control plane
-								stringvalidator.OneOf(string(oxide.ExternalIpCreateTypeEphemeral)),
+								stringvalidator.OneOf(
+									string(oxide.ExternalIpCreateTypeEphemeral),
+									string(oxide.ExternalIpCreateTypeFloating),
+								),
 							},
 						},
 					},
@@ -890,9 +886,18 @@ func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxi
 	var ips []oxide.ExternalIpCreate
 
 	for _, ip := range externalIPs {
-		eIP := oxide.ExternalIpCreate{
-			PoolName: oxide.Name(ip.IPPoolName.ValueString()),
-			Type:     oxide.ExternalIpCreateType(ip.Type.ValueString()),
+		var eIP oxide.ExternalIpCreate
+
+		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
+			if ip.Name.ValueString() != "" {
+				eIP.PoolName = oxide.Name(ip.Name.ValueString())
+			}
+			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
+		}
+
+		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeFloating) {
+			eIP.FloatingIpName = oxide.Name(ip.Name.ValueString())
+			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
 		}
 
 		ips = append(ips, eIP)

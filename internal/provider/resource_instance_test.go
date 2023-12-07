@@ -140,7 +140,11 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips    = [{}]
+  external_ips = [
+    {
+      type = "ephemeral"
+    }
+  ]
 }
 `
 
@@ -411,7 +415,6 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.ip_pool_name", "default"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
