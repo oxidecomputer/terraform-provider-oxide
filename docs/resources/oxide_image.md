@@ -6,8 +6,6 @@ page_title: "oxide_image Resource - terraform-provider-oxide"
 
 This resource manages images.
 
-!> This resource does not support updates or deletes.
-
 ## Example Usage
 
 To create an image it's necessary to define its source by setting one of `source_url` or `source_snapshot_id`.
@@ -27,18 +25,6 @@ resource "oxide_image" "example2" {
 }
 ```
 
-```hcl
-resource "oxide_image" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test image"
-  name        = "myimage"
-  source_url  = "myimage.example.com"
-  block_size  = 512
-  os          = "alpine"
-  version     = "3.15"
-}
-```
-
 ## Schema
 
 ### Required
@@ -51,13 +37,12 @@ resource "oxide_image" "example" {
 
 ### Optional
 
-- `block_size` (Number) Size of blocks in bytes. Used and required only to create image from URL.
-- `source_snapshot_id` (String) Snapshot ID of the image source if applicable. To be set only when creating an image from a snapshot.
-- `source_url` (String) "URL of the image source if applicable. To be set only when creating an image from a URL.
+- `source_snapshot_id` (String) Snapshot ID of the image source.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
+- `block_size` (Number) Size of blocks in bytes.
 - `digest` (Object) Hash of the image contents, if applicable (see [below for nested schema](#nestedobject--digest)).
 - `id` (String) Unique, immutable, system-controlled identifier of the image.
 - `size` (Number) Total size in bytes.

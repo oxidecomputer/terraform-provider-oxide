@@ -21,19 +21,19 @@ type resourceImageConfig struct {
 	SupportBlockName string
 }
 
+// TODO: Use a fetched snapshot ID when the snapshot data source is implemented
 var resourceImageConfigTpl = `
  data "oxide_project" "{{.SupportBlockName}}" {
  	name = "tf-acc-test"
  }
 
  resource "oxide_image" "{{.BlockName}}" {
-   project_id  = data.oxide_project.{{.SupportBlockName}}.id
-   description = "a test image"
-   name        = "{{.ImageName}}"
-   source_url  = "you_can_boot_anything_as_long_as_its_alpine"
-   block_size  = 512
-   os          = "alpine"
-   version     = "propolis-blob"
+   project_id         = data.oxide_project.{{.SupportBlockName}}.id
+   description        = "a test image"
+   name               = "{{.ImageName}}"
+   source_snapshot_id = "ffecbbfd-bd42-42ce-b023-e33f4020a858"
+   os                 = "alpine"
+   version            = "propolis-blob"
    timeouts = {
     read   = "1m"
     create = "3m"
@@ -42,9 +42,6 @@ var resourceImageConfigTpl = `
  `
 
 func TestAccResourceImage_full(t *testing.T) {
-	// TODO: Restore test when it is possible to delete images, otherwise tests always fail
-	t.Skip("skipping test until image delete is implemented in the API.")
-
 	imageName := newResourceName()
 	blockName := newBlockName("image")
 	supportBlockName := newBlockName("support")
@@ -71,12 +68,10 @@ func TestAccResourceImage_full(t *testing.T) {
 				Check:  checkResourceImage(resourceName, imageName),
 			},
 			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// TODO: Remove once 'you_can_boot_anything_as_long_as_its_alpine'
-				// is removed
-				ImportStateVerifyIgnore: []string{"source_url"},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source_snapshot_id"},
 			},
 		},
 	})
@@ -88,14 +83,13 @@ func checkResourceImage(resourceName, imageName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test image"),
 		resource.TestCheckResourceAttr(resourceName, "name", imageName),
-		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
-		resource.TestCheckResourceAttr(resourceName, "source_url", "you_can_boot_anything_as_long_as_its_alpine"),
+		resource.TestCheckResourceAttrSet(resourceName, "block_size"),
+		resource.TestCheckResourceAttr(resourceName, "source_snapshot_id", "ffecbbfd-bd42-42ce-b023-e33f4020a858"),
 		resource.TestCheckResourceAttrSet(resourceName, "size"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
-		// TODO: Eventually we'll want to test creating a image from URL and snapshot
 	}...)
 }
 

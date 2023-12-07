@@ -9,15 +9,12 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
@@ -49,7 +46,6 @@ type imageResourceModel struct {
 	ProjectID        types.String   `tfsdk:"project_id"`
 	Size             types.Int64    `tfsdk:"size"`
 	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
-	SourceURL        types.String   `tfsdk:"source_url"`
 	TimeCreated      types.String   `tfsdk:"time_created"`
 	TimeModified     types.String   `tfsdk:"time_modified"`
 	Version          types.String   `tfsdk:"version"`
@@ -118,37 +114,9 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"block_size": schema.Int64Attribute{
-				Optional:    true,
-				Description: "Size of blocks in bytes.",
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
 			"source_snapshot_id": schema.StringAttribute{
-				Optional:    true,
+				Required:    true,
 				Description: "Snapshot ID of the image source if applicable.",
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(path.Expressions{
-						path.MatchRoot("source_url"),
-						path.MatchRoot("source_snapshot_id"),
-					}...),
-					stringvalidator.ConflictsWith(path.Expressions{
-						path.MatchRoot("block_size"),
-					}...),
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"source_url": schema.StringAttribute{
-				Optional:    true,
-				Description: "URL source of this image, if applicable.",
-				Validators: []validator.String{
-					stringvalidator.AlsoRequires(path.Expressions{
-						path.MatchRoot("block_size"),
-					}...),
-				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -156,10 +124,13 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
-				// TODO: Restore once updates and deletes are enabled
-				// Update: true,
-				// Delete: true,
+				Update: true,
+				Delete: true,
 			}),
+			"block_size": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Size of blocks in bytes.",
+			},
 			"digest": schema.SingleNestedAttribute{
 				Computed:    true,
 				Description: "Hash of the image contents, if applicable.",
@@ -222,24 +193,8 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	is := oxide.ImageSource{}
-	if !plan.SourceSnapshotID.IsNull() {
-		is.Id = plan.SourceSnapshotID.ValueString()
-		is.Type = oxide.ImageSourceTypeSnapshot
-	} else if !plan.SourceURL.IsNull() {
-		is.Id = plan.SourceURL.ValueString()
-		is.Type = oxide.ImageSourceTypeUrl
-		// TODO: Remove before releasing, for testing purposes only
-		if plan.SourceURL.Equal(types.StringValue("you_can_boot_anything_as_long_as_its_alpine")) {
-			is.Type = oxide.ImageSourceTypeYouCanBootAnythingAsLongAsItsAlpine
-		}
-		is.BlockSize = oxide.BlockSize(plan.BlockSize.ValueInt64())
-	} else {
-		resp.Diagnostics.AddError(
-			"Error creating image",
-			"One of `source_url` or `source_snapshot_id` must be set",
-		)
-		return
-	}
+	is.Id = plan.SourceSnapshotID.ValueString()
+	is.Type = oxide.ImageSourceTypeSnapshot
 	params.Body.Source = is
 
 	image, err := r.client.ImageCreate(ctx, params)
@@ -259,6 +214,10 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
 	plan.TimeModified = types.StringValue(image.TimeModified.String())
 	plan.Version = types.StringValue(image.Version)
+	plan.BlockSize = types.Int64Null()
+	if image.BlockSize > 0 {
+		plan.BlockSize = types.Int64Value(int64(image.BlockSize))
+	}
 
 	// Parse imageResourceDigestModel into types.Object
 	dm := imageResourceDigestModel{
@@ -320,7 +279,10 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	tflog.Trace(ctx, fmt.Sprintf("read image with ID: %v", image.Id), map[string]any{"success": true})
 
-	state.BlockSize = types.Int64Value(int64(image.BlockSize))
+	state.BlockSize = types.Int64Null()
+	if image.BlockSize > 0 {
+		state.BlockSize = types.Int64Value(int64(image.BlockSize))
+	}
 	state.Description = types.StringValue(image.Description)
 	state.ID = types.StringValue(image.Id)
 	state.Name = types.StringValue(string(image.Name))
@@ -330,13 +292,10 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.TimeModified = types.StringValue(image.TimeModified.String())
 	state.Version = types.StringValue(image.Version)
 
-	// Only set ProjectID and SourceURL if they exist to avoid unintentional drift.
+	// Only set ProjectID if it exists to avoid unintentional drift.
 	// Some images with silo visibility may not have project IDs, and could be imported.
 	if image.ProjectId != "" {
 		state.ProjectID = types.StringValue(image.ProjectId)
-	}
-	if image.Url != "" {
-		state.SourceURL = types.StringValue(image.Url)
 	}
 
 	// Parse imageResourceDigestModel into types.Object
@@ -371,28 +330,31 @@ func (r *imageResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *imageResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddError(
-		"Error deleting image",
-		"the oxide API currently does not support deleting images")
+	var state imageResourceModel
 
-	// TODO: Uncomment once image delete is enabled in the API
-	//
-	//	var state imageResourceModel
-	//
-	//	// Read Terraform prior state data into the model
-	//	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	//	if resp.Diagnostics.HasError() {
-	//		return
-	//	}
-	//
-	//	if err := r.client.ImageDelete(oxide.ImageDeleteParams{
-	//		Image: oxide.NameOrId(state.ID.ValueString()),
-	//	}); err != nil {
-	//
-	//		resp.Diagnostics.AddError(
-	//			"Unable to read image:",
-	//			"API error: "+err.Error(),
-	//		)
-	//		return
-	//	}
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	if err := r.client.ImageDelete(ctx, oxide.ImageDeleteParams{
+		Image: oxide.NameOrId(state.ID.ValueString()),
+	}); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to read image:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
 }
