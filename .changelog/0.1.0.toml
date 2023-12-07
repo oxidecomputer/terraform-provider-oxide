@@ -16,8 +16,8 @@ description = "`oxide_vpc_firewall_rules` [#220](https://github.com/oxidecompute
 
 [[breaking]]
 title = "Image resource"
-description = "Image creation via URL is no longer supported [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "Image creation via URL is no longer supported [#228](https://github.com/oxidecomputer/terraform-provider-oxide/pull/228)"
 
 [[enhancements]]
 title = "Image resource"
-description = "Deletes are now supported [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "Deletes are now supported [#228](https://github.com/oxidecomputer/terraform-provider-oxide/pull/228)"
