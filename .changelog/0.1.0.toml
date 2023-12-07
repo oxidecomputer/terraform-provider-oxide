@@ -13,3 +13,11 @@ description = "Various documentation clarifications [#185](https://github.com/ox
 [[features]]
 title = "New resource"
 description = "`oxide_vpc_firewall_rules` [#220](https://github.com/oxidecomputer/terraform-provider-oxide/pull/220)"
+
+[[breaking]]
+title = "Image resource"
+description = "Image creation via URL is no longer supported [#228](https://github.com/oxidecomputer/terraform-provider-oxide/pull/228)"
+
+[[enhancements]]
+title = "Image resource"
+description = "Deletes are now supported [#228](https://github.com/oxidecomputer/terraform-provider-oxide/pull/228)"
