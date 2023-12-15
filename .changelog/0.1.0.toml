@@ -32,4 +32,4 @@ description = "Support floating IPs as external IP addresses provided to the ins
 
 [[breaking]]
 title = "Image data sources"
-description = "All image data sources no longer retrieve an image source URL [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "All image data sources no longer retrieve an image source URL [#234](https://github.com/oxidecomputer/terraform-provider-oxide/pull/234)"
