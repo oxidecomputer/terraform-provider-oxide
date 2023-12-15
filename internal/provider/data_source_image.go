@@ -43,7 +43,6 @@ type imageDataSourceModel struct {
 	Size         types.Int64                 `tfsdk:"size"`
 	TimeCreated  types.String                `tfsdk:"time_created"`
 	TimeModified types.String                `tfsdk:"time_modified"`
-	URL          types.String                `tfsdk:"url"`
 	Version      types.String                `tfsdk:"version"`
 }
 
@@ -123,10 +122,6 @@ func (d *imageDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 				Computed:    true,
 				Description: "Timestamp of when this image was last modified.",
 			},
-			"url": schema.StringAttribute{
-				Computed:    true,
-				Description: "URL source of this image, if any.",
-			},
 			"version": schema.StringAttribute{
 				Computed:    true,
 				Description: "Version of the OS.",
@@ -176,7 +171,6 @@ func (d *imageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	state.Size = types.Int64Value(int64(image.Size))
 	state.TimeCreated = types.StringValue(image.TimeCreated.String())
 	state.TimeModified = types.StringValue(image.TimeCreated.String())
-	state.URL = types.StringValue(image.Url)
 	state.Version = types.StringValue(image.Version)
 
 	digestState := imageDataSourceDigestModel{
