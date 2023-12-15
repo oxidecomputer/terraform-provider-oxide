@@ -29,3 +29,7 @@ description = "System created default VPCs and subnets are now removed automatic
 [[breaking]]
 title = "Instance resource"
 description = "Support floating IPs as external IP addresses provided to the instance. The `ip_pool_name` attribute within the `external_ips` block has been modified to `name`. [#230](https://github.com/oxidecomputer/terraform-provider-oxide/pull/230)"
+
+[[breaking]]
+title = "Image data sources"
+description = "All image data sources no longer retrieve an image source URL [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"

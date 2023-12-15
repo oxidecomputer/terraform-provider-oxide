@@ -40,7 +40,6 @@ data "oxide_image" "example" {
 - `size` (Number) Size of the image in bytes.
 - `time_created` (String) Timestamp of when this image was created.
 - `time_modified` (String) Timestamp of when this image was last modified.
-- `url` (String) URL source of this image, if any.
 - `version` (String) Version of the OS.
 
 <a id="nestedatt--timeouts"></a>
