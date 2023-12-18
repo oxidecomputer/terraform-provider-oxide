@@ -1,0 +1,58 @@
+name: Bug Report
+description: Let us know about unexpected behaviour when using the Oxide Terraform Provider
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: preliminary
+      attributes:
+        label: Preliminary checks
+        description: Please verify the following.
+        options:
+          - label: I am using the latest version, or the latest version that corresponds to my Oxide installation.
+          - label: There is no open issue that reports the same problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What was the expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is the current behaviour and what actions did you take to get there
+      description: Please provide as much background as you can.
+    validations:
+      required: true
+
+  - type: input
+    id: oxide-version
+    attributes:
+      label: Provider version
+      description: The version of the Oxide Terraform Provider you are using.
+    validations:
+      required: true
+
+  - type: input
+    id: terraform-version
+    attributes:
+      label: Terraform version
+      description: The version of Terraform you are using.
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: What operating system are you using.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else you would like to add?
