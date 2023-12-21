@@ -8,8 +8,6 @@ This resource manages images.
 
 ## Example Usage
 
-To create an image it's necessary to define its source by setting one of `source_url` or `source_snapshot_id`.
-
 ```hcl
 resource "oxide_image" "example2" {
   project_id         = "c1dee930-a8e4-11ed-afa1-0242ac120002"
@@ -32,12 +30,12 @@ resource "oxide_image" "example2" {
 - `description` (String) Description for the image.
 - `os` (String) OS image distribution. Example: "alpine".
 - `project_id` (String) ID of the project that will contain the image.
+- `source_snapshot_id` (String) Snapshot ID of the image source.
 - `version` (String) OS image version. Example: "3.16".
 - `name` (String) Name of the image.
 
 ### Optional
 
-- `source_snapshot_id` (String) Snapshot ID of the image source.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
