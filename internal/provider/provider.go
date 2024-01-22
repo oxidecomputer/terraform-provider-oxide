@@ -6,6 +6,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -107,8 +108,12 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
 	tflog.Debug(ctx, "Creating Oxide client")
 
-	// TODO: Add provider version to the user agent?
-	client, err := oxide.NewClient(token, "terraform-provider-oxide", host)
+	config := oxide.Config{
+		Token:     token,
+		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
+		Host:      host,
+	}
+	client, err := oxide.NewClient(&config)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"An error occurred while initializing the client for the Oxide API",

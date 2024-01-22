@@ -34,7 +34,12 @@ func testAccPreCheck(t *testing.T) {
 func newTestClient() (*oxide.Client, error) {
 	host, token := setAccFromEnvVar()
 
-	client, err := oxide.NewClient(token, "terraform-provider-oxide-test", host)
+	config := oxide.Config{
+		Token:     token,
+		UserAgent: "terraform-provider-oxide-test",
+		Host:      host,
+	}
+	client, err := oxide.NewClient(&config)
 	if err != nil {
 		return nil, err
 	}
