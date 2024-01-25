@@ -8,7 +8,7 @@ description = ""
 
 [[breaking]]
 title = "`oxide_instance` resource"
-description = "The `name` field in `external_ips` for the `oxide_instance` resource has been replaced with `id`. This ensures correctness, and helps avoid unintenional drift if the IP pool's name were to change outside the scope of terraform. [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "The `name` field in `external_ips` for the `oxide_instance` resource has been replaced with `id`. This ensures correctness, and helps avoid unintenional drift if the IP pool's name were to change outside the scope of terraform. [#263](https://github.com/oxidecomputer/terraform-provider-oxide/pull/263)"
 
 [[features]]
 title = "New data source"
