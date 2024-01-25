@@ -13,6 +13,10 @@ provider "oxide" {}
 
 data "oxide_projects" "project_list" {}
 
+data "oxide_ip_pool" "pool" {
+  name = "default"
+}
+
 resource "oxide_instance" "example" {
   project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
   description       = "a test instance"
@@ -22,7 +26,8 @@ resource "oxide_instance" "example" {
   ncpus             = 1
   external_ips      = [
     {
-      ip_pool_name = "default"
+      id = data.oxide_ip_pool.pool.id
+      type = "ephemeral"
     }
   ]
 }

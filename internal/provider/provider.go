@@ -134,6 +134,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewImageDataSource,
 		NewImagesDataSource,
 		NewInstanceExternalIPsDataSource,
+		NewIpPoolDataSource,
 		NewProjectDataSource,
 		NewProjectsDataSource,
 		NewSSHKeyDataSource,

@@ -53,7 +53,7 @@ resource "oxide_instance" "example" {
       type = "ephemeral"
     },
     {
-      name = "my-floating-ip"
+      id   = "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"
       type = "floating"
     }
   ]
@@ -104,10 +104,13 @@ resource "oxide_instance" "example" {
 
 ### Nested Schema for `external_ips`
 
+### Required
+
+- `id` (String) If type is ephemeral, ID of the IP pool to retrieve addresses from, or the current silo's default pool if not specified. If type is floating, id of the floating IP.
+
 ### Optional
 
-- `name` (String, Default `"default"`) If type is ephemeral, name of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, name of the floating IP.
-- `type` (String, Default `"ephemeral"`) Type of external IP. Possible values are: ephemeral or floating.
+- `type` (String) Type of external IP. Possible values are: ephemeral or floating.
 
 <a id="nestedatt--nics"></a>
 

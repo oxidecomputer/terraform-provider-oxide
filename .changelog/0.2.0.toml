@@ -2,14 +2,14 @@
 title = ""
 description = ""
 
-[[features]]
-title = ""
-description = ""
-
 [[enhancements]]
 title = ""
 description = ""
 
 [[breaking]]
-title = ""
-description = ""
+title = "`oxide_instance` resource"
+description = "The `name` field in `external_ips` for the `oxide_instance` resource has been replaced with `id`. This ensures correctness, and helps avoid unintenional drift if the IP pool's name were to change outside the scope of terraform. [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+
+[[features]]
+title = "New data source"
+description = "`oxide_ip_pool` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
