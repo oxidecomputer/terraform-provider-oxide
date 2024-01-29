@@ -106,11 +106,11 @@ resource "oxide_instance" "example" {
 
 ### Required
 
-- `id` (String) If type is ephemeral, ID of the IP pool to retrieve addresses from, or the current silo's default pool if not specified. If type is floating, id of the floating IP.
+- `type` (String) Type of external IP. Possible values are: ephemeral or floating.
 
 ### Optional
 
-- `type` (String) Type of external IP. Possible values are: ephemeral or floating.
+- `id` (String) If type is ephemeral, ID of the IP pool to retrieve addresses from, or the current silo's default pool if not specified. If type is floating, id of the floating IP.
 
 <a id="nestedatt--nics"></a>
 

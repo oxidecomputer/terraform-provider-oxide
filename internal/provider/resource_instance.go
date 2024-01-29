@@ -245,8 +245,8 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Description: "External IP addresses provided to this instance.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Description: "If type is ephemeral, name of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, name of the floating IP",
+						"id": schema.StringAttribute{
+							Description: "If type is ephemeral, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, ID of the floating IP",
 							Optional:    true,
 						},
 						"type": schema.StringAttribute{
