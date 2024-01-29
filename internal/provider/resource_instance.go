@@ -78,11 +78,11 @@ type instanceResourceNICModel struct {
 }
 
 type instanceResourceExternalIPModel struct {
-	Name types.String `tfsdk:"name"`
+	ID   types.String `tfsdk:"id"`
 	Type types.String `tfsdk:"type"`
 }
 
-// MetaIf ephemeral, nata returns the resource type name.
+// Metadata returns the resource type name.
 func (r *instanceResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "oxide_instance"
 }
@@ -245,13 +245,13 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Description: "External IP addresses provided to this instance.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Description: "If type is ephemeral, name of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, name of the floating IP",
+						"id": schema.StringAttribute{
+							Description: "If type is ephemeral, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, ID of the floating IP",
 							Optional:    true,
 						},
 						"type": schema.StringAttribute{
-							Description: "Type of external IP. Currently, only `ephemeral` is supported.",
-							Optional:    true,
+							Description: "Type of external IP.",
+							Required:    true,
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.ExternalIpCreateTypeEphemeral),
@@ -889,14 +889,14 @@ func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxi
 		var eIP oxide.ExternalIpCreate
 
 		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
-			if ip.Name.ValueString() != "" {
-				eIP.PoolName = oxide.Name(ip.Name.ValueString())
+			if ip.ID.ValueString() != "" {
+				eIP.Pool = oxide.NameOrId(ip.ID.ValueString())
 			}
 			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
 		}
 
 		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeFloating) {
-			eIP.FloatingIpName = oxide.Name(ip.Name.ValueString())
+			eIP.FloatingIp = oxide.NameOrId(ip.ID.ValueString())
 			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
 		}
 
