@@ -12,4 +12,4 @@ description = "The `name` field in `external_ips` for the `oxide_instance` resou
 
 [[features]]
 title = "New data source"
-description = "`oxide_ip_pool` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "`oxide_ip_pool` [#263](https://github.com/oxidecomputer/terraform-provider-oxide/pull/263)"
