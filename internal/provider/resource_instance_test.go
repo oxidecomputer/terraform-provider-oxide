@@ -15,22 +15,14 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-type resourceInstanceConfig struct {
-	BlockName        string
-	InstanceName     string
-	SupportBlockName string
-}
+func TestAccResourceInstance_full(t *testing.T) {
+	type resourceInstanceConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
 
-type resourceInstanceNicConfig struct {
-	BlockName        string
-	VPCBlockName     string
-	SubnetBlockName  string
-	NicName          string
-	InstanceName     string
-	SupportBlockName string
-}
-
-var resourceInstanceConfigTpl = `
+	resourceInstanceConfigTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -44,14 +36,56 @@ resource "oxide_instance" "{{.BlockName}}" {
   ncpus           = 1
   start_on_create = false
   timeouts = {
-    read   = "1m"
+	read   = "1m"
 	create = "3m"
 	delete = "2m"
   }
 }
 `
 
-var resourceInstanceExternalIPConfigTpl = `
+	instanceName := newResourceName()
+	blockName := newBlockName("instance")
+	supportBlockName := newBlockName("support")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstance(resourceName, instanceName),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func TestAccResourceInstance_extIPs(t *testing.T) {
+	type resourceInstanceConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceExternalIPConfigTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -65,14 +99,60 @@ resource "oxide_instance" "{{.BlockName}}" {
   ncpus           = 1
   start_on_create = false
   external_ips = [
-    {
-      type = "ephemeral"
-    }
+	{
+	  type = "ephemeral"
+	}
   ]
 }
 `
 
-var resourceInstanceNicConfigTpl = `
+	instanceName := newResourceName()
+	blockName := newBlockName("instance")
+	supportBlockName := newBlockName("support")
+	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName)
+	config2, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceExternalIPConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config2,
+				Check:  checkResourceInstanceIP(resourceName2, instanceName),
+			},
+			{
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// External IPs cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+			},
+		},
+	})
+}
+
+func TestAccResourceInstance_nic(t *testing.T) {
+	type resourceInstanceNicConfig struct {
+		BlockName        string
+		VPCBlockName     string
+		SubnetBlockName  string
+		NicName          string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceNicConfigTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -107,7 +187,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-var resourceInstanceNicConfigUpdateTpl = `
+	resourceInstanceNicConfigUpdateTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -134,43 +214,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-func TestAccResourceInstance_full(t *testing.T) {
-	instanceName := newResourceName()
-	blockName := newBlockName("instance")
-	supportBlockName := newBlockName("support")
-	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := parsedAccConfig(
-		resourceInstanceConfig{
-			BlockName:        blockName,
-			InstanceName:     instanceName,
-			SupportBlockName: supportBlockName,
-		},
-		resourceInstanceConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-
-	blockName2 := newBlockName("instance")
-	instanceName2 := instanceName + "-2"
-	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
-	config2, err := parsedAccConfig(
-		resourceInstanceConfig{
-			BlockName:        blockName2,
-			InstanceName:     instanceName2,
-			SupportBlockName: supportBlockName,
-		},
-		resourceInstanceExternalIPConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-
 	instanceNicName := newResourceName()
 	nicName := newResourceName()
 	blockNameVPC := newBlockName("instance-nic-vpc")
 	blockNameSubnet := newBlockName("instance-nic-subnet")
 	blockNameInstanceNic := newBlockName("instance-nic")
+	supportBlockName := newBlockName("support")
+	supportBlockName2 := newBlockName("support")
 	resourceNameInstanceNic := fmt.Sprintf("oxide_instance.%s", blockNameInstanceNic)
 	configNic, err := parsedAccConfig(
 		resourceInstanceNicConfig{
@@ -193,7 +243,7 @@ func TestAccResourceInstance_full(t *testing.T) {
 			SubnetBlockName:  blockNameSubnet,
 			InstanceName:     instanceNicName,
 			NicName:          nicName,
-			SupportBlockName: supportBlockName,
+			SupportBlockName: supportBlockName2,
 		},
 		resourceInstanceNicConfigUpdateTpl,
 	)
@@ -227,27 +277,6 @@ func TestAccResourceInstance_full(t *testing.T) {
 				// This option is only relevant for create, this means that it will
 				// never be imported
 				ImportStateVerifyIgnore: []string{"start_on_create"},
-			},
-			{
-				Config: config,
-				Check:  checkResourceInstance(resourceName, instanceName),
-			},
-			{
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"start_on_create"},
-			},
-			{
-				Config: config2,
-				Check:  checkResourceInstanceIP(resourceName2, instanceName2),
-			},
-			{
-				ResourceName:      resourceName2,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
 			},
 		},
 	})
