@@ -21,16 +21,6 @@ type resourceInstanceConfig struct {
 	SupportBlockName string
 }
 
-type resourceInstanceDiskConfig struct {
-	BlockName        string
-	DiskBlockName    string
-	DiskBlockName2   string
-	DiskName         string
-	DiskName2        string
-	InstanceName     string
-	SupportBlockName string
-}
-
 type resourceInstanceNicConfig struct {
 	BlockName        string
 	VPCBlockName     string
@@ -39,72 +29,6 @@ type resourceInstanceNicConfig struct {
 	InstanceName     string
 	SupportBlockName string
 }
-
-var resourceInstanceDiskConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
-	name = "tf-acc-test"
-}
-
-resource "oxide_disk" "{{.DiskBlockName}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test disk"
-  name        = "{{.DiskName}}"
-  size        = 1073741824
-  block_size  = 512
-}
-
-resource "oxide_disk" "{{.DiskBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test disk"
-  name        = "{{.DiskName2}}"
-  size        = 1073741824
-  block_size  = 512
-}
-
-resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = data.oxide_project.{{.SupportBlockName}}.id
-  description     = "a test instance"
-  name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
-  memory          = 1073741824
-  ncpus           = 1
-  start_on_create = false
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id, oxide_disk.{{.DiskBlockName2}}.id]
-}
-`
-
-var resourceInstanceDiskConfigUpdateTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
-	name = "tf-acc-test"
-}
-
-resource "oxide_disk" "{{.DiskBlockName}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test disk"
-  name        = "{{.DiskName}}"
-  size        = 1073741824
-  block_size  = 512
-}
-
-resource "oxide_disk" "{{.DiskBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test disk"
-  name        = "{{.DiskName2}}"
-  size        = 1073741824
-  block_size  = 512
-}
-
-resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = data.oxide_project.{{.SupportBlockName}}.id
-  description     = "a test instance"
-  name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
-  memory          = 1073741824
-  ncpus           = 1
-  start_on_create = false
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
-}
-`
 
 var resourceInstanceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
@@ -227,44 +151,6 @@ func TestAccResourceInstance_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	instanceDiskName := newResourceName()
-	diskName := newResourceName()
-	diskName2 := newResourceName()
-	blockNameInstance := newBlockName("instance")
-	blockNameInstanceDisk := newBlockName("instance-disk")
-	blockNameInstanceDisk2 := newBlockName("instance-disk-2")
-	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	configDisk, err := parsedAccConfig(
-		resourceInstanceDiskConfig{
-			BlockName:        blockNameInstance,
-			DiskBlockName:    blockNameInstanceDisk,
-			DiskBlockName2:   blockNameInstanceDisk2,
-			DiskName:         diskName,
-			DiskName2:        diskName2,
-			InstanceName:     instanceDiskName,
-			SupportBlockName: supportBlockName,
-		},
-		resourceInstanceDiskConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-	configDiskUpdate, err := parsedAccConfig(
-		resourceInstanceDiskConfig{
-			BlockName:        blockNameInstance,
-			DiskBlockName:    blockNameInstanceDisk,
-			DiskBlockName2:   blockNameInstanceDisk2,
-			DiskName:         diskName,
-			DiskName2:        diskName2,
-			InstanceName:     instanceDiskName,
-			SupportBlockName: supportBlockName,
-		},
-		resourceInstanceDiskConfigUpdateTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-
 	blockName2 := newBlockName("instance")
 	instanceName2 := instanceName + "-2"
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
@@ -363,6 +249,131 @@ func TestAccResourceInstance_full(t *testing.T) {
 				// External IPs cannot be imported as they are only present at create time
 				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
 			},
+		},
+	})
+}
+
+func TestAccResourceInstance_disk(t *testing.T) {
+	type resourceInstanceDiskConfig struct {
+		BlockName        string
+		DiskBlockName    string
+		DiskBlockName2   string
+		DiskName         string
+		DiskName2        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceDiskConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_disk" "{{.DiskBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName2}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id, oxide_disk.{{.DiskBlockName2}}.id]
+}
+`
+
+	resourceInstanceDiskConfigUpdateTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_disk" "{{.DiskBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName2}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+}
+`
+	instanceDiskName := newResourceName()
+	diskName := newResourceName()
+	diskName2 := newResourceName()
+	supportBlockName := newBlockName("support")
+	supportBlockName2 := newBlockName("support-update")
+	blockNameInstance := newBlockName("instance")
+	blockNameInstanceDisk := newBlockName("instance-disk")
+	blockNameInstanceDisk2 := newBlockName("instance-disk-2")
+	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
+	configDisk, err := parsedAccConfig(
+		resourceInstanceDiskConfig{
+			BlockName:        blockNameInstance,
+			DiskBlockName:    blockNameInstanceDisk,
+			DiskBlockName2:   blockNameInstanceDisk2,
+			DiskName:         diskName,
+			DiskName2:        diskName2,
+			InstanceName:     instanceDiskName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceDiskConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configDiskUpdate, err := parsedAccConfig(
+		resourceInstanceDiskConfig{
+			BlockName:        blockNameInstance,
+			DiskBlockName:    blockNameInstanceDisk,
+			DiskBlockName2:   blockNameInstanceDisk2,
+			DiskName:         diskName,
+			DiskName2:        diskName2,
+			InstanceName:     instanceDiskName,
+			SupportBlockName: supportBlockName2,
+		},
+		resourceInstanceDiskConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
 			{
 				Config: configDisk,
 				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
