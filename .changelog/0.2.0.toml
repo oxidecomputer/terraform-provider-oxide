@@ -13,3 +13,7 @@ description = "The `name` field in `external_ips` for the `oxide_instance` resou
 [[features]]
 title = "New data source"
 description = "`oxide_ip_pool` [#263](https://github.com/oxidecomputer/terraform-provider-oxide/pull/263)"
+
+[[breaking]]
+title = "`oxide_instance` resource"
+description = "A new optional `ssh_keys` field has been added to the `oxide_instance` resource. It is an allowlist of IDs of the saved SSH public keys to be transferred to the instance via cloud-init during instance creation. Saved SSH keys will no longer be automatically added to the instances [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"

@@ -57,6 +57,7 @@ type instanceResourceModel struct {
 	NetworkInterfaces []instanceResourceNICModel        `tfsdk:"network_interfaces"`
 	NCPUs             types.Int64                       `tfsdk:"ncpus"`
 	ProjectID         types.String                      `tfsdk:"project_id"`
+	SSHKeys           types.Set                         `tfsdk:"ssh_keys"`
 	StartOnCreate     types.Bool                        `tfsdk:"start_on_create"`
 	TimeCreated       types.String                      `tfsdk:"time_created"`
 	TimeModified      types.String                      `tfsdk:"time_modified"`
@@ -161,6 +162,14 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				ElementType: types.StringType,
 				// TODO: Remove once https://github.com/oxidecomputer/omicron/issues/3224 has been fixed,
 				// and it's clear which disk is the boot disk to not remove by accident
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
+				},
+			},
+			"ssh_keys": schema.SetAttribute{
+				Optional:    true,
+				Description: "An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.",
+				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.RequiresReplace(),
 				},
@@ -325,6 +334,14 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			UserData:    plan.UserData.ValueString(),
 		},
 	}
+
+	// TODO: Double check we're not triggering the default "add all keys" behaviour
+	sshKeys, diags := newSSHKeysOnCreate(ctx, r.client, plan.SSHKeys)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	params.Body.SshKeys = sshKeys
 
 	disks, diags := newDiskAttachmentsOnCreate(ctx, r.client, plan.DiskAttachments)
 	resp.Diagnostics.Append(diags...)
@@ -880,6 +897,26 @@ func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskI
 	}
 
 	return disks, diags
+}
+
+func newSSHKeysOnCreate(ctx context.Context, client *oxide.Client, sshKeyIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var sshKeys = []oxide.NameOrId{}
+	for _, sshKeyID := range sshKeyIDs.Elements() {
+		id, err := strconv.Unquote(sshKeyID.String())
+		if err != nil {
+			diags.AddError(
+				"Error retrieving SSH public key ID information",
+				"SSH public key ID parse error: "+err.Error(),
+			)
+			return []oxide.NameOrId{}, diags
+		}
+
+		da := oxide.NameOrId(id)
+		sshKeys = append(sshKeys, da)
+	}
+
+	return sshKeys, diags
 }
 
 func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxide.ExternalIpCreate {

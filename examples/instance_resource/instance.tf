@@ -34,6 +34,12 @@ resource "oxide_disk" "example" {
   block_size  = 512
 }
 
+resource "oxide_ssh_key" "example" {
+  name        = "example"
+  description = "Example SSH key."
+  public_key  = "ssh-ed25519 My-SSH-public-key"
+}
+
 resource "oxide_instance" "test" {
   project_id       = data.oxide_project.example.id
   description      = "a test instance"
@@ -43,6 +49,7 @@ resource "oxide_instance" "test" {
   ncpus            = 1
   start_on_create  = false
   disk_attachments = [oxide_disk.example.id]
+  ssh_keys         = [oxide_ssh_key.example.id]
   network_interfaces = [
     {
       subnet_id   = data.oxide_vpc_subnet.example.id
