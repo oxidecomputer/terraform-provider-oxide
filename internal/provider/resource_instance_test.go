@@ -174,7 +174,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips", "ssh_keys"},
+				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
 			},
 		},
 	})
@@ -310,7 +310,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// SSH Keys cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "ssh_keys"},
+				ImportStateVerifyIgnore: []string{"start_on_create"},
 			},
 		},
 	})

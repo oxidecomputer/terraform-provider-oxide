@@ -458,7 +458,15 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	// TODO: Read ssh keys
+	keySet, diags := newAssociatedSSHKeysOnCreateSet(ctx, r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Only set the SSH key list if there are any associated keys
+	if len(keySet.Elements()) > 0 {
+		state.DiskAttachments = keySet
+	}
 
 	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -745,6 +753,36 @@ func newAttachedDisksSet(ctx context.Context, client *oxide.Client, instanceID s
 	}
 
 	return diskSet, nil
+}
+
+func newAssociatedSSHKeysOnCreateSet(ctx context.Context, client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	params := oxide.InstanceSshPublicKeyListParams{
+		Limit:    1000000000,
+		Instance: oxide.NameOrId(instanceID),
+	}
+	keys, err := client.InstanceSshPublicKeyList(ctx, params)
+	if err != nil {
+		diags.AddError(
+			"Unable to list associated SSH keys:",
+			"API error: "+err.Error(),
+		)
+		return types.SetNull(types.StringType), diags
+	}
+
+	d := []attr.Value{}
+	for _, key := range keys.Items {
+		id := types.StringValue(key.Id)
+		d = append(d, id)
+	}
+	keySet, diags := types.SetValue(types.StringType, d)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return types.SetNull(types.StringType), diags
+	}
+
+	return keySet, nil
 }
 
 func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, model []instanceResourceNICModel) (
