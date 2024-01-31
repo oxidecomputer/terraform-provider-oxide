@@ -13,6 +13,7 @@ import (
 
 type dataSourceSSHKeyConfig struct {
 	BlockName         string
+	Name              string
 	SupportBlockName  string
 	SupportBlockName2 string
 }
@@ -22,31 +23,29 @@ data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
 
-data "oxide_ssh_keys" "{{.SupportBlockName2}}" {
-  project_id = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_ssh_key" "{{.SupportBlockName2}}" {
+  name        = "{{.Name}}"
+  description = "some key"
+  public_key  = "ssh-ed25519 AAAA"
 }
 
 data "oxide_ssh_key" "{{.BlockName}}" {
-  name = "{{.Name}}"
+  name = oxide_ssh_key.{{.SupportBlockName2}}.name
   timeouts = {
     read = "1m"
   }
 }
 `
 
-// NB: This test is ignored as it won't pass until we implement the
-// `oxide_ssh_keys` data source
-//
-// NB: The project must be populated with at least one SSH Key for this test to pass
 func TestAccDataSourceSSHKey_full(t *testing.T) {
-	t.Skip("skipping test until `oxide_ssh_keys` data source is implemented.")
-
 	blockName := newBlockName("datasource-ssh-key")
+	resourceName := newResourceName()
 	config, err := parsedAccConfig(
 		dataSourceSSHKeyConfig{
 			BlockName:         blockName,
 			SupportBlockName:  newBlockName("support"),
 			SupportBlockName2: newBlockName("support"),
+			Name:              resourceName,
 		},
 		dataSourceSSHKeyConfigTpl,
 	)
@@ -62,17 +61,18 @@ func TestAccDataSourceSSHKey_full(t *testing.T) {
 				Config: config,
 				Check: checkDataSourceSSHKey(
 					fmt.Sprintf("data.oxide_ssh_key.%s", blockName),
+					resourceName,
 				),
 			},
 		},
 	})
 }
 
-func checkDataSourceSSHKey(dataName string) resource.TestCheckFunc {
+func checkDataSourceSSHKey(dataName, keyName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
-		resource.TestCheckResourceAttrSet(dataName, "name"),
-		resource.TestCheckResourceAttr(dataName, "description", ""),
+		resource.TestCheckResourceAttr(dataName, "name", keyName),
+		resource.TestCheckResourceAttr(dataName, "description", "some key"),
 		resource.TestCheckResourceAttrSet(dataName, "public_key"),
 		resource.TestCheckResourceAttrSet(dataName, "silo_user_id"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
