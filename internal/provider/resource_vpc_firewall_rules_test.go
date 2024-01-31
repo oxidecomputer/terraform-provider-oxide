@@ -16,20 +16,26 @@ import (
 )
 
 type resourceFirewallRulesConfig struct {
-	BlockName        string
-	SupportBlockName string
+	BlockName         string
+	VPCName           string
+	SupportBlockName  string
+	SupportBlockName2 string
 }
 
-// TODO: Will probably need to create a specific VPC to hold these
-// So it doesn't ruin firewall rules for other tests
 var resourceFirewallRulesConfigTpl = `
-data "oxide_vpc" "{{.SupportBlockName}}" {
-	project_name = "tf-acc-test"
-	name         = "default"
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.SupportBlockName2}}" {
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-	vpc_id = data.oxide_vpc.{{.SupportBlockName}}.id
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
 	rules = [
 	   {
 		 action = "deny"
@@ -42,7 +48,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 		   hosts = [
 			 {
 				type = "vpc"
-				value = "default"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
 			 }
 		   ]
 		   ports = ["8123"]
@@ -66,7 +72,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 		   hosts = [
 			 {
 				type = "vpc"
-				value = "default"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
 			 }
 		   ]
 		   ports = []
@@ -90,13 +96,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 var resourceFirewallRulesUpdateConfigTpl = `
-data "oxide_vpc" "{{.SupportBlockName}}" {
-	project_name = "tf-acc-test"
-	name         = "default"
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.SupportBlockName2}}" {
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-	vpc_id = data.oxide_vpc.{{.SupportBlockName}}.id
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
 	rules = [
 	   {
 		 action = "deny"
@@ -109,7 +121,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 		   hosts = [
 			 {
 				type = "vpc"
-				value = "default"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
 			 }
 		   ]
 		   ports = ["8123"]
@@ -127,13 +139,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 var resourceFirewallRulesUpdateConfigTpl2 = `
-data "oxide_vpc" "{{.SupportBlockName}}" {
-	project_name = "tf-acc-test"
-	name         = "default"
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.SupportBlockName2}}" {
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-	vpc_id = data.oxide_vpc.{{.SupportBlockName}}.id
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
 	rules = [
 	   {
 		 action = "allow"
@@ -146,7 +164,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 		   hosts = [
 			 {
 				type = "vpc"
-				value = "default"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
 			 }
 		   ]
 		   ports = ["8124"]
@@ -166,11 +184,15 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 func TestAccResourceFirewallRules_full(t *testing.T) {
 	blockName := newBlockName("firewall_rules")
 	supportBlockName := newBlockName("support")
+	supportBlockName2 := newBlockName("support")
+	vpcName := newResourceName()
 	resourceName := fmt.Sprintf("oxide_vpc_firewall_rules.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceFirewallRulesConfig{
-			BlockName:        blockName,
-			SupportBlockName: supportBlockName,
+			BlockName:         blockName,
+			SupportBlockName:  supportBlockName,
+			SupportBlockName2: supportBlockName2,
+			VPCName:           vpcName,
 		},
 		resourceFirewallRulesConfigTpl,
 	)
@@ -180,8 +202,10 @@ func TestAccResourceFirewallRules_full(t *testing.T) {
 
 	configUpdate, err := parsedAccConfig(
 		resourceFirewallRulesConfig{
-			BlockName:        blockName,
-			SupportBlockName: supportBlockName,
+			BlockName:         blockName,
+			SupportBlockName:  supportBlockName,
+			SupportBlockName2: supportBlockName2,
+			VPCName:           vpcName,
 		},
 		resourceFirewallRulesUpdateConfigTpl,
 	)
@@ -191,8 +215,10 @@ func TestAccResourceFirewallRules_full(t *testing.T) {
 
 	configUpdate2, err := parsedAccConfig(
 		resourceFirewallRulesConfig{
-			BlockName:        blockName,
-			SupportBlockName: supportBlockName,
+			BlockName:         blockName,
+			SupportBlockName:  supportBlockName,
+			SupportBlockName2: supportBlockName2,
+			VPCName:           vpcName,
 		},
 		resourceFirewallRulesUpdateConfigTpl2,
 	)
@@ -207,21 +233,21 @@ func TestAccResourceFirewallRules_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceFirewallRules(resourceName),
+				Check:  checkResourceFirewallRules(resourceName, vpcName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceFirewallRulesUpdate(resourceName),
+				Check:  checkResourceFirewallRulesUpdate(resourceName, vpcName),
 			},
 			{
 				Config: configUpdate2,
-				Check:  checkResourceFirewallRulesUpdate2(resourceName),
+				Check:  checkResourceFirewallRulesUpdate2(resourceName, vpcName),
 			},
 		},
 	})
 }
 
-func checkResourceFirewallRules(resourceName string) resource.TestCheckFunc {
+func checkResourceFirewallRules(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -230,7 +256,7 @@ func checkResourceFirewallRules(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.description"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.direction"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.type", "vpc"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", "default"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", vpcName),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.name"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.priority"),
@@ -243,7 +269,7 @@ func checkResourceFirewallRules(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.description"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.direction"),
 		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.hosts.0.type", "vpc"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.hosts.0.value", "default"),
+		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.hosts.0.value", vpcName),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.name"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.priority"),
@@ -259,7 +285,7 @@ func checkResourceFirewallRules(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceFirewallRulesUpdate(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -267,7 +293,7 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "custom deny"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "inbound"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.type", "vpc"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", "default"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", vpcName),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "8123"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "ICMP"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
@@ -281,7 +307,7 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate2(resourceName string) resource.TestCheckFunc {
+func checkResourceFirewallRulesUpdate2(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -289,7 +315,7 @@ func checkResourceFirewallRulesUpdate2(resourceName string) resource.TestCheckFu
 		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "custom allow"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "outbound"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.type", "vpc"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", "default"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", vpcName),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "8124"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "TCP"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),

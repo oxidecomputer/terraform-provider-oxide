@@ -39,7 +39,7 @@ resource "oxide_ssh_key" "{{.BlockName}}" {
 func TestAccResourceSSHKey_full(t *testing.T) {
 	sshKeyName := newResourceName()
 	description := "An SSH key."
-	publicKey := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1clIQrzlQNqxgvpCCUFFOcTTFDOaqV+aocfsDZvxqB"
+	publicKey := "ssh-ed25519 AAAA"
 	blockName := newBlockName("ssh_key")
 	resourceName := fmt.Sprintf("oxide_ssh_key.%s", blockName)
 	config, err := parsedAccConfig(
@@ -78,7 +78,7 @@ func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", sshKeyName),
 		resource.TestCheckResourceAttr(resourceName, "description", "An SSH key."),
-		resource.TestCheckResourceAttr(resourceName, "public_key", "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE1clIQrzlQNqxgvpCCUFFOcTTFDOaqV&#43;aocfsDZvxqB"),
+		resource.TestCheckResourceAttr(resourceName, "public_key", "ssh-ed25519 AAAA"),
 		resource.TestCheckResourceAttrSet(resourceName, "silo_user_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
