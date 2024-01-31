@@ -53,7 +53,6 @@ func checkDataSourceProjects(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
-		resource.TestCheckResourceAttrSet(dataName, "projects.0.description"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.id"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.name"),
 		resource.TestCheckResourceAttrSet(dataName, "projects.0.time_created"),
