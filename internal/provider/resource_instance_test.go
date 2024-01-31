@@ -231,6 +231,78 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+func TestAccResourceInstance_sshKeys(t *testing.T) {
+	type resourceInstanceSshKeyConfig struct {
+		BlockName         string
+		SshKeyName        string
+		InstanceName      string
+		SupportBlockName  string
+		SupportBlockName2 string
+	}
+
+	resourceInstanceSSHKeysConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_ssh_key" "{{.SupportBlockName2}}" {
+  name        = "{{.SshKeyName}}"
+  description = "A test key"
+  public_key  = "ssh-ed25519 AAAA"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  ssh_keys        = [oxide_ssh_key.{{.SupportBlockName2}}.id]
+  start_on_create = false
+}
+`
+
+	instanceSshKeysName := newResourceName()
+	instanceSshKeysName2 := newResourceName()
+	blockNameSshKeys := newBlockName("instance-ssh-keys")
+	supportBlockNameSshKeys := newBlockName("support-instance-ssh-keys")
+	supportBlockNameSshKeys2 := newBlockName("support-instance-ssh-keys-2")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameSshKeys)
+	configSshKeys, err := parsedAccConfig(
+		resourceInstanceSshKeyConfig{
+			BlockName:         blockNameSshKeys,
+			SshKeyName:        instanceSshKeysName2,
+			InstanceName:      instanceSshKeysName,
+			SupportBlockName:  supportBlockNameSshKeys,
+			SupportBlockName2: supportBlockNameSshKeys2,
+		},
+		resourceInstanceSSHKeysConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configSshKeys,
+				Check:  checkResourceInstanceSSHKeys(resourceName, instanceSshKeysName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// SSH Keys cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create", "ssh_keys"},
+			},
+		},
+	})
+}
+
 func TestAccResourceInstance_nic(t *testing.T) {
 	type resourceInstanceNicConfig struct {
 		BlockName        string
@@ -628,6 +700,22 @@ func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckNoResourceAttr(resourceName, "network_interfaces.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

@@ -458,6 +458,8 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
+	// TODO: Read ssh keys
+
 	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
