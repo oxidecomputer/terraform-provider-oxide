@@ -27,8 +27,10 @@ func TestAccResourceInstance_full(t *testing.T) {
 		InstanceName      string
 		DiskBlockName     string
 		DiskName          string
+		SSHKeyName        string
 		SupportBlockName  string
 		SupportBlockName2 string
+		SSHBlockName      string
 		NicName           string
 	}
 
@@ -67,6 +69,12 @@ resource "oxide_disk" "{{.DiskBlockName}}" {
   block_size  = 512
 }
 
+resource "oxide_ssh_key" "{{.SSHBlockName}}" {
+  name        = "{{.SSHKeyName}}"
+  description = "A test key"
+  public_key  = "ssh-ed25519 AAAA"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
@@ -76,6 +84,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   ncpus           = 1
   start_on_create = true
   disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+  ssh_keys        = [oxide_ssh_key.{{.SSHBlockName}}.id]
   external_ips = [
 	{
 	  type = "ephemeral"
@@ -116,10 +125,12 @@ resource "oxide_instance" "{{.BlockName}}" {
 	instanceName2 := newResourceName()
 	instanceDiskName := newResourceName()
 	instanceNicName := newResourceName()
+	instanceSshKeyName := newResourceName()
 	blockName2 := newBlockName("instance")
 	diskBlockName := newBlockName("disk")
 	supportBlockName3 := newBlockName("support")
 	supportBlockName2 := newBlockName("support")
+	supportBlockNameSSHKeys := newBlockName("support-instance-ssh-keys")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	config2, err := parsedAccConfig(
 		resourceInstanceFullConfig{
@@ -127,9 +138,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 			InstanceName:      instanceName2,
 			DiskBlockName:     diskBlockName,
 			DiskName:          instanceDiskName,
+			SSHKeyName:        instanceSshKeyName,
 			SupportBlockName:  supportBlockName3,
 			SupportBlockName2: supportBlockName2,
 			NicName:           instanceNicName,
+			SSHBlockName:      supportBlockNameSSHKeys,
 		},
 		resourceInstanceFullConfigTpl,
 	)
@@ -161,7 +174,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips", "ssh_keys"},
 			},
 		},
 	})
@@ -582,6 +595,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "ssh_keys"),
 	}...)
 }
 
@@ -606,6 +620,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
