@@ -341,7 +341,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	params.Body.SshKeys = sshKeys
+	params.Body.SshPublicKeys = sshKeys
 
 	disks, diags := newDiskAttachmentsOnCreate(ctx, r.client, plan.DiskAttachments)
 	resp.Diagnostics.Append(diags...)
