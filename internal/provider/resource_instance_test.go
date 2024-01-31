@@ -22,6 +22,16 @@ func TestAccResourceInstance_full(t *testing.T) {
 		SupportBlockName string
 	}
 
+	type resourceInstanceFullConfig struct {
+		BlockName         string
+		InstanceName      string
+		DiskBlockName     string
+		DiskName          string
+		SupportBlockName  string
+		SupportBlockName2 string
+		NicName           string
+	}
+
 	resourceInstanceConfigTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
@@ -35,6 +45,50 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
+}
+`
+
+	resourceInstanceFullConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+  name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "{{.SupportBlockName2}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = true
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+  external_ips = [
+	{
+	  type = "ephemeral"
+	}
+  ]
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SupportBlockName2}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+    },
+  ]
   timeouts = {
 	read   = "1m"
 	create = "3m"
@@ -59,6 +113,30 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
+	instanceName2 := newResourceName()
+	instanceDiskName := newResourceName()
+	instanceNicName := newResourceName()
+	blockName2 := newBlockName("instance")
+	diskBlockName := newBlockName("disk")
+	supportBlockName3 := newBlockName("support")
+	supportBlockName2 := newBlockName("support")
+	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
+	config2, err := parsedAccConfig(
+		resourceInstanceFullConfig{
+			BlockName:         blockName2,
+			InstanceName:      instanceName2,
+			DiskBlockName:     diskBlockName,
+			DiskName:          instanceDiskName,
+			SupportBlockName:  supportBlockName3,
+			SupportBlockName2: supportBlockName2,
+			NicName:           instanceNicName,
+		},
+		resourceInstanceFullConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
@@ -73,6 +151,17 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+			{
+				Config: config2,
+				Check:  checkResourceInstanceFull(resourceName2, instanceName2, instanceNicName),
+			},
+			{
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// External IPs cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
 			},
 		},
 	})
@@ -109,8 +198,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	instanceName := newResourceName()
 	blockName := newBlockName("instance")
 	supportBlockName := newBlockName("support")
-	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName)
-	config2, err := parsedAccConfig(
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -128,11 +217,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config2,
-				Check:  checkResourceInstanceIP(resourceName2, instanceName),
+				Config: config,
+				Check:  checkResourceInstanceIP(resourceName, instanceName),
 			},
 			{
-				ResourceName:      resourceName2,
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
@@ -145,7 +234,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 func TestAccResourceInstance_nic(t *testing.T) {
 	type resourceInstanceNicConfig struct {
 		BlockName        string
-		VPCBlockName     string
 		SubnetBlockName  string
 		NicName          string
 		InstanceName     string
@@ -155,11 +243,6 @@ func TestAccResourceInstance_nic(t *testing.T) {
 	resourceInstanceNicConfigTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
-}
-  
-data "oxide_vpc" "{{.VPCBlockName}}" {
-  project_name = data.oxide_project.{{.SupportBlockName}}.name
-  name         = "default"
 }
   
 data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
@@ -179,7 +262,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   network_interfaces = [
     {
       subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
-      vpc_id      = data.oxide_vpc.{{.VPCBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
     },
@@ -190,17 +273,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resourceInstanceNicConfigUpdateTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
-}
-  
-data "oxide_vpc" "{{.VPCBlockName}}" {
-  project_name = data.oxide_project.{{.SupportBlockName}}.name
-  name         = "default"
-}
-  
-data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
-  project_name = data.oxide_project.{{.SupportBlockName}}.name
-  vpc_name     = "default"
-  name         = "default"
 }
   
 resource "oxide_instance" "{{.BlockName}}" {
@@ -216,7 +288,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 
 	instanceNicName := newResourceName()
 	nicName := newResourceName()
-	blockNameVPC := newBlockName("instance-nic-vpc")
 	blockNameSubnet := newBlockName("instance-nic-subnet")
 	blockNameInstanceNic := newBlockName("instance-nic")
 	supportBlockName := newBlockName("support")
@@ -225,7 +296,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 	configNic, err := parsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:        blockNameInstanceNic,
-			VPCBlockName:     blockNameVPC,
 			SubnetBlockName:  blockNameSubnet,
 			InstanceName:     instanceNicName,
 			NicName:          nicName,
@@ -239,7 +309,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 	configNicUpdate, err := parsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:        blockNameInstanceNic,
-			VPCBlockName:     blockNameVPC,
 			SubnetBlockName:  blockNameSubnet,
 			InstanceName:     instanceNicName,
 			NicName:          nicName,
@@ -438,6 +507,33 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceFull(resourceName, instanceName, nicName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
+		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.mac_address"),
+		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.name", nicName),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.primary"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.subnet_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
