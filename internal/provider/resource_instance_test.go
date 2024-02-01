@@ -27,8 +27,10 @@ func TestAccResourceInstance_full(t *testing.T) {
 		InstanceName      string
 		DiskBlockName     string
 		DiskName          string
+		SSHKeyName        string
 		SupportBlockName  string
 		SupportBlockName2 string
+		SSHBlockName      string
 		NicName           string
 	}
 
@@ -67,15 +69,22 @@ resource "oxide_disk" "{{.DiskBlockName}}" {
   block_size  = 512
 }
 
+resource "oxide_ssh_key" "{{.SSHBlockName}}" {
+  name        = "{{.SSHKeyName}}"
+  description = "A test key"
+  public_key  = "ssh-ed25519 AAAA"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = data.oxide_project.{{.SupportBlockName}}.id
-  description     = "a test instance"
-  name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
-  memory          = 1073741824
-  ncpus           = 1
-  start_on_create = true
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  host_name        = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = true
   disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+  ssh_public_keys  = [oxide_ssh_key.{{.SSHBlockName}}.id]
   external_ips = [
 	{
 	  type = "ephemeral"
@@ -87,7 +96,7 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
-    },
+    }
   ]
   timeouts = {
 	read   = "1m"
@@ -116,10 +125,12 @@ resource "oxide_instance" "{{.BlockName}}" {
 	instanceName2 := newResourceName()
 	instanceDiskName := newResourceName()
 	instanceNicName := newResourceName()
+	instanceSshKeyName := newResourceName()
 	blockName2 := newBlockName("instance")
 	diskBlockName := newBlockName("disk")
 	supportBlockName3 := newBlockName("support")
 	supportBlockName2 := newBlockName("support")
+	supportBlockNameSSHKeys := newBlockName("support-instance-ssh-keys")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	config2, err := parsedAccConfig(
 		resourceInstanceFullConfig{
@@ -127,9 +138,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 			InstanceName:      instanceName2,
 			DiskBlockName:     diskBlockName,
 			DiskName:          instanceDiskName,
+			SSHKeyName:        instanceSshKeyName,
 			SupportBlockName:  supportBlockName3,
 			SupportBlockName2: supportBlockName2,
 			NicName:           instanceNicName,
+			SSHBlockName:      supportBlockNameSSHKeys,
 		},
 		resourceInstanceFullConfigTpl,
 	)
@@ -226,6 +239,78 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
 				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+			},
+		},
+	})
+}
+
+func TestAccResourceInstance_sshKeys(t *testing.T) {
+	type resourceInstanceSshKeyConfig struct {
+		BlockName         string
+		SshKeyName        string
+		InstanceName      string
+		SupportBlockName  string
+		SupportBlockName2 string
+	}
+
+	resourceInstanceSSHKeysConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_ssh_key" "{{.SupportBlockName2}}" {
+  name        = "{{.SshKeyName}}"
+  description = "A test key"
+  public_key  = "ssh-ed25519 AAAA"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  ssh_public_keys = [oxide_ssh_key.{{.SupportBlockName2}}.id]
+  start_on_create = false
+}
+`
+
+	instanceSshKeysName := newResourceName()
+	instanceSshKeysName2 := newResourceName()
+	blockNameSshKeys := newBlockName("instance-ssh-keys")
+	supportBlockNameSshKeys := newBlockName("support-instance-ssh-keys")
+	supportBlockNameSshKeys2 := newBlockName("support-instance-ssh-keys-2")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameSshKeys)
+	configSshKeys, err := parsedAccConfig(
+		resourceInstanceSshKeyConfig{
+			BlockName:         blockNameSshKeys,
+			SshKeyName:        instanceSshKeysName2,
+			InstanceName:      instanceSshKeysName,
+			SupportBlockName:  supportBlockNameSshKeys,
+			SupportBlockName2: supportBlockNameSshKeys2,
+		},
+		resourceInstanceSSHKeysConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configSshKeys,
+				Check:  checkResourceInstanceSSHKeys(resourceName, instanceSshKeysName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// SSH Keys cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create"},
 			},
 		},
 	})
@@ -510,6 +595,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "ssh_public_keys"),
 	}...)
 }
 
@@ -534,6 +620,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -628,6 +715,22 @@ func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckNoResourceAttr(resourceName, "network_interfaces.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
