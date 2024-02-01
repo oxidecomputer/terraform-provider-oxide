@@ -19,5 +19,5 @@ labels: release
 - [ ] Verify the release is correct on GitHub and make the release live.
 - [ ] Verify the release is available on the Terraform provider registry.
 - [ ] If this is not a minor patch, create a new branch with the current version
-- [ ] Update to upcoming version in [VERSION](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION) and [internal/provider/version.go](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go), and
+- [ ] Update to upcoming version in [VERSION](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION), [internal/provider/version.go](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go), and
     create new changelog tracker file in [.changelog/](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/changelog/) for the relevant branches.
