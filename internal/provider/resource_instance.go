@@ -57,7 +57,7 @@ type instanceResourceModel struct {
 	NetworkInterfaces []instanceResourceNICModel        `tfsdk:"network_interfaces"`
 	NCPUs             types.Int64                       `tfsdk:"ncpus"`
 	ProjectID         types.String                      `tfsdk:"project_id"`
-	SSHKeys           types.Set                         `tfsdk:"ssh_keys"`
+	SSHPublicKeys     types.Set                         `tfsdk:"ssh_public_keys"`
 	StartOnCreate     types.Bool                        `tfsdk:"start_on_create"`
 	TimeCreated       types.String                      `tfsdk:"time_created"`
 	TimeModified      types.String                      `tfsdk:"time_modified"`
@@ -166,7 +166,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					setplanmodifier.RequiresReplace(),
 				},
 			},
-			"ssh_keys": schema.SetAttribute{
+			"ssh_public_keys": schema.SetAttribute{
 				Optional:    true,
 				Description: "An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.",
 				ElementType: types.StringType,
@@ -336,7 +336,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	// TODO: Double check we're not triggering the default "add all keys" behaviour
-	sshKeys, diags := newSSHKeysOnCreate(ctx, r.client, plan.SSHKeys)
+	sshKeys, diags := newSSHKeysOnCreate(ctx, r.client, plan.SSHPublicKeys)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -465,7 +465,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	// Only set the SSH key list if there are any associated keys
 	if len(keySet.Elements()) > 0 {
-		state.DiskAttachments = keySet
+		state.SSHPublicKeys = keySet
 	}
 
 	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())

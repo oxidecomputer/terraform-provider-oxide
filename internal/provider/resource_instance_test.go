@@ -76,15 +76,15 @@ resource "oxide_ssh_key" "{{.SSHBlockName}}" {
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = data.oxide_project.{{.SupportBlockName}}.id
-  description     = "a test instance"
-  name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
-  memory          = 1073741824
-  ncpus           = 1
-  start_on_create = true
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  host_name        = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = true
   disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
-  ssh_keys        = [oxide_ssh_key.{{.SSHBlockName}}.id]
+  ssh_public_keys  = [oxide_ssh_key.{{.SSHBlockName}}.id]
   external_ips = [
 	{
 	  type = "ephemeral"
@@ -96,7 +96,7 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
-    },
+    }
   ]
   timeouts = {
 	read   = "1m"
@@ -271,7 +271,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   host_name       = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
-  ssh_keys        = [oxide_ssh_key.{{.SupportBlockName2}}.id]
+  ssh_public_keys = [oxide_ssh_key.{{.SupportBlockName2}}.id]
   start_on_create = false
 }
 `
@@ -595,7 +595,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckNoResourceAttr(resourceName, "ssh_keys"),
+		resource.TestCheckNoResourceAttr(resourceName, "ssh_public_keys"),
 	}...)
 }
 
@@ -620,7 +620,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
-		resource.TestCheckResourceAttrSet(resourceName, "ssh_keys.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -730,7 +730,7 @@ func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		resource.TestCheckResourceAttrSet(resourceName, "ssh_keys.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

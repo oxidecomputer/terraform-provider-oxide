@@ -101,7 +101,7 @@ changelog: tools-private
 # This way linting tools don't need to be downloaded/installed every time you
 # want to run the linters.
 VERSION_DIR:=$(GOBIN)/versions
-VERSION_GOLANGCILINT:=v1.52.2
+VERSION_GOLANGCILINT:=v1.55.2
 VERSION_TFPROVIDERDOCS:=v0.9.1
 VERSION_TERRAFMT:=v0.5.2
 VERSION_TFPROVIDERLINT:=v0.29.0
