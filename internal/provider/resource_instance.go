@@ -327,7 +327,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		Body: &oxide.InstanceCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Hostname:    plan.HostName.ValueString(),
+			Hostname:    oxide.Hostname(plan.HostName.ValueString()),
 			Memory:      oxide.ByteCount(plan.Memory.ValueInt64()),
 			Ncpus:       oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
 			Start:       plan.StartOnCreate.ValueBoolPointer(),
