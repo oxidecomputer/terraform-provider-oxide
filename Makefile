@@ -97,6 +97,11 @@ changelog: tools-private
 	@ echo "-> Creating changelog"
 	@ $(GOBIN)/whatsit changelog create --repository oxidecomputer/terraform-provider-oxide -n $(RELEASE_VERSION) -c ./.changelog/$(RELEASE_VERSION).toml
 
+.PHONY: tag
+tag: ## Create a new git tag to prepare to build a release.
+	git tag v$(RELEASE_VERSION)
+	@echo "Run 'git push origin v$(RELEASE_VERSION)' to push your new tag to GitHub and trigger a release."
+
 # The following installs the necessary tools within the local /bin directory.
 # This way linting tools don't need to be downloaded/installed every time you
 # want to run the linters.
