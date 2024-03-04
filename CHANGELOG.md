@@ -3,7 +3,7 @@
 ### Breaking changes
 
 - **`oxide_instance` resource:** The `name` field in `external_ips` for the `oxide_instance` resource has been replaced with `id`. This ensures correctness, and helps avoid unintenional drift if the IP pool's name were to change outside the scope of terraform. [#263](https://github.com/oxidecomputer/terraform-provider-oxide/pull/263)
-- **`oxide_instance` resource:** A new optional `ssh_keys` field has been added to the `oxide_instance` resource. It is an allowlist of IDs of the saved SSH public keys to be transferred to the instance via cloud-init during instance creation. Saved SSH keys will no longer be automatically added to the instances [#269](https://github.com/oxidecomputer/terraform-provider-oxide/pull/269)
+- **`oxide_instance` resource:** A new optional `ssh_public_keys` field has been added to the `oxide_instance` resource. It is an allowlist of IDs of the saved SSH public keys to be transferred to the instance via cloud-init during instance creation. Saved SSH keys will no longer be automatically added to the instances [#269](https://github.com/oxidecomputer/terraform-provider-oxide/pull/269)
 
 ### New features
 
