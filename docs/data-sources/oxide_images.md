@@ -4,25 +4,20 @@ page_title: "oxide_images Data Source - terraform-provider-oxide"
 
 # oxide_images (Data Source)
 
-Retrieve a list of all images belonging to a project.
+Retrieve a list of all images belonging to a silo or project.
 
 ## Example Usage
 
 ```hcl
-data "oxide_images" "example" {
-  project_id = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-}
+data "oxide_images" "example" {}
 ```
 
 ## Schema
 
-### Required
-
-- `project_id` (String) ID of the project that contains the images.
-
 ### Optional
 
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
+- `project_id` (String) ID of the project that contains the images.
 
 ### Read-Only
 

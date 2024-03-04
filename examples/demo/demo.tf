@@ -13,9 +13,7 @@ provider "oxide" {}
 
 data "oxide_projects" "project_list" {}
 
-data "oxide_images" "image_list" {
-  project_id = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
-}
+data "oxide_images" "image_list" {}
 
 resource "oxide_disk" "web_disk_1" {
   project_id      = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
