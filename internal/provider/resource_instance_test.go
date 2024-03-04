@@ -436,7 +436,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
-func TestAccResourceInstance_disk(t *testing.T) {
+func TestAccCloudResourceInstance_disk(t *testing.T) {
 	type resourceInstanceDiskConfig struct {
 		BlockName        string
 		DiskBlockName    string
