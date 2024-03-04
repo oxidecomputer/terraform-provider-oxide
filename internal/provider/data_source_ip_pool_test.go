@@ -25,7 +25,7 @@ data "oxide_ip_pool" "{{.BlockName}}" {
 }
 `
 
-func TestAccDataSourceIPPool_full(t *testing.T) {
+func TestAccSiloDataSourceIPPool_full(t *testing.T) {
 	blockName := newBlockName("datasource-ip-pool")
 	config, err := parsedAccConfig(
 		dataSourceIPPoolConfig{

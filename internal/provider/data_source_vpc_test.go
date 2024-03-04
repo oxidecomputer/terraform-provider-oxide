@@ -26,7 +26,7 @@ data "oxide_vpc" "{{.BlockName}}" {
 }
 `
 
-func TestAccDataSourceVPC_full(t *testing.T) {
+func TestAccCloudDataSourceVPC_full(t *testing.T) {
 	blockName := newBlockName("datasource-vpc")
 	config, err := parsedAccConfig(
 		dataSourceVPCConfig{

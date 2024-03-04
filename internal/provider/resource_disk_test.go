@@ -40,7 +40,7 @@ resource "oxide_disk" "{{.BlockName}}" {
 }
 `
 
-func TestAccResourceDisk_full(t *testing.T) {
+func TestAccCloudResourceDisk_full(t *testing.T) {
 	diskName := newResourceName()
 	blockName := newBlockName("disk")
 	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)

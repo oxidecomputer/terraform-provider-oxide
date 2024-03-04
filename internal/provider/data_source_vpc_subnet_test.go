@@ -27,7 +27,7 @@ data "oxide_vpc_subnet" "{{.BlockName}}" {
 }
 `
 
-func TestAccDataSourceVPCSubnet_full(t *testing.T) {
+func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 	blockName := newBlockName("datasource-vpc-subnet")
 	config, err := parsedAccConfig(
 		dataSourceVPCSubnetConfig{
