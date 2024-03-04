@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.32.0
 	github.com/hashicorp/terraform-plugin-testing v1.6.0
 	github.com/oxidecomputer/oxide.go v0.1.0-beta3.0.20240303221217-043c87372ecf
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
