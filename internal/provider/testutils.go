@@ -27,7 +27,7 @@ func testAccPreCheck(t *testing.T) {
 	host, token := setAccFromEnvVar()
 
 	if host == "" || token == "" {
-		t.Fatal("Both host and token need to be set to execute acceptance tests")
+		t.Fatalf("Both host and token need to be set to execute acceptance tests. Host: %s", host)
 	}
 }
 
