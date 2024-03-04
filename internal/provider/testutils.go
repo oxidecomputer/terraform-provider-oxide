@@ -26,7 +26,7 @@ func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServ
 func testAccPreCheck(t *testing.T) {
 	host, token := setAccFromEnvVar()
 
-	k := os.Getenv("TestAccCloud")
+	k := os.Getenv("TEST_ACC_NAME")
 
 	if host == "" || token == "" {
 		t.Fatalf("Both host and token need to be set to execute acceptance tests. TF env var: %s", k)

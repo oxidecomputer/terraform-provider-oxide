@@ -31,7 +31,9 @@ jobs:
       - name: build
         run: make install
       - name: test
-        run: make testacc
+        shell: bash
+        run: |
+          make testacc
         env:
           OXIDE_TOKEN: ${{ secrets.COLO_OXIDE_TOKEN }}
           OXIDE_HOST: ${{ secrets.COLO_OXIDE_HOST }}
