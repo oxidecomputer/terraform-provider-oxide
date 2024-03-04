@@ -1,0 +1,27 @@
+name: acceptance
+on:
+  release:
+    types: [published, unpublished, edited]
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.x"
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: test
+        shell: bash
+        run: |
+          make testacc
+        env:
+          OXIDE_TOKEN: ${{ secrets.COLO_OXIDE_TOKEN }}
+          OXIDE_HOST: ${{ secrets.COLO_OXIDE_HOST }}
+          TEST_ACC_NAME: TestAccCloud

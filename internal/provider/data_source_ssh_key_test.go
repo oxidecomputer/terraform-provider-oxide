@@ -37,7 +37,7 @@ data "oxide_ssh_key" "{{.BlockName}}" {
 }
 `
 
-func TestAccDataSourceSSHKey_full(t *testing.T) {
+func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 	blockName := newBlockName("datasource-ssh-key")
 	resourceName := newResourceName()
 	config, err := parsedAccConfig(

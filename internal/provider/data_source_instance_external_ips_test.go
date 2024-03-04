@@ -46,7 +46,7 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
   }
 `
 
-func TestAccDataSourceInstanceExternalIPs_full(t *testing.T) {
+func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	blockName := newBlockName("datasource-instance-external-ips")
 	config, err := parsedAccConfig(
 		dataSourceInstanceExternalIPConfig{

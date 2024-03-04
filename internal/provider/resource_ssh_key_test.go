@@ -36,7 +36,7 @@ resource "oxide_ssh_key" "{{.BlockName}}" {
 }
 `
 
-func TestAccResourceSSHKey_full(t *testing.T) {
+func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	sshKeyName := newResourceName()
 	description := "An SSH key."
 	publicKey := "ssh-ed25519 AAAA"

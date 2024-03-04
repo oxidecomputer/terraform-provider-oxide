@@ -25,7 +25,7 @@ data "oxide_project" "{{.BlockName}}" {
 }
 `
 
-func TestAccDataSourceProject_full(t *testing.T) {
+func TestAccCloudDataSourceProject_full(t *testing.T) {
 	blockName := newBlockName("datasource-project")
 	config, err := parsedAccConfig(
 		dataSourceProjectConfig{

@@ -30,7 +30,7 @@ data "oxide_images" "{{.BlockName}}" {
 `
 
 // NB: The project must be populated with at least one image for this test to pass
-func TestAccDataSourceImages_full(t *testing.T) {
+func TestAccCloudDataSourceImages_full(t *testing.T) {
 	blockName := newBlockName("datasource-images")
 	config, err := parsedAccConfig(
 		dataSourceImagesConfig{

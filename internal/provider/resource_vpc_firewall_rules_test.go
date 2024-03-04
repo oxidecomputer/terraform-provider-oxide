@@ -181,7 +181,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 }
 `
 
-func TestAccResourceFirewallRules_full(t *testing.T) {
+func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 	blockName := newBlockName("firewall_rules")
 	supportBlockName := newBlockName("support")
 	supportBlockName2 := newBlockName("support")

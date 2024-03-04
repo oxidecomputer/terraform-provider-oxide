@@ -15,7 +15,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccResourceInstance_full(t *testing.T) {
+func TestAccCloudResourceInstance_full(t *testing.T) {
 	type resourceInstanceConfig struct {
 		BlockName        string
 		InstanceName     string
@@ -180,7 +180,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
-func TestAccResourceInstance_extIPs(t *testing.T) {
+func TestAccCloudResourceInstance_extIPs(t *testing.T) {
 	type resourceInstanceConfig struct {
 		BlockName        string
 		InstanceName     string
@@ -244,7 +244,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
-func TestAccResourceInstance_sshKeys(t *testing.T) {
+func TestAccCloudResourceInstance_sshKeys(t *testing.T) {
 	type resourceInstanceSshKeyConfig struct {
 		BlockName         string
 		SshKeyName        string
@@ -316,7 +316,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
-func TestAccResourceInstance_nic(t *testing.T) {
+func TestAccCloudResourceInstance_nic(t *testing.T) {
 	type resourceInstanceNicConfig struct {
 		BlockName        string
 		SubnetBlockName  string
@@ -436,7 +436,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
-func TestAccResourceInstance_disk(t *testing.T) {
+func TestAccCloudResourceInstance_disk(t *testing.T) {
 	type resourceInstanceDiskConfig struct {
 		BlockName        string
 		DiskBlockName    string

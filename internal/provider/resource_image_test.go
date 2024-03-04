@@ -16,9 +16,13 @@ import (
 )
 
 type resourceImageConfig struct {
-	BlockName        string
-	ImageName        string
-	SupportBlockName string
+	BlockName         string
+	ImageName         string
+	DiskName          string
+	SnapshotName      string
+	SupportBlockName  string
+	DiskBlockName     string
+	SnapshotBlockName string
 }
 
 // TODO: Use a fetched snapshot ID when the snapshot data source is implemented
@@ -27,11 +31,36 @@ var resourceImageConfigTpl = `
  	name = "tf-acc-test"
  }
 
+ resource "oxide_disk" "{{.DiskBlockName}}" {
+	project_id  = data.oxide_project.{{.SupportBlockName}}.id
+	description = "a test disk"
+	name        = "{{.DiskName}}"
+	size        = 1073741824
+	block_size  = 512
+	timeouts = {
+	  read   = "1m"
+	  create = "3m"
+	  delete = "2m"
+	}
+ }
+  
+ resource "oxide_snapshot" "{{.SnapshotBlockName}}" {
+   project_id  = data.oxide_project.{{.SupportBlockName}}.id
+   description = "a test snapshot"
+   name        = "{{.SnapshotName}}"
+   disk_id     = oxide_disk.{{.DiskBlockName}}.id
+   timeouts = {
+     read   = "1m"
+     create = "3m"
+     delete = "2m"
+   }
+ }
+
  resource "oxide_image" "{{.BlockName}}" {
    project_id         = data.oxide_project.{{.SupportBlockName}}.id
    description        = "a test image"
    name               = "{{.ImageName}}"
-   source_snapshot_id = "ffecbbfd-bd42-42ce-b023-e33f4020a858"
+   source_snapshot_id = oxide_snapshot.{{.SnapshotBlockName}}.id
    os                 = "alpine"
    version            = "propolis-blob"
    timeouts = {
@@ -41,16 +70,20 @@ var resourceImageConfigTpl = `
  }
  `
 
-func TestAccResourceImage_full(t *testing.T) {
+func TestAccCloudResourceImage_full(t *testing.T) {
 	imageName := newResourceName()
 	blockName := newBlockName("image")
 	supportBlockName := newBlockName("support")
 	resourceName := fmt.Sprintf("oxide_image.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceImageConfig{
-			BlockName:        blockName,
-			ImageName:        imageName,
-			SupportBlockName: supportBlockName,
+			BlockName:         blockName,
+			ImageName:         imageName,
+			DiskName:          newResourceName(),
+			SnapshotName:      newResourceName(),
+			SupportBlockName:  supportBlockName,
+			DiskBlockName:     newBlockName("support"),
+			SnapshotBlockName: newBlockName("support"),
 		},
 		resourceImageConfigTpl,
 	)
@@ -84,7 +117,7 @@ func checkResourceImage(resourceName, imageName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "description", "a test image"),
 		resource.TestCheckResourceAttr(resourceName, "name", imageName),
 		resource.TestCheckResourceAttrSet(resourceName, "block_size"),
-		resource.TestCheckResourceAttr(resourceName, "source_snapshot_id", "ffecbbfd-bd42-42ce-b023-e33f4020a858"),
+		resource.TestCheckResourceAttrSet(resourceName, "source_snapshot_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "size"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

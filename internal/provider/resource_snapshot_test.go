@@ -55,7 +55,7 @@ resource "oxide_snapshot" "{{.BlockName}}" {
 }
 `
 
-func TestAccResourceSnapshot_full(t *testing.T) {
+func TestAccCloudResourceSnapshot_full(t *testing.T) {
 	diskName := newResourceName()
 	snapshotName := newResourceName()
 	blockName := newBlockName("snapshot")

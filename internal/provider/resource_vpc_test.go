@@ -67,7 +67,7 @@ resource "oxide_vpc" "{{.BlockName}}" {
   }
 `
 
-func TestAccResourceVPC_full(t *testing.T) {
+func TestAccCloudResourceVPC_full(t *testing.T) {
 	vpcName := newResourceName()
 	blockName := newBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc.%s", blockName)

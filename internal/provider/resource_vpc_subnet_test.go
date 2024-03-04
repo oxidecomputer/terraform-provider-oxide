@@ -99,7 +99,7 @@ resource "oxide_vpc_subnet" "{{.BlockName}}" {
 }
 `
 
-func TestAccResourceVPCSubnet_full(t *testing.T) {
+func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 	subnetName := newResourceName()
 	vpcName := newResourceName()
 	blockName := newBlockName("subnet")

@@ -40,7 +40,7 @@ resource "oxide_project" "{{.BlockName}}" {
   }
 `
 
-func TestAccResourceProject_full(t *testing.T) {
+func TestAccCloudResourceProject_full(t *testing.T) {
 	projectName := newResourceName()
 	blockName := newBlockName("project")
 	resourceName := fmt.Sprintf("oxide_project.%s", blockName)
