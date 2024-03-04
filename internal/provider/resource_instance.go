@@ -336,7 +336,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	// TODO: Double check we're not triggering the default "add all keys" behaviour
-	sshKeys, diags := newSSHKeysOnCreate(ctx, r.client, plan.SSHPublicKeys)
+	sshKeys, diags := newSSHKeysOnCreate(plan.SSHPublicKeys)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -939,7 +939,7 @@ func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskI
 	return disks, diags
 }
 
-func newSSHKeysOnCreate(ctx context.Context, client *oxide.Client, sshKeyIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
+func newSSHKeysOnCreate(sshKeyIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var sshKeys = []oxide.NameOrId{}
 	for _, sshKeyID := range sshKeyIDs.Elements() {
