@@ -20,7 +20,7 @@ resource "oxide_instance" "example" {
   host_name        = "<host value>"
   memory           = 1073741824
   ncpus            = 1
-  ssh_keys         = ["066cab1b-c550-4aea-8a80-8422fd3bfc40", "1aa748cb-26f0-4bf5-8faf-b202dc74d698"]
+  ssh_public_keys  = ["066cab1b-c550-4aea-8a80-8422fd3bfc40", "1aa748cb-26f0-4bf5-8faf-b202dc74d698"]
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8", "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"]
   network_interfaces = [
     {
@@ -91,7 +91,7 @@ resource "oxide_instance" "example" {
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
 - `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--ips))
 - `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))
-- `ssh_keys` (Set of String, Optional) An allowlist of IDs of the saved SSH public keys to be transferred to the instance via cloud-init during instance creation.
+- `ssh_public_keys` (Set of String, Optional) An allowlist of IDs of the saved SSH public keys to be transferred to the instance via cloud-init during instance creation.
 - `start_on_create` (Boolean, Default `true`) Starts the instance on creation when set to true.
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 - `user_data` (String) User data for instance initialization systems (such as cloud-init). Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4) (+ and / characters with padding). Maximum 32 KiB unencoded data.
