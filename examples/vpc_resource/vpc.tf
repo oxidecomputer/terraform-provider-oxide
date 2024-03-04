@@ -11,10 +11,12 @@ terraform {
 
 provider "oxide" {}
 
-data "oxide_projects" "project_list" {}
+data "oxide_project" "example" {
+  name = "{YOUR-PROJECT-NAME}"
+}
 
 resource "oxide_vpc" "example" {
-  project_id        = element(tolist(data.oxide_projects.project_list.projects[*].id), 0)
+  project_id        = data.oxide_project.example.id
   description       = "a test vpc"
   name              = "myvpc"
   dns_name          = "my-vpc-dnssd"

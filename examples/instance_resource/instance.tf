@@ -12,7 +12,7 @@ terraform {
 provider "oxide" {}
 
 data "oxide_project" "example" {
-  name = "my-project"
+  name = "{YOUR-PROJECT-NAME}"
 }
 
 data "oxide_vpc_subnet" "example" {
