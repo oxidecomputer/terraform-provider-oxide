@@ -33,6 +33,6 @@ jobs:
       - name: test
         run: make testacc
         env:
-          OXIDE_TOKEN: ${{secrets.COLO_OXIDE_TOKEN}}
-          OXIDE_HOST: ${{secrets.COLO_OXIDE_HOST}}
+          OXIDE_TOKEN: ${{ secrets.COLO_OXIDE_TOKEN }}
+          OXIDE_HOST: ${{ secrets.COLO_OXIDE_HOST }}
           TEST_ACC_NAME: TestAccCloud
