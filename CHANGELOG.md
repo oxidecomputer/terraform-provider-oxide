@@ -1,3 +1,27 @@
+# 0.3.0 (2024/Apr/3)
+
+### Enhancements
+
+- **Documentation:** Clarification about retrieving silo images [#288](https://github.com/oxidecomputer/terraform-provider-oxide/pull/288)
+
+### List of commits
+
+- [be49e35](https://github.com/oxidecomputer/terraform-provider-oxide/commit/be49e35) Update Go SDK to v0.1.0-beta4 (#300)
+- [afcbd16](https://github.com/oxidecomputer/terraform-provider-oxide/commit/afcbd16) Update to Go SDK f488d8e875 (#299)
+- [d7a016c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d7a016c) Update versions in docs to reflect upcoming release (#297)
+- [765a156](https://github.com/oxidecomputer/terraform-provider-oxide/commit/765a156) Bump github.com/hashicorp/terraform-plugin-go from 0.22.0 to 0.22.1 (#294)
+- [a849db1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a849db1) Bump github.com/hashicorp/terraform-plugin-testing from 1.6.0 to 1.7.0 (#293)
+- [5830ffd](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5830ffd) Bump github.com/hashicorp/terraform-plugin-framework from 1.6.0 to 1.6.1 (#292)
+- [5f77675](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5f77675) Update terraform framework and plugin dependencies (#291)
+- [c52063a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c52063a) Bump github.com/stretchr/testify from 1.8.4 to 1.9.0 (#289)
+- [786ff95](https://github.com/oxidecomputer/terraform-provider-oxide/commit/786ff95) Include documentation about retrieving silo images (#288)
+- [2e31c95](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2e31c95) Small internal linter fix to instance resource (#287)
+- [ceaa457](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ceaa457) Fix ssh_public_keys docs (#286)
+- [643ac53](https://github.com/oxidecomputer/terraform-provider-oxide/commit/643ac53) Run acceptance tests as part of CI in releases (#285)
+- [ef5502f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ef5502f) Update to Go SDK 043c873 (#283)
+- [fa365ab](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fa365ab) Bump version and add tag make target (#278)
+- [cde8700](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cde8700) Fix changelog (#277)
+
 # 0.2.0 (2024/Feb/13)
 
 ### Breaking changes
