@@ -16,7 +16,7 @@ labels: release
 - [ ] Make sure the `oxide` SDK dependency is up to date with the latest release.
 - [ ] Generate changelog by running `make changelog` and add date of the release to the title.
 - [ ] Release the new version draft by running `make tag`.
-- [ ] Verify the release is correct on GitHub and make the release live.
+- [ ] Verify the release is correct, it's being created from the correct tag on GitHub, and make the release live. Note: Terraform registry will silently fail to publish if the tag is incorrect, and GitHub has a habit of messing up the tag a release is created from on occasion. 
 - [ ] Verify the release is available on the Terraform provider registry.
 - [ ] If this is not a minor patch, create a new branch with the current version
 - [ ] Update to upcoming version in [VERSION](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION), [internal/provider/version.go](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go), and

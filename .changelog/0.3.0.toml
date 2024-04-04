@@ -1,0 +1,3 @@
+[[enhancements]]
+title = "Documentation"
+description = "Clarification about retrieving silo images [#288](https://github.com/oxidecomputer/terraform-provider-oxide/pull/288)"
