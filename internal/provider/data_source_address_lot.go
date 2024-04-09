@@ -6,7 +6,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
@@ -119,7 +118,7 @@ func (d *networkingAddressLotsDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read all address lots"), map[string]any{"success": true})
+	tflog.Trace(ctx, "read all address lots", map[string]any{"success": true})
 
 	// Set a unique ID for the datasource payload
 	state.ID = types.StringValue(uuid.New().String())
