@@ -73,7 +73,7 @@ func (d *networkingAddressLotsDataSource) Schema(ctx context.Context, req dataso
 						},
 						"description": schema.StringAttribute{
 							Computed:    true,
-							Description: "human-readable free-form text about an Address Lot",
+							Description: "Human-readable free-form text about an Address Lot",
 						},
 						"kind": schema.StringAttribute{
 							Computed:    true,
@@ -81,7 +81,7 @@ func (d *networkingAddressLotsDataSource) Schema(ctx context.Context, req dataso
 						},
 						"name": schema.StringAttribute{
 							Computed:    true,
-							Description: "unique, mutable, user-controlled identifier for each resource",
+							Description: "Unique, mutable, user-controlled identifier for each resource",
 						},
 					},
 				},
