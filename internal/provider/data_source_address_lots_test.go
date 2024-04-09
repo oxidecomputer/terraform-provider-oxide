@@ -23,7 +23,7 @@ data "oxide_networking_address_lots" "{{.BlockName}}" {
 }
 `
 
-func TestAccCloudDataSourceNetworkingAddressLots_full(t *testing.T) {
+func TestAccSiloDataSourceNetworkingAddressLots_full(t *testing.T) {
 	blockName := newBlockName("datasource-networking-address-lots")
 	config, err := parsedAccConfig(
 		dataSourceNetworkingAddressLotConfig{
