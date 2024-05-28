@@ -177,6 +177,9 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 											},
 										},
 									},
+									Validators: []validator.Set{
+										setvalidator.SizeAtLeast(1),
+									},
 								},
 								"protocols": schema.SetAttribute{
 									Description: "If present, the networking protocols this rule applies to. Possible values are: TCP, UDP and ICMP.",
@@ -190,12 +193,16 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 												string(oxide.VpcFirewallRuleProtocolIcmp),
 											),
 										)),
+										setvalidator.SizeAtLeast(1),
 									},
 								},
 								"ports": schema.SetAttribute{
 									Description: "If present, the destination ports this rule applies to.",
 									Optional:    true,
 									ElementType: types.StringType,
+									Validators: []validator.Set{
+										setvalidator.SizeAtLeast(1),
+									},
 								},
 							},
 						},
@@ -578,10 +585,22 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 		return nil, diags
 	}
 
-	model := vpcFirewallRulesResourceRuleFiltersModel{
-		Hosts:     hostsModel,
-		Ports:     portSet,
-		Protocols: protocolSet,
+	model := vpcFirewallRulesResourceRuleFiltersModel{}
+
+	if len(hostsModel) > 0 {
+		model.Hosts = hostsModel
+	}
+
+	if len(portSet.Elements()) > 0 {
+		model.Ports = portSet
+	} else {
+		model.Ports = types.SetNull(types.StringType)
+	}
+
+	if len(protocolSet.Elements()) > 0 {
+		model.Protocols = protocolSet
+	} else {
+		model.Protocols = types.SetNull(types.StringType)
 	}
 
 	return &model, nil

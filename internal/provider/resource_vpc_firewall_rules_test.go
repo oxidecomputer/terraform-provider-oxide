@@ -75,8 +75,6 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 				value = oxide_vpc.{{.SupportBlockName2}}.name
 			 }
 		   ]
-		   ports = []
-		   protocols = []
 		 }
 		 targets = [
 		   {
@@ -118,12 +116,6 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 		 priority = 50
 		 status = "enabled"
 		 filters = {
-		   hosts = [
-			 {
-				type = "vpc"
-				value = oxide_vpc.{{.SupportBlockName2}}.name
-			 }
-		   ]
 		   ports = ["8123"]
 		   protocols = ["ICMP"]
 		 },
@@ -237,7 +229,7 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceFirewallRulesUpdate(resourceName, vpcName),
+				Check:  checkResourceFirewallRulesUpdate(resourceName),
 			},
 			{
 				Config: configUpdate2,
@@ -285,15 +277,15 @@ func checkResourceFirewallRules(resourceName, vpcName string) resource.TestCheck
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.action", "deny"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "custom deny"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "inbound"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.type", "vpc"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", vpcName),
+		resource.TestCheckNoResourceAttr(resourceName, "rules.0.filters.hosts.0.type"),
+		resource.TestCheckNoResourceAttr(resourceName, "rules.0.filters.hosts.0.value"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "8123"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "ICMP"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
