@@ -1,3 +1,3 @@
 [[breaking]]
 title = "`oxide_vpc_firewall_rules` resource"
-description = "Setting an empty array for `filters.hosts`, `filters.ports` and `filters.protocols` is no longer supported. To omit they must be unset. [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "Setting an empty array for `filters.hosts`, `filters.ports` and `filters.protocols` is no longer supported. To omit they must be unset. [#322](https://github.com/oxidecomputer/terraform-provider-oxide/pull/322)"
