@@ -102,6 +102,13 @@ tag: ## Create a new git tag to prepare to build a release.
 	git tag v$(RELEASE_VERSION)
 	@echo "Run 'git push origin v$(RELEASE_VERSION)' to push your new tag to GitHub and trigger a release."
 
+.PHONY: sdk-version
+## Sets Oxide Go SDK to a specified version
+sdk-version:
+	@ echo "-> Setting Oxide Go SDK to oxide.go@$(SDK_V)"
+	@ go get github.com/oxidecomputer/oxide.go@$(SDK_V)
+	@ go mod tidy
+
 # The following installs the necessary tools within the local /bin directory.
 # This way linting tools don't need to be downloaded/installed every time you
 # want to run the linters.
