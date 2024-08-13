@@ -15,7 +15,7 @@ To generate a token, follow these steps:
 - Make sure you have installed the Oxide CLI
 - Log in via the Oxide console.
 - Run `oxide auth login --host <host>`
-- Run `oxide auth status --host <host> --show-token` to retrieve the token (host and credential information is saved in `$HOME/.config/oxide/credentials.toml`).
+- Retrieve the token associated with the host from `$HOME/.config/oxide/credentials.toml`.
 
 ### Example
 
