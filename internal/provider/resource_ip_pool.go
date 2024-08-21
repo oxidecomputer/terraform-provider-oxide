@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/oxidecomputer/oxide.go/oxide"
-	oxideSDK "github.com/oxidecomputer/oxide.go/oxide"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -35,7 +34,7 @@ func NewIPPoolResource() resource.Resource {
 
 // ipPoolResource is the resource implementation.
 type ipPoolResource struct {
-	client *oxideSDK.Client
+	client *oxide.Client
 }
 
 type ipPoolResourceModel struct {
@@ -66,7 +65,7 @@ func (r *ipPoolResource) Configure(_ context.Context, req resource.ConfigureRequ
 		return
 	}
 
-	r.client = req.ProviderData.(*oxideSDK.Client)
+	r.client = req.ProviderData.(*oxide.Client)
 }
 
 func (r *ipPoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -148,10 +147,10 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxideSDK.IpPoolCreateParams{
-		Body: &oxideSDK.IpPoolCreate{
+	params := oxide.IpPoolCreateParams{
+		Body: &oxide.IpPoolCreate{
 			Description: plan.Description.ValueString(),
-			Name:        oxideSDK.Name(plan.Name.ValueString()),
+			Name:        oxide.Name(plan.Name.ValueString()),
 		},
 	}
 	ipPool, err := r.client.IpPoolCreate(ctx, params)
@@ -170,7 +169,7 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
 
 	for index, ipPoolRange := range plan.Ranges {
-		var body oxideSDK.IpRange
+		var body oxide.IpRange
 
 		// TODO: Error checking here can be improved by checking both addresses
 		// TODO: Check if I really need the unquote if I use ValueString() instead
@@ -192,12 +191,12 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 			return
 		}
 		if isIPv4(firstAddress) {
-			body = oxideSDK.Ipv4Range{
+			body = oxide.Ipv4Range{
 				First: firstAddress,
 				Last:  lastAddress,
 			}
 		} else if isIPv6(firstAddress) {
-			body = oxideSDK.Ipv6Range{
+			body = oxide.Ipv6Range{
 				First: firstAddress,
 				Last:  lastAddress,
 			}
@@ -210,8 +209,8 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 			return
 		}
 
-		params := oxideSDK.IpPoolRangeAddParams{
-			Pool: oxideSDK.NameOrId(plan.ID.ValueString()),
+		params := oxide.IpPoolRangeAddParams{
+			Pool: oxide.NameOrId(plan.ID.ValueString()),
 			Body: &body,
 		}
 
@@ -256,8 +255,8 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	ipPool, err := r.client.IpPoolView(ctx, oxideSDK.IpPoolViewParams{
-		Pool: oxideSDK.NameOrId(state.ID.ValueString()),
+	ipPool, err := r.client.IpPoolView(ctx, oxide.IpPoolViewParams{
+		Pool: oxide.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -275,8 +274,8 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
 
 	// Append information about IP Pool ranges
-	listParams := oxideSDK.IpPoolRangeListParams{
-		Pool:  oxideSDK.NameOrId(ipPool.Id),
+	listParams := oxide.IpPoolRangeListParams{
+		Pool:  oxide.NameOrId(ipPool.Id),
 		Limit: 1000000000,
 	}
 	ipPoolRanges, err := r.client.IpPoolRangeList(ctx, listParams)
@@ -373,11 +372,11 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	params := oxideSDK.IpPoolUpdateParams{
-		Pool: oxideSDK.NameOrId(state.ID.ValueString()),
-		Body: &oxideSDK.IpPoolUpdate{
+	params := oxide.IpPoolUpdateParams{
+		Pool: oxide.NameOrId(state.ID.ValueString()),
+		Body: &oxide.IpPoolUpdate{
 			Description: plan.Description.ValueString(),
-			Name:        oxideSDK.Name(plan.Name.ValueString()),
+			Name:        oxide.Name(plan.Name.ValueString()),
 		},
 	}
 
@@ -425,8 +424,8 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	// Remove all IP pool ranges first
 	ranges, err := r.client.IpPoolRangeList(
 		ctx,
-		oxideSDK.IpPoolRangeListParams{
-			Pool:  oxideSDK.NameOrId(state.ID.ValueString()),
+		oxide.IpPoolRangeListParams{
+			Pool:  oxide.NameOrId(state.ID.ValueString()),
 			Limit: 1000000000,
 		},
 	)
@@ -442,15 +441,15 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	tflog.Trace(ctx, fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 	for _, item := range ranges.Items {
-		var ipRange oxideSDK.IpRange
+		var ipRange oxide.IpRange
 		rs := item.Range.(map[string]interface{})
 		if isIPv4(rs["first"].(string)) {
-			ipRange = oxideSDK.Ipv4Range{
+			ipRange = oxide.Ipv4Range{
 				First: rs["first"].(string),
 				Last:  rs["last"].(string),
 			}
 		} else if isIPv6(rs["first"].(string)) {
-			ipRange = oxideSDK.Ipv6Range{
+			ipRange = oxide.Ipv6Range{
 				First: rs["first"].(string),
 				Last:  rs["last"].(string),
 			}
@@ -468,8 +467,8 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			return
 		}
 
-		params := oxideSDK.IpPoolRangeRemoveParams{
-			Pool: oxideSDK.NameOrId(state.ID.ValueString()),
+		params := oxide.IpPoolRangeRemoveParams{
+			Pool: oxide.NameOrId(state.ID.ValueString()),
 			Body: &ipRange,
 		}
 		if err := r.client.IpPoolRangeRemove(ctx, params); err != nil {
@@ -491,8 +490,8 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	if err := r.client.IpPoolDelete(
 		ctx,
-		oxideSDK.IpPoolDeleteParams{
-			Pool: oxideSDK.NameOrId(state.ID.ValueString()),
+		oxide.IpPoolDeleteParams{
+			Pool: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
@@ -510,7 +509,7 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 
 	addedRanges := []ipPoolResourceRangeModel{}
 	for index, ipPoolRange := range ranges {
-		var body oxideSDK.IpRange
+		var body oxide.IpRange
 
 		// TODO: Error checking here can be improved by checking both addresses
 		// TODO: Check if I really need the unquote if I use ValueString() instead
@@ -532,12 +531,12 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 			return diags
 		}
 		if isIPv4(firstAddress) {
-			body = oxideSDK.Ipv4Range{
+			body = oxide.Ipv4Range{
 				First: firstAddress,
 				Last:  lastAddress,
 			}
 		} else if isIPv6(firstAddress) {
-			body = oxideSDK.Ipv6Range{
+			body = oxide.Ipv6Range{
 				First: firstAddress,
 				Last:  lastAddress,
 			}
@@ -550,8 +549,8 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 			return diags
 		}
 
-		params := oxideSDK.IpPoolRangeAddParams{
-			Pool: oxideSDK.NameOrId(poolID),
+		params := oxide.IpPoolRangeAddParams{
+			Pool: oxide.NameOrId(poolID),
 			Body: &body,
 		}
 
