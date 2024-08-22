@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -158,63 +157,9 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
 	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
 
-	for index, ipPoolRange := range plan.Ranges {
-		var body oxide.IpRange
-
-		// TODO: Error checking here can be improved by checking both addresses
-		// TODO: Check if I really need the unquote if I use ValueString() instead
-		firstAddress, err := strconv.Unquote(ipPoolRange.FirstAddress.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating range within IP Pool",
-				err.Error(),
-			)
-			return
-		}
-		// TODO: Check if I really need the unquote if I use ValueString() instead
-		lastAddress, err := strconv.Unquote(ipPoolRange.LastAddress.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating range within IP Pool",
-				err.Error(),
-			)
-			return
-		}
-		if isIPv4(firstAddress) {
-			body = oxide.Ipv4Range{
-				First: firstAddress,
-				Last:  lastAddress,
-			}
-		} else if isIPv6(firstAddress) {
-			body = oxide.Ipv6Range{
-				First: firstAddress,
-				Last:  lastAddress,
-			}
-		} else {
-			resp.Diagnostics.AddError(
-				"Error creating range within IP Pool",
-				fmt.Errorf("%s is neither a valid IPv4 or IPv6",
-					firstAddress).Error(),
-			)
-			return
-		}
-
-		params := oxide.IpPoolRangeAddParams{
-			Pool: oxide.NameOrId(plan.ID.ValueString()),
-			Body: &body,
-		}
-
-		ipR, err := r.client.IpPoolRangeAdd(ctx, params)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating range within IP Pool",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("added IP Pool range with ID: %v", ipR.Id), map[string]any{"success": true})
-
-		plan.Ranges[index] = ipPoolRange
+	resp.Diagnostics.Append(addRanges(ctx, r.client, plan.Ranges, plan.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Save plan into Terraform state
@@ -341,13 +286,21 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	planRanges := plan.Ranges
 	stateRanges := state.Ranges
+
+	// Check plan and if it has a range that the state doesn't then attach it
 	rangesToAdd := sliceDiff(planRanges, stateRanges)
-	if rangesToAdd != nil {
-		resp.Diagnostics.Append(addRanges(ctx, r.client, rangesToAdd, state.ID.ValueString())...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	resp.Diagnostics.Append(addRanges(ctx, r.client, rangesToAdd, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
+
+	// Check state and if it has a range that the plan doesn't then detach it
+	rangesToDetach := sliceDiff(stateRanges, planRanges)
+	resp.Diagnostics.Append(removeRanges(ctx, r.client, rangesToDetach, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	params := oxide.IpPoolUpdateParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.IpPoolUpdate{
@@ -521,7 +474,58 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 			)
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("added IP Pool range with ID: %v", ipR.Id), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("added IP Pool range with ID: %v, from: %v to: %v", ipR.Id, firstAddress, lastAddress),
+			map[string]any{"success": true},
+		)
+	}
+
+	return nil
+}
+
+func removeRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourceRangeModel, poolID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, ipPoolRange := range ranges {
+		var body oxide.IpRange
+
+		firstAddress := ipPoolRange.FirstAddress.ValueString()
+		lastAddress := ipPoolRange.LastAddress.ValueString()
+
+		if isIPv4(firstAddress) {
+			body = oxide.Ipv4Range{
+				First: firstAddress,
+				Last:  lastAddress,
+			}
+		} else if isIPv6(firstAddress) {
+			body = oxide.Ipv6Range{
+				First: firstAddress,
+				Last:  lastAddress,
+			}
+		} else {
+			diags.AddError(
+				"Error removing range within IP Pool",
+				fmt.Errorf("%s is neither a valid IPv4 or IPv6",
+					firstAddress).Error(),
+			)
+			return diags
+		}
+
+		params := oxide.IpPoolRangeRemoveParams{
+			Pool: oxide.NameOrId(poolID),
+			Body: &body,
+		}
+
+		err := client.IpPoolRangeRemove(ctx, params)
+		if err != nil {
+			diags.AddError(
+				"Error removing range within IP Pool",
+				"API error: "+err.Error(),
+			)
+			return diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("removed IP Pool range from: %v to: %v", firstAddress, lastAddress), map[string]any{"success": true})
 	}
 
 	return nil

@@ -36,7 +36,7 @@ resource "oxide_ip_pool" "example" {
 
 ### Optional
 
-- `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. Can be IPv4 or IPv6. (see [below for nested schema](#nestedblock--ranges))
+- `ranges` (List of Object, Optional) Adds IP ranges to the created IP pool. (see [below for nested schema](#nestedblock--ranges))
 - `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
@@ -53,11 +53,6 @@ Required:
 
 - `first_address` (String) First address in the range.
 - `last_address` (String) Last address in the range.
-
-Read-Only:
-
-- `id` (String) Unique, immutable, system-controlled identifier.
-- `time_created` (String) Timestamp of when this range was added to the IP pool.
 
 <a id="nestedatt--timeouts"></a>
 

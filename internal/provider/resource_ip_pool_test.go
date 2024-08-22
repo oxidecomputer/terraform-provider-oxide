@@ -37,6 +37,15 @@ func TestAccResourceIpPool_full(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				Config: testResourceIPPoolRemoveUpdateConfig,
+				Check:  checkResourceIPPoolRemoveUpdate(resourceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testResourceIPPoolRangesConfig,
 				Check:  checkResourceIPPoolRanges(resourceName2),
 			},
@@ -83,6 +92,10 @@ resource "oxide_ip_pool" "test" {
 	ranges = [
     {
 		first_address = "172.20.15.227"
+		last_address  = "172.20.15.230"
+	},
+	{
+		first_address = "172.20.15.231"
 		last_address  = "172.20.15.239"
 	}
   ]
@@ -96,8 +109,35 @@ func checkResourceIPPoolUpdate(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool-new"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "ranges.0.first_address"),
+		resource.TestCheckResourceAttrSet(resourceName, "ranges.0.last_address"),
+		resource.TestCheckResourceAttrSet(resourceName, "ranges.1.first_address"),
+		resource.TestCheckResourceAttrSet(resourceName, "ranges.1.last_address"),
+	}...)
+}
+
+var testResourceIPPoolRemoveUpdateConfig = `
+resource "oxide_ip_pool" "test" {
+	description       = "a new description for ip_pool"
+	name              = "terraform-acc-myippool-new"
+	ranges = [
+    {
+		first_address = "172.20.15.227"
+		last_address  = "172.20.15.230"
+	}
+  ]
+}
+`
+
+func checkResourceIPPoolRemoveUpdate(resourceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a new description for ip_pool"),
+		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool-new"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckResourceAttr(resourceName, "ranges.0.first_address", "172.20.15.227"),
-		resource.TestCheckResourceAttr(resourceName, "ranges.0.last_address", "172.20.15.239"),
+		resource.TestCheckResourceAttr(resourceName, "ranges.0.last_address", "172.20.15.230"),
 	}...)
 }
 
