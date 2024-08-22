@@ -4,4 +4,4 @@ description = "Setting an empty array for `filters.hosts`, `filters.ports` and `
 
 [[features]]
 title = "New resource"
-description = "`oxide_ip_pool` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "`oxide_ip_pool` [#337](https://github.com/oxidecomputer/terraform-provider-oxide/pull/337)"
