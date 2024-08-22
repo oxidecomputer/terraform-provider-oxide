@@ -50,8 +50,6 @@ type ipPoolResourceModel struct {
 type ipPoolResourceRangeModel struct {
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
-	// ID           types.String `tfsdk:"id"`
-	// TimeCreated  types.String `tfsdk:"time_created"`
 }
 
 // Metadata returns the resource type name.
@@ -95,14 +93,6 @@ func (r *ipPoolResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 						"last_address": schema.StringAttribute{
 							Description: "Last address in the range",
 							Required:    true,
-						},
-						"id": schema.StringAttribute{
-							Computed:    true,
-							Description: "Unique, immutable, system-controlled identifier of the range.",
-						},
-						"time_created": schema.StringAttribute{
-							Computed:    true,
-							Description: "Timestamp of when this range was created.",
 						},
 					},
 				},
@@ -224,9 +214,6 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 		tflog.Trace(ctx, fmt.Sprintf("added IP Pool range with ID: %v", ipR.Id), map[string]any{"success": true})
 
-		//	ipPoolRange.ID = types.StringValue(ipR.Id)
-		//	ipPoolRange.TimeCreated = types.StringValue(ipR.TimeCreated.String())
-
 		plan.Ranges[index] = ipPoolRange
 	}
 
@@ -294,10 +281,7 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	for index, item := range ipPoolRanges.Items {
-		ipPoolRange := ipPoolResourceRangeModel{
-			//	ID:          types.StringValue(item.Id),
-			//	TimeCreated: types.StringValue(item.TimeCreated.String()),
-		}
+		ipPoolRange := ipPoolResourceRangeModel{}
 
 		// TODO: For the time being we are using interfaces for nested allOf within oneOf objects in
 		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect that.
@@ -355,23 +339,15 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	//	// TODO: Support updates here
-	//	if !reflect.DeepEqual(plan.Ranges, state.Ranges) {
-	//		resp.Diagnostics.AddError(
-	//			"Error updating IP Pool",
-	//			"IP pool ranges cannot be updated; please revert to previous configuration",
-	//		)
-	//		return
-	//	}
-
 	planRanges := plan.Ranges
 	stateRanges := state.Ranges
 	rangesToAdd := sliceDiff(planRanges, stateRanges)
-	resp.Diagnostics.Append(addRanges(ctx, r.client, rangesToAdd, state.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
+	if rangesToAdd != nil {
+		resp.Diagnostics.Append(addRanges(ctx, r.client, rangesToAdd, state.ID.ValueString())...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-
 	params := oxide.IpPoolUpdateParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.IpPoolUpdate{
@@ -507,29 +483,12 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourceRangeModel, poolID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	addedRanges := []ipPoolResourceRangeModel{}
-	for index, ipPoolRange := range ranges {
+	for _, ipPoolRange := range ranges {
 		var body oxide.IpRange
 
-		// TODO: Error checking here can be improved by checking both addresses
-		// TODO: Check if I really need the unquote if I use ValueString() instead
-		firstAddress, err := strconv.Unquote(ipPoolRange.FirstAddress.String())
-		if err != nil {
-			diags.AddError(
-				"Error creating range within IP Pool",
-				err.Error(),
-			)
-			return diags
-		}
-		// TODO: Check if I really need the unquote if I use ValueString() instead
-		lastAddress, err := strconv.Unquote(ipPoolRange.LastAddress.String())
-		if err != nil {
-			diags.AddError(
-				"Error creating range within IP Pool",
-				err.Error(),
-			)
-			return diags
-		}
+		firstAddress := ipPoolRange.FirstAddress.ValueString()
+		lastAddress := ipPoolRange.LastAddress.ValueString()
+
 		if isIPv4(firstAddress) {
 			body = oxide.Ipv4Range{
 				First: firstAddress,
@@ -563,11 +522,6 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 			return diags
 		}
 		tflog.Trace(ctx, fmt.Sprintf("added IP Pool range with ID: %v", ipR.Id), map[string]any{"success": true})
-
-		//	ipPoolRange.ID = types.StringValue(ipR.Id)
-		//	ipPoolRange.TimeCreated = types.StringValue(ipR.TimeCreated.String())
-
-		addedRanges[index] = ipPoolRange
 	}
 
 	return nil
