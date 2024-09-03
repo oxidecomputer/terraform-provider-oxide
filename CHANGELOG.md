@@ -1,3 +1,42 @@
+# 0.4.0 (2024/Sep/3)
+
+### Breaking changes
+
+- **`oxide_vpc_firewall_rules` resource:** Setting an empty array for `filters.hosts`, `filters.ports` and `filters.protocols` is no longer supported. To omit they must be unset. [#322](https://github.com/oxidecomputer/terraform-provider-oxide/pull/322)
+
+### New features
+
+- **New resource:** `oxide_ip_pool` [#337](https://github.com/oxidecomputer/terraform-provider-oxide/pull/337)
+
+### List of commits
+
+- [b7004cb](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b7004cb) Bump version and update go SDK to 0.1.0-beta8 (#340)
+- [f926330](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f926330) IP pools resource (#337)
+- [7479a12](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7479a12) Update oxide SDK to 3ece27 (#336)
+- [84308fa](https://github.com/oxidecomputer/terraform-provider-oxide/commit/84308fa) Update README to refer to credentials.toml (#331)
+- [8222c50](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8222c50) Bump github.com/hashicorp/terraform-plugin-framework from 1.10.0 to 1.11.0 (#333)
+- [151a08c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/151a08c) Bump github.com/hashicorp/terraform-plugin-testing from 1.9.0 to 1.10.0 (#332)
+- [2aa7d20](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2aa7d20) Bump go SDK to v0.1.0-beta7 (#330)
+- [48b1a91](https://github.com/oxidecomputer/terraform-provider-oxide/commit/48b1a91) Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.12.0 to 0.13.0 (#329)
+- [9eefa18](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9eefa18) Bump github.com/hashicorp/terraform-plugin-testing from 1.8.0 to 1.9.0 (#328)
+- [0f47840](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0f47840) Bump github.com/hashicorp/terraform-plugin-framework from 1.9.0 to 1.10.0 (#327)
+- [76b76f7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/76b76f7) Update Go SDK to oxide.go@06dd780 (#326)
+- [5509a22](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5509a22) [examples] Improve the instance example (#325)
+- [65667bc](https://github.com/oxidecomputer/terraform-provider-oxide/commit/65667bc) Bump github.com/hashicorp/terraform-plugin-framework from 1.8.0 to 1.9.0 (#323)
+- [d3448b4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d3448b4) Do not support empty arrays for filters (#322)
+- [334451a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/334451a) Bump github.com/hashicorp/terraform-plugin-testing from 1.7.0 to 1.8.0 (#320)
+- [051a1b2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/051a1b2) Bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.33.0 to 2.34.0 (#319)
+- [9648298](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9648298) Bump goreleaser/goreleaser-action from 5.0.0 to 5.1.0 (#318)
+- [a159c1c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a159c1c) Bump github.com/oxidecomputer/oxide.go from 0.1.0-beta5 to 0.1.0-beta6 (#317)
+- [346115f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/346115f) Bump github.com/hashicorp/terraform-plugin-go from 0.22.2 to 0.23.0 (#316)
+- [4b75916](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4b75916) Update SDK to v0.1.0-beta5 (#315)
+- [a4c3b2d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a4c3b2d) Bump github.com/hashicorp/terraform-plugin-framework from 1.7.0 to 1.8.0 (#314)
+- [2c87da0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2c87da0) Bump github.com/hashicorp/terraform-plugin-go from 0.22.1 to 0.22.2 (#313)
+- [7cf197c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7cf197c) Bump golang.org/x/net from 0.21.0 to 0.23.0 (#312)
+- [6d46708](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6d46708) Bump github.com/hashicorp/terraform-plugin-framework from 1.6.1 to 1.7.0 (#298)
+- [5ac843f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5ac843f) Fix acceptance testing action (#303)
+- [d4eb035](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d4eb035) Bump version to 0.4.0 (#302)
+
 # 0.3.0 (2024/Apr/3)
 
 ### Enhancements
