@@ -58,9 +58,8 @@ func (r *ipPoolSiloLinkResource) Configure(_ context.Context, req resource.Confi
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// TODO: Is there a get I can use?
 func (r *ipPoolSiloLinkResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("ip_pool_id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
