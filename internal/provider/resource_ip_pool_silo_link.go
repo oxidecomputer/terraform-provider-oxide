@@ -81,8 +81,7 @@ func (r *ipPoolSiloLinkResource) Schema(ctx context.Context, _ resource.SchemaRe
 				},
 			},
 			"is_default": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
+				Required: true,
 				Description: "Whether this is the default IP pool for a silo. " +
 					"Only a single IP pool silo link can be marked as default",
 			},
