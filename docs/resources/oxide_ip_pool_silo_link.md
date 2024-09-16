@@ -30,7 +30,7 @@ resource "oxide_ip_pool_silo_link" "example" {
 - `ip_pool_id` (String) Name of the IP pool.
 - `is_default` (Boolean) Whether a pool is the default for a silo. All floating IPs and instance ephemeral IPs will come from that pool when no other pool is specified. 
 
--> There can only be one default pool for a given silo.
+-> There can only be one default pool for a given silo. Due to this restriction, changing the default IP pool to another can result in a race condition when running `terraform apply`. To help avoid errors, make sure to use `terraform apply -parallelism=1` when changing the default IP pool for a silo. In some cases, you may still get a `400 ObjectAlreadyExists` error. If this happens, you may try the command again, or set all IP pools to `is_default = false` first, and set the default pool as a second step.
 
 ### Optional
 
