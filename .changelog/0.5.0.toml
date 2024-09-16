@@ -6,6 +6,10 @@ description = ""
 title = ""
 description = ""
 
+[[features]]
+title = "New datasource"
+description = "`oxide_silo` [#347](https://github.com/oxidecomputer/terraform-provider-oxide/pull/347)"
+
 [[enhancements]]
 title = ""
 description = ""
