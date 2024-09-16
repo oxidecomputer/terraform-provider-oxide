@@ -138,11 +138,8 @@ func (r *ipPoolSiloLinkResource) Create(ctx context.Context, req resource.Create
 		map[string]any{"success": true},
 	)
 
-	// Set a unique ID for the datasource payload
+	// Set a unique ID for the resource payload
 	plan.ID = types.StringValue(uuid.New().String())
-
-	// Map response body to schema and populate Computed attribute values
-	plan.IsDefault = types.BoolPointerValue(link.IsDefault)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -254,9 +251,12 @@ func (r *ipPoolSiloLinkResource) Update(ctx context.Context, req resource.Update
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("created IP pool silo link for IP pool: %v", link.IpPoolId),
+		fmt.Sprintf("updated IP pool silo link for IP pool: %v", link.IpPoolId),
 		map[string]any{"success": true},
 	)
+
+	// This is a terraform-specific ID. We just copy it from the state
+	plan.ID = state.ID
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
