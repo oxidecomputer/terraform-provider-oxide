@@ -12,8 +12,7 @@ import (
 )
 
 type dataSourceSiloConfig struct {
-	BlockName        string
-	SupportBlockName string
+	BlockName string
 }
 
 var dataSourceSiloConfigTpl = `
@@ -29,8 +28,7 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	blockName := newBlockName("datasource-silo")
 	config, err := parsedAccConfig(
 		dataSourceSiloConfig{
-			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			BlockName: blockName,
 		},
 		dataSourceSiloConfigTpl,
 	)
