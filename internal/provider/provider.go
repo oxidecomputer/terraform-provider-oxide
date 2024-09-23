@@ -151,6 +151,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewImageResource,
 		NewInstanceResource,
 		NewIPPoolResource,
+		NewIpPoolSiloLinkResource,
 		NewProjectResource,
 		NewSnapshotResource,
 		NewSSHKeyResource,

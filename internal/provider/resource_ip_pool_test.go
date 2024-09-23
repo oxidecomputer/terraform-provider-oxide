@@ -96,7 +96,7 @@ resource "oxide_ip_pool" "test" {
 	},
 	{
 		first_address = "172.20.15.231"
-		last_address  = "172.20.15.239"
+		last_address  = "172.20.15.233"
 	}
   ]
 }

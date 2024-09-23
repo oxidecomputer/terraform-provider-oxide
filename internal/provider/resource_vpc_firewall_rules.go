@@ -559,7 +559,7 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 	for _, h := range filter.Hosts {
 		m := vpcFirewallRuleHostFilterModel{
 			Type:  types.StringValue(string(h.Type)),
-			Value: types.StringValue(string(h.Value)),
+			Value: types.StringValue(h.Value.(string)),
 		}
 
 		hostsModel = append(hostsModel, m)
@@ -612,7 +612,7 @@ func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFire
 	for _, t := range target {
 		m := vpcFirewallRulesResourceRuleTargetModel{
 			Type:  types.StringValue(string(t.Type)),
-			Value: types.StringValue(string(t.Value)),
+			Value: types.StringValue(t.Value.(string)),
 		}
 
 		model = append(model, m)
