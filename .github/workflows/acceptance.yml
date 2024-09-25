@@ -10,7 +10,8 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.x"
+          go-version-file: 'go.mod'
+          cache: true
       - name: test
         shell: bash
         run: |
