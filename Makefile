@@ -113,10 +113,10 @@ sdk-version:
 # This way linting tools don't need to be downloaded/installed every time you
 # want to run the linters.
 VERSION_DIR:=$(GOBIN)/versions
-VERSION_GOLANGCILINT:=v1.55.2
+VERSION_GOLANGCILINT:=v1.61.0
 VERSION_TFPROVIDERDOCS:=v0.9.1
 VERSION_TERRAFMT:=v0.5.2
-VERSION_TFPROVIDERLINT:=v0.29.0
+VERSION_TFPROVIDERLINT:=v0.30.0
 VERSION_WHATSIT:=7fd2b385f
 
 tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint 
