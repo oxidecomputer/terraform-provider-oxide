@@ -47,6 +47,7 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
+	BootDiskID        types.String                      `tfsdk:"boot_disk_id"`
 	Description       types.String                      `tfsdk:"description"`
 	DiskAttachments   types.Set                         `tfsdk:"disk_attachments"`
 	ExternalIPs       []instanceResourceExternalIPModel `tfsdk:"external_ips"`
@@ -145,6 +146,19 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Description: "Number of CPUs allocated for this instance.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"boot_disk_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "ID of the disk the instance should be booted from.",
+				PlanModifiers: []planmodifier.String{
+					// TODO: TBD on whether to require replace or not
+					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(
+						path.MatchRoot("disk_attachments"),
+					),
 				},
 			},
 			"start_on_create": schema.BoolAttribute{
@@ -325,6 +339,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	params := oxide.InstanceCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.InstanceCreate{
+			BootDiskId:  plan.BootDiskID.ValueString(),
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Hostname:    oxide.Hostname(plan.HostName.ValueString()),
@@ -448,6 +463,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
 
+	state.BootDiskID = types.StringValue(instance.BootDiskId)
 	state.Description = types.StringValue(instance.Description)
 	state.HostName = types.StringValue(string(instance.Hostname))
 	state.ID = types.StringValue(instance.Id)
@@ -516,6 +532,14 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	planDisks := plan.DiskAttachments.Elements()
 	stateDisks := state.DiskAttachments.Elements()
 
+	updateTimeout, diags := state.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	// Check plan and if it has an ID that the state doesn't then attach it
 	disksToAttach := sliceDiff(planDisks, stateDisks)
 	resp.Diagnostics.Append(attachDisks(ctx, r.client, disksToAttach, state.ID.ValueString())...)
@@ -547,7 +571,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Read instance to retrieve modified time value
+	// Read instance to retrieve modified time value if this is the only update we are doing
 	params := oxide.InstanceViewParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
 	}
@@ -561,6 +585,48 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
+
+	// Update instance only if boot_disk_id changes
+	if state.BootDiskID != plan.BootDiskID {
+
+		// TODO: Only stop the instance for boot_disk_id changes?
+		// TODO: Document this behaviour
+		stopParams := oxide.InstanceStopParams{
+			Instance: oxide.NameOrId(state.ID.ValueString()),
+		}
+		_, err := r.client.InstanceStop(ctx, stopParams)
+		if err != nil {
+			if !is404(err) {
+				resp.Diagnostics.AddError(
+					"Unable to stop instance:",
+					"API error: "+err.Error(),
+				)
+				return
+			}
+		}
+
+		diags = waitForInstanceStop(ctx, r.client, updateTimeout, state.ID.ValueString())
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
+		params := oxide.InstanceUpdateParams{
+			Instance: oxide.NameOrId(state.ID.ValueString()),
+			BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+		}
+		instance, err = r.client.InstanceUpdate(ctx, params)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf("updated instance with ID: %v", instance.Id), map[string]any{"success": true})
+	}
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
