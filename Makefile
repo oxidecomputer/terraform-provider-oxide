@@ -49,10 +49,7 @@ test:
 
 ## Lints all of the source files
 .PHONY: lint
-# Sadly tfproviderlint does not seem to want to play nicely on CI with
-# Go versions >= 1.22. Add to CI again when the version is updated
-# https://github.com/bflad/tfproviderlint/blob/main/go.mod#L3 
-lint: golangci-lint tfproviderdocs terrafmt # tfproviderlint configfmt
+lint: golangci-lint tfproviderdocs terrafmt tfproviderlint # configfmt
 
 .PHONY: tfproviderlint
 tfproviderlint: tools
