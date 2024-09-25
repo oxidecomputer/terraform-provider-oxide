@@ -12,7 +12,7 @@ description = "`oxide_silo` [#347](https://github.com/oxidecomputer/terraform-pr
 
 [[features]]
 title = "New instance attribute"
-description = "It is now possible to specify a boot disk by setting `boot_disk_id` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)"
+description = "It is now possible to specify a boot disk by setting `boot_disk_id` [#352](https://github.com/oxidecomputer/terraform-provider-oxide/pull/352)"
 
 [[enhancements]]
 title = ""
