@@ -151,15 +151,10 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"boot_disk_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "ID of the disk the instance should be booted from.",
-				PlanModifiers: []planmodifier.String{
-					// TODO: TBD on whether to require replace or not
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.AlsoRequires(
-						path.MatchRoot("disk_attachments"),
-					),
-				},
+				// TODO: TBD on whether to require replace or not
+				// PlanModifiers: []planmodifier.String{
+				// 	stringplanmodifier.RequiresReplace(),
+				// },
 			},
 			"start_on_create": schema.BoolAttribute{
 				Optional:    true,
@@ -339,7 +334,6 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	params := oxide.InstanceCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.InstanceCreate{
-			BootDiskId:  plan.BootDiskID.ValueString(),
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Hostname:    oxide.Hostname(plan.HostName.ValueString()),
@@ -348,6 +342,25 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			Start:       plan.StartOnCreate.ValueBoolPointer(),
 			UserData:    plan.UserData.ValueString(),
 		},
+	}
+
+	// Add boot disk if any
+	if !plan.BootDiskID.IsNull() {
+		diskParams := oxide.DiskViewParams{
+			Disk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+		}
+		diskView, err := r.client.DiskView(ctx, diskParams)
+		if err != nil {
+			diags.AddError(
+				"Error retrieving boot disk information",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		params.Body.BootDisk = oxide.InstanceDiskAttachment{
+			Name: diskView.Name,
+			Type: oxide.InstanceDiskAttachmentTypeAttach,
+		}
 	}
 
 	// TODO: Double check we're not triggering the default "add all keys" behaviour
@@ -614,7 +627,9 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 		params := oxide.InstanceUpdateParams{
 			Instance: oxide.NameOrId(state.ID.ValueString()),
-			BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+			Body: &oxide.InstanceUpdate{
+				BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+			},
 		}
 		instance, err = r.client.InstanceUpdate(ctx, params)
 		if err != nil {

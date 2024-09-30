@@ -93,7 +93,7 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
-- `boot_disk_id` (String, Optional) ID of the disk the instance should be booted from. This ID must also be present in `disk_attachments`.
+- `boot_disk_id` (String, Optional) ID of the disk the instance should be booted from.
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
 - `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--ips))
 - `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))

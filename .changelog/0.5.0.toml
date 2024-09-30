@@ -4,15 +4,15 @@ description = ""
 
 [[features]]
 title = "New resource"
-description = "`oxide_ip_pool_silo_link` [#345](https://github.com/oxidecomputer/terraform-provider-oxide/pull/345)"
+description = "`oxide_ip_pool_silo_link` [#345](https://github.com/oxidecomputer/terraform-provider-oxide/pull/345)."
 
 [[features]]
 title = "New datasource"
-description = "`oxide_silo` [#347](https://github.com/oxidecomputer/terraform-provider-oxide/pull/347)"
+description = "`oxide_silo` [#347](https://github.com/oxidecomputer/terraform-provider-oxide/pull/347)."
 
 [[features]]
 title = "New instance attribute"
-description = "It is now possible to specify a boot disk by setting `boot_disk_id` [#352](https://github.com/oxidecomputer/terraform-provider-oxide/pull/352)"
+description = "It is now possible to specify a boot disk by setting `boot_disk_id` [#352](https://github.com/oxidecomputer/terraform-provider-oxide/pull/352)."
 
 [[enhancements]]
 title = ""

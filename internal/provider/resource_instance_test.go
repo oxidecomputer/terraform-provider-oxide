@@ -84,7 +84,6 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory           = 1073741824
   ncpus            = 1
   start_on_create  = true
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
   ssh_public_keys  = [oxide_ssh_key.{{.SSHBlockName}}.id]
   external_ips = [
 	{
@@ -478,7 +477,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id, oxide_disk.{{.DiskBlockName2}}.id]
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id}}.id]
 }
 `
 
@@ -512,7 +511,6 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
 }
 `
 	instanceDiskName := newResourceName()
@@ -613,7 +611,6 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
 		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
@@ -661,7 +658,6 @@ func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestC
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
-		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.1"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -678,8 +674,6 @@ func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
-		resource.TestCheckNoResourceAttr(resourceName, "disk_attachments.1"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
