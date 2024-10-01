@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
 	github.com/hashicorp/terraform-plugin-testing v1.10.0
-	github.com/oxidecomputer/oxide.go v0.1.0-beta8.0.20240923043657-5f5c33925e0d
+	github.com/oxidecomputer/oxide.go v0.1.0-beta8.0.20241001184257-cadd7b620187
 	github.com/stretchr/testify v1.9.0
 )
 
@@ -69,5 +69,3 @@ require (
 	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/oxidecomputer/oxide.go => ../oxide.go
