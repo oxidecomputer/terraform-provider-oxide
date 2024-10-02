@@ -477,7 +477,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id}}.id]
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
 }
 `
 

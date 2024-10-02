@@ -357,7 +357,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			)
 			return
 		}
-		params.Body.BootDisk = oxide.InstanceDiskAttachment{
+		params.Body.BootDisk = &oxide.InstanceDiskAttachment{
 			Name: diskView.Name,
 			Type: oxide.InstanceDiskAttachmentTypeAttach,
 		}
@@ -476,7 +476,9 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
 
-	state.BootDiskID = types.StringValue(instance.BootDiskId)
+	if !state.BootDiskID.IsNull() {
+		state.BootDiskID = types.StringValue(instance.BootDiskId)
+	}
 	state.Description = types.StringValue(instance.Description)
 	state.HostName = types.StringValue(string(instance.Hostname))
 	state.ID = types.StringValue(instance.Id)
