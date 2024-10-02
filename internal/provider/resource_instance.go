@@ -151,10 +151,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"boot_disk_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "ID of the disk the instance should be booted from.",
-				// TODO: TBD on whether to require replace or not
-				// PlanModifiers: []planmodifier.String{
-				// 	stringplanmodifier.RequiresReplace(),
-				// },
 			},
 			"start_on_create": schema.BoolAttribute{
 				Optional:    true,
@@ -171,9 +167,9 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				ElementType: types.StringType,
 				// TODO: Remove once https://github.com/oxidecomputer/omicron/issues/3224 has been fixed,
 				// and it's clear which disk is the boot disk to not remove by accident
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
-				},
+				//PlanModifiers: []planmodifier.Set{
+				//	setplanmodifier.RequiresReplace(),
+				//},
 			},
 			"ssh_public_keys": schema.SetAttribute{
 				Optional:    true,
