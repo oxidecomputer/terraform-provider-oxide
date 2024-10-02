@@ -85,6 +85,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   ncpus            = 1
   start_on_create  = true
   ssh_public_keys  = [oxide_ssh_key.{{.SSHBlockName}}.id]
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
   external_ips = [
 	{
 	  type = "ephemeral"
@@ -477,7 +478,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id, oxide_disk.{{.DiskBlockName2}}.id]
 }
 `
 
@@ -511,6 +512,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
 }
 `
 	instanceDiskName := newResourceName()

@@ -12,6 +12,8 @@ This resource manages instances.
 <!-- TODO: TBD on this behaviour or require replace -->
 -> Boot disk updates will stop and reboot the instance.
 
+-> When setting a boot disk, the boot disk ID should also be included as part of `disk_attachments`
+
 ## Example Usage
 
 ### Basic instance with attached disks and a network interface
@@ -93,7 +95,7 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
-- `boot_disk_id` (String, Optional) ID of the disk the instance should be booted from.
+- `boot_disk_id` (String, Optional) ID of the disk the instance should be booted from. This ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
 - `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--ips))
 - `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))

@@ -476,7 +476,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
 
-	if !state.BootDiskID.IsNull() {
+	if instance.BootDiskId != "" {
 		state.BootDiskID = types.StringValue(instance.BootDiskId)
 	}
 	state.Description = types.StringValue(instance.Description)
@@ -718,37 +718,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
-
-	// Detach all disks
-	for _, diskAttch := range state.DiskAttachments.Elements() {
-		diskID, err := strconv.Unquote(diskAttch.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error detaching disk",
-				"Disk ID parse error: "+err.Error(),
-			)
-			return
-		}
-
-		params := oxide.InstanceDiskDetachParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-			Body: &oxide.DiskPath{
-				Disk: oxide.NameOrId(diskID),
-			},
-		}
-		_, err = r.client.InstanceDiskDetach(ctx, params)
-		if err != nil {
-			if !is404(err) {
-				resp.Diagnostics.AddError(
-					"Error detaching disk",
-					"API error: "+err.Error(),
-				)
-				return
-			}
-			continue
-		}
-		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
-	}
 
 	params2 := oxide.InstanceDeleteParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
