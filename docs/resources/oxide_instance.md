@@ -6,13 +6,10 @@ page_title: "oxide_instance Resource - terraform-provider-oxide"
 
 This resource manages instances.
 
-<!-- TODO: This may not be necessary anymore? -->
--> Disk attachment updates require a resource replacement.
-
 <!-- TODO: TBD on this behaviour or require replace -->
 -> Boot disk updates will stop and reboot the instance.
 
--> When setting a boot disk, the boot disk ID should also be included as part of `disk_attachments`
+-> When setting a boot disk, the boot disk ID should also be included as part of `disk_attachments`.
 
 ## Example Usage
 

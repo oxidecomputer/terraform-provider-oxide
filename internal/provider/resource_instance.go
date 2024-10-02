@@ -165,11 +165,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "IDs of the disks to be attached to the instance.",
 				ElementType: types.StringType,
-				// TODO: Remove once https://github.com/oxidecomputer/omicron/issues/3224 has been fixed,
-				// and it's clear which disk is the boot disk to not remove by accident
-				//PlanModifiers: []planmodifier.Set{
-				//	setplanmodifier.RequiresReplace(),
-				//},
 			},
 			"ssh_public_keys": schema.SetAttribute{
 				Optional:    true,
@@ -540,9 +535,6 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	planDisks := plan.DiskAttachments.Elements()
-	stateDisks := state.DiskAttachments.Elements()
-
 	updateTimeout, diags := state.Timeouts.Update(ctx, defaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -551,6 +543,13 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	// Update disk attachments
+	//
+	// We attach new disks first in case the new boot disk is one of the newly added
+	// disks
+	planDisks := plan.DiskAttachments.Elements()
+	stateDisks := state.DiskAttachments.Elements()
+
 	// Check plan and if it has an ID that the state doesn't then attach it
 	disksToAttach := sliceDiff(planDisks, stateDisks)
 	resp.Diagnostics.Append(attachDisks(ctx, r.client, disksToAttach, state.ID.ValueString())...)
@@ -558,13 +557,58 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// Update instance only if boot_disk_id changes
+	if state.BootDiskID != plan.BootDiskID {
+		stopParams := oxide.InstanceStopParams{
+			Instance: oxide.NameOrId(state.ID.ValueString()),
+		}
+		_, err := r.client.InstanceStop(ctx, stopParams)
+		if err != nil {
+			if !is404(err) {
+				resp.Diagnostics.AddError(
+					"Unable to stop instance:",
+					"API error: "+err.Error(),
+				)
+				return
+			}
+		}
+
+		diags = waitForInstanceStop(ctx, r.client, updateTimeout, state.ID.ValueString())
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
+		params := oxide.InstanceUpdateParams{
+			Instance: oxide.NameOrId(state.ID.ValueString()),
+			Body: &oxide.InstanceUpdate{
+				BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+			},
+		}
+		instance, err := r.client.InstanceUpdate(ctx, params)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf("updated instance with ID: %v", instance.Id), map[string]any{"success": true})
+	}
+
 	// Check state and if it has an ID that the plan doesn't then detach it
+	//
+	// We only detach disks once we have made changes to the boot disk (if any)
+	// in case we need to remove the previous boot disk
 	disksToDetach := sliceDiff(stateDisks, planDisks)
 	resp.Diagnostics.Append(detachDisks(ctx, r.client, disksToDetach, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Update NICs
 	planNICs := plan.NetworkInterfaces
 	stateNICs := state.NetworkInterfaces
 
@@ -596,50 +640,6 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
-
-	// Update instance only if boot_disk_id changes
-	if state.BootDiskID != plan.BootDiskID {
-
-		// TODO: Only stop the instance for boot_disk_id changes?
-		// TODO: Document this behaviour
-		stopParams := oxide.InstanceStopParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-		}
-		_, err := r.client.InstanceStop(ctx, stopParams)
-		if err != nil {
-			if !is404(err) {
-				resp.Diagnostics.AddError(
-					"Unable to stop instance:",
-					"API error: "+err.Error(),
-				)
-				return
-			}
-		}
-
-		diags = waitForInstanceStop(ctx, r.client, updateTimeout, state.ID.ValueString())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
-
-		params := oxide.InstanceUpdateParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-			Body: &oxide.InstanceUpdate{
-				BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
-			},
-		}
-		instance, err = r.client.InstanceUpdate(ctx, params)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to read instance:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-
-		tflog.Trace(ctx, fmt.Sprintf("updated instance with ID: %v", instance.Id), map[string]any{"success": true})
-	}
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
@@ -889,13 +889,12 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 	nicSet := []instanceResourceNICModel{}
 	for _, nic := range nics.Items {
 		n := instanceResourceNICModel{
-			Description: types.StringValue(nic.Description),
-			ID:          types.StringValue(nic.Id),
-			IPAddr:      types.StringValue(nic.Ip),
-			MAC:         types.StringValue(string(nic.Mac)),
-			Name:        types.StringValue(string(nic.Name)),
-			// TODO: Should I check for nil before assigning this one?
-			Primary:      types.BoolValue(*nic.Primary),
+			Description:  types.StringValue(nic.Description),
+			ID:           types.StringValue(nic.Id),
+			IPAddr:       types.StringValue(nic.Ip),
+			MAC:          types.StringValue(string(nic.Mac)),
+			Name:         types.StringValue(string(nic.Name)),
+			Primary:      types.BoolPointerValue(nic.Primary),
 			SubnetID:     types.StringValue(nic.SubnetId),
 			TimeCreated:  types.StringValue(nic.TimeCreated.String()),
 			TimeModified: types.StringValue(nic.TimeModified.String()),

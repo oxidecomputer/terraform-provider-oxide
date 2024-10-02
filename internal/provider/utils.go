@@ -59,3 +59,13 @@ func sliceDiff[S []E, E any](a, b S) S {
 	}
 	return diff
 }
+
+// Whether a slice contains an item
+func sliceContains[T comparable](s []T, str T) bool {
+	for _, a := range s {
+		if a == str {
+			return true
+		}
+	}
+	return false
+}
