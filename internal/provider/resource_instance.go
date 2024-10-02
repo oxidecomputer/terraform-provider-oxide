@@ -151,6 +151,11 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"boot_disk_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "ID of the disk the instance should be booted from.",
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(
+						path.MatchRoot("disk_attachments"),
+					),
+				},
 			},
 			"start_on_create": schema.BoolAttribute{
 				Optional:    true,
@@ -337,12 +342,32 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Add boot disk if any
 	if !plan.BootDiskID.IsNull() {
+		// Validate whether the boot disk ID is included in `attachments`
+		// This is necessary as the response from InstanceDiskList includes
+		// the boot disk and would result in an inconsistent state in terraform
+		isBootIDPresent, err := attrValueSliceContains(plan.DiskAttachments.Elements(), plan.BootDiskID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error unquoting disk attachments",
+				"Validation error: "+err.Error(),
+			)
+			return
+		}
+
+		if !isBootIDPresent {
+			resp.Diagnostics.AddError(
+				"Validation error",
+				"Boot disk ID should be part of `disk_attachments`",
+			)
+			return
+		}
+
 		diskParams := oxide.DiskViewParams{
 			Disk: oxide.NameOrId(plan.BootDiskID.ValueString()),
 		}
 		diskView, err := r.client.DiskView(ctx, diskParams)
 		if err != nil {
-			diags.AddError(
+			resp.Diagnostics.AddError(
 				"Error retrieving boot disk information",
 				"API error: "+err.Error(),
 			)
@@ -1155,4 +1180,17 @@ func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 	}
 
 	return nil
+}
+
+func attrValueSliceContains(s []attr.Value, str string) (bool, error) {
+	for _, a := range s {
+		v, err := strconv.Unquote(a.String())
+		if err != nil {
+			return false, err
+		}
+		if v == str {
+			return true, nil
+		}
+	}
+	return false, nil
 }
