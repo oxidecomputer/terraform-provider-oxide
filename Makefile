@@ -19,7 +19,7 @@ PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
 # Acceptance test variables
 TEST_ACC_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/provider
-TEST_ACC_NAME ?= TestAccCloudResourceInstance
+TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
 
 # Unit test variables
