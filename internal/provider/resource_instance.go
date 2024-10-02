@@ -568,6 +568,28 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	// The instance must be stopped for all updates
+	stopParams := oxide.InstanceStopParams{
+		Instance: oxide.NameOrId(state.ID.ValueString()),
+	}
+	_, err := r.client.InstanceStop(ctx, stopParams)
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to stop instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	diags = waitForInstanceStop(ctx, r.client, updateTimeout, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
 	// Update disk attachments
 	//
 	// We attach new disks first in case the new boot disk is one of the newly added
@@ -584,26 +606,6 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Update instance only if boot_disk_id changes
 	if state.BootDiskID != plan.BootDiskID {
-		stopParams := oxide.InstanceStopParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-		}
-		_, err := r.client.InstanceStop(ctx, stopParams)
-		if err != nil {
-			if !is404(err) {
-				resp.Diagnostics.AddError(
-					"Unable to stop instance:",
-					"API error: "+err.Error(),
-				)
-				return
-			}
-		}
-
-		diags = waitForInstanceStop(ctx, r.client, updateTimeout, state.ID.ValueString())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
 		params := oxide.InstanceUpdateParams{
 			Instance: oxide.NameOrId(state.ID.ValueString()),
@@ -620,7 +622,9 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("updated instance with ID: %v", instance.Id), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf(
+			"updated boot disk forinstance with ID: %v", instance.Id), map[string]any{"success": true},
+		)
 	}
 
 	// Check state and if it has an ID that the plan doesn't then detach it
@@ -649,6 +653,18 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	startParams := oxide.InstanceStartParams{Instance: oxide.NameOrId(state.ID.ValueString())}
+	_, err = r.client.InstanceStart(ctx, startParams)
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to start instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
 	}
 
 	// Read instance to retrieve modified time value if this is the only update we are doing
@@ -764,8 +780,11 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 		Pending: []string{
 			string(oxide.InstanceStateCreating),
 			string(oxide.InstanceStateStarting),
+			string(oxide.InstanceStateRunning),
 			string(oxide.InstanceStateStopping),
 			string(oxide.InstanceStateRebooting),
+			string(oxide.InstanceStateMigrating),
+			string(oxide.InstanceStateRepairing),
 		},
 		Target:  []string{string(oxide.InstanceStateStopped)},
 		Timeout: timeout,
