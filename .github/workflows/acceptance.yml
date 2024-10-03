@@ -1,9 +1,7 @@
 name: acceptance
-# Temporarily halt as this release hasn't been deployed
-# Testing has been done manually
-# on:
-#   release:
-#     types: [published, unpublished, edited]
+on:
+  release:
+    types: [published, unpublished, edited]
 jobs:
   acceptance:
     runs-on: ubuntu-latest
