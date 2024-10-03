@@ -6,7 +6,9 @@ page_title: "oxide_instance Resource - terraform-provider-oxide"
 
 This resource manages instances.
 
--> Disk attachment updates require a resource replacement.
+-> Boot disk updates will stop and reboot the instance.
+
+-> When setting a boot disk, the boot disk ID should also be included as part of `disk_attachments`.
 
 ## Example Usage
 
@@ -15,6 +17,7 @@ This resource manages instances.
 ```hcl
 resource "oxide_instance" "example" {
   project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  boot_disk_id     = "611bb17d-6883-45be-b3aa-8a186fdeafe8"
   description      = "a test instance"
   name             = "myinstance"
   host_name        = "<host value>"
@@ -88,6 +91,7 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
+- `boot_disk_id` (String, Optional) ID of the disk the instance should be booted from. This ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
 - `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--ips))
 - `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))

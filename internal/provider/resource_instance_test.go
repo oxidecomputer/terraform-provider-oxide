@@ -77,14 +77,15 @@ resource "oxide_ssh_key" "{{.SSHBlockName}}" {
 
 resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  boot_disk_id     = oxide_disk.{{.DiskBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
   host_name        = "terraform-acc-myhost"
   memory           = 1073741824
   ncpus            = 1
   start_on_create  = true
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
   ssh_public_keys  = [oxide_ssh_key.{{.SSHBlockName}}.id]
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
   external_ips = [
 	{
 	  type = "ephemeral"
@@ -470,6 +471,7 @@ resource "oxide_disk" "{{.DiskBlockName2}}" {
 
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  boot_disk_id    = oxide_disk.{{.DiskBlockName2}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
@@ -503,6 +505,7 @@ resource "oxide_disk" "{{.DiskBlockName2}}" {
 
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  boot_disk_id    = oxide_disk.{{.DiskBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
@@ -602,6 +605,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 func checkResourceInstanceFull(resourceName, instanceName, nicName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
@@ -609,7 +613,6 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
 		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
@@ -649,6 +652,7 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
@@ -656,7 +660,6 @@ func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestC
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
-		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.1"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -666,14 +669,13 @@ func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestC
 func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
-		resource.TestCheckNoResourceAttr(resourceName, "disk_attachments.1"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

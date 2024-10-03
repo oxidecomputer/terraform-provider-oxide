@@ -107,6 +107,7 @@ resource "oxide_ssh_key" "example" {
 
 resource "oxide_instance" "test" {
   project_id       = data.oxide_project.example.id
+  boot_disk_id     = oxide_disk.example.id
   description      = "a test instance"
   name             = "my-instance"
   host_name        = "my-host"
