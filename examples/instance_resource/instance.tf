@@ -132,6 +132,10 @@ resource "oxide_instance" "test" {
   user_data = filebase64("./init.sh")
 }
 
+data "oxide_instance_external_ips" "example" {
+  instance_id = oxide_instance.test.id
+}
+
 output "instance_external_ip" {
   value = data.oxide_instance_external_ips.example.external_ips.0.ip
 }
