@@ -47,6 +47,7 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
+	BootDiskID        types.String                      `tfsdk:"boot_disk_id"`
 	Description       types.String                      `tfsdk:"description"`
 	DiskAttachments   types.Set                         `tfsdk:"disk_attachments"`
 	ExternalIPs       []instanceResourceExternalIPModel `tfsdk:"external_ips"`
@@ -147,6 +148,15 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					int64planmodifier.RequiresReplace(),
 				},
 			},
+			"boot_disk_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "ID of the disk the instance should be booted from.",
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(
+						path.MatchRoot("disk_attachments"),
+					),
+				},
+			},
 			"start_on_create": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
@@ -160,11 +170,6 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Description: "IDs of the disks to be attached to the instance.",
 				ElementType: types.StringType,
-				// TODO: Remove once https://github.com/oxidecomputer/omicron/issues/3224 has been fixed,
-				// and it's clear which disk is the boot disk to not remove by accident
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
-				},
 			},
 			"ssh_public_keys": schema.SetAttribute{
 				Optional:    true,
@@ -335,6 +340,45 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		},
 	}
 
+	// Add boot disk if any
+	if !plan.BootDiskID.IsNull() {
+		// Validate whether the boot disk ID is included in `attachments`
+		// This is necessary as the response from InstanceDiskList includes
+		// the boot disk and would result in an inconsistent state in terraform
+		isBootIDPresent, err := attrValueSliceContains(plan.DiskAttachments.Elements(), plan.BootDiskID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error unquoting disk attachments",
+				"Validation error: "+err.Error(),
+			)
+			return
+		}
+
+		if !isBootIDPresent {
+			resp.Diagnostics.AddError(
+				"Validation error",
+				"Boot disk ID should be part of `disk_attachments`",
+			)
+			return
+		}
+
+		diskParams := oxide.DiskViewParams{
+			Disk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+		}
+		diskView, err := r.client.DiskView(ctx, diskParams)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error retrieving boot disk information",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+		params.Body.BootDisk = &oxide.InstanceDiskAttachment{
+			Name: diskView.Name,
+			Type: oxide.InstanceDiskAttachmentTypeAttach,
+		}
+	}
+
 	// TODO: Double check we're not triggering the default "add all keys" behaviour
 	sshKeys, diags := newSSHKeysOnCreate(plan.SSHPublicKeys)
 	resp.Diagnostics.Append(diags...)
@@ -448,6 +492,9 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
 
+	if instance.BootDiskId != "" {
+		state.BootDiskID = types.StringValue(instance.BootDiskId)
+	}
 	state.Description = types.StringValue(instance.Description)
 	state.HostName = types.StringValue(string(instance.Hostname))
 	state.ID = types.StringValue(instance.Id)
@@ -513,6 +560,40 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	updateTimeout, diags := state.Timeouts.Update(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
+	// The instance must be stopped for all updates
+	stopParams := oxide.InstanceStopParams{
+		Instance: oxide.NameOrId(state.ID.ValueString()),
+	}
+	_, err := r.client.InstanceStop(ctx, stopParams)
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to stop instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	diags = waitForInstanceStop(ctx, r.client, updateTimeout, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+
+	// Update disk attachments
+	//
+	// We attach new disks first in case the new boot disk is one of the newly added
+	// disks
 	planDisks := plan.DiskAttachments.Elements()
 	stateDisks := state.DiskAttachments.Elements()
 
@@ -523,13 +604,40 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	// Update instance only if boot_disk_id changes
+	if state.BootDiskID != plan.BootDiskID {
+
+		params := oxide.InstanceUpdateParams{
+			Instance: oxide.NameOrId(state.ID.ValueString()),
+			Body: &oxide.InstanceUpdate{
+				BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+			},
+		}
+		instance, err := r.client.InstanceUpdate(ctx, params)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to read instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf(
+			"updated boot disk forinstance with ID: %v", instance.Id), map[string]any{"success": true},
+		)
+	}
+
 	// Check state and if it has an ID that the plan doesn't then detach it
+	//
+	// We only detach disks once we have made changes to the boot disk (if any)
+	// in case we need to remove the previous boot disk
 	disksToDetach := sliceDiff(stateDisks, planDisks)
 	resp.Diagnostics.Append(detachDisks(ctx, r.client, disksToDetach, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Update NICs
 	planNICs := plan.NetworkInterfaces
 	stateNICs := state.NetworkInterfaces
 
@@ -547,7 +655,19 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Read instance to retrieve modified time value
+	startParams := oxide.InstanceStartParams{Instance: oxide.NameOrId(state.ID.ValueString())}
+	_, err = r.client.InstanceStart(ctx, startParams)
+	if err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to start instance:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	// Read instance to retrieve modified time value if this is the only update we are doing
 	params := oxide.InstanceViewParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
 	}
@@ -636,37 +756,6 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
-	// Detach all disks
-	for _, diskAttch := range state.DiskAttachments.Elements() {
-		diskID, err := strconv.Unquote(diskAttch.String())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error detaching disk",
-				"Disk ID parse error: "+err.Error(),
-			)
-			return
-		}
-
-		params := oxide.InstanceDiskDetachParams{
-			Instance: oxide.NameOrId(state.ID.ValueString()),
-			Body: &oxide.DiskPath{
-				Disk: oxide.NameOrId(diskID),
-			},
-		}
-		_, err = r.client.InstanceDiskDetach(ctx, params)
-		if err != nil {
-			if !is404(err) {
-				resp.Diagnostics.AddError(
-					"Error detaching disk",
-					"API error: "+err.Error(),
-				)
-				return
-			}
-			continue
-		}
-		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", diskID), map[string]any{"success": true})
-	}
-
 	params2 := oxide.InstanceDeleteParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
 	}
@@ -691,8 +780,11 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 		Pending: []string{
 			string(oxide.InstanceStateCreating),
 			string(oxide.InstanceStateStarting),
+			string(oxide.InstanceStateRunning),
 			string(oxide.InstanceStateStopping),
 			string(oxide.InstanceStateRebooting),
+			string(oxide.InstanceStateMigrating),
+			string(oxide.InstanceStateRepairing),
 		},
 		Target:  []string{string(oxide.InstanceStateStopped)},
 		Timeout: timeout,
@@ -841,13 +933,12 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 	nicSet := []instanceResourceNICModel{}
 	for _, nic := range nics.Items {
 		n := instanceResourceNICModel{
-			Description: types.StringValue(nic.Description),
-			ID:          types.StringValue(nic.Id),
-			IPAddr:      types.StringValue(nic.Ip),
-			MAC:         types.StringValue(string(nic.Mac)),
-			Name:        types.StringValue(string(nic.Name)),
-			// TODO: Should I check for nil before assigning this one?
-			Primary:      types.BoolValue(*nic.Primary),
+			Description:  types.StringValue(nic.Description),
+			ID:           types.StringValue(nic.Id),
+			IPAddr:       types.StringValue(nic.Ip),
+			MAC:          types.StringValue(string(nic.Mac)),
+			Name:         types.StringValue(string(nic.Name)),
+			Primary:      types.BoolPointerValue(nic.Primary),
 			SubnetID:     types.StringValue(nic.SubnetId),
 			TimeCreated:  types.StringValue(nic.TimeCreated.String()),
 			TimeModified: types.StringValue(nic.TimeModified.String()),
@@ -1108,4 +1199,17 @@ func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 	}
 
 	return nil
+}
+
+func attrValueSliceContains(s []attr.Value, str string) (bool, error) {
+	for _, a := range s {
+		v, err := strconv.Unquote(a.String())
+		if err != nil {
+			return false, err
+		}
+		if v == str {
+			return true, nil
+		}
+	}
+	return false, nil
 }

@@ -1,3 +1,27 @@
+# 0.5.0 (2024/Oct/3)
+
+### New features
+
+- **New resource:** `oxide_ip_pool_silo_link` [#345](https://github.com/oxidecomputer/terraform-provider-oxide/pull/345).
+- **New datasource:** `oxide_silo` [#347](https://github.com/oxidecomputer/terraform-provider-oxide/pull/347).
+- **New instance attribute:** It is now possible to specify a boot disk by setting `boot_disk_id` [#352](https://github.com/oxidecomputer/terraform-provider-oxide/pull/352).
+
+### Enhancements
+
+- **Instance resource:** Disk attachments no longer require resource replacement [#352](https://github.com/oxidecomputer/terraform-provider-oxide/pull/352).
+
+### List of commits
+
+- [5f90026](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5f90026) Docs version bump (#355)
+- [d85888a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d85888a) Refine instance update (#353)
+- [10ab870](https://github.com/oxidecomputer/terraform-provider-oxide/commit/10ab870) `oxide_instance` boot disk implementation (#352)
+- [b323c37](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b323c37) Silo datasource (#347)
+- [3e4303a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3e4303a) Update to Go SDK 7b8deef (#348)
+- [8e5e448](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8e5e448) `oxide_ip_pool_silo_link` resource (#345)
+- [800bdb8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/800bdb8) Bump goreleaser/goreleaser-action from 5.1.0 to 6.0.0 (#324)
+- [7067777](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7067777) Update goreleaser version to 2 (#343)
+- [f5932a7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f5932a7) Bump version to 0.5.0 (#342)
+
 # 0.4.0 (2024/Sep/3)
 
 ### Breaking changes

@@ -4,7 +4,7 @@ terraform {
   required_providers {
     oxide = {
       source  = "oxidecomputer/oxide"
-      version = "0.4.0"
+      version = "0.5.0"
     }
   }
 }
@@ -107,6 +107,7 @@ resource "oxide_ssh_key" "example" {
 
 resource "oxide_instance" "test" {
   project_id       = data.oxide_project.example.id
+  boot_disk_id     = oxide_disk.example.id
   description      = "a test instance"
   name             = "my-instance"
   host_name        = "my-host"
@@ -129,6 +130,10 @@ resource "oxide_instance" "test" {
     }
   ]
   user_data = filebase64("./init.sh")
+}
+
+data "oxide_instance_external_ips" "example" {
+  instance_id = oxide_instance.test.id
 }
 
 output "instance_external_ip" {
