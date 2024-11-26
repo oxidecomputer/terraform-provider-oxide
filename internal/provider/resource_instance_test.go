@@ -510,7 +510,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   name            = "{{.InstanceName}}"
   host_name       = "terraform-acc-myhost"
   memory          = 1073741824
-  ncpus           = 1
+  ncpus           = 2
   start_on_create = true
   disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
 }
@@ -674,7 +674,7 @@ func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
 		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
-		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),

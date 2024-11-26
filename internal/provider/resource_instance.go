@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -137,16 +136,10 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"memory": schema.Int64Attribute{
 				Required:    true,
 				Description: "Instance memory in bytes.",
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
 			},
 			"ncpus": schema.Int64Attribute{
 				Required:    true,
 				Description: "Number of CPUs allocated for this instance.",
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
 			},
 			"boot_disk_id": schema.StringAttribute{
 				Optional:    true,
@@ -604,13 +597,17 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Update instance only if boot_disk_id changes
-	if state.BootDiskID != plan.BootDiskID {
+	// Update instance only if configurable instance params change
+	if state.BootDiskID != plan.BootDiskID ||
+		state.Memory != plan.Memory ||
+		state.NCPUs != plan.NCPUs {
 
 		params := oxide.InstanceUpdateParams{
 			Instance: oxide.NameOrId(state.ID.ValueString()),
 			Body: &oxide.InstanceUpdate{
 				BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
+				Memory:   oxide.ByteCount(plan.Memory.ValueInt64()),
+				Ncpus:    oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
 			},
 		}
 		instance, err := r.client.InstanceUpdate(ctx, params)
