@@ -597,7 +597,10 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// Update instance only if configurable instance params change
+	// Update instance only if configurable instance params change.
+	// Due to the design of the API, when updating an instance all
+	// parameters must be set. This means we set all of the parameters
+	// even if only a single one changed.
 	if state.BootDiskID != plan.BootDiskID ||
 		state.Memory != plan.Memory ||
 		state.NCPUs != plan.NCPUs {
