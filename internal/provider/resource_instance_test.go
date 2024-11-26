@@ -586,6 +586,137 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+func TestAccCloudResourceInstance_update(t *testing.T) {
+	type resourceInstanceUpdateConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = true
+}
+`
+
+	resourceInstanceConfigUpdateTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 2
+  start_on_create = true
+}
+`
+
+	resourceInstanceConfigUpdate2Tpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 2147483648
+  ncpus           = 2
+  start_on_create = true
+}
+`
+	instanceName := newResourceName()
+	supportBlockName := newBlockName("support")
+	supportBlockName2 := newBlockName("support-update")
+	blockNameInstance := newBlockName("instance")
+	resourceNameInstance := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
+	config, err := parsedAccConfig(
+		resourceInstanceUpdateConfig{
+			BlockName:        blockNameInstance,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configUpdate, err := parsedAccConfig(
+		resourceInstanceUpdateConfig{
+			BlockName:        blockNameInstance,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName2,
+		},
+		resourceInstanceConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configUpdate2, err := parsedAccConfig(
+		resourceInstanceUpdateConfig{
+			BlockName:        blockNameInstance,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName2,
+		},
+		resourceInstanceConfigUpdate2Tpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstanceUpdate(resourceNameInstance, instanceName),
+			},
+			{
+				// Update NCPUs
+				Config: configUpdate,
+				Check:  checkResourceInstanceUpdate2(resourceNameInstance, instanceName),
+			},
+			{
+				// Update Menory
+				Config: configUpdate2,
+				Check:  checkResourceInstanceUpdate3(resourceNameInstance, instanceName),
+			},
+			{
+				// Update all
+				Config: config,
+				Check:  checkResourceInstanceUpdate(resourceNameInstance, instanceName),
+			},
+			{
+				ResourceName:      resourceNameInstance,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
 func checkResourceInstance(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -733,6 +864,51 @@ func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "2147483648"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

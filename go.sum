@@ -132,8 +132,10 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/oxidecomputer/oxide.go v0.1.0-beta8.0.20241002225252-92053e192b28 h1:EXm6ATVUL2fIdxz8Jzvf0W3WhIP5/vnXyYZPLvs1z7Q=
-github.com/oxidecomputer/oxide.go v0.1.0-beta8.0.20241002225252-92053e192b28/go.mod h1:9TBnNt4BsYikmgOEdQ8bDhENhpa3lBE4CpekqpzqPCQ=
+github.com/oxidecomputer/oxide.go v0.1.0-beta9.0.20241125050113-eb153ea4db8c h1:w3WgeFerjCSXGNT9u3vyJIaZ8Yxa82DZYhwOL9gi1CU=
+github.com/oxidecomputer/oxide.go v0.1.0-beta9.0.20241125050113-eb153ea4db8c/go.mod h1:Fn/YWG8Ycr9qFeQJszDGRooZSQr2P/kco+34iOHotmw=
+github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
+github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pjbgf/sha1cd v0.3.0 h1:4D5XXmUUBUl/xQ6IjCkEAbqXskkq/4O7LmGn0AqMDs4=
 github.com/pjbgf/sha1cd v0.3.0/go.mod h1:nZ1rrWOcGJ5uZgEEVL1VUM9iRQiZvWdbZjkKyFzPPsI=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

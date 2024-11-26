@@ -6,7 +6,7 @@ page_title: "oxide_instance Resource - terraform-provider-oxide"
 
 This resource manages instances.
 
--> Boot disk, disk attachment, and network interface updates will stop and reboot the instance.
+-> Updates will stop and reboot the instance.
 
 -> When setting a boot disk, the boot disk ID should also be included as part of `disk_attachments`.
 

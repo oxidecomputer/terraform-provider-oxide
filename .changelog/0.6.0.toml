@@ -7,8 +7,8 @@ title = ""
 description = ""
 
 [[enhancements]]
-title = ""
-description = ""
+title = "Instance resource"
+description = "Updates to `Memory` and `NCPUs` no longer require resource replace [#370](https://github.com/oxidecomputer/terraform-provider-oxide/pull/370)."
 
 [[bugs]]
 title = ""
