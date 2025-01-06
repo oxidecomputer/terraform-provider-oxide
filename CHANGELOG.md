@@ -1,3 +1,25 @@
+# 0.6.0 (2025/Jan/06)
+
+### Enhancements
+
+- **Instance resource:** Updates to `Memory` and `NCPUs` no longer require resource replace [#370](https://github.com/oxidecomputer/terraform-provider-oxide/pull/370).
+
+### List of commits
+
+- [b19273d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b19273d) release: bump version (#373)
+- [69c8d9a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/69c8d9a) Update to Go SDK eb153ea (#370)
+- [9c66bad](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9c66bad) Bump github.com/hashicorp/terraform-plugin-testing from 1.10.0 to 1.11.0 (#369)
+- [a8c9da0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a8c9da0) Bump github.com/stretchr/testify from 1.9.0 to 1.10.0 (#368)
+- [e92be74](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e92be74) codeowners: update owners (#367)
+- [731ad55](https://github.com/oxidecomputer/terraform-provider-oxide/commit/731ad55) Bump goreleaser/goreleaser-action from 6.0.0 to 6.1.0 (#366)
+- [432eb1b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/432eb1b) Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.14.0 to 0.15.0 (#364)
+- [7b3ab82](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7b3ab82) Bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.34.0 to 2.35.0 (#365)
+- [922ad1c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/922ad1c) Bump github.com/hashicorp/terraform-plugin-framework from 1.12.0 to 1.13.0 (#363)
+- [7fb9c74](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7fb9c74) Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.13.0 to 0.14.0 (#360)
+- [bd0df07](https://github.com/oxidecomputer/terraform-provider-oxide/commit/bd0df07) Upgrade to Go 1.23 and tf plugins (#351)
+- [98a5e76](https://github.com/oxidecomputer/terraform-provider-oxide/commit/98a5e76) Fix example on returning instance external ip (#359)
+- [26dcc35](https://github.com/oxidecomputer/terraform-provider-oxide/commit/26dcc35) Update to 0.6 for development (#358)
+
 # 0.5.0 (2024/Oct/3)
 
 ### New features
