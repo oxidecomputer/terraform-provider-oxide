@@ -29,6 +29,7 @@ type oxideProvider struct {
 type oxideProviderModel struct {
 	Host  types.String `tfsdk:"host"`
 	Token types.String `tfsdk:"token"`
+	Profile types.String `tfsdk:"profile"`
 }
 
 // New initialises a new provider
@@ -56,6 +57,11 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				Sensitive:   true,
 				Description: "Token used to authenticate",
 			},
+			"profile": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Profile used to authenticate. Retrieves host and token from credentials.toml",
+			},
 		},
 	}
 }
@@ -66,6 +72,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	host := os.Getenv("OXIDE_HOST")
 	token := os.Getenv("OXIDE_TOKEN")
+	profile := ""
 
 	var data oxideProviderModel
 
@@ -80,39 +87,56 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	if data.Host.ValueString() != "" {
 		host = data.Host.ValueString()
 	}
-
-	if token == "" {
-		resp.Diagnostics.AddError(
-			"Missing API Token Configuration",
-			"While configuring the provider, the API token was not found in "+
-				"the OXIDE_TOKEN environment variable or "+
-				"configuration block token attribute.",
-		)
+	if data.Profile.ValueString() != "" {
+		profile = data.Profile.ValueString()
 	}
 
-	if host == "" {
-		resp.Diagnostics.AddError(
-			"Missing Host Configuration",
-			"While configuring the provider, the host was not found in "+
-				"the OXIDE_HOST environment variable or "+
-				"configuration block host attribute.",
-		)
+	var config oxide.Config
+
+
+	if profile != "" {
+		ctx = tflog.SetField(ctx, "profile", profile)
+		tflog.Debug(ctx, "Creating Oxide client")
+
+		config = oxide.Config{
+			Profile:   profile,
+			UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
+		}
+	} else {
+		if token == "" {
+			resp.Diagnostics.AddError(
+				"Missing API Token Configuration",
+				"While configuring the provider, the API token was not found in "+
+					"the OXIDE_TOKEN environment variable or "+
+					"configuration block token attribute.",
+			)
+		}
+
+		if host == "" {
+			resp.Diagnostics.AddError(
+				"Missing Host Configuration",
+				"While configuring the provider, the host was not found in "+
+					"the OXIDE_HOST environment variable or "+
+					"configuration block host attribute.",
+			)
+		}
+
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		ctx = tflog.SetField(ctx, "host", host)
+		ctx = tflog.SetField(ctx, "token", token)
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
+		tflog.Debug(ctx, "Creating Oxide client")
+
+		config = oxide.Config{
+			Token:     token,
+			UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
+			Host:      host,
+		}
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ctx = tflog.SetField(ctx, "host", host)
-	ctx = tflog.SetField(ctx, "token", token)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
-	tflog.Debug(ctx, "Creating Oxide client")
-
-	config := oxide.Config{
-		Token:     token,
-		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
-		Host:      host,
-	}
 	client, err := oxide.NewClient(&config)
 	if err != nil {
 		resp.Diagnostics.AddError(
