@@ -59,7 +59,6 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			},
 			"profile": schema.StringAttribute{
 				Optional:    true,
-				Sensitive:   true,
 				Description: "Profile used to authenticate. Retrieves host and token from credentials.toml",
 			},
 		},
@@ -96,7 +95,6 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	if profile != "" {
 		ctx = tflog.SetField(ctx, "profile", profile)
-		tflog.Debug(ctx, "Creating Oxide client")
 
 		config = oxide.Config{
 			Profile:   profile,
@@ -128,7 +126,6 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		ctx = tflog.SetField(ctx, "host", host)
 		ctx = tflog.SetField(ctx, "token", token)
 		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
-		tflog.Debug(ctx, "Creating Oxide client")
 
 		config = oxide.Config{
 			Token:     token,
@@ -137,6 +134,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		}
 	}
 
+	tflog.Debug(ctx, "Creating Oxide client")
 	client, err := oxide.NewClient(&config)
 	if err != nil {
 		resp.Diagnostics.AddError(
