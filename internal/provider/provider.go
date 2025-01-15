@@ -114,7 +114,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 			"Missing API Token Configuration",
 			"While configuring the provider, the API token was not found in "+
 				"the OXIDE_TOKEN environment variable or "+
-				"configuration block token attribute.",
+				"configuration block token attribute, or profile.",
 		)
 	}
 
@@ -123,7 +123,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 			"Missing Host Configuration",
 			"While configuring the provider, the host was not found in "+
 				"the OXIDE_HOST environment variable or "+
-				"configuration block host attribute.",
+				"configuration block host attribute, or profile.",
 		)
 	}
 
