@@ -60,4 +60,4 @@ resource "oxide_disk" "example" {
 
 - `host` (String) URL of the root of the target server
 - `token` (String, Sensitive) Token used to authenticate
-- `profile` (String) Profile used to authenticate from `credentials.toml`
+- `profile` (String, Sensitive) Profile used to authenticate from `credentials.toml`
