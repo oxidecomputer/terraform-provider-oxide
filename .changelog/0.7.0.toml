@@ -1,0 +1,15 @@
+[[breaking]]
+title = ""
+description = ""
+
+[[features]]
+title = "Profile Argument for Terraform Provider"
+description = "Allows authentication via a authenticated `profile` in `credentials.toml` [#383](https://github.com/oxidecomputer/terraform-provider-oxide/pull/383)."
+
+[[enhancements]]
+title = ""
+description = ""
+
+[[bugs]]
+title = ""
+description = ""

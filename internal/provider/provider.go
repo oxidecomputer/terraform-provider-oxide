@@ -9,10 +9,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
@@ -27,8 +30,9 @@ type oxideProvider struct {
 }
 
 type oxideProviderModel struct {
-	Host  types.String `tfsdk:"host"`
-	Token types.String `tfsdk:"token"`
+	Host    types.String `tfsdk:"host"`
+	Token   types.String `tfsdk:"token"`
+	Profile types.String `tfsdk:"profile"`
 }
 
 // New initialises a new provider
@@ -50,11 +54,31 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			"host": schema.StringAttribute{
 				Optional:    true,
 				Description: "URL of the root of the target server",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("profile"),
+					}...),
+				},
 			},
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
 				Description: "Token used to authenticate",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("profile"),
+					}...),
+				},
+			},
+			"profile": schema.StringAttribute{
+				Optional:    true,
+				Description: "Profile used to authenticate. Retrieves host and token from credentials.toml",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("host"),
+						path.MatchRoot("token"),
+					}...),
+				},
 			},
 		},
 	}
@@ -66,6 +90,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	host := os.Getenv("OXIDE_HOST")
 	token := os.Getenv("OXIDE_TOKEN")
+	profile := ""
 
 	var data oxideProviderModel
 
@@ -80,22 +105,25 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	if data.Host.ValueString() != "" {
 		host = data.Host.ValueString()
 	}
+	if data.Profile.ValueString() != "" {
+		profile = data.Profile.ValueString()
+	}
 
-	if token == "" {
+	if token == "" && profile == "" {
 		resp.Diagnostics.AddError(
 			"Missing API Token Configuration",
 			"While configuring the provider, the API token was not found in "+
 				"the OXIDE_TOKEN environment variable or "+
-				"configuration block token attribute.",
+				"configuration block token attribute, or profile.",
 		)
 	}
 
-	if host == "" {
+	if host == "" && profile == "" {
 		resp.Diagnostics.AddError(
 			"Missing Host Configuration",
 			"While configuring the provider, the host was not found in "+
 				"the OXIDE_HOST environment variable or "+
-				"configuration block host attribute.",
+				"configuration block host attribute, or profile.",
 		)
 	}
 
@@ -105,6 +133,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	ctx = tflog.SetField(ctx, "host", host)
 	ctx = tflog.SetField(ctx, "token", token)
+	ctx = tflog.SetField(ctx, "profile", profile)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
 	tflog.Debug(ctx, "Creating Oxide client")
 
@@ -112,6 +141,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		Token:     token,
 		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
 		Host:      host,
+		Profile:   profile,
 	}
 	client, err := oxide.NewClient(&config)
 	if err != nil {
