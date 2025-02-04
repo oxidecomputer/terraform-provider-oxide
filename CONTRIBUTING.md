@@ -29,7 +29,7 @@ are checked out to adjacent directories (e.g., share the same parent directory).
 
 To undo those changes run `make unset-local-api`.
 
-If the SDK you wish to try out with another version or a Go pseudo-version of the SDK run `SDK_V={GIT_HASH|VERSION} make sdk-version`.
+To use a specific version of the Go SDK run `SDK_V={GIT_HASH|VERSION} make sdk-version`.
 
 ## Using the provider
 
