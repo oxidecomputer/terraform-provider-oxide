@@ -17,8 +17,15 @@ There is a caveat when installing with an Apple M1 computer. When building the s
 
 ### Building with local SDK changes or other versions
 
-If you wish to try out the provider with changes in your local SDK, all you need to do is run `make local-api`. The make target assumes you have  the `oxide.go`
-inside the same parent directory as this one (e.g. your-dir/oxide.go  and your-dir/terraform-provider-oxide).
+To use the Terraform provider with a local `oxide.go` Go SDK run `make local-api`.
+This target assumes both the `oxide.go` and `terraform-provider-oxide` repositories
+are checked out to adjacent directories (e.g., share the same parent directory).
+
+```
+.
+├── oxide.go
+└── terraform-provider-oxide
+```
 
 To undo those changes run `make unset-local-api`.
 
