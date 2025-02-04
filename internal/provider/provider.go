@@ -170,6 +170,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewSiloDataSource,
 		NewSSHKeyDataSource,
 		NewVPCDataSource,
+		NewVPCRouterDataSource,
 		NewVPCSubnetDataSource,
 	}
 }
@@ -187,6 +188,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewSSHKeyResource,
 		NewVPCResource,
 		NewVPCFirewallRulesResource,
+		NewVpcRouterResource,
 		NewVPCSubnetResource,
 	}
 }
