@@ -13,3 +13,11 @@ description = ""
 [[bugs]]
 title = ""
 description = ""
+
+[[features]]
+title = "New resource"
+description = "`oxide_vpc_internet_gateway` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)."
+
+[[features]]
+title = "New datasource"
+description = "`oxide_vpc_internet_gateway` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)."

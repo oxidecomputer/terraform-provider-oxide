@@ -170,6 +170,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewSiloDataSource,
 		NewSSHKeyDataSource,
 		NewVPCDataSource,
+		NewVPCInternetGatewayDataSource,
 		NewVPCSubnetDataSource,
 	}
 }
