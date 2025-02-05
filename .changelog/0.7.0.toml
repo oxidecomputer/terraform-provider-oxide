@@ -16,8 +16,8 @@ description = ""
 
 [[features]]
 title = "New resource"
-description = "`oxide_vpc_internet_gateway` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)."
+description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389)."
 
 [[features]]
 title = "New datasource"
-description = "`oxide_vpc_internet_gateway` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)."
+description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389)."
