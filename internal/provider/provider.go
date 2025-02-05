@@ -186,6 +186,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewSnapshotResource,
 		NewSSHKeyResource,
 		NewVPCResource,
+		NewVPCInternetGatewayResource,
 		NewVPCFirewallRulesResource,
 		NewVPCSubnetResource,
 	}
