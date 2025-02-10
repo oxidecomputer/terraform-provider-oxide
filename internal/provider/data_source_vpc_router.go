@@ -33,6 +33,7 @@ type vpcRouterDataSource struct {
 type vpcRouterDataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
+	Kind         types.String   `tfsdk:"kind"`
 	Name         types.String   `tfsdk:"name"`
 	ProjectName  types.String   `tfsdk:"project_name"`
 	VPCID        types.String   `tfsdk:"vpc_id"`
@@ -81,7 +82,11 @@ func (d *vpcRouterDataSource) Schema(ctx context.Context, req datasource.SchemaR
 			"timeouts": timeouts.Attributes(ctx),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the VPC.",
+				Description: "Unique, immutable, system-controlled identifier of the VPC router.",
+			},
+			"kind": schema.StringAttribute{
+				Computed:    true,
+				Description: "Whether the VPC router is custom or system created.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
@@ -129,6 +134,7 @@ func (d *vpcRouterDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	state.Description = types.StringValue(router.Description)
 	state.ID = types.StringValue(router.Id)
+	state.Kind = types.StringValue(string(router.Kind))
 	state.Name = types.StringValue(string(router.Name))
 	state.VPCID = types.StringValue(router.VpcId)
 	state.TimeCreated = types.StringValue(router.TimeCreated.String())

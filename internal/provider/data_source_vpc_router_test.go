@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
 type dataSourceVPCRouterConfig struct {
@@ -63,6 +64,7 @@ func checkDataSourceVPCRouter(dataName string) resource.TestCheckFunc {
 			"Routes are automatically added to this router as vpc subnets are created",
 		),
 		resource.TestCheckResourceAttr(dataName, "name", "system"),
+		resource.TestCheckResourceAttr(dataName, "kind", string(oxide.VpcRouterKindSystem)),
 		resource.TestCheckResourceAttrSet(dataName, "vpc_id"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "time_modified"),

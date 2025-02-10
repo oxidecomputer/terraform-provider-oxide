@@ -35,6 +35,7 @@ data "oxide_vpc_router" "example" {
 
 - `description` (String) Description for the VPC router.
 - `id` (String) Unique, immutable, system-controlled identifier of the VPC router.
+- `kind` (String) Whether the VPC router is custom or system created.
 - `name` (String) Name of the VPC router.
 - `vpc_id` (String) ID of the VPC that contains the router.
 - `time_created` (String) Timestamp of when this VPC router was created.

@@ -129,6 +129,7 @@ func checkResourceVPCRouter(resourceName, routerName string) resource.TestCheckF
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test router"),
+		resource.TestCheckResourceAttr(resourceName, "kind", string(oxide.RouterRouteKindCustom)),
 		resource.TestCheckResourceAttr(resourceName, "name", routerName),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -145,6 +146,7 @@ func checkResourceVPCRouterUpdate(resourceName, routerName string) resource.Test
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a new description for router"),
+		resource.TestCheckResourceAttr(resourceName, "kind", string(oxide.RouterRouteKindCustom)),
 		resource.TestCheckResourceAttr(resourceName, "name", routerName),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

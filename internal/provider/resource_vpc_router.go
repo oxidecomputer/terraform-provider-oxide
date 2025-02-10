@@ -38,6 +38,7 @@ type vpcRouterResource struct {
 type vpcRouterResourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
+	Kind         types.String   `tfsdk:"kind"`
 	Name         types.String   `tfsdk:"name"`
 	VPCID        types.String   `tfsdk:"vpc_id"`
 	TimeCreated  types.String   `tfsdk:"time_created"`
@@ -85,6 +86,10 @@ func (r *vpcRouterResource) Schema(ctx context.Context, _ resource.SchemaRequest
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC router.",
+			},
+			"kind": schema.StringAttribute{
+				Computed:    true,
+				Description: "Whether the VPC router is custom or system created.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
@@ -142,6 +147,7 @@ func (r *vpcRouterResource) Create(ctx context.Context, req resource.CreateReque
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouter.Id)
+	plan.Kind = types.StringValue(string(vpcRouter.Kind))
 	plan.TimeCreated = types.StringValue(vpcRouter.TimeCreated.String())
 	plan.TimeModified = types.StringValue(vpcRouter.TimeModified.String())
 
@@ -190,6 +196,7 @@ func (r *vpcRouterResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	state.Description = types.StringValue(vpcRouter.Description)
 	state.ID = types.StringValue(vpcRouter.Id)
+	state.Kind = types.StringValue(string(vpcRouter.Kind))
 	state.Name = types.StringValue(string(vpcRouter.Name))
 	state.VPCID = types.StringValue(string(vpcRouter.VpcId))
 	state.TimeCreated = types.StringValue(vpcRouter.TimeCreated.String())
@@ -247,6 +254,7 @@ func (r *vpcRouterResource) Update(ctx context.Context, req resource.UpdateReque
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouter.Id)
+	plan.Kind = types.StringValue(string(vpcRouter.Kind))
 	plan.TimeCreated = types.StringValue(vpcRouter.TimeCreated.String())
 	plan.TimeModified = types.StringValue(vpcRouter.TimeModified.String())
 

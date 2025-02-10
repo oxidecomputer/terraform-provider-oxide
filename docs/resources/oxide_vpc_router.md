@@ -37,6 +37,7 @@ resource "oxide_vpc_router" "example" {
 ### Read-Only
 
 - `id` (String) Unique, immutable, system-controlled identifier of the VPC router.
+- `kind` (String) Whether the VPC router is custom or system created.
 - `time_created` (String) Timestamp of when this VPC router was created.
 - `time_modified` (String) Timestamp of when this VPC router was last modified.
 

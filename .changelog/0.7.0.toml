@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = "Profile Argument for Terraform Provider"
-description = "Allows authentication via a authenticated `profile` in `credentials.toml` [#383](https://github.com/oxidecomputer/terraform-provider-oxide/pull/383)."
+title = "Profile attribute in provider block"
+description = "Allows authentication via an authenticated `profile` in `credentials.toml` [#383](https://github.com/oxidecomputer/terraform-provider-oxide/pull/383)."
 
 [[features]]
 title = "New resource"
