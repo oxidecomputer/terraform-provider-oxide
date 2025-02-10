@@ -14,14 +14,6 @@ description = "`oxide_vpc_router` [#388](https://github.com/oxidecomputer/terraf
 title = "New datasource"
 description = "`oxide_vpc_router` [#388](https://github.com/oxidecomputer/terraform-provider-oxide/pull/388)."
 
-[[enhancements]]
-title = ""
-description = ""
-
-[[bugs]]
-title = ""
-description = ""
-
 [[features]]
 title = "New resource"
 description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389)."
@@ -29,3 +21,11 @@ description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecompu
 [[features]]
 title = "New datasource"
 description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389)."
+
+[[enhancements]]
+title = ""
+description = ""
+
+[[bugs]]
+title = ""
+description = ""

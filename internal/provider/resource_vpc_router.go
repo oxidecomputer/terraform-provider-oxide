@@ -25,8 +25,8 @@ var (
 	_ resource.ResourceWithConfigure = (*vpcRouterResource)(nil)
 )
 
-// NewVpcRouterResource is a helper function to simplify the provider implementation.
-func NewVpcRouterResource() resource.Resource {
+// NewVPCRouterResource is a helper function to simplify the provider implementation.
+func NewVPCRouterResource() resource.Resource {
 	return &vpcRouterResource{}
 }
 
