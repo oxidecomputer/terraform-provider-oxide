@@ -8,28 +8,57 @@ This resource manages instances.
 
 -> Updates will stop and reboot the instance.
 
--> When setting a boot disk, the boot disk ID should also be included as part of `disk_attachments`.
+-> When setting a boot disk using `boot_disk_id`, the boot disk ID must also be
+present in `disk_attachments`.
 
 ## Example Usage
 
-### Basic instance with attached disks and a network interface
+### Instance minimal example
 
 ```hcl
 resource "oxide_instance" "example" {
   project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  boot_disk_id     = "611bb17d-6883-45be-b3aa-8a186fdeafe8"
-  description      = "a test instance"
+  description      = "Example instance."
   name             = "myinstance"
-  host_name        = "<host value>"
-  memory           = 1073741824
+  host_name        = "myhostname"
+  memory           = 10737418240
   ncpus            = 1
-  ssh_public_keys  = ["066cab1b-c550-4aea-8a80-8422fd3bfc40", "1aa748cb-26f0-4bf5-8faf-b202dc74d698"]
-  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8", "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"]
+  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+}
+```
+
+### Instance with user data and an SSH public key
+
+```hcl
+resource "oxide_instance" "example" {
+  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description      = "Example instance."
+  name             = "myinstance"
+  host_name        = "myhostname"
+  memory           = 10737418240
+  ncpus            = 1
+  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  ssh_public_keys  = ["066cab1b-c550-4aea-8a80-8422fd3bfc40"]
+  user_data        = filebase64("path/to/init.sh")
+}
+```
+
+### Instance with a custom network interface with resource timeouts
+
+```hcl
+resource "oxide_instance" "example" {
+  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description      = "Example instance."
+  name             = "myinstance"
+  host_name        = "myhostname"
+  memory           = 10737418240
+  ncpus            = 1
+  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
   network_interfaces = [
     {
       subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
       vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
-      description = "a sample nic"
+      description = "Example network interface."
       name        = "mynic"
     },
   ]
@@ -41,17 +70,18 @@ resource "oxide_instance" "example" {
 }
 ```
 
-### Assign an IP pool for the instance and do not start instance on creation
+### Instance with external IPs that does not start when created
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id      = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description     = "a test instance"
-  name            = "myinstance"
-  host_name       = "<host value>"
-  memory          = 1073741824
-  ncpus           = 1
-  start_on_create = false
+  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description      = "Example instance."
+  name             = "myinstance"
+  host_name        = "myhostname"
+  memory           = 10737418240
+  ncpus            = 1
+  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  start_on_create  = false
   external_ips = [
     {
       type = "ephemeral"
@@ -64,26 +94,12 @@ resource "oxide_instance" "example" {
 }
 ```
 
-### Define user data
-
-```hcl
-resource "oxide_instance" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test instance"
-  name        = "myinstance"
-  host_name   = "<host value>"
-  memory      = 1073741824
-  ncpus       = 1
-  user_data   = filebase64("path/to/init.sh")
-}
-```
-
 ## Schema
 
 ### Required
 
 - `description` (String) Description for the instance.
-- `host_name` (String) Host name of the instance.
+- `host_name` (String) Hostname of the instance.
 - `memory` (Number) Instance memory in bytes.
 - `name` (String) Name of the instance.
 - `ncpus` (Number) Number of CPUs allocated for this instance.
@@ -91,14 +107,14 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
-- `boot_disk_id` (String, Optional) ID of the disk the instance should be booted from. This ID must also be present in `disk_attachments`.
-- `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance.
-- `external_ips` (Set of Object, Optional) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--ips))
-- `network_interfaces` (Set of Object, Optional) Virtual network interface devices attached to an instance. (see [below for nested schema](#nestedatt--nics))
-- `ssh_public_keys` (Set of String, Optional) An allowlist of IDs of the saved SSH public keys to be transferred to the instance via cloud-init during instance creation.
-- `start_on_create` (Boolean, Default `true`) Starts the instance on creation when set to true.
-- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
-- `user_data` (String) User data for instance initialization systems (such as cloud-init). Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4) (+ and / characters with padding). Maximum 32 KiB unencoded data.
+- `boot_disk_id` (String, Optional) ID of the disk to boot the instance from. When provided, this ID must also be present in `disk_attachments`.
+- `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `book_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
+- `external_ips` (Set of Object, Optional) External IP addresses associated with the instance. See [below for nested schema](#nestedatt--ips).
+- `network_interfaces` (Set of Object, Optional) Network interface devices attached to the instance. See [below for nested schema](#nestedatt--nics).
+- `ssh_public_keys` (Set of String, Optional) The IDs of the SSH public keys to be transferred to the instance via cloud-init.
+- `start_on_create` (Boolean, Default `true`) Whether to start the instance on creation.
+- `timeouts` (Attribute, Optional) Timeouts for performing API operations. See [below for nested schema](#nestedatt--timeouts).
+- `user_data` (String) User data for instance initialization systems (e.g., cloud-init). Must be a Base64-encoded string as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4). Must be no larger than 32 KiB unencoded.
 
 ### Read-Only
 
@@ -112,11 +128,11 @@ resource "oxide_instance" "example" {
 
 ### Required
 
-- `type` (String) Type of external IP. Possible values are: ephemeral or floating.
+- `type` (String) Type of external IP. Must be one of `ephemeral` or `floating`.
 
 ### Optional
 
-- `id` (String) If type is ephemeral, ID of the IP pool to retrieve addresses from, or the current silo's default pool if not specified. If type is floating, id of the floating IP.
+- `id` (String) If `type` is `ephemeral`, the ID of the IP pool to retrieve addresses from, or the silo's default pool if not specified. If `type` is `floating`, the ID of the floating IP.
 
 <a id="nestedatt--nics"></a>
 
