@@ -1,3 +1,33 @@
+# 0.7.0 (2025/Feb/25)
+
+### New features
+
+- **Profile attribute in provider block:** Allows authentication via an authenticated `profile` in `credentials.toml` [#383](https://github.com/oxidecomputer/terraform-provider-oxide/pull/383).
+- **New resource:** `oxide_vpc_router` [#388](https://github.com/oxidecomputer/terraform-provider-oxide/pull/388).
+- **New datasource:** `oxide_vpc_router` [#388](https://github.com/oxidecomputer/terraform-provider-oxide/pull/388).
+- **New resource:** `oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389).
+- **New datasource:** `oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389).
+
+### List of commits
+
+- [360c215](https://github.com/oxidecomputer/terraform-provider-oxide/commit/360c215) Update SDK to v0.3.0 (#399)
+- [e76a859](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e76a859) Update docs to new version 0.7.0 (#395)
+- [36f7bf0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/36f7bf0) Bump goreleaser/goreleaser-action from 6.1.0 to 6.2.1 (#394)
+- [44b6bdd](https://github.com/oxidecomputer/terraform-provider-oxide/commit/44b6bdd) docs: update oxide_instance resource (#393)
+- [a85899a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a85899a) New `oxide_vpc_internet_gateway` resource and datasource (#389)
+- [f471988](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f471988) Bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.35.0 to 2.36.0 (#391)
+- [8540a1f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8540a1f) New oxide_vpc_router resource and datasource (#388)
+- [accc74b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/accc74b) Improve contributing docs (#387)
+- [fc247e8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fc247e8) Bump github.com/hashicorp/terraform-plugin-go from 0.25.0 to 0.26.0 (#386)
+- [c7d43e8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c7d43e8) Bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.4.1 to 0.5.0 (#384)
+- [631a15c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/631a15c) Adding profile lookup for credentials.toml (#383)
+- [9d23c27](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9d23c27) Bump github.com/oxidecomputer/oxide.go from 0.1.0-beta9.0.20241125050113-eb153ea4db8c to 0.2.0 (#382)
+- [90e035d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/90e035d) Bump golang.org/x/net from 0.28.0 to 0.33.0 (#380)
+- [e393a06](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e393a06) Bump golang.org/x/crypto from 0.29.0 to 0.31.0 (#379)
+- [f140866](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f140866) Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.15.0 to 0.16.0 (#372)
+- [532c3f1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/532c3f1) release: bump version (#375)
+- [dac5730](https://github.com/oxidecomputer/terraform-provider-oxide/commit/dac5730) release: update changelog (#374)
+
 # 0.6.0 (2025/Jan/06)
 
 ### Enhancements
