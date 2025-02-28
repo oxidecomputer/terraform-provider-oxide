@@ -4,7 +4,10 @@ page_title: "oxide_vpc_firewall_rules Resource - terraform-provider-oxide"
 
 # oxide_vpc_firewall_rules (Resource)
 
-This resource manages VPC subnets.
+This resource manages VPC firewall rules.
+
+!> Firewall rules defined by this resource are considered exhaustive and will
+overwrite any other firewall rules for the VPC once applied.
 
 ## Example Usage
 
@@ -13,9 +16,9 @@ resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
   rules = [
     {
-      action      = "deny"
-      description = "custom deny"
-      name        = "custom-deny-http"
+      action      = "allow"
+      description = "Allow HTTPS."
+      name        = "allow-https"
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -26,8 +29,8 @@ resource "oxide_vpc_firewall_rules" "example" {
             value = "default"
           }
         ]
-        ports     = ["8123"]
-        protocols = ["ICMP"]
+        ports     = ["443"]
+        protocols = ["TCP"]
       },
       targets = [
         {
@@ -84,7 +87,7 @@ Optional:
 
 - `hosts` (Set) If present, the sources (if incoming) or destinations (if outgoing) this rule applies to. (see [below for nested schema](#nestedatt--hosts))
 - `protocols` (Array of Strings) If present, the networking protocols this rule applies to. Possible values are: TCP, UDP and ICMP.
-- `ports` (Array of Strings) If present, the destination ports this rule applies to.
+- `ports` (Array of Strings) If present, the destination ports this rule applies to. Can be a mix of single ports (e.g., `"443"`) and port ranges (e.g., `"30000-32768"`).
 
 <a id="nestedatt--hosts"></a>
 
