@@ -1,0 +1,31 @@
+[[breaking]]
+title = ""
+description = ""
+
+[[features]]
+title = "Profile attribute in provider block"
+description = "Allows authentication via an authenticated `profile` in `credentials.toml` [#383](https://github.com/oxidecomputer/terraform-provider-oxide/pull/383)."
+
+[[features]]
+title = "New resource"
+description = "`oxide_vpc_router` [#388](https://github.com/oxidecomputer/terraform-provider-oxide/pull/388)."
+
+[[features]]
+title = "New datasource"
+description = "`oxide_vpc_router` [#388](https://github.com/oxidecomputer/terraform-provider-oxide/pull/388)."
+
+[[features]]
+title = "New resource"
+description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389)."
+
+[[features]]
+title = "New datasource"
+description = "`oxide_vpc_internet_gateway` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/389)."
+
+[[enhancements]]
+title = ""
+description = ""
+
+[[bugs]]
+title = ""
+description = ""
