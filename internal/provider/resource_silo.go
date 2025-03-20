@@ -43,27 +43,27 @@ type siloResource struct {
 }
 
 type siloResourceModel struct {
-	AdminGroupName   types.String             `tfsdk:"admin_group_name"`
-	Description      types.String             `tfsdk:"description"`
-	Discoverable     types.Bool               `tfsdk:"discoverable"`
-	ID               types.String             `tfsdk:"id"`
-	IdentityMode     types.String             `tfsdk:"identity_mode"`
-	MappedFleetRoles map[string][]string      `tfsdk:"mapped_fleet_roles"`
-	Name             types.String             `tfsdk:"name"`
-	Quotas           quotaResourceModel       `tfsdk:"quotas"`
-	TlsCertificates  []certificateCreateModel `tfsdk:"tls_certificates"`
-	Timeouts         timeouts.Value           `tfsdk:"timeouts"`
-	TimeCreated      types.String             `tfsdk:"time_created"`
-	TimeModified     types.String             `tfsdk:"time_modified"`
+	AdminGroupName   types.String             			`tfsdk:"admin_group_name"`
+	Description      types.String             			`tfsdk:"description"`
+	Discoverable     types.Bool               			`tfsdk:"discoverable"`
+	ID               types.String             			`tfsdk:"id"`
+	IdentityMode     types.String             			`tfsdk:"identity_mode"`
+	MappedFleetRoles map[string][]string      			`tfsdk:"mapped_fleet_roles"`
+	Name             types.String             			`tfsdk:"name"`
+	Quotas           siloResourceQuotaModel   			`tfsdk:"quotas"`
+	TlsCertificates  []siloResourceTlsCertificateModel 	`tfsdk:"tls_certificates"`
+	Timeouts         timeouts.Value           			`tfsdk:"timeouts"`
+	TimeCreated      types.String             			`tfsdk:"time_created"`
+	TimeModified     types.String             			`tfsdk:"time_modified"`
 }
 
-type quotaResourceModel struct {
+type siloResourceQuotaModel struct {
 	Cpus    types.Int64 `tfsdk:"cpus"`
 	Memory  types.Int64 `tfsdk:"memory"`
 	Storage types.Int64 `tfsdk:"storage"`
 }
 
-type certificateCreateModel struct {
+type siloResourceTlsCertificateModel struct {
 	Cert        types.String `tfsdk:"cert"`
 	Description types.String `tfsdk:"description"`
 	Key         types.String `tfsdk:"key"`
@@ -95,7 +95,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 		Attributes: map[string]schema.Attribute{
 			"admin_group_name": schema.StringAttribute{
 				Optional:    true,
-				Description: "Admin Group Name for the silo.",
+				Description: "Name of the group to be granted the Silo Admin role.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -109,7 +109,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 			},
 			"discoverable": schema.BoolAttribute{
 				Required:    true,
-				Description: "A silo where discoverable is false can be retrieved only by its id - it will not be part of the 'list all silos' output.",
+				Description: "Whether this silo is present in the silo_list output.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 				},
@@ -240,7 +240,7 @@ func toOxideMappedFleetRoles(mappedFleetRoles map[string][]string) map[string][]
 	return model
 }
 
-func toOxideTlsCertificates(tlsCertificates []certificateCreateModel) []oxide.CertificateCreate {
+func toOxideTlsCertificates(tlsCertificates []siloResourceTlsCertificateModel) []oxide.CertificateCreate {
 	var model []oxide.CertificateCreate
 
 	for _, tlsCert := range tlsCertificates {
