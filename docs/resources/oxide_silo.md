@@ -6,33 +6,35 @@ page_title: "oxide_silo Resource - terraform-provider-oxide"
 
 This resource manages the creation of an Oxide Silo.
 
+Note: On Silo updates the only attribute that can be updated is the `quotas`. The rest of the attributes will cause a destroy first and then another create.
+
 ## Example Usage
 
 ```hcl
 resource "oxide_silo" "example" {
-	description       		= "a test silo"
-	name              		= "{{.SiloName}}"
-	admin_group_name 		= "test_admin"
-	identity_mode 			= "saml_jit"
-	discoverable 			= true
-	mapped_fleet_roles 		= {
-		admin  = ["admin", "collaborator"]
-		viewer = ["viewer"]
-	}
-	quotas 					= {
-		cpus 				= 8
-		memory 				= 32
-		storage 			= 100
-	}
-	tls_certificates 		= [
-		{
-			cert 			= "PUBLIC_KEY"
-			description 	= "test cert 1"
-			key 			= "PRIVATE_KEY"
-			name 			= "silo_cert_1"
-			service 		= "service1"
-		},
-	]
+  description      = "a test silo"
+  name             = "{{.SiloName}}"
+  admin_group_name = "test_admin"
+  identity_mode    = "saml_jit"
+  discoverable     = true
+  mapped_fleet_roles = {
+    admin  = ["admin", "collaborator"]
+    viewer = ["viewer"]
+  }
+  quotas = {
+    cpus    = 8
+    memory  = 32
+    storage = 100
+  }
+  tls_certificates = [
+    {
+      cert        = "PUBLIC_KEY"
+      description = "test cert 1"
+      key         = "PRIVATE_KEY"
+      name        = "silo_cert_1"
+      service     = "service1"
+    },
+  ]
 }
 ```
 
@@ -41,7 +43,7 @@ resource "oxide_silo" "example" {
 ### Required
 
 - `name` (String) Name of the Oxide Silo.
-- `discoverable` (Boolean, Default `true`) A silo where discoverable is false can be retrieved only by its id it will not be part of the 'list all silos' output.
+- `discoverable` (Boolean) Whether this silo is present in the silo_list output. Defaults to `true`.
 - `identity_mode` (String) Describes how identities are managed and users are authenticated in this Silo
 - `quotas` (Set of Object) Limits the amount of provisionable CPU, memory, and storage in the Silo. (see [below for nested schema](#nestedatt--quotas))
 - `description` (String) Description for the Oxide Silo.
