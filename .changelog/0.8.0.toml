@@ -3,7 +3,7 @@ title = ""
 description = ""
 
 [[features]]
-title = "New oxide silo resource"
+title = "New resource"
 description = "`oxide_silo` [#389](https://github.com/oxidecomputer/terraform-provider-oxide/pull/407)."
 
 [[enhancements]]
