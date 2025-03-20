@@ -57,10 +57,6 @@ type siloResourceModel struct {
 	TimeModified     types.String             `tfsdk:"time_modified"`
 }
 
-type fleetRoleModel struct {
-	FleetRole types.String `tfsdk:"fleet_role"`
-}
-
 type quotaResourceModel struct {
 	Cpus    types.Int64 `tfsdk:"cpus"`
 	Memory  types.Int64 `tfsdk:"memory"`
@@ -231,7 +227,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 	}
 }
 
-func siloCreateMappedFleetRolesModel(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
+func toOxideMappedFleetRoles(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
 	model := make(map[string][]oxide.FleetRole)
 
 	for key, fleetRoleModels := range mappedFleetRoles {
@@ -244,15 +240,7 @@ func siloCreateMappedFleetRolesModel(mappedFleetRoles map[string][]string) map[s
 	return model
 }
 
-func newQuotasModel(quotas quotaResourceModel) oxide.SiloQuotasCreate {
-	return oxide.SiloQuotasCreate{
-		Cpus:    int(quotas.Cpus.ValueInt64()),
-		Memory:  oxide.ByteCount(quotas.Memory.ValueInt64()),
-		Storage: oxide.ByteCount(quotas.Storage.ValueInt64()),
-	}
-}
-
-func newTlsCertificates(tlsCertificates []certificateCreateModel) []oxide.CertificateCreate {
+func toOxideTlsCertificates(tlsCertificates []certificateCreateModel) []oxide.CertificateCreate {
 	var model []oxide.CertificateCreate
 
 	for _, tlsCert := range tlsCertificates {
@@ -294,10 +282,14 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			Description:      plan.Description.ValueString(),
 			IdentityMode:     oxide.SiloIdentityMode(plan.IdentityMode.ValueString()),
 			Discoverable:     plan.Discoverable.ValueBoolPointer(),
-			MappedFleetRoles: siloCreateMappedFleetRolesModel(plan.MappedFleetRoles),
+			MappedFleetRoles: toOxideMappedFleetRoles(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
-			Quotas:           newQuotasModel(plan.Quotas),
-			TlsCertificates:  newTlsCertificates(plan.TlsCertificates),
+			Quotas:           oxide.SiloQuotasCreate{
+								Cpus:    int(plan.Quotas.Cpus.ValueInt64()),
+								Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
+								Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
+							  },
+			TlsCertificates:  toOxideTlsCertificates(plan.TlsCertificates),
 		},
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Silo creation parameters: %+v", params.Body.TlsCertificates), nil)
@@ -364,7 +356,7 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.ID = types.StringValue(silo.Id)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
-	state.MappedFleetRoles = stateMappedFleetRolesModel(silo.MappedFleetRoles)
+	state.MappedFleetRoles = toTerraformMappedFleetRoles(silo.MappedFleetRoles)
 	state.Name = types.StringValue(string(silo.Name))
 	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	state.TimeModified = types.StringValue(silo.TimeModified.String())
@@ -376,7 +368,7 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 }
 
-func stateMappedFleetRolesModel(mappedFleetRoles map[string][]oxide.FleetRole) map[string][]string {
+func toTerraformMappedFleetRoles(mappedFleetRoles map[string][]oxide.FleetRole) map[string][]string {
 	model := make(map[string][]string)
 	for key, roles := range mappedFleetRoles {
 		var modelRoles []string
@@ -386,39 +378,6 @@ func stateMappedFleetRolesModel(mappedFleetRoles map[string][]oxide.FleetRole) m
 		model[key] = modelRoles
 	}
 	return model
-}
-
-// Delete deletes the resource and removes the Terraform state on success.
-func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state siloResourceModel
-
-	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
-	defer cancel()
-
-	params := oxide.SiloDeleteParams{
-		Silo: oxide.NameOrId(state.ID.ValueString()),
-	}
-	if err := r.client.SiloDelete(ctx, params); err != nil {
-		if !is404(err) {
-			resp.Diagnostics.AddError(
-				"Error deleting silo:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
@@ -477,4 +436,37 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+}
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state siloResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	params := oxide.SiloDeleteParams{
+		Silo: oxide.NameOrId(state.ID.ValueString()),
+	}
+	if err := r.client.SiloDelete(ctx, params); err != nil {
+		if !is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting silo:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+	tflog.Trace(ctx, fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
