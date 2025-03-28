@@ -504,20 +504,16 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 	}
 
 	for _, rule := range rules {
-		priority := rule.Priority.ValueInt64Pointer()
-		if priority == nil {
-			panic("TEMPORARY ERROR")
-		}
-
 		r := oxide.VpcFirewallRuleUpdate{
 			Action:      oxide.VpcFirewallRuleAction(rule.Action.ValueString()),
 			Description: rule.Description.ValueString(),
 			Direction:   oxide.VpcFirewallRuleDirection(rule.Direction.ValueString()),
 			Name:        oxide.Name(rule.Name.ValueString()),
-			Priority:    oxide.NewPointer(int(*priority)),
-			Status:      oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
-			Filters:     newFilterTypeFromModel(rule.Filters),
-			Targets:     newTargetTypeFromModel(rule.Targets),
+			// We can safely dereference rule.Priority as it's a required field
+			Priority: oxide.NewPointer(int(*rule.Priority.ValueInt64Pointer())),
+			Status:   oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
+			Filters:  newFilterTypeFromModel(rule.Filters),
+			Targets:  newTargetTypeFromModel(rule.Targets),
 		}
 
 		updateRules = append(updateRules, r)
