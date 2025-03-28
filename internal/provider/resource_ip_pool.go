@@ -208,7 +208,7 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// Append information about IP Pool ranges
 	listParams := oxide.IpPoolRangeListParams{
 		Pool:  oxide.NameOrId(ipPool.Id),
-		Limit: 1000000000,
+		Limit: oxide.NewPointer(1000000000),
 	}
 	ipPoolRanges, err := r.client.IpPoolRangeList(ctx, listParams)
 	if err != nil {
@@ -355,7 +355,7 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		ctx,
 		oxide.IpPoolRangeListParams{
 			Pool:  oxide.NameOrId(state.ID.ValueString()),
-			Limit: 1000000000,
+			Limit: oxide.NewPointer(1000000000),
 		},
 	)
 	if err != nil {

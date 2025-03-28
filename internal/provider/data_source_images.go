@@ -164,7 +164,7 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	// Seems unlikely anyone will have more than one billion images.
 	params := oxide.ImageListParams{
 		Project: oxide.NameOrId(state.ProjectID.ValueString()),
-		Limit:   1000000000,
+		Limit:   oxide.NewPointer(1000000000),
 		SortBy:  oxide.NameOrIdSortModeIdAscending,
 	}
 	images, err := d.client.ImageList(ctx, params)

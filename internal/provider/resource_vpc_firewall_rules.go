@@ -504,12 +504,17 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 	}
 
 	for _, rule := range rules {
+		priority := rule.Priority.ValueInt64Pointer()
+		if priority == nil {
+			panic("TEMPORARY ERROR")
+		}
+
 		r := oxide.VpcFirewallRuleUpdate{
 			Action:      oxide.VpcFirewallRuleAction(rule.Action.ValueString()),
 			Description: rule.Description.ValueString(),
 			Direction:   oxide.VpcFirewallRuleDirection(rule.Direction.ValueString()),
 			Name:        oxide.Name(rule.Name.ValueString()),
-			Priority:    int(rule.Priority.ValueInt64()),
+			Priority:    oxide.NewPointer(int(*priority)),
 			Status:      oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
 			Filters:     newFilterTypeFromModel(rule.Filters),
 			Targets:     newTargetTypeFromModel(rule.Targets),
@@ -527,12 +532,13 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRules
 
 	for _, rule := range rules {
 		m := vpcFirewallRulesResourceRuleModel{
-			Action:       types.StringValue(string(rule.Action)),
-			Description:  types.StringValue(rule.Description),
-			Direction:    types.StringValue(string(rule.Direction)),
-			ID:           types.StringValue(rule.Id),
-			Name:         types.StringValue(string(rule.Name)),
-			Priority:     types.Int64Value(int64(rule.Priority)),
+			Action:      types.StringValue(string(rule.Action)),
+			Description: types.StringValue(rule.Description),
+			Direction:   types.StringValue(string(rule.Direction)),
+			ID:          types.StringValue(rule.Id),
+			Name:        types.StringValue(string(rule.Name)),
+			// We can safely dereference rule.Priority as it's a required field
+			Priority:     types.Int64Value(int64(*rule.Priority)),
 			Status:       types.StringValue(string(rule.Status)),
 			Targets:      newTargetsModelFromResponse(rule.Targets),
 			TimeCreated:  types.StringValue(rule.TimeCreated.String()),

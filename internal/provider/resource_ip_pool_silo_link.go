@@ -168,7 +168,7 @@ func (r *ipPoolSiloLinkResource) Read(ctx context.Context, req resource.ReadRequ
 
 	params := oxide.IpPoolSiloListParams{
 		Pool:   oxide.NameOrId(state.IPPoolID.ValueString()),
-		Limit:  1000000000,
+		Limit:  oxide.NewPointer(1000000000),
 		SortBy: oxide.IdSortModeIdAscending,
 	}
 

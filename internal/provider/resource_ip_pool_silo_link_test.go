@@ -195,7 +195,7 @@ func testAccIPPoolSiloLinkDestroy(s *terraform.State) error {
 		siloID := rs.Primary.Attributes["silo_id"]
 		params := oxide.IpPoolSiloListParams{
 			Pool:   oxide.NameOrId(oxide.NameOrId(ipPoolID)),
-			Limit:  1000000000,
+			Limit:  oxide.NewPointer(1000000000),
 			SortBy: oxide.IdSortModeIdAscending,
 		}
 

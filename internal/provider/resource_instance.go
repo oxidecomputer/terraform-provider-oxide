@@ -821,7 +821,7 @@ func newAttachedDisksSet(ctx context.Context, client *oxide.Client, instanceID s
 	var diags diag.Diagnostics
 
 	params := oxide.InstanceDiskListParams{
-		Limit:    1000000000,
+		Limit:    oxide.NewPointer(1000000000),
 		Instance: oxide.NameOrId(instanceID),
 	}
 	disks, err := client.InstanceDiskList(ctx, params)
@@ -851,7 +851,7 @@ func newAssociatedSSHKeysOnCreateSet(ctx context.Context, client *oxide.Client, 
 	var diags diag.Diagnostics
 
 	params := oxide.InstanceSshPublicKeyListParams{
-		Limit:    1000000000,
+		Limit:    oxide.NewPointer(1000000000),
 		Instance: oxide.NameOrId(instanceID),
 	}
 	keys, err := client.InstanceSshPublicKeyList(ctx, params)
@@ -919,7 +919,7 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 
 	params := oxide.InstanceNetworkInterfaceListParams{
 		Instance: oxide.NameOrId(instanceID),
-		Limit:    1000000000,
+		Limit:    oxide.NewPointer(1000000000),
 	}
 	nics, err := client.InstanceNetworkInterfaceList(ctx, params)
 	if err != nil {
