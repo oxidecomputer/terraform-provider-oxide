@@ -115,7 +115,7 @@ func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadReques
 	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000 results.
 	// Seems unlikely anyone will have more than one billion projects.
 	params := oxide.ProjectListParams{
-		Limit:  1000000000,
+		Limit:  oxide.NewPointer(1000000000),
 		SortBy: oxide.NameOrIdSortModeNameDescending,
 	}
 	projects, err := d.client.ProjectList(ctx, params)

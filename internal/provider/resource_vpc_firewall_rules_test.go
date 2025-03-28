@@ -113,7 +113,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 		 description = "custom deny"
 		 name = "custom-deny-http"
 		 direction = "inbound"
-		 priority = 50
+		 priority = 0
 		 status = "enabled"
 		 filters = {
 		   ports = ["8123"]
@@ -290,7 +290,7 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "ICMP"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "custom-deny-http"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "50"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "0"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "enabled"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.value", "default"),
