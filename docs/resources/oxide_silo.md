@@ -6,7 +6,7 @@ page_title: "oxide_silo Resource - terraform-provider-oxide"
 
 This resource manages the creation of an Oxide Silo.
 
-Note: On Silo updates the only attribute that can be updated is the `quotas`. The rest of the attributes will cause a destroy first and then another create.
+-> Only the `quotas` attribute supports in-place modification. Changes to other attributes will result in the silo being destroyed and created anew.
 
 ## Example Usage
 
