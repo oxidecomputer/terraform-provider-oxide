@@ -8,7 +8,7 @@ description = ""
 
 [[features]]
 title = "New resource"
-description = "`oxide_anti_affinity_group` [#XXX](https://github.com/oxidecomputer/terraform-provider-oxide/pull/XXX)."
+description = "`oxide_anti_affinity_group` [#415](https://github.com/oxidecomputer/terraform-provider-oxide/pull/415)."
 
 [[enhancements]]
 title = ""
