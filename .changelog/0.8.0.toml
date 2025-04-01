@@ -10,6 +10,10 @@ description = ""
 title = "New resource"
 description = "`oxide_anti_affinity_group` [#415](https://github.com/oxidecomputer/terraform-provider-oxide/pull/415)."
 
+[[features]]
+title = "New data source"
+description = "`oxide_anti_affinity_group` [#415](https://github.com/oxidecomputer/terraform-provider-oxide/pull/415)."
+
 [[enhancements]]
 title = ""
 description = ""

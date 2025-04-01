@@ -29,7 +29,7 @@ resource "oxide_anti_affinity_group" "example" {
 
 - `description` (String) Description for the anti-affinity group.
 - `name` (String) Name of the anti-affinity group.
-- `policy` (String) Affinity policy used to describe what to do when a request cannot be satisfied.
+- `policy` (String) Affinity policy used to describe what to do when a request cannot be satisfied. Possible values are: `allow` or `fail`.
 - `project_id` (String) ID of the project that will contain the anti-affinity group.
 
 ### Optional
