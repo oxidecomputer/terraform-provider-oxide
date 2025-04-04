@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -191,6 +192,36 @@ func Test_sliceDiff_model(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sliceDiff(tt.args.a, tt.args.b)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_newNameOrIdList(t *testing.T) {
+	tests := []struct {
+		name string
+		args []attr.Value
+		want []oxide.NameOrId
+	}{
+		{
+			name: "success double quote",
+			args: []attr.Value{types.StringValue("d72b0406-dd16-4373-ba2e-b7016ede6c3c"), types.StringValue("bob")},
+			want: []oxide.NameOrId{"d72b0406-dd16-4373-ba2e-b7016ede6c3c", "bob"},
+		},
+		{
+			name: "success backtick",
+			args: []attr.Value{types.StringValue(`d72b0406-dd16-4373-ba2e-b7016ede6c3c`), types.StringValue(`bob`)},
+			want: []oxide.NameOrId{"d72b0406-dd16-4373-ba2e-b7016ede6c3c", "bob"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set := types.SetValueMust(types.StringType, tt.args)
+			got, diags := newNameOrIdList(set)
+			if diags.HasError() {
+				// We know diags can only contain a single error in this function
+				t.Errorf("unexpected error: %s: %s ", diags[0].Summary(), diags[0].Detail())
+			}
 			assert.Equal(t, tt.want, got)
 		})
 	}
