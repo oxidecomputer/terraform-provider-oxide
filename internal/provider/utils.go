@@ -6,8 +6,13 @@ package provider
 
 import (
 	"net"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
 func is404(err error) bool {
@@ -36,11 +41,6 @@ func defaultTimeout() time.Duration {
 	return 10 * time.Minute
 }
 
-//nolint:golint,unused
-func newBoolPointer(b bool) *bool {
-	return &b
-}
-
 // sliceDiff returns a string slice of the elements in `a` that aren't in `b`.
 // This function is a bit expensive, but given the fact that
 // the expected number of elements is relatively slow
@@ -58,4 +58,25 @@ func sliceDiff[S []E, E any](a, b S) S {
 		}
 	}
 	return diff
+}
+
+// newNameOrIdList takes a terraform set and converts is into a slice NameOrIds.
+func newNameOrIdList(nameOrIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var list = []oxide.NameOrId{}
+	for _, item := range nameOrIDs.Elements() {
+		id, err := strconv.Unquote(item.String())
+		if err != nil {
+			diags.AddError(
+				"Error retrieving name or ID information",
+				"name or ID parse error: "+err.Error(),
+			)
+			return []oxide.NameOrId{}, diags
+		}
+
+		n := oxide.NameOrId(id)
+		list = append(list, n)
+	}
+
+	return list, diags
 }

@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New instance argument"
+description = "It is now possible to manage anti-affinity group assigments on instance resources. [#414](https://github.com/oxidecomputer/terraform-provider-oxide/pull/414)."
 
 [[features]]
 title = "New resource"
