@@ -23,15 +23,17 @@ func TestAccCloudResourceInstance_full(t *testing.T) {
 	}
 
 	type resourceInstanceFullConfig struct {
-		BlockName         string
-		InstanceName      string
-		DiskBlockName     string
-		DiskName          string
-		SSHKeyName        string
-		SupportBlockName  string
-		SupportBlockName2 string
-		SSHBlockName      string
-		NicName           string
+		BlockName                  string
+		InstanceName               string
+		DiskBlockName              string
+		DiskName                   string
+		SSHKeyName                 string
+		AntiAffinityGroupName      string
+		SupportBlockName           string
+		SupportBlockName2          string
+		SSHBlockName               string
+		AntiAffinityGroupBlockName string
+		NicName                    string
 	}
 
 	resourceInstanceConfigTpl := `
@@ -75,17 +77,25 @@ resource "oxide_ssh_key" "{{.SSHBlockName}}" {
   public_key  = "ssh-ed25519 AAAA"
 }
 
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id       = data.oxide_project.{{.SupportBlockName}}.id
-  boot_disk_id     = oxide_disk.{{.DiskBlockName}}.id
-  description      = "a test instance"
-  name             = "{{.InstanceName}}"
-  host_name        = "terraform-acc-myhost"
-  memory           = 1073741824
-  ncpus            = 1
-  start_on_create  = true
-  ssh_public_keys  = [oxide_ssh_key.{{.SSHBlockName}}.id]
-  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
+  project_id       	   = data.oxide_project.{{.SupportBlockName}}.id
+  boot_disk_id     	   = oxide_disk.{{.DiskBlockName}}.id
+  description      	   = "a test instance"
+  name             	   = "{{.InstanceName}}"
+  host_name        	   = "terraform-acc-myhost"
+  memory           	   = 1073741824
+  ncpus            	   = 1
+  start_on_create  	   = true
+  ssh_public_keys  	   = [oxide_ssh_key.{{.SSHBlockName}}.id]
+  disk_attachments 	   = [oxide_disk.{{.DiskBlockName}}.id]
   external_ips = [
 	{
 	  type = "ephemeral"
@@ -127,23 +137,27 @@ resource "oxide_instance" "{{.BlockName}}" {
 	instanceDiskName := newResourceName()
 	instanceNicName := newResourceName()
 	instanceSshKeyName := newResourceName()
+	instanceAaGroupName := newResourceName()
 	blockName2 := newBlockName("instance")
 	diskBlockName := newBlockName("disk")
 	supportBlockName3 := newBlockName("support")
 	supportBlockName2 := newBlockName("support")
 	supportBlockNameSSHKeys := newBlockName("support-instance-ssh-keys")
+	supportBlockNameAaGroup := newBlockName("support-instance-anti-affinity-group")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	config2, err := parsedAccConfig(
 		resourceInstanceFullConfig{
-			BlockName:         blockName2,
-			InstanceName:      instanceName2,
-			DiskBlockName:     diskBlockName,
-			DiskName:          instanceDiskName,
-			SSHKeyName:        instanceSshKeyName,
-			SupportBlockName:  supportBlockName3,
-			SupportBlockName2: supportBlockName2,
-			NicName:           instanceNicName,
-			SSHBlockName:      supportBlockNameSSHKeys,
+			BlockName:                  blockName2,
+			InstanceName:               instanceName2,
+			DiskBlockName:              diskBlockName,
+			DiskName:                   instanceDiskName,
+			SSHKeyName:                 instanceSshKeyName,
+			SupportBlockName:           supportBlockName3,
+			SupportBlockName2:          supportBlockName2,
+			NicName:                    instanceNicName,
+			SSHBlockName:               supportBlockNameSSHKeys,
+			AntiAffinityGroupBlockName: supportBlockNameAaGroup,
+			AntiAffinityGroupName:      instanceAaGroupName,
 		},
 		resourceInstanceFullConfigTpl,
 	)
@@ -717,6 +731,187 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+func TestAccCloudResourceInstance_antiAffinityGroups(t *testing.T) {
+	type resourceInstanceAntiAffinityGroupsConfig struct {
+		BlockName                   string
+		InstanceName                string
+		AntiAffinityGroupName       string
+		AntiAffinityGroupName2      string
+		SupportBlockName            string
+		AntiAffinityGroupBlockName  string
+		AntiAffinityGroupBlockName2 string
+	}
+
+	resourceInstanceAntiAffinityGroupsConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
+  project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
+  description     	   = "a test instance"
+  name            	   = "{{.InstanceName}}"
+  host_name       	   = "terraform-acc-myhost"
+  memory          	   = 1073741824
+  ncpus           	   = 1
+  start_on_create 	   = false
+}
+`
+
+	resourceInstanceAntiAffinityGroupsConfigTplUpdate := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName2}}"
+  policy      = "allow"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id, oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName2}}.id]
+  project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
+  description     	   = "a test instance"
+  name            	   = "{{.InstanceName}}"
+  host_name       	   = "terraform-acc-myhost"
+  memory          	   = 1073741824
+  ncpus           	   = 1
+  start_on_create 	   = false
+}
+`
+
+	resourceInstanceAntiAffinityGroupsConfigTplUpdate2 := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName2}}"
+  policy      = "allow"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
+  project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
+  description     	   = "a test instance"
+  name            	   = "{{.InstanceName}}"
+  host_name       	   = "terraform-acc-myhost"
+  memory          	   = 1073741824
+  ncpus           	   = 1
+  start_on_create 	   = false
+}
+`
+
+	instanceAntiAffinityGroupsName := newResourceName()
+	antiAffinityGroupName1 := newResourceName()
+	antiAffinityGroupName2 := newResourceName()
+	blockNameAntiAffinityGroups := newBlockName("instance-anti-affinity-groups")
+	supportBlockNameAntiAffinityGroups := newBlockName("support-instance-anti-affinity-groups")
+	supportBlockNameAntiAffinityGroup1 := newBlockName("support-instance-anti-affinity-group")
+	supportBlockNameAntiAffinityGroup2 := newBlockName("support-instance-anti-affinity-group")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameAntiAffinityGroups)
+	configAntiAffinityGroups, err := parsedAccConfig(
+		resourceInstanceAntiAffinityGroupsConfig{
+			BlockName:                  blockNameAntiAffinityGroups,
+			InstanceName:               instanceAntiAffinityGroupsName,
+			SupportBlockName:           supportBlockNameAntiAffinityGroups,
+			AntiAffinityGroupName:      antiAffinityGroupName1,
+			AntiAffinityGroupBlockName: supportBlockNameAntiAffinityGroup1,
+		},
+		resourceInstanceAntiAffinityGroupsConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configAntiAffinityGroupsUpdate, err := parsedAccConfig(
+		resourceInstanceAntiAffinityGroupsConfig{
+			BlockName:                   blockNameAntiAffinityGroups,
+			InstanceName:                instanceAntiAffinityGroupsName,
+			SupportBlockName:            supportBlockNameAntiAffinityGroups,
+			AntiAffinityGroupName:       antiAffinityGroupName1,
+			AntiAffinityGroupBlockName:  supportBlockNameAntiAffinityGroup1,
+			AntiAffinityGroupName2:      antiAffinityGroupName2,
+			AntiAffinityGroupBlockName2: supportBlockNameAntiAffinityGroup2,
+		},
+		resourceInstanceAntiAffinityGroupsConfigTplUpdate,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configAntiAffinityGroupsUpdate2, err := parsedAccConfig(
+		resourceInstanceAntiAffinityGroupsConfig{
+			BlockName:                   blockNameAntiAffinityGroups,
+			InstanceName:                instanceAntiAffinityGroupsName,
+			SupportBlockName:            supportBlockNameAntiAffinityGroups,
+			AntiAffinityGroupName:       antiAffinityGroupName1,
+			AntiAffinityGroupBlockName:  supportBlockNameAntiAffinityGroup1,
+			AntiAffinityGroupName2:      antiAffinityGroupName2,
+			AntiAffinityGroupBlockName2: supportBlockNameAntiAffinityGroup2,
+		},
+		resourceInstanceAntiAffinityGroupsConfigTplUpdate2,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configAntiAffinityGroups,
+				Check:  checkResourceInstanceAntiAffinityGroups(resourceName, instanceAntiAffinityGroupsName),
+			},
+			// Add another anti-affinity group
+			{
+				Config: configAntiAffinityGroupsUpdate,
+				Check:  checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceAntiAffinityGroupsName),
+			},
+			// Remove an anti-affinity group
+			{
+				Config: configAntiAffinityGroupsUpdate2,
+				Check:  checkResourceInstanceAntiAffinityGroups(resourceName, instanceAntiAffinityGroupsName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// start-on-create cannot be imported as it is only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
 func checkResourceInstance(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -909,6 +1104,39 @@ func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttr(resourceName, "memory", "2147483648"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceAntiAffinityGroups(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.1"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

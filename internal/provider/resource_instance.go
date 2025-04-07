@@ -46,23 +46,24 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	BootDiskID        types.String                      `tfsdk:"boot_disk_id"`
-	Description       types.String                      `tfsdk:"description"`
-	DiskAttachments   types.Set                         `tfsdk:"disk_attachments"`
-	ExternalIPs       []instanceResourceExternalIPModel `tfsdk:"external_ips"`
-	HostName          types.String                      `tfsdk:"host_name"`
-	ID                types.String                      `tfsdk:"id"`
-	Memory            types.Int64                       `tfsdk:"memory"`
-	Name              types.String                      `tfsdk:"name"`
-	NetworkInterfaces []instanceResourceNICModel        `tfsdk:"network_interfaces"`
-	NCPUs             types.Int64                       `tfsdk:"ncpus"`
-	ProjectID         types.String                      `tfsdk:"project_id"`
-	SSHPublicKeys     types.Set                         `tfsdk:"ssh_public_keys"`
-	StartOnCreate     types.Bool                        `tfsdk:"start_on_create"`
-	TimeCreated       types.String                      `tfsdk:"time_created"`
-	TimeModified      types.String                      `tfsdk:"time_modified"`
-	Timeouts          timeouts.Value                    `tfsdk:"timeouts"`
-	UserData          types.String                      `tfsdk:"user_data"`
+	AntiAffinityGroups types.Set                         `tfsdk:"anti_affinity_groups"`
+	BootDiskID         types.String                      `tfsdk:"boot_disk_id"`
+	Description        types.String                      `tfsdk:"description"`
+	DiskAttachments    types.Set                         `tfsdk:"disk_attachments"`
+	ExternalIPs        []instanceResourceExternalIPModel `tfsdk:"external_ips"`
+	HostName           types.String                      `tfsdk:"host_name"`
+	ID                 types.String                      `tfsdk:"id"`
+	Memory             types.Int64                       `tfsdk:"memory"`
+	Name               types.String                      `tfsdk:"name"`
+	NetworkInterfaces  []instanceResourceNICModel        `tfsdk:"network_interfaces"`
+	NCPUs              types.Int64                       `tfsdk:"ncpus"`
+	ProjectID          types.String                      `tfsdk:"project_id"`
+	SSHPublicKeys      types.Set                         `tfsdk:"ssh_public_keys"`
+	StartOnCreate      types.Bool                        `tfsdk:"start_on_create"`
+	TimeCreated        types.String                      `tfsdk:"time_created"`
+	TimeModified       types.String                      `tfsdk:"time_modified"`
+	Timeouts           timeouts.Value                    `tfsdk:"timeouts"`
+	UserData           types.String                      `tfsdk:"user_data"`
 }
 
 type instanceResourceNICModel struct {
@@ -140,6 +141,11 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"ncpus": schema.Int64Attribute{
 				Required:    true,
 				Description: "Number of CPUs allocated for this instance.",
+			},
+			"anti_affinity_groups": schema.SetAttribute{
+				Optional:    true,
+				Description: "IDs of the anti-affinity groups this instance should belong to.",
+				ElementType: types.StringType,
 			},
 			"boot_disk_id": schema.StringAttribute{
 				Optional:    true,
@@ -372,13 +378,19 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	// TODO: Double check we're not triggering the default "add all keys" behaviour
-	sshKeys, diags := newSSHKeysOnCreate(plan.SSHPublicKeys)
+	sshKeys, diags := newNameOrIdList(plan.SSHPublicKeys)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	params.Body.SshPublicKeys = sshKeys
+
+	antiAffinityGroupIDs, diags := newNameOrIdList(plan.AntiAffinityGroups)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	params.Body.AntiAffinityGroups = antiAffinityGroupIDs
 
 	disks, diags := newDiskAttachmentsOnCreate(ctx, r.client, plan.DiskAttachments)
 	resp.Diagnostics.Append(diags...)
@@ -506,6 +518,16 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	// Only set the SSH key list if there are any associated keys
 	if len(keySet.Elements()) > 0 {
 		state.SSHPublicKeys = keySet
+	}
+
+	antiAffinityGroupSet, diags := newAssociatedAntiAffinityGroupsOnCreateSet(ctx, r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Only set the anti-affinity group list if there are any associated groups
+	if len(antiAffinityGroupSet.Elements()) > 0 {
+		state.AntiAffinityGroups = antiAffinityGroupSet
 	}
 
 	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
@@ -651,6 +673,24 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// Check state and if it has an ID that the plan doesn't then delete it
 	nicsToDelete := sliceDiff(stateNICs, planNICs)
 	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Update anti-affinity groups
+	planAntiAffinityGroups := plan.AntiAffinityGroups.Elements()
+	stateAntiAffinityGroups := state.AntiAffinityGroups.Elements()
+
+	// Check plan and if it has an ID that the state doesn't then add it
+	antiAffinityGroupsToAdd := sliceDiff(planAntiAffinityGroups, stateAntiAffinityGroups)
+	resp.Diagnostics.Append(addAntiAffinityGroups(ctx, r.client, antiAffinityGroupsToAdd, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Check state and if it has an ID that the plan doesn't then remove it
+	antiAffinityGroupsToRemove := sliceDiff(stateAntiAffinityGroups, planAntiAffinityGroups)
+	resp.Diagnostics.Append(removeAntiAffinityGroups(ctx, r.client, antiAffinityGroupsToRemove, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -877,6 +917,36 @@ func newAssociatedSSHKeysOnCreateSet(ctx context.Context, client *oxide.Client, 
 	return keySet, nil
 }
 
+func newAssociatedAntiAffinityGroupsOnCreateSet(ctx context.Context, client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	params := oxide.InstanceAntiAffinityGroupListParams{
+		Limit:    oxide.NewPointer(1000000000),
+		Instance: oxide.NameOrId(instanceID),
+	}
+	groups, err := client.InstanceAntiAffinityGroupList(ctx, params)
+	if err != nil {
+		diags.AddError(
+			"Unable to list associated anti-affinity groups:",
+			"API error: "+err.Error(),
+		)
+		return types.SetNull(types.StringType), diags
+	}
+
+	d := []attr.Value{}
+	for _, group := range groups.Items {
+		id := types.StringValue(group.Id)
+		d = append(d, id)
+	}
+	groupSet, diags := types.SetValue(types.StringType, d)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return types.SetNull(types.StringType), diags
+	}
+
+	return groupSet, nil
+}
+
 func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, model []instanceResourceNICModel) (
 	oxide.InstanceNetworkInterfaceAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -1030,26 +1100,6 @@ func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskI
 	return disks, diags
 }
 
-func newSSHKeysOnCreate(sshKeyIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var sshKeys = []oxide.NameOrId{}
-	for _, sshKeyID := range sshKeyIDs.Elements() {
-		id, err := strconv.Unquote(sshKeyID.String())
-		if err != nil {
-			diags.AddError(
-				"Error retrieving SSH public key ID information",
-				"SSH public key ID parse error: "+err.Error(),
-			)
-			return []oxide.NameOrId{}, diags
-		}
-
-		da := oxide.NameOrId(id)
-		sshKeys = append(sshKeys, da)
-	}
-
-	return sshKeys, diags
-}
-
 func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
 	var ips []oxide.ExternalIpCreate
 
@@ -1196,6 +1246,70 @@ func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 			return diags
 		}
 		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", v), map[string]any{"success": true})
+	}
+
+	return nil
+}
+
+func addAntiAffinityGroups(
+	ctx context.Context, client *oxide.Client, groups []attr.Value, instanceID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, v := range groups {
+		id, err := strconv.Unquote(v.String())
+		if err != nil {
+			diags.AddError(
+				"Error adding anti-affinity group",
+				"anti-affinity group ID parse error: "+err.Error(),
+			)
+			return diags
+		}
+
+		params := oxide.AntiAffinityGroupMemberInstanceAddParams{
+			Instance:          oxide.NameOrId(instanceID),
+			AntiAffinityGroup: oxide.NameOrId(id),
+		}
+		_, err = client.AntiAffinityGroupMemberInstanceAdd(ctx, params)
+		if err != nil {
+			diags.AddError(
+				"Error adding anti-affinity group",
+				"API error: "+err.Error(),
+			)
+			return diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("added anti-affinity group with ID: %v", v), map[string]any{"success": true})
+	}
+
+	return nil
+}
+
+func removeAntiAffinityGroups(
+	ctx context.Context, client *oxide.Client, groups []attr.Value, instanceID string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, v := range groups {
+		id, err := strconv.Unquote(v.String())
+		if err != nil {
+			diags.AddError(
+				"Error removing anti-affinity group",
+				"anti-affinity group ID parse error: "+err.Error(),
+			)
+			return diags
+		}
+
+		params := oxide.AntiAffinityGroupMemberInstanceDeleteParams{
+			Instance:          oxide.NameOrId(instanceID),
+			AntiAffinityGroup: oxide.NameOrId(id),
+		}
+		err = client.AntiAffinityGroupMemberInstanceDelete(ctx, params)
+		if err != nil {
+			diags.AddError(
+				"Error removing anti-affinity group",
+				"API error: "+err.Error(),
+			)
+			return diags
+		}
+		tflog.Trace(ctx, fmt.Sprintf("removed anit-affinity group with ID: %v", v), map[string]any{"success": true})
 	}
 
 	return nil

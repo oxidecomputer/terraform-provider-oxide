@@ -6,7 +6,7 @@ page_title: "oxide_instance Resource - terraform-provider-oxide"
 
 This resource manages instances.
 
--> Updates will stop and reboot the instance.
+!> Updates will stop and start the instance.
 
 -> When setting a boot disk using `boot_disk_id`, the boot disk ID must also be
 present in `disk_attachments`.
@@ -27,19 +27,20 @@ resource "oxide_instance" "example" {
 }
 ```
 
-### Instance with user data and an SSH public key
+### Instance with user data and an SSH public key and anti-affinity group
 
 ```hcl
 resource "oxide_instance" "example" {
-  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description      = "Example instance."
-  name             = "myinstance"
-  host_name        = "myhostname"
-  memory           = 10737418240
-  ncpus            = 1
-  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
-  ssh_public_keys  = ["066cab1b-c550-4aea-8a80-8422fd3bfc40"]
-  user_data        = filebase64("path/to/init.sh")
+  project_id           = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  description          = "Example instance."
+  name                 = "myinstance"
+  host_name            = "myhostname"
+  memory               = 10737418240
+  ncpus                = 1
+  anti_affinity_groups = ["9b9f9be1-96bf-44ad-864a-0dedae3b3999"]
+  disk_attachments     = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  ssh_public_keys      = ["066cab1b-c550-4aea-8a80-8422fd3bfc40"]
+  user_data            = filebase64("path/to/init.sh")
 }
 ```
 
@@ -107,6 +108,7 @@ resource "oxide_instance" "example" {
 
 ### Optional
 
+- `anti_affinity_groups` (Set of String, Optional) The IDs of the anti-affinity groups this instance should belong to.
 - `boot_disk_id` (String, Optional) ID of the disk to boot the instance from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String, Optional) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `book_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
 - `external_ips` (Set of Object, Optional) External IP addresses associated with the instance. See [below for nested schema](#nestedatt--ips).
