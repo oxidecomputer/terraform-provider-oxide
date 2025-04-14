@@ -7,4 +7,4 @@ package provider
 // TODO: Make sure this variable is updated every time a new version is released
 
 // Version contains the current terraform provider version.
-const Version = "0.8.0"
+const Version = "0.9.0"
