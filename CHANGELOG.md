@@ -1,3 +1,26 @@
+# 0.8.0 (2025/Apr/15)
+
+### New features
+
+- **New instance argument:** It is now possible to manage anti-affinity group assigments on instance resources. [#414](https://github.com/oxidecomputer/terraform-provider-oxide/pull/414).
+- **New resource:** `oxide_anti_affinity_group` [#415](https://github.com/oxidecomputer/terraform-provider-oxide/pull/415).
+- **New data source:** `oxide_anti_affinity_group` [#415](https://github.com/oxidecomputer/terraform-provider-oxide/pull/415).
+
+### List of commits
+
+- [9a8fcec](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9a8fcec) Update SDK to v0.4.0 and doc fixes (#420)
+- [663403c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/663403c) Anti-affinity groups on instance create (#414)
+- [021b0f8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/021b0f8) New anti-affinity group resource and datasource (#415)
+- [c55ad49](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c55ad49) Bump goreleaser/goreleaser-action from 6.2.1 to 6.3.0 (#413)
+- [cb246e7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cb246e7) Bump SDK version to c8be658 (#410)
+- [ce6ac4c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ce6ac4c) Update dependencies (#409)
+- [fbc831d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fbc831d) vpc_firewall_rules: update documentation (#405)
+- [31d1cca](https://github.com/oxidecomputer/terraform-provider-oxide/commit/31d1cca) Update GoReleaser deprecated fields (#402)
+- [0fe7a4d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0fe7a4d) Version bump to 0.8.0 (#401)
+- [6712875](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6712875) Bump github.com/hashicorp/terraform-plugin-framework from 1.13.0 to 1.14.1 (#398)
+- [da67e68](https://github.com/oxidecomputer/terraform-provider-oxide/commit/da67e68) Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.16.0 to 0.17.0 (#397)
+- [a3fdc71](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a3fdc71) Bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.36.0 to 2.36.1 (#396)
+
 # 0.7.0 (2025/Feb/25)
 
 ### New features
