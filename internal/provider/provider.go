@@ -193,6 +193,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewVPCInternetGatewayResource,
 		NewVPCFirewallRulesResource,
 		NewVPCRouterResource,
+		NewVPCRouterRouteResource,
 		NewVPCSubnetResource,
 	}
 }
