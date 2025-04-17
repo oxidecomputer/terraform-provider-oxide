@@ -279,6 +279,8 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	cpus := int(plan.Quotas.Cpus.ValueInt64())
+
 	params := oxide.SiloCreateParams{
 		Body: &oxide.SiloCreate{
 			AdminGroupName:   plan.AdminGroupName.ValueString(),
@@ -288,7 +290,7 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			MappedFleetRoles: toOxideMappedFleetRoles(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
 			Quotas: oxide.SiloQuotasCreate{
-				Cpus:    int(plan.Quotas.Cpus.ValueInt64()),
+				Cpus:    &cpus,
 				Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
 				Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
 			},
@@ -409,10 +411,12 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	cpus := int(plan.Quotas.Cpus.ValueInt64())
+
 	siloQuotasParams := oxide.SiloQuotasUpdateParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.SiloQuotasUpdate{
-			Cpus:    int(plan.Quotas.Cpus.ValueInt64()),
+			Cpus:    &cpus,
 			Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
 			Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
 		},
