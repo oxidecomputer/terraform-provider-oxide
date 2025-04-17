@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "Adding oxide_silo resource"
+description = "Adding the oxide_silo resource for Silo CRUD. This allows for an oxide_silo resource to be managed through Terraform."
 
 [[enhancements]]
 title = ""
