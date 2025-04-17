@@ -43,18 +43,18 @@ type siloResource struct {
 }
 
 type siloResourceModel struct {
-	AdminGroupName   types.String             			`tfsdk:"admin_group_name"`
-	Description      types.String             			`tfsdk:"description"`
-	Discoverable     types.Bool               			`tfsdk:"discoverable"`
-	ID               types.String             			`tfsdk:"id"`
-	IdentityMode     types.String             			`tfsdk:"identity_mode"`
-	MappedFleetRoles map[string][]string      			`tfsdk:"mapped_fleet_roles"`
-	Name             types.String             			`tfsdk:"name"`
-	Quotas           siloResourceQuotaModel   			`tfsdk:"quotas"`
-	TlsCertificates  []siloResourceTlsCertificateModel	`tfsdk:"tls_certificates"`
-	Timeouts         timeouts.Value           			`tfsdk:"timeouts"`
-	TimeCreated      types.String             			`tfsdk:"time_created"`
-	TimeModified     types.String             			`tfsdk:"time_modified"`
+	AdminGroupName   types.String                      `tfsdk:"admin_group_name"`
+	Description      types.String                      `tfsdk:"description"`
+	Discoverable     types.Bool                        `tfsdk:"discoverable"`
+	ID               types.String                      `tfsdk:"id"`
+	IdentityMode     types.String                      `tfsdk:"identity_mode"`
+	MappedFleetRoles map[string][]string               `tfsdk:"mapped_fleet_roles"`
+	Name             types.String                      `tfsdk:"name"`
+	Quotas           siloResourceQuotaModel            `tfsdk:"quotas"`
+	TlsCertificates  []siloResourceTlsCertificateModel `tfsdk:"tls_certificates"`
+	Timeouts         timeouts.Value                    `tfsdk:"timeouts"`
+	TimeCreated      types.String                      `tfsdk:"time_created"`
+	TimeModified     types.String                      `tfsdk:"time_modified"`
 }
 
 type siloResourceQuotaModel struct {
@@ -287,12 +287,12 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			Discoverable:     plan.Discoverable.ValueBoolPointer(),
 			MappedFleetRoles: toOxideMappedFleetRoles(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
-			Quotas:           oxide.SiloQuotasCreate{
-								Cpus:    int(plan.Quotas.Cpus.ValueInt64()),
-								Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
-								Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
-							  },
-			TlsCertificates:  toOxideTlsCertificates(plan.TlsCertificates),
+			Quotas: oxide.SiloQuotasCreate{
+				Cpus:    int(plan.Quotas.Cpus.ValueInt64()),
+				Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
+				Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
+			},
+			TlsCertificates: toOxideTlsCertificates(plan.TlsCertificates),
 		},
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Silo creation parameters: %+v", params.Body.TlsCertificates), nil)
