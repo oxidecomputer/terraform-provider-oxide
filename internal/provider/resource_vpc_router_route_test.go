@@ -44,9 +44,17 @@ resource "oxide_vpc_router" "{{.VPCRouterBlockName}}" {
 }
 
 resource "oxide_vpc_router_route" "{{.BlockName}}" {
-	description    = "a test router"
+	description    = "a test route"
 	name           = "{{.VPCRouterRouteName}}"
 	vpc_router_id  = oxide_vpc_router.{{.VPCRouterBlockName}}.id
+	destination = {
+		type  = "ip_net"
+		value = "::/0"
+	}
+	target = {
+		type  = "ip"
+		value = "::1" 
+	}
 	timeouts = {
 		read   = "1m"
 		create = "3m"
@@ -68,11 +76,31 @@ resource "oxide_vpc" "{{.VPCBlockName}}" {
 	dns_name    = "my-vpc"
 }
 
-resource "oxide_vpc_router" "{{.BlockName}}" {
+resource "oxide_vpc_router" "{{.VPCRouterBlockName}}" {
 	description = "a new description for router"
 	name        = "{{.VPCRouterName}}"
 	vpc_id      = oxide_vpc.{{.VPCBlockName}}.id
-  }
+}
+
+resource "oxide_vpc_router_route" "{{.BlockName}}" {
+	description    = "a new description for the route"
+	name           = "{{.VPCRouterRouteName}}"
+	vpc_router_id  = oxide_vpc_router.{{.VPCRouterBlockName}}.id
+	destination = {
+		type  = "ip_net"
+		value = "::/0"
+	}
+	target = {
+		type  = "ip"
+		value = "::1" 
+	}
+	timeouts = {
+		read   = "1m"
+		create = "3m"
+		delete = "2m"
+		update = "4m"
+	}
+}
 `
 
 func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
@@ -83,7 +111,7 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 	blockName := newBlockName("route")
 	supportBlockName := newBlockName("support")
 	vpcBlockName := newBlockName("vpc")
-	resourceName := fmt.Sprintf("oxide_vpc_router.%s", blockName)
+	resourceName := fmt.Sprintf("oxide_vpc_router_route.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceVPCRouterRouteConfig{
 			VPCName:            vpcName,
@@ -120,11 +148,11 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-		CheckDestroy:             testAccVPCRouterDestroy,
+		CheckDestroy:             testAccVPCRouterRouteDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceVPCRouterRoute(resourceName, routerName),
+				Check:  checkResourceVPCRouterRoute(resourceName, routerRouteName),
 			},
 			{
 				Config: configUpdate,
@@ -142,10 +170,10 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 func checkResourceVPCRouterRoute(resourceName, routerName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a test router"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test route"),
 		resource.TestCheckResourceAttr(resourceName, "kind", string(oxide.RouterRouteKindCustom)),
 		resource.TestCheckResourceAttr(resourceName, "name", routerName),
-		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "vpc_router_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
@@ -158,8 +186,8 @@ func checkResourceVPCRouterRoute(resourceName, routerName string) resource.TestC
 func checkResourceVPCRouterRouteUpdate(resourceName, routerName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a new description for router"),
+		resource.TestCheckResourceAttrSet(resourceName, "vpc_router_id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a new description for the route"),
 		resource.TestCheckResourceAttr(resourceName, "kind", string(oxide.RouterRouteKindCustom)),
 		resource.TestCheckResourceAttr(resourceName, "name", routerName),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -174,7 +202,7 @@ func testAccVPCRouterRouteDestroy(s *terraform.State) error {
 	}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "oxide_vpc_router" {
+		if rs.Type != "oxide_vpc_router_route" {
 			continue
 		}
 

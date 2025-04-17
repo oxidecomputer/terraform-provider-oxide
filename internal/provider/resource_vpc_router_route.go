@@ -51,13 +51,13 @@ type vpcRouterRouteResourceModel struct {
 }
 
 type vpcRouterRouteDestinationModel struct {
-	Type  oxide.RouteDestinationType
-	Value any
+	Type  oxide.RouteDestinationType `tfsdk:"type"`
+	Value types.String               `tfsdk:"value"`
 }
 
 type vpcRouterRouteTargetModel struct {
-	Type  oxide.RouteTargetType
-	Value any
+	Type  oxide.RouteTargetType `tfsdk:"type"`
+	Value types.String          `tfsdk:"value"`
 }
 
 // Metadata returns the resource type name.
@@ -88,7 +88,7 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the VPC RouterRoute.",
+				Description: "Description for the VPC Router Route.",
 			},
 			"destination": schema.SingleNestedAttribute{
 				Required:    true,
@@ -201,13 +201,13 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 			Description: plan.Description.ValueString(),
 			Destination: oxide.RouteDestination{
 				Type:  plan.Destination.Type,
-				Value: plan.Destination.Value,
+				Value: plan.Destination.Value.ValueString(),
 			},
 			Name: oxide.Name(plan.Name.ValueString()),
 			Target: oxide.RouteTarget{
 				Type: plan.Target.Type,
 				// TODO: Does this work with "drop"?
-				Value: plan.Target.Value,
+				Value: plan.Target.Value.ValueString(),
 			},
 		},
 	}
@@ -272,15 +272,18 @@ func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 	tflog.Trace(ctx, fmt.Sprintf("read VPC RouterRoute with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
 
+	destinationValue := vpcRouterRoute.Destination.Value.(string)
+	targetValue := vpcRouterRoute.Target.Value.(string)
+
 	state.Description = types.StringValue(vpcRouterRoute.Description)
 	state.Destination.Type = vpcRouterRoute.Destination.Type
-	state.Destination.Value = vpcRouterRoute.Destination.Value
+	state.Destination.Value = types.StringValue(destinationValue)
 	state.ID = types.StringValue(vpcRouterRoute.Id)
 	state.Kind = types.StringValue(string(vpcRouterRoute.Kind))
 	state.Name = types.StringValue(string(vpcRouterRoute.Name))
 	state.Target.Type = vpcRouterRoute.Target.Type
 	// TODO: How does this work with "drop"?
-	state.Target.Value = vpcRouterRoute.Target.Value
+	state.Target.Value = types.StringValue(targetValue)
 	state.VPCRouterID = types.StringValue(string(vpcRouterRoute.VpcRouterId))
 	state.TimeCreated = types.StringValue(vpcRouterRoute.TimeCreated.String())
 	state.TimeModified = types.StringValue(vpcRouterRoute.TimeModified.String())
@@ -325,12 +328,12 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Destination: oxide.RouteDestination{
 				Type:  plan.Destination.Type,
-				Value: plan.Destination.Value,
+				Value: plan.Destination.Value.ValueString(),
 			},
 			Target: oxide.RouteTarget{
 				Type: plan.Target.Type,
 				// TODO: How does this behave with "drop"?
-				Value: plan.Target.Value,
+				Value: plan.Target.Value.ValueString(),
 			},
 		},
 	}
