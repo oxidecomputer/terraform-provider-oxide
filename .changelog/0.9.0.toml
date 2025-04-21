@@ -3,8 +3,12 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New resource"
+description = "`oxide_floating_ip` [#427](https://github.com/oxidecomputer/terraform-provider-oxide/pull/427)."
+
+[[features]]
+title = "New data resource"
+description = "`oxide_floating_ip` [#427](https://github.com/oxidecomputer/terraform-provider-oxide/pull/427)."
 
 [[enhancements]]
 title = ""
