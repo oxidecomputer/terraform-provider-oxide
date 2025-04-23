@@ -84,7 +84,7 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the VPC router.",
+				Description: "Name of the VPC router route.",
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
@@ -147,26 +147,26 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 			},
 			"vpc_router_id": schema.StringAttribute{
 				Required:    true,
-				Description: "ID of the VPC router that will contain the route.",
+				Description: "ID of the VPC router route that will contain the route.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the VPC router.",
+				Description: "Unique, immutable, system-controlled identifier of the VPC router route.",
 			},
 			"kind": schema.StringAttribute{
 				Computed:    true,
-				Description: "Whether the VPC router is custom or system created.",
+				Description: "Whether the VPC router route is custom or system created.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC router was created.",
+				Description: "Timestamp of when this VPC router route was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC router was last modified.",
+				Description: "Timestamp of when this VPC router route was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -221,7 +221,7 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created VPC router with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
+	tflog.Trace(ctx, fmt.Sprintf("created VPC router route with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouterRoute.Id)
@@ -340,12 +340,12 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 	vpcRouterRoute, err := r.client.VpcRouterRouteUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating VPC router",
+			"Error updating VPC router route",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("updated VPC router with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
+	tflog.Trace(ctx, fmt.Sprintf("updated VPC router route with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouterRoute.Id)
@@ -384,12 +384,12 @@ func (r *vpcRouterRouteResource) Delete(ctx context.Context, req resource.Delete
 	if err := r.client.VpcRouterRouteDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
-				"Unable to delete VPC router:",
+				"Unable to delete VPC router route:",
 				"API error: "+err.Error(),
 			)
 			return
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted VPC router with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(ctx, fmt.Sprintf("deleted VPC router route with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }

@@ -173,6 +173,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewVPCDataSource,
 		NewVPCInternetGatewayDataSource,
 		NewVPCRouterDataSource,
+		NewVPCRouterRouteDataSource,
 		NewVPCSubnetDataSource,
 	}
 }
