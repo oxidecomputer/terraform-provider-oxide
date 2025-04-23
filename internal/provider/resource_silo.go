@@ -11,11 +11,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -26,58 +28,54 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*siloResource)(nil)
-	_ resource.ResourceWithConfigure = (*siloResource)(nil)
+	_ resource.Resource                = (*siloResource)(nil)
+	_ resource.ResourceWithConfigure   = (*siloResource)(nil)
+	_ resource.ResourceWithImportState = (*siloResource)(nil)
 )
 
-// NewSiloResource is a helper function to simplify the provider implementation.
 func NewSiloResource() resource.Resource {
 	return &siloResource{}
 }
 
-// siloResource is the resource implementation.
 type siloResource struct {
 	client *oxide.Client
 }
 
 type siloResourceModel struct {
-	AdminGroupName   types.String                      `tfsdk:"admin_group_name"`
-	Description      types.String                      `tfsdk:"description"`
-	Discoverable     types.Bool                        `tfsdk:"discoverable"`
 	ID               types.String                      `tfsdk:"id"`
-	IdentityMode     types.String                      `tfsdk:"identity_mode"`
-	MappedFleetRoles map[string][]string               `tfsdk:"mapped_fleet_roles"`
 	Name             types.String                      `tfsdk:"name"`
-	Quotas           siloResourceQuotaModel            `tfsdk:"quotas"`
+	Description      types.String                      `tfsdk:"description"`
+	Quotas           siloResourceQuotasModel           `tfsdk:"quotas"`
 	TlsCertificates  []siloResourceTlsCertificateModel `tfsdk:"tls_certificates"`
-	Timeouts         timeouts.Value                    `tfsdk:"timeouts"`
+	Discoverable     types.Bool                        `tfsdk:"discoverable"`
+	IdentityMode     types.String                      `tfsdk:"identity_mode"`
+	AdminGroupName   types.String                      `tfsdk:"admin_group_name"`
+	MappedFleetRoles map[string][]string               `tfsdk:"mapped_fleet_roles"`
 	TimeCreated      types.String                      `tfsdk:"time_created"`
 	TimeModified     types.String                      `tfsdk:"time_modified"`
+	Timeouts         timeouts.Value                    `tfsdk:"timeouts"`
 }
 
-type siloResourceQuotaModel struct {
+type siloResourceQuotasModel struct {
 	Cpus    types.Int64 `tfsdk:"cpus"`
 	Memory  types.Int64 `tfsdk:"memory"`
 	Storage types.Int64 `tfsdk:"storage"`
 }
 
 type siloResourceTlsCertificateModel struct {
-	Cert        types.String `tfsdk:"cert"`
-	Description types.String `tfsdk:"description"`
-	Key         types.String `tfsdk:"key"`
 	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Cert        types.String `tfsdk:"cert"`
+	Key         types.String `tfsdk:"key"`
 	Service     types.String `tfsdk:"service"`
 }
 
-// Metadata returns the resource type name.
-func (r *siloResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *siloResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "oxide_silo"
 }
 
-// Configure adds the provider configured client to the data source.
-func (r *siloResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -89,135 +87,109 @@ func (r *siloResource) ImportState(ctx context.Context, req resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// Schema defines the schema for the resource.
 func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"admin_group_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "Name of the group to be granted the Silo Admin role.",
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the silo.",
+			},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Unique, immutable, user-controlled identifier of the silo.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-zA-Z0-9-]+$`),
+						`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-'.`,
+					),
+					stringvalidator.LengthAtMost(63),
 				},
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the silo.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"discoverable": schema.BoolAttribute{
-				Required:    true,
-				Description: "Whether this silo is present in the silo_list output.",
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplaceIfConfigured(),
-				},
-			},
-			"mapped_fleet_roles": schema.MapAttribute{
-				Optional:    true,
-				Description: "Mapped Fleet Roles for the Silo.",
-				ElementType: types.ListType{ElemType: types.StringType},
-			},
-			"name": schema.StringAttribute{
-				Required:    true,
-				Description: "Name of the silo.",
+				Description: "Human-readable free-form text about the silo.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"quotas": schema.SingleNestedAttribute{
 				Required:    true,
-				Description: "Limits the amount of provisionable CPU, memory, and storage in the Silo.",
+				Description: "Limits the amount of provisionable CPU, memory, and storage in the silo.",
 				Attributes: map[string]schema.Attribute{
 					"cpus": schema.Int64Attribute{
 						Required:    true,
-						Description: "Amount of virtual CPUs available for running instances in the Silo.",
+						Description: "Amount of virtual CPUs available for running instances in the silo.",
 					},
 					"memory": schema.Int64Attribute{
 						Required:    true,
-						Description: "Amount of RAM (in bytes) available for running instances in the Silo.",
+						Description: "Amount of memory, in bytes, available for running instances in the silo.",
 					},
 					"storage": schema.Int64Attribute{
 						Required:    true,
-						Description: "Amount of storage (in bytes) available for disks or snapshots.",
+						Description: "Amount of storage, in bytes, available for disks or snapshots.",
 					},
 				},
 			},
 			"tls_certificates": schema.ListNestedAttribute{
 				Required:    true,
-				Description: "Initial TLS certificates to be used for the new Silo's console and API endpoints.",
+				Description: "Initial TLS certificates to be used for the new silo's console and API endpoints.",
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
 				NestedObject: schema.NestedAttributeObject{
+					PlanModifiers: []planmodifier.Object{
+						objectplanmodifier.RequiresReplace(),
+					},
 					Attributes: map[string]schema.Attribute{
-						"cert": schema.StringAttribute{
-							Description: "PEM-formatted string containing public certificate chain.",
+						"name": schema.StringAttribute{
 							Required:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
+							Description: "Unique, immutable, user-controlled identifier of the certificate.",
+							Validators: []validator.String{
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^[a-zA-Z0-9-]+$`),
+									`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-'.`,
+								),
+								stringvalidator.LengthAtMost(63),
 							},
 						},
 						"description": schema.StringAttribute{
-							Description: "Certificate description.",
 							Required:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
-							},
+							Description: "Human-readable free-form text about the certificate.",
+						},
+						"cert": schema.StringAttribute{
+							Required:    true,
+							Description: "PEM-formatted string containing public certificate chain.",
 						},
 						"key": schema.StringAttribute{
+							Required:    true,
 							Description: "PEM-formatted string containing private key.",
-							Required:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
-							},
-						},
-						"name": schema.StringAttribute{
-							Description: "Name associated to the certificate.",
-							Required:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
-							},
-							Validators: []validator.String{
-								stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9-]+$`),
-									"allowed characters are lowercase ASCII, digits, and \"-\""),
-							},
 						},
 						"service": schema.StringAttribute{
+							Optional:    true,
+							Computed:    true,
+							Default:     stringdefault.StaticString("external_api"),
 							Description: "Service using this certificate.",
-							Required:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplace(),
-							},
 							Validators: []validator.String{
 								stringvalidator.OneOf("external_api"),
 							},
 						},
 					},
 				},
-				Validators: []validator.List{
-					listvalidator.SizeAtLeast(1),
+			},
+			"discoverable": schema.BoolAttribute{
+				Required:    true,
+				Description: "Whether this silo is present in the silo_list output.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
 				},
 			},
-			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
-				Create: true,
-				Read:   true,
-				Update: true,
-				Delete: true,
-			}),
-			"time_created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this silo was created.",
-			},
-			"time_modified": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this silo was last modified.",
-			},
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the silo.",
-			},
 			"identity_mode": schema.StringAttribute{
-				Description: "How users and groups are managed in the Silo",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
+				Description: "How users and groups are managed in the silo.",
 				Default:     stringdefault.StaticString(string(oxide.SiloIdentityModeLocalOnly)),
 				Validators: []validator.String{
 					stringvalidator.OneOf(
@@ -226,6 +198,41 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 					),
 				},
 			},
+			"admin_group_name": schema.StringAttribute{
+				Optional:    true,
+				Description: "If set, this group will be created during Silo creation and granted the 'Silo Admin' role.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"mapped_fleet_roles": schema.MapAttribute{
+				Optional:    true,
+				Description: "Mapped Fleet Roles for the Silo.",
+				ElementType: types.ListType{
+					ElemType: types.StringType,
+				},
+				Validators: []validator.Map{
+					mapvalidator.ValueListsAre(
+						listvalidator.ValueStringsAre(
+							stringvalidator.OneOf("admin", "collaborator", "viewer"),
+						),
+					),
+				},
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this silo was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this silo was last modified.",
+			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 		},
 	}
 }
@@ -261,11 +268,9 @@ func toOxideTlsCertificates(tlsCertificates []siloResourceTlsCertificateModel) [
 	return model
 }
 
-// Create creates the resource and sets the initial Terraform state.
 func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan siloResourceModel
 
-	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -276,10 +281,9 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
-
-	cpus := int(plan.Quotas.Cpus.ValueInt64())
 
 	params := oxide.SiloCreateParams{
 		Body: &oxide.SiloCreate{
@@ -290,14 +294,16 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			MappedFleetRoles: toOxideMappedFleetRoles(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
 			Quotas: oxide.SiloQuotasCreate{
-				Cpus:    &cpus,
+				Cpus:    oxide.NewPointer(int(plan.Quotas.Cpus.ValueInt64())),
 				Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
 				Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
 			},
 			TlsCertificates: toOxideTlsCertificates(plan.TlsCertificates),
 		},
 	}
+
 	tflog.Debug(ctx, fmt.Sprintf("Silo creation parameters: %+v", params.Body.TlsCertificates), nil)
+
 	silo, err := r.client.SiloCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -306,25 +312,22 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 		)
 		return
 	}
+
 	tflog.Trace(ctx, fmt.Sprintf("created silo with ID: %v", silo.Id), map[string]any{"success": true})
 
-	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(silo.Id)
 	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	plan.TimeModified = types.StringValue(silo.TimeModified.String())
 
-	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 }
 
-// Read refreshes the Terraform state with the latest data.
 func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state siloResourceModel
 
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -335,16 +338,17 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
 	params := oxide.SiloViewParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
 	}
+
 	silo, err := r.client.SiloView(ctx, params)
 	if err != nil {
 		if is404(err) {
-			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -357,16 +361,32 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	tflog.Trace(ctx, fmt.Sprintf("read Silo with ID: %v", silo.Id), map[string]any{"success": true})
 
-	state.Description = types.StringValue(silo.Description)
-	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
+	siloQuotas, err := r.client.SiloQuotasView(ctx, oxide.SiloQuotasViewParams{
+		Silo: oxide.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read silo quotas:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
 	state.ID = types.StringValue(silo.Id)
-	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
-	state.MappedFleetRoles = toTerraformMappedFleetRoles(silo.MappedFleetRoles)
 	state.Name = types.StringValue(string(silo.Name))
+	state.Description = types.StringValue(silo.Description)
+	state.Quotas = siloResourceQuotasModel{
+		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
+		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
+		Storage: types.Int64Value(int64(siloQuotas.Storage)),
+	}
+	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
+	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
+	// TODO(sudomateo): Ensure there's no drift due to empty map versus nil return.
+	state.MappedFleetRoles = toTerraformMappedFleetRoles(silo.MappedFleetRoles)
 	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	state.TimeModified = types.StringValue(silo.TimeModified.String())
 
-	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -385,19 +405,15 @@ func toTerraformMappedFleetRoles(mappedFleetRoles map[string][]oxide.FleetRole) 
 	return model
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
 func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan siloResourceModel
 	var state siloResourceModel
 
-	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read Terraform prior state data into the state model to retrieve ID
-	// which is a computed attribute, so it won't show up in the plan.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -408,19 +424,19 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
-
-	cpus := int(plan.Quotas.Cpus.ValueInt64())
 
 	siloQuotasParams := oxide.SiloQuotasUpdateParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.SiloQuotasUpdate{
-			Cpus:    &cpus,
+			Cpus:    oxide.NewPointer(int(plan.Quotas.Cpus.ValueInt64())),
 			Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
 			Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
 		},
 	}
+
 	siloQuotas, err := r.client.SiloQuotasUpdate(ctx, siloQuotasParams)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -432,24 +448,35 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	tflog.Trace(ctx, fmt.Sprintf("updated silo with ID: %v", siloQuotas.SiloId), map[string]any{"success": true})
 
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(siloQuotas.SiloId)
-	plan.Quotas.Cpus = types.Int64Value(plan.Quotas.Cpus.ValueInt64())
-	plan.Quotas.Memory = types.Int64Value(plan.Quotas.Memory.ValueInt64())
-	plan.Quotas.Storage = types.Int64Value(plan.Quotas.Storage.ValueInt64())
+	silo, err := r.client.SiloView(ctx, oxide.SiloViewParams{
+		Silo: oxide.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating silo quotas",
+			"API error: "+err.Error(),
+		)
+		return
+	}
 
-	// Save plan into Terraform state
+	plan.ID = types.StringValue(siloQuotas.SiloId)
+	plan.Quotas = siloResourceQuotasModel{
+		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
+		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
+		Storage: types.Int64Value(int64(siloQuotas.Storage)),
+	}
+	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
+	plan.TimeModified = types.StringValue(silo.TimeModified.String())
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
 func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state siloResourceModel
 
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -460,12 +487,14 @@ func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
 	params := oxide.SiloDeleteParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
 	}
+
 	if err := r.client.SiloDelete(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
@@ -475,5 +504,6 @@ func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 			return
 		}
 	}
+
 	tflog.Trace(ctx, fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
