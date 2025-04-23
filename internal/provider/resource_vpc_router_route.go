@@ -38,26 +38,26 @@ type vpcRouterRouteResource struct {
 }
 
 type vpcRouterRouteResourceModel struct {
-	Description  types.String                   `tfsdk:"description"`
-	Destination  vpcRouterRouteDestinationModel `tfsdk:"destination"`
-	ID           types.String                   `tfsdk:"id"`
-	Kind         types.String                   `tfsdk:"kind"`
-	Name         types.String                   `tfsdk:"name"`
-	Target       vpcRouterRouteTargetModel      `tfsdk:"target"`
-	TimeCreated  types.String                   `tfsdk:"time_created"`
-	TimeModified types.String                   `tfsdk:"time_modified"`
-	VPCRouterID  types.String                   `tfsdk:"vpc_router_id"`
-	Timeouts     timeouts.Value                 `tfsdk:"timeouts"`
+	Description  types.String                    `tfsdk:"description"`
+	Destination  *vpcRouterRouteDestinationModel `tfsdk:"destination"`
+	ID           types.String                    `tfsdk:"id"`
+	Kind         types.String                    `tfsdk:"kind"`
+	Name         types.String                    `tfsdk:"name"`
+	Target       *vpcRouterRouteTargetModel      `tfsdk:"target"`
+	TimeCreated  types.String                    `tfsdk:"time_created"`
+	TimeModified types.String                    `tfsdk:"time_modified"`
+	VPCRouterID  types.String                    `tfsdk:"vpc_router_id"`
+	Timeouts     timeouts.Value                  `tfsdk:"timeouts"`
 }
 
 type vpcRouterRouteDestinationModel struct {
-	Type  oxide.RouteDestinationType `tfsdk:"type"`
-	Value types.String               `tfsdk:"value"`
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 type vpcRouterRouteTargetModel struct {
-	Type  oxide.RouteTargetType `tfsdk:"type"`
-	Value types.String          `tfsdk:"value"`
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 // Metadata returns the resource type name.
@@ -200,12 +200,12 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 		Body: &oxide.RouterRouteCreate{
 			Description: plan.Description.ValueString(),
 			Destination: oxide.RouteDestination{
-				Type:  plan.Destination.Type,
+				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
 				Value: plan.Destination.Value.ValueString(),
 			},
 			Name: oxide.Name(plan.Name.ValueString()),
 			Target: oxide.RouteTarget{
-				Type: plan.Target.Type,
+				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
 				// TODO: Does this work with "drop"?
 				Value: plan.Target.Value.ValueString(),
 			},
@@ -276,12 +276,12 @@ func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequ
 	targetValue := vpcRouterRoute.Target.Value.(string)
 
 	state.Description = types.StringValue(vpcRouterRoute.Description)
-	state.Destination.Type = vpcRouterRoute.Destination.Type
+	state.Destination.Type = types.StringValue(string(vpcRouterRoute.Destination.Type))
 	state.Destination.Value = types.StringValue(destinationValue)
 	state.ID = types.StringValue(vpcRouterRoute.Id)
 	state.Kind = types.StringValue(string(vpcRouterRoute.Kind))
 	state.Name = types.StringValue(string(vpcRouterRoute.Name))
-	state.Target.Type = vpcRouterRoute.Target.Type
+	state.Target.Type = types.StringValue(string(vpcRouterRoute.Target.Type))
 	// TODO: How does this work with "drop"?
 	state.Target.Value = types.StringValue(targetValue)
 	state.VPCRouterID = types.StringValue(string(vpcRouterRoute.VpcRouterId))
@@ -327,11 +327,11 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Destination: oxide.RouteDestination{
-				Type:  plan.Destination.Type,
+				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
 				Value: plan.Destination.Value.ValueString(),
 			},
 			Target: oxide.RouteTarget{
-				Type: plan.Target.Type,
+				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
 				// TODO: How does this behave with "drop"?
 				Value: plan.Target.Value.ValueString(),
 			},

@@ -22,7 +22,7 @@ var (
 	_ datasource.DataSourceWithConfigure = (*vpcRouterRouteDataSource)(nil)
 )
 
-// NewVPCRouterRouteDataSource initialises an images datasource
+// NewVPCRouterRouteDataSource initialises a VPC router route datasource
 func NewVPCRouterRouteDataSource() datasource.DataSource {
 	return &vpcRouterRouteDataSource{}
 }
