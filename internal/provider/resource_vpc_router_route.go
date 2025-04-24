@@ -118,7 +118,7 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 			},
 			"target": schema.SingleNestedAttribute{
 				Required:    true,
-				Description: "location that matched packets should be forwarded to",
+				Description: "Location that matched packets should be forwarded to.",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
 						Description: "Route destination type. Possible values: vpc, subnet, instance, ip, internet_gateway, drop",
@@ -140,7 +140,7 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 							"- `subnet`: Name of the VPC subnet " +
 							"- `instance`: Name of the instance" +
 							"- `ip`: IP address " +
-							"- `internet_gateway`: name of the internet gateway",
+							"- `internet_gateway`: Name of the internet gateway",
 						Optional: true,
 					},
 				},

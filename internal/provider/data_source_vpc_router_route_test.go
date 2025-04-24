@@ -19,10 +19,10 @@ type dataSourceVPCRouterRouteConfig struct {
 
 var dataSourceVPCRouterRouteConfigTpl = `
 data "oxide_vpc_router_route" "{{.BlockName}}" {
-  project_name = "tf-acc-test"
-  vpc_name     = "default"
-  vpc_router_name  = "system"
-  name         = "default-v4"
+  project_name    = "tf-acc-test"
+  vpc_name        = "default"
+  vpc_router_name = "system"
+  name            = "default-v4"
   timeouts = {
     read = "1m"
   }
