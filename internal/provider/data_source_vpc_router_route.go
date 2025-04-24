@@ -207,9 +207,13 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 	// Parse vpcRouterRouteTargetDataSourceModel into types.Object
 	tm := vpcRouterRouteTargetDataSourceModel{
 		Type: types.StringValue(string(route.Target.Type)),
-		// TODO: How does this work with "drop"?
-		Value: types.StringValue(route.Target.Value.(string)),
 	}
+
+	// When the target type is set to "drop" the value will be nil
+	if route.Target.Value != nil {
+		tm.Value = types.StringValue(route.Target.Value.(string))
+	}
+
 	targetAttributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
