@@ -146,15 +146,15 @@ func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
 			continue
 		}
 
-		params := oxide.VpcViewParams{
-			Vpc: oxide.NameOrId(rs.Primary.Attributes["id"]),
+		params := oxide.AntiAffinityGroupViewParams{
+			AntiAffinityGroup: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
 
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, time.Minute)
 		defer cancel()
 
-		res, err := client.VpcView(ctx, params)
+		res, err := client.AntiAffinityGroupView(ctx, params)
 		if err != nil && is404(err) {
 			continue
 		}
