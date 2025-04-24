@@ -1,3 +1,16 @@
+# 0.9.0 (2025/Apr/23)
+
+### New features
+
+- **New resource:** `oxide_floating_ip` [#427](https://github.com/oxidecomputer/terraform-provider-oxide/pull/427).
+- **New data resource:** `oxide_floating_ip` [#427](https://github.com/oxidecomputer/terraform-provider-oxide/pull/427).
+
+### List of commits
+
+- [2bd3b33](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2bd3b33) oxide_floating_ip: initial resource and data source (#427)
+- [c54c243](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c54c243) Bump golang.org/x/net from 0.37.0 to 0.38.0 (#424)
+- [440abcb](https://github.com/oxidecomputer/terraform-provider-oxide/commit/440abcb) Version bump to 0.9.0 (#422)
+
 # 0.8.0 (2025/Apr/15)
 
 ### New features
