@@ -13,10 +13,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -28,20 +31,28 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
+// Compile-time assertions to check that siloResource implements the necessary
+// Terraform resource interfaces.
 var (
 	_ resource.Resource                = (*siloResource)(nil)
 	_ resource.ResourceWithConfigure   = (*siloResource)(nil)
 	_ resource.ResourceWithImportState = (*siloResource)(nil)
 )
 
+// NewSiloResource is a helper to easily construct a siloResource as a type that
+// implements the Terraform resource interface.
 func NewSiloResource() resource.Resource {
 	return &siloResource{}
 }
 
+// siloResource is the concrete type that implements the necessary Terraform
+// resource interfaces. It holds state to interact with the Oxide API.
 type siloResource struct {
 	client *oxide.Client
 }
 
+// siloResourceModel represents the Terraform configuration and state for the
+// Oxide silo resource.
 type siloResourceModel struct {
 	ID               types.String                      `tfsdk:"id"`
 	Name             types.String                      `tfsdk:"name"`
@@ -57,12 +68,15 @@ type siloResourceModel struct {
 	Timeouts         timeouts.Value                    `tfsdk:"timeouts"`
 }
 
+// siloResourceQuotasModel represents quotas for an Oxide silo.
 type siloResourceQuotasModel struct {
 	Cpus    types.Int64 `tfsdk:"cpus"`
 	Memory  types.Int64 `tfsdk:"memory"`
 	Storage types.Int64 `tfsdk:"storage"`
 }
 
+// siloResourceTlsCertificateModel represents a TLS certificate for an Oxide
+// silo.
 type siloResourceTlsCertificateModel struct {
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
@@ -71,10 +85,12 @@ type siloResourceTlsCertificateModel struct {
 	Service     types.String `tfsdk:"service"`
 }
 
+// Metadata configures the Terraform resource name for this resource.
 func (r *siloResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "oxide_silo"
 }
 
+// Configure sets up necessary data or clients needed by this resource.
 func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
@@ -83,10 +99,12 @@ func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequ
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports this resource using its ID.
 func (r *siloResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+// Schema defines the attributes for this resource.
 func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
@@ -170,8 +188,8 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 						"service": schema.StringAttribute{
 							Optional:    true,
 							Computed:    true,
-							Default:     stringdefault.StaticString("external_api"),
 							Description: "Service using this certificate.",
+							Default:     stringdefault.StaticString("external_api"),
 							Validators: []validator.String{
 								stringvalidator.OneOf("external_api"),
 							},
@@ -207,11 +225,22 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 			},
 			"mapped_fleet_roles": schema.MapAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Mapped Fleet Roles for the Silo.",
+				Default: mapdefault.StaticValue(types.MapValueMust(
+					types.ListType{ElemType: types.StringType},
+					map[string]attr.Value{},
+				)),
 				ElementType: types.ListType{
 					ElemType: types.StringType,
 				},
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.RequiresReplace(),
+				},
 				Validators: []validator.Map{
+					mapvalidator.KeysAre(
+						stringvalidator.OneOf("admin", "collaborator", "viewer"),
+					),
 					mapvalidator.ValueListsAre(
 						listvalidator.ValueStringsAre(
 							stringvalidator.OneOf("admin", "collaborator", "viewer"),
@@ -237,37 +266,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 	}
 }
 
-func toOxideMappedFleetRoles(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
-	model := make(map[string][]oxide.FleetRole)
-
-	for key, fleetRoleModels := range mappedFleetRoles {
-		var roles []oxide.FleetRole
-		for _, frm := range fleetRoleModels {
-			roles = append(roles, oxide.FleetRole(frm))
-		}
-		model[key] = roles
-	}
-	return model
-}
-
-func toOxideTlsCertificates(tlsCertificates []siloResourceTlsCertificateModel) []oxide.CertificateCreate {
-	var model []oxide.CertificateCreate
-
-	for _, tlsCert := range tlsCertificates {
-		r := oxide.CertificateCreate{
-			Cert:        tlsCert.Cert.ValueString(),
-			Description: tlsCert.Description.ValueString(),
-			Key:         tlsCert.Key.ValueString(),
-			Name:        oxide.Name(tlsCert.Name.ValueString()),
-			Service:     oxide.ServiceUsingCertificate(tlsCert.Service.ValueString()),
-		}
-
-		model = append(model, r)
-	}
-
-	return model
-}
-
+// Create creates this resource using the Oxide API.
 func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan siloResourceModel
 
@@ -325,6 +324,7 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 }
 
+// Read fetches this resource using the Oxide API.
 func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state siloResourceModel
 
@@ -382,7 +382,6 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
-	// TODO(sudomateo): Ensure there's no drift due to empty map versus nil return.
 	state.MappedFleetRoles = toTerraformMappedFleetRoles(silo.MappedFleetRoles)
 	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	state.TimeModified = types.StringValue(silo.TimeModified.String())
@@ -393,18 +392,9 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 }
 
-func toTerraformMappedFleetRoles(mappedFleetRoles map[string][]oxide.FleetRole) map[string][]string {
-	model := make(map[string][]string)
-	for key, roles := range mappedFleetRoles {
-		var modelRoles []string
-		for _, role := range roles {
-			modelRoles = append(modelRoles, string(role))
-		}
-		model[key] = modelRoles
-	}
-	return model
-}
-
+// Update updates this resource using the Oxide API. Not all attributes can
+// be updated. Refer to [Schema] and the Oxide API documentation for more
+// information.
 func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan siloResourceModel
 	var state siloResourceModel
@@ -474,6 +464,7 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 }
 
+// Delete deletes this resource using the Oxide API.
 func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state siloResourceModel
 
@@ -506,4 +497,47 @@ func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+}
+
+func toOxideMappedFleetRoles(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
+	model := make(map[string][]oxide.FleetRole)
+
+	for key, fleetRoleModels := range mappedFleetRoles {
+		var roles []oxide.FleetRole
+		for _, frm := range fleetRoleModels {
+			roles = append(roles, oxide.FleetRole(frm))
+		}
+		model[key] = roles
+	}
+	return model
+}
+
+func toOxideTlsCertificates(tlsCertificates []siloResourceTlsCertificateModel) []oxide.CertificateCreate {
+	var model []oxide.CertificateCreate
+
+	for _, tlsCert := range tlsCertificates {
+		r := oxide.CertificateCreate{
+			Cert:        tlsCert.Cert.ValueString(),
+			Description: tlsCert.Description.ValueString(),
+			Key:         tlsCert.Key.ValueString(),
+			Name:        oxide.Name(tlsCert.Name.ValueString()),
+			Service:     oxide.ServiceUsingCertificate(tlsCert.Service.ValueString()),
+		}
+
+		model = append(model, r)
+	}
+
+	return model
+}
+
+func toTerraformMappedFleetRoles(mappedFleetRoles map[string][]oxide.FleetRole) map[string][]string {
+	model := make(map[string][]string)
+	for key, roles := range mappedFleetRoles {
+		var modelRoles []string
+		for _, role := range roles {
+			modelRoles = append(modelRoles, string(role))
+		}
+		model[key] = modelRoles
+	}
+	return model
 }
