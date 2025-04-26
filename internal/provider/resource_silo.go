@@ -14,10 +14,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
@@ -34,9 +34,8 @@ import (
 // Compile-time assertions to check that siloResource implements the necessary
 // Terraform resource interfaces.
 var (
-	_ resource.Resource                = (*siloResource)(nil)
-	_ resource.ResourceWithConfigure   = (*siloResource)(nil)
-	_ resource.ResourceWithImportState = (*siloResource)(nil)
+	_ resource.Resource              = (*siloResource)(nil)
+	_ resource.ResourceWithConfigure = (*siloResource)(nil)
 )
 
 // NewSiloResource is a helper to easily construct a siloResource as a type that
@@ -99,11 +98,6 @@ func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequ
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// ImportState imports this resource using its ID.
-func (r *siloResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
 // Schema defines the attributes for this resource.
 func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -156,6 +150,9 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				Description: "Initial TLS certificates to be used for the new silo's console and API endpoints.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
+				},
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
 				},
 				NestedObject: schema.NestedAttributeObject{
 					PlanModifiers: []planmodifier.Object{
@@ -359,7 +356,7 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read Silo with ID: %v", silo.Id), map[string]any{"success": true})
+	tflog.Trace(ctx, fmt.Sprintf("read silo with ID: %v", silo.Id), map[string]any{"success": true})
 
 	siloQuotas, err := r.client.SiloQuotasView(ctx, oxide.SiloQuotasViewParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),

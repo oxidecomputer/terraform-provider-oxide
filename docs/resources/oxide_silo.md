@@ -4,17 +4,20 @@ page_title: "oxide_silo Resource - terraform-provider-oxide"
 
 # oxide_silo (Resource)
 
-This resource manages the creation of an Oxide Silo.
+This resource manages the creation of an Oxide silo.
 
--> Only the `quotas` attribute supports in-place modification. Changes to other attributes will result in the silo being destroyed and created anew.
+-> This resource does not support import!
+
+-> Only the `quotas` attribute supports in-place modification. Changes to other
+attributes will result in the silo being destroyed and created anew.
 
 ## Example Usage
 
 ```hcl
 resource "oxide_silo" "example" {
-  description      = "a test silo"
-  name             = "{{.SiloName}}"
-  admin_group_name = "test_admin"
+  name             = "showcase"
+  description      = "Demo and event silo."
+  admin_group_name = "showcase_admin"
   identity_mode    = "saml_jit"
   discoverable     = true
   mapped_fleet_roles = {
@@ -22,14 +25,14 @@ resource "oxide_silo" "example" {
     viewer = ["viewer"]
   }
   quotas = {
-    cpus    = 8
-    memory  = 34359738368
-    storage = 34359738368
+    cpus    = 64
+    memory  = 137438953472 # 128 GiB
+    storage = 549755813888 # 512 GiB
   }
   tls_certificates = [
     {
-      name        = "silo_cert_1"
-      description = "test cert 1"
+      name        = "wildcard_cert"
+      description = "Wildcard cert for *.sys.oxide.example.com."
       cert        = file("cert.pem")
       key         = file("key.pem")
       service     = "external_api"
@@ -42,44 +45,54 @@ resource "oxide_silo" "example" {
 
 ### Required
 
-- `name` (String) Name of the Oxide Silo.
+- `name` (String) Name of the Oxide silo.
+- `description` (String) Description for the Oxide silo.
+- `quotas` (Set of Object) Limits the amount of provisionable CPU, memory, and storage in the silo. (See [below for nested schema](#nestedatt--quotas).)
+- `tls_certificates` (String) Initial TLS certificates to be used for the new silo's console and API endpoints. (See [below for nested schema](#nestedatt--tls).)
 - `discoverable` (Boolean) Whether this silo is present in the silo_list output. Defaults to `true`.
-- `identity_mode` (String) Describes how identities are managed and users are authenticated in this Silo. Only valid values are `saml_jit` and `local_only`.
-- `quotas` (Set of Object) Limits the amount of provisionable CPU, memory, and storage in the Silo. (see [below for nested schema](#nestedatt--quotas))
-- `description` (String) Description for the Oxide Silo.
-- `tls_certificates` (String) Initial TLS certificates to be used for the new Silo's console and API endpoints. (see [below for nested schema](#nestedatt--tls))
 
 ### Optional
 
-- `admin_group_name` (String) Admin group name for the Oxide Silo. Identity providers can assert that users belong to this group and those users can log in and further initialize the Silo.
-- `mapped_fleet_roles` (Set of Object) Mapping of which Fleet roles are conferred by each Silo role. The default is that no Fleet roles are conferred by any Silo roles unless there's a corresponding entry in this map.
+- `identity_mode` (String) How identities are managed and users are authenticated in this silo. Valid values are `saml_jit` and `local_only`. Defaults to `local_only`.
+- `admin_group_name` (String) This group will be created during silo creation and granted the "Silo Admin" role. Identity providers can assert that users belong to this group and those users can log in and further initialize the Silo.
+- `mapped_fleet_roles` (Map) Mapping of which fleet roles are conferred by each silo role. The default is that no fleet roles are conferred by any silo roles unless there's a corresponding entry in this map. Map keys must be one of `admin`, `collaborator`, or `viewer` and map values are an array of strings that must be one of `admin`, `collaborator`, or `viewer`.
+- `timeouts` (Attribute, Optional) Timeouts for performing API operations. See [below for nested schema](#nestedatt--timeouts).
 
 ### Read-Only
 
-- `id` (String) Unique, immutable, system-controlled identifier of the Silo.
+- `id` (String) Unique, immutable, system-controlled identifier of the silo.
 - `time_created` (String) Timestamp of when this Silo was created.
 - `time_modified` (String) Timestamp of when this Silo was last modified.
 
-<a id=""></a>
+<a id="nestedatt--quotas"></a>
 
 ### Nested Schema for `quotas`
 
 ### Required
 
-- `cpus` (Number) The amount of virtual CPUs available for running instances in the Silo
-- `memory` (Number) The amount of RAM (in bytes) available for running instances in the Silo
-- `storage` (Number) The amount of storage (in bytes) available for disks or snapshots
+- `cpus` (Number) The amount of virtual CPUs available for running instances in the silo.
+- `memory` (Number) The amount of RAM, in bytes, available for running instances in the silo.
+- `storage` (Number) The amount of storage, in bytes, available for disks or snapshots.
 
-<a id="nestedatt--quotas"></a>
+<a id="nestedatt--tls"></a>
 
 ### Nested Schema for `tls_certificates`
 
 ### Required
 
-- `cert` (String) PEM-formatted string containing public certificate chain.
-- `description` (String) Description of the certificate.
-- `key` (String) PEM-formatted string containing private key.
 - `name` (String) The name associated with the certificate.
-- `service` (String) The service associated with the certificate. Only valid value is `external_api`.
+- `description` (String) Description of the certificate.
+- `cert` (String) PEM-formatted string containing public certificate chain.
+- `key` (String) PEM-formatted string containing private key.
+- `service` (String) The service associated with the certificate. The only valid value is `external_api`. Defaults to `external_api`.
 
-<a id="nestedatt--tls"></a>
+<a id="nestedatt--timeouts"></a>
+
+### Nested Schema for `timeouts`
+
+#### Optional
+
+- `create` (String, Default `10m`)
+- `delete` (String, Default `10m`)
+- `read` (String, Default `10m`)
+- `update` (String, Default `10m`)
