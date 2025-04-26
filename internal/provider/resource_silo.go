@@ -14,13 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -34,8 +33,9 @@ import (
 // Compile-time assertions to check that siloResource implements the necessary
 // Terraform resource interfaces.
 var (
-	_ resource.Resource              = (*siloResource)(nil)
-	_ resource.ResourceWithConfigure = (*siloResource)(nil)
+	_ resource.Resource                = (*siloResource)(nil)
+	_ resource.ResourceWithConfigure   = (*siloResource)(nil)
+	_ resource.ResourceWithImportState = (*siloResource)(nil)
 )
 
 // NewSiloResource is a helper to easily construct a siloResource as a type that
@@ -56,7 +56,7 @@ type siloResourceModel struct {
 	ID               types.String                      `tfsdk:"id"`
 	Name             types.String                      `tfsdk:"name"`
 	Description      types.String                      `tfsdk:"description"`
-	Quotas           siloResourceQuotasModel           `tfsdk:"quotas"`
+	Quotas           *siloResourceQuotasModel          `tfsdk:"quotas"`
 	TlsCertificates  []siloResourceTlsCertificateModel `tfsdk:"tls_certificates"`
 	Discoverable     types.Bool                        `tfsdk:"discoverable"`
 	IdentityMode     types.String                      `tfsdk:"identity_mode"`
@@ -96,6 +96,11 @@ func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequ
 	}
 
 	r.client = req.ProviderData.(*oxide.Client)
+}
+
+// ImportState imports this resource using its ID.
+func (r *siloResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the attributes for this resource.
@@ -147,20 +152,16 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 			},
 			"tls_certificates": schema.ListNestedAttribute{
 				Required:    true,
+				WriteOnly:   true,
 				Description: "Initial TLS certificates to be used for the new silo's console and API endpoints.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
-				},
 				NestedObject: schema.NestedAttributeObject{
-					PlanModifiers: []planmodifier.Object{
-						objectplanmodifier.RequiresReplace(),
-					},
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required:    true,
+							WriteOnly:   true,
 							Description: "Unique, immutable, user-controlled identifier of the certificate.",
 							Validators: []validator.String{
 								stringvalidator.RegexMatches(
@@ -172,21 +173,23 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 						},
 						"description": schema.StringAttribute{
 							Required:    true,
+							WriteOnly:   true,
 							Description: "Human-readable free-form text about the certificate.",
 						},
 						"cert": schema.StringAttribute{
 							Required:    true,
+							WriteOnly:   true,
 							Description: "PEM-formatted string containing public certificate chain.",
 						},
 						"key": schema.StringAttribute{
 							Required:    true,
+							WriteOnly:   true,
 							Description: "PEM-formatted string containing private key.",
 						},
 						"service": schema.StringAttribute{
-							Optional:    true,
-							Computed:    true,
+							Required:    true,
+							WriteOnly:   true,
 							Description: "Service using this certificate.",
-							Default:     stringdefault.StaticString("external_api"),
 							Validators: []validator.String{
 								stringvalidator.OneOf("external_api"),
 							},
@@ -281,6 +284,14 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	// The tls_certificates attribute is a write-only attribute which must be retrieved
+	// from the configuration instead of the plan. We save it into the plan instead of
+	// creating a new variable so that code below can solely use the plan variable.
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("tls_certificates"), &plan.TlsCertificates)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	params := oxide.SiloCreateParams{
 		Body: &oxide.SiloCreate{
 			AdminGroupName:   plan.AdminGroupName.ValueString(),
@@ -372,7 +383,7 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.ID = types.StringValue(silo.Id)
 	state.Name = types.StringValue(string(silo.Name))
 	state.Description = types.StringValue(silo.Description)
-	state.Quotas = siloResourceQuotasModel{
+	state.Quotas = &siloResourceQuotasModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
@@ -447,7 +458,7 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	plan.ID = types.StringValue(siloQuotas.SiloId)
-	plan.Quotas = siloResourceQuotasModel{
+	plan.Quotas = &siloResourceQuotasModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
