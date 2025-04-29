@@ -98,7 +98,7 @@ resource "oxide_silo" "{{.BlockName}}" {
 }
 `
 
-func TestAccCloudResourceSilo_full(t *testing.T) {
+func TestAccSiloResourceSilo_full(t *testing.T) {
 	siloName := newResourceName()
 	blockName := newBlockName("silo")
 	resourceName := fmt.Sprintf("oxide_silo.%s", blockName)

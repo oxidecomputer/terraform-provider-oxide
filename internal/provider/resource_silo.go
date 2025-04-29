@@ -103,6 +103,8 @@ func (r *siloResource) ImportState(ctx context.Context, req resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+const tlsCertificateRegEx = `^[a-zA-Z0-9-]+$`
+
 // Schema defines the attributes for this resource.
 func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -119,7 +121,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				},
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-zA-Z0-9-]+$`),
+						regexp.MustCompile(tlsCertificateRegEx),
 						`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-'.`,
 					),
 					stringvalidator.LengthAtMost(63),
@@ -165,7 +167,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 							Description: "Unique, immutable, user-controlled identifier of the certificate.",
 							Validators: []validator.String{
 								stringvalidator.RegexMatches(
-									regexp.MustCompile(`^[a-zA-Z0-9-]+$`),
+									regexp.MustCompile(tlsCertificateRegEx),
 									`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-'.`,
 								),
 								stringvalidator.LengthAtMost(63),
@@ -187,9 +189,10 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 							Description: "PEM-formatted string containing private key.",
 						},
 						"service": schema.StringAttribute{
-							Required:    true,
+							Optional:    true,
 							WriteOnly:   true,
 							Description: "Service using this certificate.",
+							Default:     stringdefault.StaticString("external_api"),
 							Validators: []validator.String{
 								stringvalidator.OneOf("external_api"),
 							},
@@ -298,14 +301,14 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			Description:      plan.Description.ValueString(),
 			IdentityMode:     oxide.SiloIdentityMode(plan.IdentityMode.ValueString()),
 			Discoverable:     plan.Discoverable.ValueBoolPointer(),
-			MappedFleetRoles: toOxideMappedFleetRoles(plan.MappedFleetRoles),
+			MappedFleetRoles: stringMapToFleetRoleMap(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
 			Quotas: oxide.SiloQuotasCreate{
-				Cpus:    oxide.NewPointer(int(plan.Quotas.Cpus.ValueInt64())),
-				Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
-				Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
+				Cpus:    oxide.NewPointer(int(*plan.Quotas.Cpus.ValueInt64Pointer())),
+				Memory:  oxide.ByteCount(*plan.Quotas.Memory.ValueInt64Pointer()),
+				Storage: oxide.ByteCount(*plan.Quotas.Storage.ValueInt64Pointer()),
 			},
-			TlsCertificates: toOxideTlsCertificates(plan.TlsCertificates),
+			TlsCertificates: tlsCertsModelToCertificateCreateSlice(plan.TlsCertificates),
 		},
 	}
 
@@ -390,7 +393,7 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
-	state.MappedFleetRoles = toTerraformMappedFleetRoles(silo.MappedFleetRoles)
+	state.MappedFleetRoles = fleetRoleMapToStringMap(silo.MappedFleetRoles)
 	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	state.TimeModified = types.StringValue(silo.TimeModified.String())
 
@@ -429,9 +432,9 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	siloQuotasParams := oxide.SiloQuotasUpdateParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.SiloQuotasUpdate{
-			Cpus:    oxide.NewPointer(int(plan.Quotas.Cpus.ValueInt64())),
-			Memory:  oxide.ByteCount(plan.Quotas.Memory.ValueInt64()),
-			Storage: oxide.ByteCount(plan.Quotas.Storage.ValueInt64()),
+			Cpus:    oxide.NewPointer(int(*plan.Quotas.Cpus.ValueInt64Pointer())),
+			Memory:  oxide.ByteCount(*plan.Quotas.Memory.ValueInt64Pointer()),
+			Storage: oxide.ByteCount(*plan.Quotas.Storage.ValueInt64Pointer()),
 		},
 	}
 
@@ -507,7 +510,7 @@ func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	tflog.Trace(ctx, fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
-func toOxideMappedFleetRoles(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
+func stringMapToFleetRoleMap(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
 	model := make(map[string][]oxide.FleetRole)
 
 	for key, fleetRoleModels := range mappedFleetRoles {
@@ -520,7 +523,7 @@ func toOxideMappedFleetRoles(mappedFleetRoles map[string][]string) map[string][]
 	return model
 }
 
-func toOxideTlsCertificates(tlsCertificates []siloResourceTlsCertificateModel) []oxide.CertificateCreate {
+func tlsCertsModelToCertificateCreateSlice(tlsCertificates []siloResourceTlsCertificateModel) []oxide.CertificateCreate {
 	var model []oxide.CertificateCreate
 
 	for _, tlsCert := range tlsCertificates {
@@ -538,7 +541,7 @@ func toOxideTlsCertificates(tlsCertificates []siloResourceTlsCertificateModel) [
 	return model
 }
 
-func toTerraformMappedFleetRoles(mappedFleetRoles map[string][]oxide.FleetRole) map[string][]string {
+func fleetRoleMapToStringMap(mappedFleetRoles map[string][]oxide.FleetRole) map[string][]string {
 	model := make(map[string][]string)
 	for key, roles := range mappedFleetRoles {
 		var modelRoles []string

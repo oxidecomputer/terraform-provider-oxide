@@ -57,8 +57,9 @@ resource "oxide_silo" "example" {
 
 - `identity_mode` (String) How identities are managed and users are authenticated in this silo. Valid values are `saml_jit` and `local_only`. Defaults to `local_only`.
 - `admin_group_name` (String) This group will be created during silo creation and granted the "Silo Admin" role. Identity providers can assert that users belong to this group and those users can log in and further initialize the Silo.
-- `mapped_fleet_roles` (Map) Mapping of which fleet roles are conferred by each silo role. The default is that no fleet roles are conferred by any silo roles unless there's a corresponding entry in this map. Map keys must be one of `admin`, `collaborator`, or `viewer` and map values are an array of strings that must be one of `admin`, `collaborator`, or `viewer`.
+- `mapped_fleet_roles` (Map) Setting that defines the association between silo roles and fleet roles. By default, silo roles do not grant any fleet roles. To establish a connection, you create entries in this map. The key for each entry must be a silo role: `admin`, `collaborator`, or `viewer`. The value is a list of fleet roles (`admin`, `collaborator`, or `viewer`) that the key silo role will grant.
 - `timeouts` (Attribute, Optional) Timeouts for performing API operations. See [below for nested schema](#nestedatt--timeouts).
+- `service` (String) The service associated with the certificate. The only valid value is `external_api`. Defaults to `external_api`.
 
 ### Read-Only
 
@@ -86,7 +87,6 @@ resource "oxide_silo" "example" {
 - `description` (String) Description of the certificate.
 - `cert` (String) PEM-formatted string containing public certificate chain.
 - `key` (String) PEM-formatted string containing private key.
-- `service` (String) The service associated with the certificate. The only valid value is `external_api`. Defaults to `external_api`.
 
 <a id="nestedatt--timeouts"></a>
 
