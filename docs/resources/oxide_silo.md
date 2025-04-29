@@ -6,10 +6,6 @@ page_title: "oxide_silo Resource - terraform-provider-oxide"
 
 This resource manages the creation of an Oxide silo.
 
--> This resource requires Terraform version v1.11 or later due to the
-`tls_certificates` attribute being a
-[write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments).
-
 -> Only the `quotas` attribute supports in-place modification. Changes to other
 attributes will result in the silo being destroyed and created anew.
 
@@ -50,7 +46,7 @@ resource "oxide_silo" "example" {
 - `name` (String) Name of the Oxide silo.
 - `description` (String) Description for the Oxide silo.
 - `quotas` (Set of Object) Limits the amount of provisionable CPU, memory, and storage in the silo. (See [below for nested schema](#nestedatt--quotas).)
-- `tls_certificates` (String, Write-only) Initial TLS certificates to be used for the new silo's console and API endpoints. This attribute is a [write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) and can only be modified by updating its configuration and [replacing the resource](https://developer.hashicorp.com/terraform/cli/state/taint). (See [below for nested schema](#nestedatt--tls).)
+- `tls_certificates` (String, Write-only) Initial TLS certificates to be used for the new silo's console and API endpoints. This attribute is a [write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) and can only be modified by updating its configuration. (https://developer.hashicorp.com/terraform/cli/state/taint). (See [below for nested schema](#nestedatt--tls).)
 - `discoverable` (Boolean) Whether this silo is present in the silo_list output. Defaults to `true`.
 
 ### Optional
