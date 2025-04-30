@@ -24,7 +24,7 @@ data "oxide_vpc_router_route" "example" {
 
 ### Required
 
-- `name` (String) Name of the router.
+- `name` (String) Name of the VPC router route.
 - `project_name` (String) Name of the project that contains the VPC router route.
 - `vpc_router_name` (String) Name of the VPC router that contains the VPC router route.
 - `vpc_name` (String) Name of the VPC that contains the VPC router route.

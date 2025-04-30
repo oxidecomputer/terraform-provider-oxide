@@ -210,6 +210,7 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 		},
 	}
 
+	// When the target type is set to "drop" the value will be nil
 	if !plan.Target.Value.IsNull() {
 		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
@@ -346,6 +347,7 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 		},
 	}
 
+	// When the target type is set to "drop" the value will be nil
 	if !plan.Target.Value.IsNull() {
 		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
