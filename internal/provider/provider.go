@@ -173,6 +173,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewVPCDataSource,
 		NewVPCInternetGatewayDataSource,
 		NewVPCRouterDataSource,
+		NewVPCRouterRouteDataSource,
 		NewVPCSubnetDataSource,
 		NewFloatingIPDataSource,
 	}
@@ -194,6 +195,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewVPCInternetGatewayResource,
 		NewVPCFirewallRulesResource,
 		NewVPCRouterResource,
+		NewVPCRouterRouteResource,
 		NewVPCSubnetResource,
 		NewFloatingIPResource,
 	}
