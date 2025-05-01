@@ -383,13 +383,16 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
+	memoryVal := int64(siloQuotas.Memory)
+	storageVal := int64(siloQuotas.Storage)
+
 	state.ID = types.StringValue(silo.Id)
 	state.Name = types.StringValue(string(silo.Name))
 	state.Description = types.StringValue(silo.Description)
 	state.Quotas = &siloResourceQuotasModel{
-		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
-		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
-		Storage: types.Int64Value(int64(siloQuotas.Storage)),
+		Cpus:    types.Int64PointerValue(intToInt64Pointer(siloQuotas.Cpus)),
+		Memory:  types.Int64PointerValue(&memoryVal),
+		Storage: types.Int64PointerValue(&storageVal),
 	}
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
@@ -460,11 +463,14 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	memoryVal := int64(siloQuotas.Memory)
+	storageVal := int64(siloQuotas.Storage)
+
 	plan.ID = types.StringValue(siloQuotas.SiloId)
 	plan.Quotas = &siloResourceQuotasModel{
-		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
-		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
-		Storage: types.Int64Value(int64(siloQuotas.Storage)),
+		Cpus:    types.Int64PointerValue(intToInt64Pointer(siloQuotas.Cpus)),
+		Memory:  types.Int64PointerValue(&memoryVal),
+		Storage: types.Int64PointerValue(&storageVal),
 	}
 	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	plan.TimeModified = types.StringValue(silo.TimeModified.String())
@@ -551,4 +557,12 @@ func fleetRoleMapToStringMap(mappedFleetRoles map[string][]oxide.FleetRole) map[
 		model[key] = modelRoles
 	}
 	return model
+}
+
+func intToInt64Pointer(i *int) *int64 {
+	if i == nil {
+		return nil
+	}
+	val := int64(*i)
+	return &val
 }
