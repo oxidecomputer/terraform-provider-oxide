@@ -46,7 +46,7 @@ resource "oxide_silo" "example" {
 - `name` (String) Name of the Oxide silo.
 - `description` (String) Description for the Oxide silo.
 - `quotas` (Set of Object) Limits the amount of provisionable CPU, memory, and storage in the silo. (See [below for nested schema](#nestedatt--quotas).)
-- `tls_certificates` (String, Write-only) Initial TLS certificates to be used for the new silo's console and API endpoints. This attribute is a [write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) and can only be modified by updating its configuration. (https://developer.hashicorp.com/terraform/cli/state/taint). (See [below for nested schema](#nestedatt--tls).)
+- `tls_certificates` (String, Write-only) Initial TLS certificates to be used for the new silo's console and API endpoints. This is a [write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) and can only be modified by updating its configuration. (https://developer.hashicorp.com/terraform/cli/state/taint). (See [below for nested schema](#nestedatt--tls).)
 - `discoverable` (Boolean) Whether this silo is present in the silo_list output. Defaults to `true`.
 
 ### Optional

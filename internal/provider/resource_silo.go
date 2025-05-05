@@ -156,9 +156,6 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				Required:    true,
 				WriteOnly:   true,
 				Description: "Initial TLS certificates to be used for the new silo's console and API endpoints.",
-				Validators: []validator.List{
-					listvalidator.SizeAtLeast(1),
-				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
@@ -189,7 +186,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 							Description: "PEM-formatted string containing private key.",
 						},
 						"service": schema.StringAttribute{
-							Optional:    true,
+							Computed:    true,
 							WriteOnly:   true,
 							Description: "Service using this certificate.",
 							Default:     stringdefault.StaticString("external_api"),
@@ -304,6 +301,7 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			MappedFleetRoles: stringMapToFleetRoleMap(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
 			Quotas: oxide.SiloQuotasCreate{
+				// We can safely dereference all fields within plan.Quotas as they are required fields
 				Cpus:    oxide.NewPointer(int(*plan.Quotas.Cpus.ValueInt64Pointer())),
 				Memory:  oxide.ByteCount(*plan.Quotas.Memory.ValueInt64Pointer()),
 				Storage: oxide.ByteCount(*plan.Quotas.Storage.ValueInt64Pointer()),
@@ -383,16 +381,13 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	memoryVal := int64(siloQuotas.Memory)
-	storageVal := int64(siloQuotas.Storage)
-
 	state.ID = types.StringValue(silo.Id)
 	state.Name = types.StringValue(string(silo.Name))
 	state.Description = types.StringValue(silo.Description)
 	state.Quotas = &siloResourceQuotasModel{
-		Cpus:    types.Int64PointerValue(intToInt64Pointer(siloQuotas.Cpus)),
-		Memory:  types.Int64PointerValue(&memoryVal),
-		Storage: types.Int64PointerValue(&storageVal),
+		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
+ 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
+ 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
 	}
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
@@ -435,6 +430,7 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	siloQuotasParams := oxide.SiloQuotasUpdateParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.SiloQuotasUpdate{
+			// We can safely dereference all fields within plan.Quotas as they are required fields
 			Cpus:    oxide.NewPointer(int(*plan.Quotas.Cpus.ValueInt64Pointer())),
 			Memory:  oxide.ByteCount(*plan.Quotas.Memory.ValueInt64Pointer()),
 			Storage: oxide.ByteCount(*plan.Quotas.Storage.ValueInt64Pointer()),
@@ -463,14 +459,11 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	memoryVal := int64(siloQuotas.Memory)
-	storageVal := int64(siloQuotas.Storage)
-
 	plan.ID = types.StringValue(siloQuotas.SiloId)
 	plan.Quotas = &siloResourceQuotasModel{
-		Cpus:    types.Int64PointerValue(intToInt64Pointer(siloQuotas.Cpus)),
-		Memory:  types.Int64PointerValue(&memoryVal),
-		Storage: types.Int64PointerValue(&storageVal),
+		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
+ 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
+ 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
 	}
 	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	plan.TimeModified = types.StringValue(silo.TimeModified.String())
@@ -557,12 +550,4 @@ func fleetRoleMapToStringMap(mappedFleetRoles map[string][]oxide.FleetRole) map[
 		model[key] = modelRoles
 	}
 	return model
-}
-
-func intToInt64Pointer(i *int) *int64 {
-	if i == nil {
-		return nil
-	}
-	val := int64(*i)
-	return &val
 }
