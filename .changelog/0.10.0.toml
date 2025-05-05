@@ -1,12 +1,12 @@
 [[breaking]]
-title = ""
-description = ""
+title = "Minimum Terraform version required"
+description = "`oxide_silo` [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425). Breaking change due to `tls_certificates` attribute being a
+[write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments)."
 
 [[features]]
 title = "New resource"
-description = "`oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/terraform-provider-oxide/pull/423)."
+description = "`oxide_silo` [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425)."
 
-[[features]]
 title = "New data resource"
 description = "`oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/terraform-provider-oxide/pull/423)."
 

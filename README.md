@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- [Terraform](https://www.terraform.io/downloads) 1.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
+- [Terraform](https://www.terraform.io/downloads) 1.11.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
 
 ## Using the provider
 
