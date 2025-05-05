@@ -386,8 +386,8 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.Description = types.StringValue(silo.Description)
 	state.Quotas = &siloResourceQuotasModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
- 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
- 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
+		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
+		Storage: types.Int64Value(int64(siloQuotas.Storage)),
 	}
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
@@ -462,8 +462,8 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	plan.ID = types.StringValue(siloQuotas.SiloId)
 	plan.Quotas = &siloResourceQuotasModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
- 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
- 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
+		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
+		Storage: types.Int64Value(int64(siloQuotas.Storage)),
 	}
 	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
 	plan.TimeModified = types.StringValue(silo.TimeModified.String())
