@@ -186,10 +186,9 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 							Description: "PEM-formatted string containing private key.",
 						},
 						"service": schema.StringAttribute{
-							Computed:    true,
+							Required:    true,
 							WriteOnly:   true,
 							Description: "Service using this certificate.",
-							Default:     stringdefault.StaticString("external_api"),
 							Validators: []validator.String{
 								stringvalidator.OneOf("external_api"),
 							},

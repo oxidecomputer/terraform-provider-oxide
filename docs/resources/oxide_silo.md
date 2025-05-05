@@ -46,7 +46,7 @@ resource "oxide_silo" "example" {
 - `name` (String) Name of the Oxide silo.
 - `description` (String) Description for the Oxide silo.
 - `quotas` (Set of Object) Limits the amount of provisionable CPU, memory, and storage in the silo. (See [below for nested schema](#nestedatt--quotas).)
-- `tls_certificates` (String, Write-only) Initial TLS certificates to be used for the new silo's console and API endpoints. This is a [write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) and can only be modified by updating its configuration. (https://developer.hashicorp.com/terraform/cli/state/taint). (See [below for nested schema](#nestedatt--tls).)
+- `tls_certificates` (String, Write-only) TLS certificates to be used for the silo's console and API endpoints. This is a [write-only attribute](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) since TLS certificates can only be specified during silo creation. Refer to the [Silo Management guide](https://docs.oxide.computer/guides/operator/silo-management) for instructions on replacing the TLS certificates of an existing silo _without_ destroying it and creating it anew. Alternatively, if it's acceptable to destroy the silo and create it anew you can modify this attribute and [replace the resource](https://developer.hashicorp.com/terraform/cli/state/taint). (See [below for nested schema](#nestedatt--tls).)
 - `discoverable` (Boolean) Whether this silo is present in the silo_list output. Defaults to `true`.
 
 ### Optional
@@ -55,7 +55,6 @@ resource "oxide_silo" "example" {
 - `admin_group_name` (String) This group will be created during silo creation and granted the "Silo Admin" role. Identity providers can assert that users belong to this group and those users can log in and further initialize the Silo.
 - `mapped_fleet_roles` (Map) Setting that defines the association between silo roles and fleet roles. By default, silo roles do not grant any fleet roles. To establish a connection, you create entries in this map. The key for each entry must be a silo role: `admin`, `collaborator`, or `viewer`. The value is a list of fleet roles (`admin`, `collaborator`, or `viewer`) that the key silo role will grant.
 - `timeouts` (Attribute, Optional) Timeouts for performing API operations. See [below for nested schema](#nestedatt--timeouts).
-- `service` (String) The service associated with the certificate. The only valid value is `external_api`. Defaults to `external_api`.
 
 ### Read-Only
 
@@ -83,6 +82,7 @@ resource "oxide_silo" "example" {
 - `description` (String) Description of the certificate.
 - `cert` (String) PEM-formatted string containing public certificate chain.
 - `key` (String) PEM-formatted string containing private key.
+- `service` (String) The service associated with the certificate. The only valid value is `external_api`.
 
 <a id="nestedatt--timeouts"></a>
 
