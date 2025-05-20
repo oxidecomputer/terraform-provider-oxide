@@ -35,6 +35,45 @@ var (
 	_ resource.ResourceWithConfigure = (*instanceResource)(nil)
 )
 
+var _ validator.List = externalIPValidator{}
+
+type externalIPValidator struct{}
+
+func (f externalIPValidator) Description(context.Context) string {
+	return "foo"
+}
+
+func (f externalIPValidator) MarkdownDescription(context.Context) string {
+	return "foo"
+}
+
+func (f externalIPValidator) ValidateList(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	var externalIPs []instanceResourceExternalIPModel
+	diags := req.ConfigValue.ElementsAs(ctx, &externalIPs, false)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var ephemeralExternalIPs int
+	for _, externalIP := range externalIPs {
+		if externalIP.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
+			ephemeralExternalIPs++
+		}
+	}
+	if ephemeralExternalIPs > 1 {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Too many blocks with type = %q", oxide.ExternalIpCreateTypeEphemeral),
+			fmt.Sprintf("Only one block with type = %q is allowed, but found %d.", oxide.ExternalIpCreateTypeEphemeral, ephemeralExternalIPs),
+		)
+		return
+	}
+}
+
 // NewInstanceResource is a helper function to simplify the provider implementation.
 func NewInstanceResource() resource.Resource {
 	return &instanceResource{}
@@ -253,10 +292,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					},
 				},
 			},
-			// TODO: Add validator to ensure at most one of the elements is of type `ephemeral`.
-			"external_ips": schema.SetNestedAttribute{
+			"external_ips": schema.ListNestedAttribute{
 				Optional:    true,
 				Description: "External IP addresses provided to this instance.",
+				Validators: []validator.List{
+					externalIPValidator{},
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
@@ -629,16 +670,18 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// external IP's IP Pool is modified. This is because there can only be one
 	// ephemeral external IP attached to an instance at a given time and the
 	// last detachment/attachment wins.
-	externalIPsToDetach := sliceDiff(state.ExternalIPs, plan.ExternalIPs)
-	resp.Diagnostics.Append(detachExternalIPs(ctx, r.client, externalIPsToDetach, state.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	{
+		externalIPsToDetach := sliceDiff(state.ExternalIPs, plan.ExternalIPs)
+		resp.Diagnostics.Append(detachExternalIPs(ctx, r.client, externalIPsToDetach, state.ID.ValueString())...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-	externalIPsToAttach := sliceDiff(plan.ExternalIPs, state.ExternalIPs)
-	resp.Diagnostics.Append(attachExternalIPs(ctx, r.client, externalIPsToAttach, state.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
+		externalIPsToAttach := sliceDiff(plan.ExternalIPs, state.ExternalIPs)
+		resp.Diagnostics.Append(attachExternalIPs(ctx, r.client, externalIPsToAttach, state.ID.ValueString())...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	// Update disk attachments
@@ -1219,8 +1262,8 @@ func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 	return nil
 }
 
-// attachExternalIPs attaches the ephemeral and floating IPs specified by
-// `externalIPs` to the instance specified by `instanceID`.
+// attachExternalIPs attaches the external IPs specified by externalIPs to the
+// instance specified by instanceID.
 func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []instanceResourceExternalIPModel, instanceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1239,7 +1282,7 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if _, err := client.InstanceEphemeralIpAttach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error attaching ephemeral external IP with ID %s", externalIPID.String()),
+					fmt.Sprintf("Error attaching ephemeral external IP with ID %s", externalIPID.ValueString()),
 					"API error: "+err.Error(),
 				)
 
@@ -1250,7 +1293,6 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 			params := oxide.FloatingIpAttachParams{
 				FloatingIp: oxide.NameOrId(externalIPID.ValueString()),
 				Body: &oxide.FloatingIpAttach{
-					// TODO: Support alternative FloatingIpParentKind values once available upstream.
 					Kind:   oxide.FloatingIpParentKindInstance,
 					Parent: oxide.NameOrId(instanceID),
 				},
@@ -1258,7 +1300,7 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if _, err := client.FloatingIpAttach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error attaching floating external IP with ID %s", externalIPID.String()),
+					fmt.Sprintf("Error attaching floating external IP with ID %s", externalIPID.ValueString()),
 					"API error: "+err.Error(),
 				)
 
@@ -1267,19 +1309,19 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 		default:
 			diags.AddError(
 				"Error attaching external IP",
-				fmt.Sprintf("Unknown external IP type %s", externalIPType.String()),
+				fmt.Sprintf("Unknown external IP type %s", externalIPType.ValueString()),
 			)
 			return diags
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("successfully attached %s external IP with ID %s", externalIPType.String(), externalIPID.String()), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("successfully attached %s external IP with ID %s", externalIPType.ValueString(), externalIPID.ValueString()), map[string]any{"success": true})
 	}
 
 	return nil
 }
 
-// detachExternalIPs detaches the ephemeral and floating IPs specified by
-// `externalIPs` from the instance specified by `instanceID`.
+// detachExternalIPs detaches the external IPs specified by externalIPs from the
+// instance specified by instanceID.
 func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []instanceResourceExternalIPModel, instanceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1295,7 +1337,7 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if err := client.InstanceEphemeralIpDetach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error detaching ephemeral external IP with ID %s", externalIPID.String()),
+					fmt.Sprintf("Error detaching ephemeral external IP with ID %s", externalIPID.ValueString()),
 					"API error: "+err.Error(),
 				)
 
@@ -1309,7 +1351,7 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if _, err := client.FloatingIpDetach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error detaching floating external IP with ID %s", externalIPID.String()),
+					fmt.Sprintf("Error detaching floating external IP with ID %s", externalIPID.ValueString()),
 					"API error: "+err.Error(),
 				)
 
@@ -1318,12 +1360,12 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 		default:
 			diags.AddError(
 				"Error detaching external IP",
-				fmt.Sprintf("Unknown external IP type %s", externalIPType.String()),
+				fmt.Sprintf("Unknown external IP type %s", externalIPType.ValueString()),
 			)
 			return diags
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("successfully detached %s external IP with ID %s", externalIPType.String(), externalIPID.String()), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("successfully detached %s external IP with ID %s", externalIPType.ValueString(), externalIPID.ValueString()), map[string]any{"success": true})
 	}
 
 	return nil
