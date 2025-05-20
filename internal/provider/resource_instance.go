@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,45 +35,6 @@ var (
 	_ resource.Resource              = (*instanceResource)(nil)
 	_ resource.ResourceWithConfigure = (*instanceResource)(nil)
 )
-
-var _ validator.List = externalIPValidator{}
-
-type externalIPValidator struct{}
-
-func (f externalIPValidator) Description(context.Context) string {
-	return "foo"
-}
-
-func (f externalIPValidator) MarkdownDescription(context.Context) string {
-	return "foo"
-}
-
-func (f externalIPValidator) ValidateList(ctx context.Context, req validator.ListRequest, resp *validator.ListResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	var externalIPs []instanceResourceExternalIPModel
-	diags := req.ConfigValue.ElementsAs(ctx, &externalIPs, false)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var ephemeralExternalIPs int
-	for _, externalIP := range externalIPs {
-		if externalIP.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
-			ephemeralExternalIPs++
-		}
-	}
-	if ephemeralExternalIPs > 1 {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Too many blocks with type = %q", oxide.ExternalIpCreateTypeEphemeral),
-			fmt.Sprintf("Only one block with type = %q is allowed, but found %d.", oxide.ExternalIpCreateTypeEphemeral, ephemeralExternalIPs),
-		)
-		return
-	}
-}
 
 // NewInstanceResource is a helper function to simplify the provider implementation.
 func NewInstanceResource() resource.Resource {
@@ -292,17 +254,19 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					},
 				},
 			},
-			"external_ips": schema.ListNestedAttribute{
+			"external_ips": schema.SetNestedAttribute{
 				Optional:    true,
 				Description: "External IP addresses provided to this instance.",
-				Validators: []validator.List{
-					externalIPValidator{},
+				Validators: []validator.Set{
+					instanceExternalIPValidator{},
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Description: "If type is ephemeral, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, ID of the floating IP",
 							Optional:    true,
+							Computed:    true,
+							Default:     stringdefault.StaticString(""),
 						},
 						"type": schema.StringAttribute{
 							Description: "Type of external IP.",
@@ -553,6 +517,9 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 			Type: types.StringValue(string(externalIP.Kind)),
 		})
 	}
+	if len(externalIPs) > 0 {
+		state.ExternalIPs = externalIPs
+	}
 
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
 
@@ -568,7 +535,6 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.ProjectID = types.StringValue(instance.ProjectId)
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
-	state.ExternalIPs = externalIPs
 
 	keySet, diags := newAssociatedSSHKeysOnCreateSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -806,6 +772,29 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	plan.ProjectID = types.StringValue(instance.ProjectId)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
+
+	// TODO: Support pagination when Go SDK supports it.
+	externalIPResponse, err := r.client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
+		Instance: oxide.NameOrId(state.ID.ValueString()),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read instance external ips:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	externalIPs := make([]instanceResourceExternalIPModel, 0, len(externalIPResponse.Items))
+	for _, externalIP := range externalIPResponse.Items {
+		externalIPs = append(externalIPs, instanceResourceExternalIPModel{
+			ID:   types.StringValue(externalIP.Id),
+			Type: types.StringValue(string(externalIP.Kind)),
+		})
+	}
+	if len(externalIPs) > 0 {
+		state.ExternalIPs = externalIPs
+	}
 
 	// TODO: should I do this or read from the newly created ones?
 	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
@@ -1514,4 +1503,50 @@ func attrValueSliceContains(s []attr.Value, str string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// Ensure the concrete validator satisfies the [validator.List] interface.
+var _ validator.Set = instanceExternalIPValidator{}
+
+// instanceExternalIPValidator is a custom validator that validates the
+// external_ips attribute on an oxide_instance resource.
+type instanceExternalIPValidator struct{}
+
+// Description describes the validation in plain text formatting.
+func (f instanceExternalIPValidator) Description(context.Context) string {
+	return "cannot have more than one ephemeral external ip"
+}
+
+// MarkdownDescription describes the validation in Markdown formatting.
+func (f instanceExternalIPValidator) MarkdownDescription(context.Context) string {
+	return "cannot have more than one ephemeral external ip"
+}
+
+// ValidateSet validates whether a set of [instanceExternalIPValidator] objects
+// has at most one object with type = "ephemeral".
+func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	var externalIPs []instanceResourceExternalIPModel
+	diags := req.ConfigValue.ElementsAs(ctx, &externalIPs, false)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var ephemeralExternalIPs int
+	for _, externalIP := range externalIPs {
+		if externalIP.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
+			ephemeralExternalIPs++
+		}
+	}
+	if ephemeralExternalIPs > 1 {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Too many external IPs with type = %q", oxide.ExternalIpCreateTypeEphemeral),
+			fmt.Sprintf("Only 1 external IP with type = %q is allowed, but found %d.", oxide.ExternalIpCreateTypeEphemeral, ephemeralExternalIPs),
+		)
+		return
+	}
 }

@@ -223,11 +223,27 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
+	resourceInstanceExternalIPConfigUpdateTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+}
+`
+
 	instanceName := newResourceName()
 	blockName := newBlockName("instance")
 	supportBlockName := newBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := parsedAccConfig(
+	initialConfig, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -236,7 +252,19 @@ resource "oxide_instance" "{{.BlockName}}" {
 		resourceInstanceExternalIPConfigTpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
+		t.Errorf("error parsing initial config template data: %e", err)
+	}
+
+	updateConfig, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceExternalIPConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing update config template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -245,7 +273,17 @@ resource "oxide_instance" "{{.BlockName}}" {
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config,
+				Config: initialConfig,
+				Check:  checkResourceInstanceIP(resourceName, instanceName),
+			},
+			// Detach the external IP.
+			{
+				Config: updateConfig,
+				Check:  checkResourceInstanceIPUpdate(resourceName, instanceName),
+			},
+			// Attach an external IP.
+			{
+				Config: initialConfig,
 				Check:  checkResourceInstanceIP(resourceName, instanceName),
 			},
 			{
@@ -710,7 +748,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 				Check:  checkResourceInstanceUpdate2(resourceNameInstance, instanceName),
 			},
 			{
-				// Update Menory
+				// Update memory
 				Config: configUpdate2,
 				Check:  checkResourceInstanceUpdate3(resourceNameInstance, instanceName),
 			},
@@ -972,6 +1010,22 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceIPUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "external_ips"),
 	}...)
 }
 
