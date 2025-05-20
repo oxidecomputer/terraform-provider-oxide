@@ -498,29 +498,6 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	// TODO: Support pagination when Go SDK supports it.
-	externalIPResponse, err := r.client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
-		Instance: oxide.NameOrId(state.ID.ValueString()),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read instance external ips:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	externalIPs := make([]instanceResourceExternalIPModel, 0, len(externalIPResponse.Items))
-	for _, externalIP := range externalIPResponse.Items {
-		externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-			ID:   types.StringValue(externalIP.Id),
-			Type: types.StringValue(string(externalIP.Kind)),
-		})
-	}
-	if len(externalIPs) > 0 {
-		state.ExternalIPs = externalIPs
-	}
-
 	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
 
 	if instance.BootDiskId != "" {
@@ -535,6 +512,16 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.ProjectID = types.StringValue(instance.ProjectId)
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
+
+	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Only set the external IPs if there are any to avoid drift.
+	if len(externalIPs) > 0 {
+		state.ExternalIPs = externalIPs
+	}
 
 	keySet, diags := newAssociatedSSHKeysOnCreateSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -773,27 +760,13 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	// TODO: Support pagination when Go SDK supports it.
-	externalIPResponse, err := r.client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
-		Instance: oxide.NameOrId(state.ID.ValueString()),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read instance external ips:",
-			"API error: "+err.Error(),
-		)
+	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	externalIPs := make([]instanceResourceExternalIPModel, 0, len(externalIPResponse.Items))
-	for _, externalIP := range externalIPResponse.Items {
-		externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-			ID:   types.StringValue(externalIP.Id),
-			Type: types.StringValue(string(externalIP.Kind)),
-		})
-	}
 	if len(externalIPs) > 0 {
-		state.ExternalIPs = externalIPs
+		plan.ExternalIPs = externalIPs
 	}
 
 	// TODO: should I do this or read from the newly created ones?
@@ -1086,6 +1059,33 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 	}
 
 	return nicSet, nil
+}
+
+func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, instanceID string) (
+	[]instanceResourceExternalIPModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	externalIPs := make([]instanceResourceExternalIPModel, 0)
+
+	// TODO: Support pagination when Go SDK supports it.
+	externalIPResponse, err := client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
+		Instance: oxide.NameOrId(instanceID),
+	})
+	if err != nil {
+		diags.AddError(
+			"Unable to list instance external ips:",
+			"API error: "+err.Error(),
+		)
+		return nil, diags
+	}
+
+	for _, externalIP := range externalIPResponse.Items {
+		externalIPs = append(externalIPs, instanceResourceExternalIPModel{
+			ID:   types.StringValue(externalIP.Id),
+			Type: types.StringValue(string(externalIP.Kind)),
+		})
+	}
+
+	return externalIPs, nil
 }
 
 type vpcAndSubnetNames struct {
@@ -1505,7 +1505,7 @@ func attrValueSliceContains(s []attr.Value, str string) (bool, error) {
 	return false, nil
 }
 
-// Ensure the concrete validator satisfies the [validator.List] interface.
+// Ensure the concrete validator satisfies the [validator.Set] interface.
 var _ validator.Set = instanceExternalIPValidator{}
 
 // instanceExternalIPValidator is a custom validator that validates the
