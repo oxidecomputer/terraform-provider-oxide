@@ -262,6 +262,10 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
+						// The id attribute is optional, computed, and has a default to account for the
+						// case where an instance created with an external IP using the default IP pool
+						// (i.e., id = null) would drift when read (e.g., id = "") and require updating
+						// in place.
 						"id": schema.StringAttribute{
 							Description: "If type is ephemeral, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, ID of the floating IP",
 							Optional:    true,
@@ -1066,7 +1070,6 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, insta
 	var diags diag.Diagnostics
 	externalIPs := make([]instanceResourceExternalIPModel, 0)
 
-	// TODO: Support pagination when Go SDK supports it.
 	externalIPResponse, err := client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
 		Instance: oxide.NameOrId(instanceID),
 	})
@@ -1297,8 +1300,8 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 			}
 		default:
 			diags.AddError(
-				"Error attaching external IP",
-				fmt.Sprintf("Unknown external IP type %s", externalIPType.ValueString()),
+				fmt.Sprintf("Cannot attach invalid external IP type %q", externalIPType.ValueString()),
+				fmt.Sprintf("The external IP type must be one of: %q, %q", oxide.ExternalIpCreateTypeEphemeral, oxide.ExternalIpCreateTypeFloating),
 			)
 			return diags
 		}
@@ -1348,8 +1351,8 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 			}
 		default:
 			diags.AddError(
-				"Error detaching external IP",
-				fmt.Sprintf("Unknown external IP type %s", externalIPType.ValueString()),
+				fmt.Sprintf("Cannot detach invalid external IP type %q", externalIPType.ValueString()),
+				fmt.Sprintf("The external IP type must be one of: %q, %q", oxide.ExternalIpCreateTypeEphemeral, oxide.ExternalIpCreateTypeFloating),
 			)
 			return diags
 		}
@@ -1522,8 +1525,30 @@ func (f instanceExternalIPValidator) MarkdownDescription(context.Context) string
 	return "cannot have more than one ephemeral external ip"
 }
 
-// ValidateSet validates whether a set of [instanceExternalIPValidator] objects
-// has at most one object with type = "ephemeral".
+// ValidateSet validates whether a set of [instanceResourceExternalIPModel]
+// objects has at most one object with type = "ephemeral". The Terraform SDK
+// already deduplicates sets within configuration. For example, the following
+// configuration in Terraform results in a single ephemeral external IP.
+//
+//   resource "oxide_instance" "example" {
+//     external_ips = [
+//       { type = "ephemeral"},
+//       { type = "ephemeral"},
+//     ]
+//   }
+//
+// However, that deduplication does not extend to sets that contain different
+// attributes, like so.
+// 
+//   resource "oxide_instance" "example" {
+//     external_ips = [
+//       { type = "ephemeral", id = "a58dc21d-896d-4e5a-bb77-b0922a04e553"},
+//       { type = "ephemeral"},
+//     ]
+//   }
+//
+// That's where this validator comes in. This validator errors with the above
+// configuration, preventing a user from using multiple ephemeral external IPs.
 func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
