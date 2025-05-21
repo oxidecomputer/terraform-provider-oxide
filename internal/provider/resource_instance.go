@@ -1530,22 +1530,22 @@ func (f instanceExternalIPValidator) MarkdownDescription(context.Context) string
 // already deduplicates sets within configuration. For example, the following
 // configuration in Terraform results in a single ephemeral external IP.
 //
-//   resource "oxide_instance" "example" {
-//     external_ips = [
-//       { type = "ephemeral"},
-//       { type = "ephemeral"},
-//     ]
-//   }
+//	resource "oxide_instance" "example" {
+//	  external_ips = [
+//	    { type = "ephemeral"},
+//	    { type = "ephemeral"},
+//	  ]
+//	}
 //
 // However, that deduplication does not extend to sets that contain different
 // attributes, like so.
-// 
-//   resource "oxide_instance" "example" {
-//     external_ips = [
-//       { type = "ephemeral", id = "a58dc21d-896d-4e5a-bb77-b0922a04e553"},
-//       { type = "ephemeral"},
-//     ]
-//   }
+//
+//	resource "oxide_instance" "example" {
+//	  external_ips = [
+//	    { type = "ephemeral", id = "a58dc21d-896d-4e5a-bb77-b0922a04e553"},
+//	    { type = "ephemeral"},
+//	  ]
+//	}
 //
 // That's where this validator comes in. This validator errors with the above
 // configuration, preventing a user from using multiple ephemeral external IPs.
