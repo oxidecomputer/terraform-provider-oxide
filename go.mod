@@ -1,6 +1,6 @@
 module github.com/oxidecomputer/terraform-provider-oxide
 
-go 1.23.0
+go 1.24.3
 
 require (
 	github.com/google/uuid v1.6.0
@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.1
-	github.com/oxidecomputer/oxide.go v0.4.1-0.20250423011427-65b1d0f6b391
+	github.com/oxidecomputer/oxide.go v0.4.1-0.20250530023940-ecfa72d833e0
 	github.com/stretchr/testify v1.10.0
 )
 
