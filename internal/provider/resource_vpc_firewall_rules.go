@@ -491,13 +491,17 @@ func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.Dele
 	tflog.Trace(ctx, fmt.Sprintf("deleted firewall rules for VPC with ID: %v", state.VPCID.ValueString()), map[string]any{"success": true})
 }
 
+// newVPCFirewallRulesUpdateBody builds the parameters required by the Oxide
+// vpc_firewall_rules_update API using the specified rules.
 func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
-	var updateRules []oxide.VpcFirewallRuleUpdate
+	// The make builtin is used to explicitly get an empty slice rather than a zero
+	// value slice for the use case of removing all the firewall rules from a VPC.
+	//
+	// This is necessary because of the following.
+	// * The vpc_firewall_rules_update API requires `{"rules": []}` to remove all rules.
+	// * [oxide.VpcFirewallRuleUpdateParams] uses `omitzero` on its Rules field.
+	updateRules := make([]oxide.VpcFirewallRuleUpdate, 0)
 	body := new(oxide.VpcFirewallRuleUpdateParams)
-
-	if rules == nil {
-		return body
-	}
 
 	for _, rule := range rules {
 		r := oxide.VpcFirewallRuleUpdate{
@@ -519,8 +523,13 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 	return body
 }
 
+// newVPCFirewallRulesModel translates a slice of [oxide.VpcFirewallRule] into a
+// slice of [vpcFirewallRulesResourceRuleModel].
 func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
-	var model []vpcFirewallRulesResourceRuleModel
+	// The make builtin is used to explicitly get an empty slice rather than a zero
+	// value slice for the use case of removing all the firewall rules from a VPC.
+	// See the comment within [newVPCFirewallRulesUpdateBody] for more information.
+	model := make([]vpcFirewallRulesResourceRuleModel, 0)
 
 	for _, rule := range rules {
 		m := vpcFirewallRulesResourceRuleModel{
