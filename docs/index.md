@@ -24,7 +24,7 @@ Note: Cannot use `profile` with `host` and `token` arguments and vice versa.
 
 ```hcl
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.11"
 
   required_providers {
     oxide = {
