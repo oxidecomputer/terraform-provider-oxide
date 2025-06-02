@@ -173,6 +173,24 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 }
 `
 
+var resourceFirewallRulesUpdateConfigTpl3 = `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.SupportBlockName2}}" {
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
+}
+
+resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+	rules = []
+}
+`
+
 func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 	blockName := newBlockName("firewall_rules")
 	supportBlockName := newBlockName("support")
@@ -202,7 +220,7 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 		resourceFirewallRulesUpdateConfigTpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
+		t.Errorf("error parsing update config template data: %e", err)
 	}
 
 	configUpdate2, err := parsedAccConfig(
@@ -215,7 +233,20 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 		resourceFirewallRulesUpdateConfigTpl2,
 	)
 	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
+		t.Errorf("error parsing update config 2 template data: %e", err)
+	}
+
+	configUpdate3, err := parsedAccConfig(
+		resourceFirewallRulesConfig{
+			BlockName:         blockName,
+			SupportBlockName:  supportBlockName,
+			SupportBlockName2: supportBlockName2,
+			VPCName:           vpcName,
+		},
+		resourceFirewallRulesUpdateConfigTpl3,
+	)
+	if err != nil {
+		t.Errorf("error parsing update config 3 template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -234,6 +265,10 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 			{
 				Config: configUpdate2,
 				Check:  checkResourceFirewallRulesUpdate2(resourceName, vpcName),
+			},
+			{
+				Config: configUpdate3,
+				Check:  checkResourceFirewallRulesUpdate3(resourceName),
 			},
 		},
 	})
@@ -318,6 +353,14 @@ func checkResourceFirewallRulesUpdate2(resourceName, vpcName string) resource.Te
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.value", "default"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.time_modified"),
+	}...)
+}
+
+func checkResourceFirewallRulesUpdate3(resourceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
+		resource.TestCheckResourceAttr(resourceName, "rules.#", "0"),
 	}...)
 }
 

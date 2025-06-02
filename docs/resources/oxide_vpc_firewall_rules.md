@@ -9,6 +9,10 @@ This resource manages VPC firewall rules.
 !> Firewall rules defined by this resource are considered exhaustive and will
 overwrite any other firewall rules for the VPC once applied.
 
+!> Setting the `rules` attribute to `[]` will delete all firewall rules for the
+VPC which may cause undesired network traffic. Please double check the firewall
+rules when updating this resource.
+
 ## Example Usage
 
 ```hcl
@@ -48,7 +52,7 @@ resource "oxide_vpc_firewall_rules" "example" {
 ### Required
 
 - `vpc_id` (String) ID of the VPC that will have the firewall rules applied to.
-- `rules` (Set) Associated firewall rules. Updates require replacement. (see [below for nested schema](#nestedatt--rules))
+- `rules` (Set) Associated firewall rules. Set to `[]` to delete all firewall rules. (see [below for nested schema](#nestedatt--rules))
 
 ### Optional
 
