@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -177,6 +178,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.Set{
+					setvalidator.NoNullValues(),
+					setvalidator.ValueStringsAre(
+						stringvalidator.NoneOf(""),
+					),
 				},
 			},
 			"network_interfaces": schema.SetNestedAttribute{

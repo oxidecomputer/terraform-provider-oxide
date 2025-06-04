@@ -14,6 +14,10 @@ description = "`oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/
 title = "VPC firewall rules resource"
 description = "In place updates are now supported [#432](https://github.com/oxidecomputer/terraform-provider-oxide/pull/432)"
 
+[[enhancements]]
+title = "`oxide_instance` attribute validation"
+description = "Added validation to the `ssh_public_keys` attribute on the `oxide_instance` resource. [#443](https://github.com/oxidecomputer/terraform-provider-oxide/pull/443)"
+
 [[bugs]]
 title = ""
 description = ""
