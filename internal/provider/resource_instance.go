@@ -406,13 +406,14 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	params.Body.AntiAffinityGroups = antiAffinityGroupIDs
 
-	// The control plane API counts the BootDisk and the Disk attachments when it calculates the limit on disk attachments.
-	// If bootdisk is set explicitly, we don't want it to be in the API call, but we need it in the state entry.
 	disks, diags := newDiskAttachmentsOnCreate(ctx, r.client, plan.DiskAttachments)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// The control plane API counts the BootDisk and the Disk attachments when it calculates the limit on disk attachments.
+	// If bootdisk is set explicitly, we don't want it to be in the API call, but we need it in the state entry.
 	params.Body.Disks = filterBootDiskFromDisks(disks, params.Body.BootDisk)
 
 	externalIPs := newExternalIPsOnCreate(plan.ExternalIPs)
