@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -382,13 +383,13 @@ func TestAccCloudResourceInstance_nic(t *testing.T) {
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
-  
+
 data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
   project_name = data.oxide_project.{{.SupportBlockName}}.name
   vpc_name     = "default"
   name         = "default"
 }
-  
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
@@ -412,7 +413,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
-  
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
@@ -1226,4 +1227,84 @@ func testAccInstanceDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func TestFilterBootDiskFromDisks(t *testing.T) {
+	boot_disk := oxide.InstanceDiskAttachment{
+		Name: "testboot01",
+		Type: oxide.InstanceDiskAttachmentTypeAttach,
+	}
+
+	tests := []struct {
+		boot_disk oxide.InstanceDiskAttachment
+		disks     []oxide.InstanceDiskAttachment
+		want      []oxide.InstanceDiskAttachment
+	}{
+		{
+			boot_disk: boot_disk,
+			disks: []oxide.InstanceDiskAttachment{
+				boot_disk,
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+			},
+			want: []oxide.InstanceDiskAttachment{
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+			},
+		},
+		{
+			boot_disk: oxide.InstanceDiskAttachment{},
+			disks: []oxide.InstanceDiskAttachment{
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+				{
+					Name: "testboot01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+			},
+			want: []oxide.InstanceDiskAttachment{
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+				{
+					Name: "testdisk01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+				{
+					Name: "testboot01",
+					Type: oxide.InstanceDiskAttachmentTypeAttach,
+				},
+			},
+		},
+		{
+			boot_disk: oxide.InstanceDiskAttachment{},
+			disks:     []oxide.InstanceDiskAttachment{},
+			want:      []oxide.InstanceDiskAttachment{},
+		},
+	}
+	for _, tt := range tests {
+		disks := filterBootDiskFromDisks(tt.disks, &tt.boot_disk)
+		if !reflect.DeepEqual(disks, tt.want) {
+			t.Errorf("want: %+v, got: %+v", tt.want, disks)
+		}
+	}
 }

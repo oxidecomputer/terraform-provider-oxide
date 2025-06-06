@@ -411,7 +411,10 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	params.Body.Disks = disks
+
+	// The control plane API counts the BootDisk and the Disk attachments when it calculates the limit on disk attachments.
+	// If bootdisk is set explicitly, we don't want it to be in the API call, but we need it in the state entry.
+	params.Body.Disks = filterBootDiskFromDisks(disks, params.Body.BootDisk)
 
 	externalIPs := newExternalIPsOnCreate(plan.ExternalIPs)
 	params.Body.ExternalIps = externalIPs
@@ -1176,6 +1179,17 @@ func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskI
 	}
 
 	return disks, diags
+}
+
+func filterBootDiskFromDisks(disks []oxide.InstanceDiskAttachment, boot_disk *oxide.InstanceDiskAttachment) []oxide.InstanceDiskAttachment {
+	var filtered_disks = []oxide.InstanceDiskAttachment{}
+	for _, disk := range disks {
+		if disk == *boot_disk {
+			continue
+		}
+		filtered_disks = append(filtered_disks, disk)
+	}
+	return filtered_disks
 }
 
 func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
