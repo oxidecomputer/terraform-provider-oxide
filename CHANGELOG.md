@@ -1,3 +1,40 @@
+# 0.10.0 (2025/Jun/12)
+
+### Breaking changes
+
+- **Minimum Terraform version v1.11 required:** Due to the introduction of [write-only attributes](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) in the new `oxide_silo` resource, the minimum Terraform version is now v1.11 [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425).
+
+### New features
+
+- **New resource:** `oxide_silo` [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425).
+- **New resource:** `oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/terraform-provider-oxide/pull/423).
+- **New data resource:** `oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/terraform-provider-oxide/pull/423).
+
+### Enhancements
+
+- **VPC firewall rules resource:** In place updates are now supported [#432](https://github.com/oxidecomputer/terraform-provider-oxide/pull/432)
+- **`oxide_instance` attribute validation:** Added validation to the `ssh_public_keys` attribute on the `oxide_instance` resource. [#443](https://github.com/oxidecomputer/terraform-provider-oxide/pull/443)
+
+### List of commits
+
+- [c004b55](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c004b55) Ignore 404 when removing instance membership from anti-affinity group (#449)
+- [bb71de5](https://github.com/oxidecomputer/terraform-provider-oxide/commit/bb71de5) Update docs to reference 0.10.0 (#448)
+- [2674283](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2674283) Update to Go SDK v0.5.0 (#447)
+- [a10d6cf](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a10d6cf) Bump github.com/cloudflare/circl from 1.6.0 to 1.6.1 (#445)
+- [a5e3113](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a5e3113) This filters the boot disk out of attachments (#444)
+- [f803d8b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f803d8b) oxide_instance: add validation to ssh_public_keys attribute (#443)
+- [7478329](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7478329) In-place update for VPC firewall rules (#432)
+- [3f15cea](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3f15cea) Bump github.com/hashicorp/terraform-plugin-go from 0.27.0 to 0.28.0 (#439)
+- [2eacede](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2eacede) Bump github.com/hashicorp/terraform-plugin-testing from 1.13.0 to 1.13.1 (#440)
+- [8860cdc](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8860cdc) oxide_instance: allow in-place `external_ips` modification (#381)
+- [ac7cc52](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ac7cc52) Bump github.com/hashicorp/terraform-plugin-framework-validators from 0.17.0 to 0.18.0 (#433)
+- [4744222](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4744222) Bump github.com/hashicorp/terraform-plugin-testing from 1.12.0 to 1.13.0 (#437)
+- [154598c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/154598c) Bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.36.1 to 2.37.0 (#434)
+- [b646f11](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b646f11) Bump github.com/hashicorp/terraform-plugin-framework from 1.14.1 to 1.15.0 (#435)
+- [e5644d0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e5644d0) Feature silo creation (#425)
+- [9e5664d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9e5664d) Router route resource and datasource (#423)
+- [9f0e000](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9f0e000) version: bump to 0.10.0 (#429)
+
 # 0.9.0 (2025/Apr/23)
 
 ### New features
