@@ -2,11 +2,12 @@
 
 ### Breaking changes
 
-- **Minimum Terraform version v1.11 required:** Due to the introduction of [write-only attributes](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) in the new `oxide_silo` resoucre, the minimum Terraform version is now v1.11 [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425).
+- **Minimum Terraform version v1.11 required:** Due to the introduction of [write-only attributes](https://developer.hashicorp.com/terraform/plugin/framework/resources/write-only-arguments) in the new `oxide_silo` resource, the minimum Terraform version is now v1.11 [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425).
 
 ### New features
 
 - **New resource:** `oxide_silo` [#425](https://github.com/oxidecomputer/terraform-provider-oxide/pull/425).
+- **New resource:** `oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/terraform-provider-oxide/pull/423).
 - **New data resource:** `oxide_vpc_router_route` [#423](https://github.com/oxidecomputer/terraform-provider-oxide/pull/423).
 
 ### Enhancements
