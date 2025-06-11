@@ -1460,7 +1460,7 @@ func addAntiAffinityGroups(
 		id, err := strconv.Unquote(v.String())
 		if err != nil {
 			diags.AddError(
-				"Error adding anti-affinity group",
+				"Error adding anti-affinity group to instance",
 				"anti-affinity group ID parse error: "+err.Error(),
 			)
 			return diags
@@ -1473,12 +1473,12 @@ func addAntiAffinityGroups(
 		_, err = client.AntiAffinityGroupMemberInstanceAdd(ctx, params)
 		if err != nil {
 			diags.AddError(
-				"Error adding anti-affinity group",
+				"Error adding anti-affinity group to instance",
 				"API error: "+err.Error(),
 			)
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("added anti-affinity group with ID: %v", v), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("added anti-affinity group with ID: %v to instance with ID: %v", id, instanceID), map[string]any{"success": true})
 	}
 
 	return nil
@@ -1492,7 +1492,7 @@ func removeAntiAffinityGroups(
 		id, err := strconv.Unquote(v.String())
 		if err != nil {
 			diags.AddError(
-				"Error removing anti-affinity group",
+				"Error removing anti-affinity group from instance",
 				"anti-affinity group ID parse error: "+err.Error(),
 			)
 			return diags
@@ -1504,13 +1504,18 @@ func removeAntiAffinityGroups(
 		}
 		err = client.AntiAffinityGroupMemberInstanceDelete(ctx, params)
 		if err != nil {
+			// If the anti-affinity group doesn't exist anymore, it means
+			// the instance isn't part of it. We can just return.
+			if is404(err) {
+				return nil
+			}
 			diags.AddError(
-				"Error removing anti-affinity group",
+				"Error removing anti-affinity group from instance",
 				"API error: "+err.Error(),
 			)
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("removed anit-affinity group with ID: %v", v), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("removed anti-affinity group with ID %v to instance with ID %v", id, instanceID), map[string]any{"success": true})
 	}
 
 	return nil
