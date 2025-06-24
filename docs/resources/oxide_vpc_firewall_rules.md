@@ -61,6 +61,8 @@ resource "oxide_vpc_firewall_rules" "example" {
 ### Read-Only
 
 - `id` (String) Unique, immutable, system-controlled identifier of the firewall rules. Specific only to Terraform.
+- `time_created` (String) Timestamp of when the VPC firewall rules were created.
+- `time_modified` (String) Timestamp of when the VPC firewall rules were last modified.
 
 <a id="nestedatt--rules"></a>
 
@@ -76,12 +78,6 @@ Required:
 - `priority` (Number) The relative priority of this rule.
 - `status` (String) Whether this rule is in effect. Possible values are: enabled or disabled.
 - `targets` (Set) Sets of instances that the rule applies to. (see [below for nested schema](#nestedatt--targets))
-
-Read-Only:
-
-- `id` (String) Unique, immutable, system-controlled identifier of the firewall rule.
-- `time_created` (String) Timestamp of when this firewall rule was created.
-- `time_modified` (String) Timestamp of when this firewall rule was last modified.
 
 <a id="nestedatt--filters"></a>
 

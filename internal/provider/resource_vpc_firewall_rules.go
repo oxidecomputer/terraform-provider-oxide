@@ -48,20 +48,27 @@ type vpcFirewallRulesResourceModel struct {
 	Rules    []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
 	Timeouts timeouts.Value                      `tfsdk:"timeouts"`
 	VPCID    types.String                        `tfsdk:"vpc_id"`
+
+	// Populated from the same fields within [vpcFirewallRulesResourceRuleModel].
+	TimeCreated  types.String `tfsdk:"time_created"`
+	TimeModified types.String `tfsdk:"time_modified"`
 }
 
 type vpcFirewallRulesResourceRuleModel struct {
-	Action       types.String                              `tfsdk:"action"`
-	Description  types.String                              `tfsdk:"description"`
-	Direction    types.String                              `tfsdk:"direction"`
-	Filters      *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
-	ID           types.String                              `tfsdk:"id"`
-	Name         types.String                              `tfsdk:"name"`
-	Priority     types.Int64                               `tfsdk:"priority"`
-	Status       types.String                              `tfsdk:"status"`
-	Targets      []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
-	TimeCreated  types.String                              `tfsdk:"time_created"`
-	TimeModified types.String                              `tfsdk:"time_modified"`
+	Action      types.String                              `tfsdk:"action"`
+	Description types.String                              `tfsdk:"description"`
+	Direction   types.String                              `tfsdk:"direction"`
+	Filters     *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
+	Name        types.String                              `tfsdk:"name"`
+	Priority    types.Int64                               `tfsdk:"priority"`
+	Status      types.String                              `tfsdk:"status"`
+	Targets     []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
+
+	// Used to retrieve the timestamps from the API and populate the same fields
+	// within [vpcFirewallRulesResourceModel]. The `tfsdk:"-"` struct field tag is used
+	// to tell Terraform not to populate these values in the schema.
+	TimeCreated  types.String `tfsdk:"-"`
+	TimeModified types.String `tfsdk:"-"`
 }
 
 type vpcFirewallRulesResourceRuleTargetModel struct {
@@ -110,6 +117,10 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			// The rules attribute cannot contain computed attributes since the upstream API
+			// returns updated attributes for every rule, irrespective of which rules actually
+			// change. See https://github.com/oxidecomputer/terraform-provider-oxide/issues/453
+			// for more information.
 			"rules": schema.SetNestedAttribute{
 				Required:    true,
 				Description: "Associated firewall rules.",
@@ -202,10 +213,6 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 								},
 							},
 						},
-						"id": schema.StringAttribute{
-							Computed:    true,
-							Description: "Unique, immutable, system-controlled identifier of the firewall rule.",
-						},
 						"name": schema.StringAttribute{
 							Required:    true,
 							Description: "Name of the VPC firewall rule.",
@@ -255,14 +262,6 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 								},
 							},
 						},
-						"time_created": schema.StringAttribute{
-							Computed:    true,
-							Description: "Timestamp of when this VPC firewall rule was created.",
-						},
-						"time_modified": schema.StringAttribute{
-							Computed:    true,
-							Description: "Timestamp of when this VPC firewall rule was last modified.",
-						},
 					},
 				},
 			},
@@ -275,6 +274,14 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the firewall rules. Specific only to Terraform.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when the VPC firewall rules were last created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when the VPC firewall rules were last modified.",
 			},
 		},
 	}
@@ -325,6 +332,13 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	plan.TimeCreated = types.StringNull()
+	plan.TimeModified = types.StringNull()
+	if len(plan.Rules) > 0 {
+		plan.TimeCreated = plan.Rules[0].TimeCreated
+		plan.TimeModified = plan.Rules[0].TimeModified
 	}
 
 	// Save plan into Terraform state
@@ -383,6 +397,13 @@ func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	state.Rules = rules
+
+	state.TimeCreated = types.StringNull()
+	state.TimeModified = types.StringNull()
+	if len(state.Rules) > 0 {
+		state.TimeCreated = state.Rules[0].TimeCreated
+		state.TimeModified = state.Rules[0].TimeModified
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -445,6 +466,13 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	plan.TimeCreated = types.StringNull()
+	plan.TimeModified = types.StringNull()
+	if len(plan.Rules) > 0 {
+		plan.TimeCreated = plan.Rules[0].TimeCreated
+		plan.TimeModified = plan.Rules[0].TimeModified
 	}
 
 	// Save plan into Terraform state
@@ -536,7 +564,6 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRules
 			Action:      types.StringValue(string(rule.Action)),
 			Description: types.StringValue(rule.Description),
 			Direction:   types.StringValue(string(rule.Direction)),
-			ID:          types.StringValue(rule.Id),
 			Name:        types.StringValue(string(rule.Name)),
 			// We can safely dereference rule.Priority as it's a required field
 			Priority:     types.Int64Value(int64(*rule.Priority)),
