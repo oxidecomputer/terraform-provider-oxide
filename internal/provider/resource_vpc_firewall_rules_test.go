@@ -24,200 +24,170 @@ type resourceFirewallRulesConfig struct {
 
 var resourceFirewallRulesConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
-  name = "tf-acc-test"
+	name = "tf-acc-test"
 }
 
 resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test vpc"
-  name        = "{{.VPCName}}"
-  dns_name    = "my-vpc-dns"
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
-  rules = [
-    {
-      action      = "deny"
-      description = "custom deny"
-      name        = "custom-deny-http"
-      direction   = "inbound"
-      priority    = 50
-      status      = "enabled"
-      filters = {
-        hosts = [
-          {
-            type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
-          }
-        ]
-        ports     = ["8123"]
-        protocols = ["ICMP"]
-      },
-      targets = [
-        {
-          type  = "subnet"
-          value = "default"
-        }
-      ]
-    },
-    {
-      action      = "allow"
-      name        = "allow-internal-inbound"
-      description = "custom allow"
-      direction   = "inbound"
-      priority    = 65534
-      status      = "enabled"
-      filters = {
-        hosts = [
-          {
-            type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
-          }
-        ]
-      }
-      targets = [
-        {
-          type  = "subnet"
-          value = "default"
-        }
-      ]
-    }
-  ]
-  timeouts = {
-    read   = "1m"
-    create = "3m"
-    delete = "2m"
-    update = "4m"
-  }
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+	rules = [
+	   {
+		 action = "deny"
+		 description = "custom deny"
+		 name = "custom-deny-http"
+		 direction = "inbound"
+		 priority = 50
+		 status = "enabled"
+		 filters = {
+		   hosts = [
+			 {
+				type = "vpc"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
+			 }
+		   ]
+		   ports = ["8123"]
+		   protocols = ["ICMP"]
+		 },
+		 targets = [
+		   {
+			  type = "subnet"
+			  value = "default"
+		   }
+		 ]
+	   },
+	   {
+		 action = "allow"
+		 name = "allow-internal-inbound"
+		 description = "custom allow"
+		 direction = "inbound"
+		 priority = 65534
+		 status = "enabled"
+		 filters = {
+		   hosts = [
+			 {
+				type = "vpc"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
+			 }
+		   ]
+		 }
+		 targets = [
+		   {
+			  type = "subnet"
+			  value = "default"
+		   }
+		 ]
+	   }
+	]
+	timeouts = {
+		read   = "1m"
+		create = "3m"
+		delete = "2m"
+		update = "4m"
+	}
 }
 `
 
 var resourceFirewallRulesUpdateConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
-  name = "tf-acc-test"
+	name = "tf-acc-test"
 }
 
 resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test vpc"
-  name        = "{{.VPCName}}"
-  dns_name    = "my-vpc-dns"
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
-  rules = [
-    {
-      action      = "allow"
-      description = "Allow HTTPS."
-      name        = "allow-https"
-      direction   = "inbound"
-      priority    = 50
-      status      = "enabled"
-      filters = {
-        hosts = [
-          {
-            type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
-          }
-        ]
-        ports     = ["443"]
-        protocols = ["TCP"]
-      },
-      targets = [
-        {
-          type  = "subnet"
-          value = oxide_vpc.{{.SupportBlockName2}}.name
-        }
-      ]
-    },
-    {
-      action      = "allow"
-      description = "Allow SSH."
-      name        = "allow-ssh"
-      direction   = "inbound"
-      priority    = 50
-      status      = "enabled"
-      filters = {
-        hosts = [
-          {
-            type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
-          }
-        ]
-        ports     = ["22"]
-        protocols = ["TCP"]
-      },
-      targets = [
-        {
-          type  = "subnet"
-          value = oxide_vpc.{{.SupportBlockName2}}.name
-        }
-      ]
-    }
-  ]
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+	rules = [
+	   {
+		 action = "deny"
+		 description = "custom deny"
+		 name = "custom-deny-http"
+		 direction = "inbound"
+		 priority = 0
+		 status = "enabled"
+		 filters = {
+		   ports = ["8123"]
+		   protocols = ["ICMP"]
+		 },
+		 targets = [
+		   {
+			  type = "subnet"
+			  value = "default"
+		   }
+		 ]
+	   }
+	]
 }
 `
 
 var resourceFirewallRulesUpdateConfigTpl2 = `
 data "oxide_project" "{{.SupportBlockName}}" {
-  name = "tf-acc-test"
+	name = "tf-acc-test"
 }
 
 resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test vpc"
-  name        = "{{.VPCName}}"
-  dns_name    = "my-vpc-dns"
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
-  rules = [
-    {
-      action      = "allow"
-      description = "Allow HTTPS."
-      name        = "allow-https"
-      direction   = "inbound"
-      priority    = 50
-      status      = "enabled"
-      filters = {
-        hosts = [
-          {
-            type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
-          }
-        ]
-        ports     = ["443"]
-        protocols = ["TCP"]
-      },
-      targets = [
-        {
-          type  = "subnet"
-          value = oxide_vpc.{{.SupportBlockName2}}.name
-        }
-      ]
-    },
-  ]
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+	rules = [
+	   {
+		 action = "allow"
+		 description = "custom allow"
+		 name = "custom-allow-http"
+		 direction = "outbound"
+		 priority = 40
+		 status = "disabled"
+		 filters = {
+		   hosts = [
+			 {
+				type = "vpc"
+				value = oxide_vpc.{{.SupportBlockName2}}.name
+			 }
+		   ]
+		   ports = ["8124"]
+		   protocols = ["TCP"]
+		 },
+		 targets = [
+		   {
+			  type = "subnet"
+			  value = "default"
+		   }
+		 ]
+	   }
+	]
 }
 `
 
 var resourceFirewallRulesUpdateConfigTpl3 = `
 data "oxide_project" "{{.SupportBlockName}}" {
-  name = "tf-acc-test"
+	name = "tf-acc-test"
 }
 
 resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
-  description = "a test vpc"
-  name        = "{{.VPCName}}"
-  dns_name    = "my-vpc-dns"
+	project_id        = data.oxide_project.{{.SupportBlockName}}.id
+	description       = "a test vpc"
+	name              = "{{.VPCName}}"
+	dns_name          = "my-vpc-dns"
 }
 
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
-  rules = []
+	vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+	rules = []
 }
 `
 
@@ -346,38 +316,21 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-		// Rule 1.
-		resource.TestCheckResourceAttr(resourceName, "rules.0.action", "allow"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "Allow HTTPS."),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "allow-https"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.action", "deny"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "custom deny"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "inbound"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "50"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "enabled"),
+		resource.TestCheckNoResourceAttr(resourceName, "rules.0.filters.hosts.0.type"),
+		resource.TestCheckNoResourceAttr(resourceName, "rules.0.filters.hosts.0.value"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "8123"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "ICMP"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.type"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.value"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "443"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "TCP"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "custom-deny-http"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "0"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "enabled"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.targets.0.value"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.value", "default"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.time_modified"),
-		// Rule 2.
-		resource.TestCheckResourceAttr(resourceName, "rules.1.action", "allow"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.description", "Allow SSH."),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.name", "allow-ssh"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.direction", "inbound"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.priority", "50"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.status", "enabled"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.1.id"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.1.filters.hosts.0.type"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.1.filters.hosts.0.value"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.ports.0", "22"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.protocols.0", "TCP"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.targets.0.type", "subnet"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.1.targets.0.value"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.1.time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.1.time_modified"),
 	}...)
 }
 
@@ -385,20 +338,19 @@ func checkResourceFirewallRulesUpdate2(resourceName, vpcName string) resource.Te
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-		// Rule 1.
 		resource.TestCheckResourceAttr(resourceName, "rules.0.action", "allow"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "Allow HTTPS."),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "allow-https"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "inbound"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "50"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "enabled"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.type"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.value"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "443"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "custom allow"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "outbound"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.type", "vpc"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.hosts.0.value", vpcName),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "8124"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "TCP"),
+		resource.TestCheckResourceAttrSet(resourceName, "rules.0.id"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "custom-allow-http"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "40"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "disabled"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
-		resource.TestCheckResourceAttrSet(resourceName, "rules.0.targets.0.value"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.value", "default"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.time_modified"),
 	}...)
