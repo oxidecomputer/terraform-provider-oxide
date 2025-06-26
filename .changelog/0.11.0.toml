@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "Removed computed attributes from `vpc_firewall_rules`"
+description = "Removed all computed attributes from the `rules` attribute within the `vpc_firewall_rules` resource to fix an invalid plan error while maintaining in-place update of VPC firewall rules. [#456](https://github.com/oxidecomputer/terraform-provider-oxide/pull/456)"
 
 [[features]]
 title = ""
