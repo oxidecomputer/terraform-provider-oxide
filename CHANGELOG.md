@@ -1,3 +1,18 @@
+# 0.11.0
+
+### Breaking changes
+
+- **Removed computed attributes from `vpc_firewall_rules`:** Removed all computed attributes from the `rules` attribute within the `vpc_firewall_rules` resource to fix an invalid plan error while maintaining in-place update of VPC firewall rules. [#456](https://github.com/oxidecomputer/terraform-provider-oxide/pull/456)
+
+### List of commits
+
+- [d93050b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d93050b) vpc_firewall_rules: fix provider produced invalid plan (#456)
+- [4336e1e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4336e1e) revert: vpc_firewall_rules: fix provider produced invalid plan (#455)
+- [83b931f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/83b931f) misc: format json
+- [788bf8c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/788bf8c) vpc_firewall_rules: fix provider produced invalid plan
+- [26cfef7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/26cfef7) Bump github.com/hashicorp/terraform-plugin-testing from 1.13.1 to 1.13.2 (#452)
+- [b925ae6](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b925ae6) Bump to version 0.11.0 (#451)
+
 # 0.10.0 (2025/Jun/12)
 
 ### Breaking changes
