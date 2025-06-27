@@ -11,13 +11,21 @@ labels: release
  After completing each task put an `x` in the corresponding box,
  and paste the link to the relevant PR.
 -->
-- [ ] Make sure all examples and docs reference the new provider version.
-- [ ] Make sure the [VERSION](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION) and [internal/provider/version.go](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go) files have the new version you want to release.
-- [ ] Make sure the `oxide` SDK dependency is up to date with the latest release.
-- [ ] Generate changelog by running `make changelog` and add date of the release to the title.
+- [ ] Update the Terraform configuration version constraints in the following files to use the version you want to release.
+    - [ ] [`examples`](https://github.com/oxidecomputer/terraform-provider-oxide/tree/main/examples)
+    - [ ] [`docs`](https://github.com/oxidecomputer/terraform-provider-oxide/tree/main/docs)
+- [ ] Update the following files with the version you want to release.
+    - [ ] [`VERSION`](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION)
+    - [ ] [`internal/provider/version.go`](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go)
+- [ ] Update the `github.com/oxidecomputer/oxide.go` dependency to the latest release.
+- [ ] Generate the `CHANGELOG.md` file.
+    - [ ] Run `make changelog`
+    - [ ] Add the date of the release to the title
 - [ ] Release the new version draft by running `make tag`.
 - [ ] Verify the release is correct, it's being created from the correct tag on GitHub, and make the release live. Note: Terraform registry will silently fail to publish if the tag is incorrect, and GitHub has a habit of messing up the tag a release is created from on occasion. 
 - [ ] Verify the release is available on the Terraform provider registry.
-- [ ] If this is not a minor patch, create a new branch with the current version
-- [ ] Update to upcoming version in [VERSION](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION), [internal/provider/version.go](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go), and
-    create new changelog tracker file in [.changelog/](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/changelog/) for the relevant branches.
+- [ ] If this is a major or minor release, create a new `MAJOR.MINOR` branch from the newly created tag.
+- [ ] Update the following files with the upcoming version.
+    - [ ] [`VERSION`](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION)
+    - [ ] [`internal/provider/version.go`](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go)
+- [ ] Create new changelog file in [.changelog/](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/changelog/) on the relevant branches.
