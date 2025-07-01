@@ -11,5 +11,5 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
+title = "`oxide_instance`"
+description = "Fixed the `inconsistent result after apply` error when applying a subsequent plan where the `external_ips` attribute contained an ephemeral IP with a non-empty ID. [#460](https://github.com/oxidecomputer/terraform-provider-oxide/pull/460)"

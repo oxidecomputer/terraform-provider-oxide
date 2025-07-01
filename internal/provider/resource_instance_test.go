@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -196,14 +197,50 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+// TestAccCloudResourceInstance_extIPs tests whether Terraform can create
+// `oxide_instance` resources with the `external_ips` attribute populated. It
+// assumes an IP pool named `default` already exists in the silo the test is
+// running against. The `OXIDE_TEST_IP_POOL_NAME` environment variable can be
+// used to override the IP pool if necessary.
+//
+// This test is also meant to catch regressions of the following issue.
+// https://github.com/oxidecomputer/terraform-provider-oxide/issues/459.
 func TestAccCloudResourceInstance_extIPs(t *testing.T) {
 	type resourceInstanceConfig struct {
 		BlockName        string
 		InstanceName     string
 		SupportBlockName string
+		IPPoolBlockName  string
+		IPPoolName       string
 	}
 
 	resourceInstanceExternalIPConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_ip_pool" "{{.IPPoolBlockName}}" {
+	name = "{{.IPPoolName}}"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  external_ips = [
+	{
+	  type = "ephemeral"
+	  id   = data.oxide_ip_pool.{{.IPPoolBlockName}}.id
+	}
+  ]
+}
+`
+
+	resourceInstanceExternalIPConfigUpdate1Tpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -224,7 +261,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	resourceInstanceExternalIPConfigUpdateTpl := `
+	resourceInstanceExternalIPConfigUpdate2Tpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -240,15 +277,25 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
+	// Some test environments may not have an IP pool named `default`. This allows a
+	// user to override the IP pool name used for this test.
+	ipPoolName, ok := os.LookupEnv("OXIDE_TEST_IP_POOL_NAME")
+	if !ok || ipPoolName == "" {
+		ipPoolName = "default"
+	}
+
 	instanceName := newResourceName()
 	blockName := newBlockName("instance")
 	supportBlockName := newBlockName("support")
+	ipPoolBlockName := newBlockName("ip-pool")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
 	initialConfig, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
+			IPPoolBlockName:  ipPoolBlockName,
+			IPPoolName:       ipPoolName,
 		},
 		resourceInstanceExternalIPConfigTpl,
 	)
@@ -256,16 +303,28 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing initial config template data: %e", err)
 	}
 
-	updateConfig, err := parsedAccConfig(
+	updateConfig1, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
 		},
-		resourceInstanceExternalIPConfigUpdateTpl,
+		resourceInstanceExternalIPConfigUpdate1Tpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing update config template data: %e", err)
+		t.Errorf("error parsing first update config template data: %e", err)
+	}
+
+	updateConfig2, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceExternalIPConfigUpdate2Tpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing second update config template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -273,19 +332,25 @@ resource "oxide_instance" "{{.BlockName}}" {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
+			// Ephemeral external IP with specified IP pool ID.
 			{
 				Config: initialConfig,
 				Check:  checkResourceInstanceIP(resourceName, instanceName),
 			},
-			// Detach the external IP.
+			// Ephemeral external IP with default silo IP pool ID.
 			{
-				Config: updateConfig,
-				Check:  checkResourceInstanceIPUpdate(resourceName, instanceName),
+				Config: updateConfig1,
+				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
 			},
-			// Attach an external IP.
+			// Ephemeral external IP with specified IP pool ID.
 			{
 				Config: initialConfig,
 				Check:  checkResourceInstanceIP(resourceName, instanceName),
+			},
+			// Detach all external IPs.
+			{
+				Config: updateConfig2,
+				Check:  checkResourceInstanceIPUpdate2(resourceName, instanceName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -1007,6 +1072,7 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.0.id"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -1014,7 +1080,24 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 	}...)
 }
 
-func checkResourceInstanceIPUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.id", ""),
+	}...)
+}
+
+func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
