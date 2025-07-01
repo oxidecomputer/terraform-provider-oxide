@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -196,14 +197,43 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+// TestAccCloudResourceInstance_extIPs tests whether Terraform
+// can create `oxide_instance` resources with the `external_ips`
+// attribute populated. It requires the OXIDE_TEST_EXTERNAL_IP_POOL_ID
+// environment variable so that the test can explicitly use an
+// IP pool for the external IP to catch possible regressions of
+// https://github.com/oxidecomputer/terraform-provider-oxide/issues/459.
 func TestAccCloudResourceInstance_extIPs(t *testing.T) {
 	type resourceInstanceConfig struct {
 		BlockName        string
 		InstanceName     string
 		SupportBlockName string
+		ExternalIPPoolID string
 	}
 
 	resourceInstanceExternalIPConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  external_ips = [
+	{
+	  type = "ephemeral"
+      id   = "{{.ExternalIPPoolID}}"
+	}
+  ]
+}
+`
+
+	resourceInstanceExternalIPConfigUpdateTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -224,22 +254,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	resourceInstanceExternalIPConfigUpdateTpl := `
-data "oxide_project" "{{.SupportBlockName}}" {
-	name = "tf-acc-test"
-}
-
-resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = data.oxide_project.{{.SupportBlockName}}.id
-  description     = "a test instance"
-  name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
-  memory          = 1073741824
-  ncpus           = 1
-  start_on_create = false
-}
-`
-
 	instanceName := newResourceName()
 	blockName := newBlockName("instance")
 	supportBlockName := newBlockName("support")
@@ -249,6 +263,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			BlockName:        blockName,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
+			ExternalIPPoolID: os.Getenv("OXIDE_TEST_EXTERNAL_IP_POOL_ID"),
 		},
 		resourceInstanceExternalIPConfigTpl,
 	)
@@ -269,7 +284,16 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+
+			// This is checked under [resource.ParallelTest] rather than earlier in the test
+			// to gate the check behind the TF_ACC environment variable. This prevents the
+			// check from causing errors when running unit tests.
+			if os.Getenv("OXIDE_TEST_EXTERNAL_IP_POOL_ID") == "" {
+				t.Skip("OXIDE_TEST_EXTERNAL_IP_POOL_ID is required to run this test.")
+			}
+		},
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -277,12 +301,10 @@ resource "oxide_instance" "{{.BlockName}}" {
 				Config: initialConfig,
 				Check:  checkResourceInstanceIP(resourceName, instanceName),
 			},
-			// Detach the external IP.
 			{
 				Config: updateConfig,
 				Check:  checkResourceInstanceIPUpdate(resourceName, instanceName),
 			},
-			// Attach an external IP.
 			{
 				Config: initialConfig,
 				Check:  checkResourceInstanceIP(resourceName, instanceName),
@@ -1007,6 +1029,7 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.0.id"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -1026,7 +1049,8 @@ func checkResourceInstanceIPUpdate(resourceName, instanceName string) resource.T
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckNoResourceAttr(resourceName, "external_ips"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.0.id", ""),
 	}...)
 }
 
