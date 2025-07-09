@@ -4,7 +4,7 @@ terraform {
   required_providers {
     oxide = {
       source  = "oxidecomputer/oxide"
-      version = "0.10.0"
+      version = "0.12.0"
     }
   }
 }
