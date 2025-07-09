@@ -1,3 +1,16 @@
+# 0.12.0 (2025/Jul/09)
+
+### Bug fixes
+
+- **`oxide_instance`:** Fixed the `inconsistent result after apply` error when applying a subsequent plan where the `external_ips` attribute contained an ephemeral IP with a non-empty ID. [#460](https://github.com/oxidecomputer/terraform-provider-oxide/pull/460)
+
+### List of commits
+
+- [7af9fa6](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7af9fa6) resource(oxide_instance): fix inconsistent result after apply (#460)
+- [f9b42d1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f9b42d1) misc: update release checklist (#458)
+- [f148e51](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f148e51) changelog: add missing date
+- [d1a4d6d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d1a4d6d) misc: bump to version v0.12.0 (#457)
+
 # 0.11.0 (2025/Jun/26)
 
 ### Breaking changes
