@@ -527,7 +527,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state.ID.ValueString())
+	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -774,7 +774,9 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state.ID.ValueString())
+	// We use the plan here instead of the state to capture the desired IP pool ID
+	// value for the ephemeral external IP rather than the previous value.
+	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1075,13 +1077,32 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 	return nicSet, nil
 }
 
-func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, instanceID string) (
+// newAttachedExternalIPModel fetches the external IP addresses for the instance
+// specified by model, keeping the IP pool ID from the ephemeral external IP
+// from the model if one is present.
+func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model instanceResourceModel) (
 	[]instanceResourceExternalIPModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	externalIPs := make([]instanceResourceExternalIPModel, 0)
 
+	// The [oxide.Client.InstanceExternalIpList] method does not return the IP pool
+	// ID for ephemeral external IPs. See https://github.com/oxidecomputer/omicron/issues/6825.
+	//
+	// Pull the IP pool ID out of the model to populate the external IP model that
+	// we're building to prevent erroneous Terraform diffs (e.g., state contains
+	// IP pool ID and refresh doesn't). It's safe to stop at the first ephemeral
+	// external IP encountered since the configuration enforces at most one
+	// ephemeral external IP.
+	ephemeralIPPoolID := ""
+	for _, externalIP := range model.ExternalIPs {
+		if externalIP.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
+			ephemeralIPPoolID = externalIP.ID.ValueString()
+			break
+		}
+	}
+
 	externalIPResponse, err := client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
-		Instance: oxide.NameOrId(instanceID),
+		Instance: oxide.NameOrId(model.ID.ValueString()),
 	})
 	if err != nil {
 		diags.AddError(
@@ -1092,10 +1113,23 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, insta
 	}
 
 	for _, externalIP := range externalIPResponse.Items {
-		externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-			ID:   types.StringValue(externalIP.Id),
-			Type: types.StringValue(string(externalIP.Kind)),
-		})
+		switch externalIP.Kind {
+		case oxide.ExternalIpKindEphemeral:
+			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
+				ID:   types.StringValue(ephemeralIPPoolID),
+				Type: types.StringValue(string(externalIP.Kind)),
+			})
+		case oxide.ExternalIpKindFloating:
+			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
+				ID:   types.StringValue(externalIP.IpPoolId),
+				Type: types.StringValue(string(externalIP.Kind)),
+			})
+		default:
+			diags.AddError(
+				"Invalid external IP kind:",
+				fmt.Sprintf("Encountered unexpected external IP kind: %s", externalIP.Kind),
+			)
+		}
 	}
 
 	return externalIPs, nil
