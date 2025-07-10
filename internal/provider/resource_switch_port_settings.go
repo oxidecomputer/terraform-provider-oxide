@@ -14,135 +14,146 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*switchPortConfigurationResource)(nil)
-	_ resource.ResourceWithConfigure = (*switchPortConfigurationResource)(nil)
+	_ resource.Resource              = (*switchPortSettingsResource)(nil)
+	_ resource.ResourceWithConfigure = (*switchPortSettingsResource)(nil)
 )
 
-type switchPortConfigurationResource struct {
+type switchPortSettingsResource struct {
 	client *oxide.Client
 }
 
-type addressLotModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
+type switchPortSettingsModel struct {
+	ID           types.String                       `tfsdk:"id"`
+	Name         types.String                       `tfsdk:"name"`
+	Description  types.String                       `tfsdk:"description"`
+	Addresses    []switchPortSettingsAddressModel   `tfsdk:"addresses"`
+	BGPPeers     []switchPortSettingsBGPPeerModel   `tfsdk:"bgp_peers"`
+	Groups       []types.String                     `tfsdk:"groups"`
+	Interfaces   []switchPortSettingsInterfaceModel `tfsdk:"interfaces"`
+	Links        []switchPortSettingsLinkModel      `tfsdk:"links"`
+	PortConfig   *switchPortSettingsPortConfigModel `tfsdk:"port_config"`
+	Routes       []switchPortSettingsRouteModel     `tfsdk:"routes"`
+	TimeCreated  types.String                       `tfsdk:"time_created"`
+	TimeModified types.String                       `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value                     `tfsdk:"timeouts"`
 }
 
-type switchPortAddressModel struct {
-	Address    types.String    `tfsdk:"address"`
-	AddressLot addressLotModel `tfsdk:"address_lot"`
-	Vlan       types.Int32     `tfsdk:"vlan"`
+type switchPortSettingsAddressModel struct {
+	Addresses []switchPortSettingsAddressAddressModel `tfsdk:"addresses"`
+	LinkName  types.String                            `tfsdk:"link_name"`
 }
 
-type switchPortAddressConfigModel struct {
-	LinkName  types.String             `tfsdk:"link_name"`
-	Addresses []switchPortAddressModel `tfsdk:"addresses"`
+type switchPortSettingsAddressAddressModel struct {
+	Address    types.String `tfsdk:"address"`
+	AddressLot types.String `tfsdk:"address_lot"`
+	VlanID     types.Int32  `tfsdk:"vlan_id"`
 }
 
-type routeModel struct {
-	Destination types.String `tfsdk:"destination"`
-	Gateway     types.String `tfsdk:"gateway"`
-	RibPriority types.Int32  `tfsdk:"rib_priority"`
-	VlanID      types.Int32  `tfsdk:"vlan_id"`
-}
-
-type routeConfigModel struct {
+type switchPortSettingsBGPPeerModel struct {
 	LinkName types.String `tfsdk:"link_name"`
-	Routes   []routeModel `tfsdk:"routes"`
+	Peers    []switchPortSettingsBGPPeerPeerModel
 }
 
-type lldpLinkConfigCreateModel struct {
-	Id                types.String `tfsdk:"id"`
-	ChassisId         types.String `tfsdk:"chassis_id"`
+type switchPortSettingsBGPPeerPeerModel struct {
+	Addr                   types.String                                     `tfsdk:"peers"`
+	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allow_export"`
+	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allow_import"`
+	BGPConfig              types.String                                     `tfsdk:"bgp_config"`
+	Communities            []types.String                                   `tfsdk:"communities"`
+	ConnectRetry           types.Int64                                      `tfsdk:"connect_retry"`
+	DelayOpen              types.Int64                                      `tfsdk:"delay_open"`
+	EnforceFirstAs         types.Bool                                       `tfsdk:"enforce_first_as"`
+	HoldTime               types.Int64                                      `tfsdk:"hold_time"`
+	IdleHoldTime           types.Int64                                      `tfsdk:"idle_hold_time"`
+	InterfaceName          types.String                                     `tfsdk:"interface_name"`
+	Keepalive              types.Int64                                      `tfsdk:"keepalive"`
+	LocalPref              types.Int64                                      `tfsdk:"local_pref"`
+	MD5AuthKey             types.String                                     `tfsdk:"md5_auth_key"`
+	MinTTL                 types.Int32                                      `tfsdk:"min_ttl"`
+	MultiExitDiscriminator types.Int64                                      `tfsdk:"multi_exit_discriminator"`
+	RemoteASN              types.Int64                                      `tfsdk:"remote_asn"`
+	VlanID                 types.Int32                                      `tfsdk:"vlan_id"`
+}
+
+type switchPortSettingsBGPPeerPeerAllowedExportModel struct {
+	Type  types.String   `tfsdk:"type"`
+	Value []types.String `tfsdk:"value"`
+}
+
+type switchPortSettingsBGPPeerPeerAllowedImportModel struct {
+	Type  types.String   `tfsdk:"type"`
+	Value []types.String `tfsdk:"value"`
+}
+
+type switchPortSettingsInterfaceModel struct {
+	Kind      *switchPortSettingsInterfaceKindModel `tfsdk:"kind"`
+	LinkName  types.String                          `tfsdk:"link_name"`
+	V6Enabled types.Bool                            `tfsdk:"v6_enabled"`
+}
+
+type switchPortSettingsInterfaceKindModel struct {
+	Type types.String `tfsdk:"type"`
+	VID  types.Int32  `tfsdk:"vid"`
+}
+
+type switchPortSettingsLinkModel struct {
+	Autoneg  types.Bool                       `tfsdk:"autoneg"`
+	FEC      types.String                     `tfsdk:"fec"`
+	LinkName types.String                     `tfsdk:"link_name"`
+	LLDP     *switchPortSettingsLinkLLDPModel `tfsdk:"lldp"`
+	MTU      types.Int32                      `tfsdk:"mtu"`
+	Speed    types.String                     `tfsdk:"speed"`
+	TxEq     *switchPortSettingsLinkTxEqModel `tfsdk:"tx_eq"`
+}
+
+type switchPortSettingsLinkLLDPModel struct {
+	ChassisID         types.String `tfsdk:"chassis_id"`
 	Enabled           types.Bool   `tfsdk:"enabled"`
 	LinkDescription   types.String `tfsdk:"link_description"`
 	LinkName          types.String `tfsdk:"link_name"`
-	ManagementIp      types.String `tfsdk:"management_ip"`
+	ManagementIP      types.String `tfsdk:"management_ip"`
 	SystemDescription types.String `tfsdk:"system_description"`
 	SystemName        types.String `tfsdk:"system_name"`
 }
 
-type txEqConfigModel struct {
+type switchPortSettingsLinkTxEqModel struct {
 	Main  types.Int32 `tfsdk:"main"`
 	Post1 types.Int32 `tfsdk:"post1"`
 	Post2 types.Int32 `tfsdk:"post2"`
-	Pre1  types.Int32 `tfsdk:"pre1"`
-	Pre2  types.Int32 `tfsdk:"pre2"`
+	Pre1  types.Int32 `tfsdk:"Pre1"`
+	Pre2  types.Int32 `tfsdk:"Pre2"`
 }
 
-type linkConfigModel struct {
-	Name    types.String              `tfsdk:"name"`
-	Autoneg bool                      `tfsdk:"autoneg"`
-	Fec     types.String              `tfsdk:"fec"`
-	Lldp    lldpLinkConfigCreateModel `tfsdk:"lldp"`
-	Mtu     types.Int32               `tfsdk:"mtu"`
-	Speed   types.String              `tfsdk:"speed"`
-	TxEq    *txEqConfigModel          `tfsdk:"tx_eq"`
+type switchPortSettingsPortConfigModel struct {
+	Geometry types.String `tfsdk:"geometry"`
 }
 
-type importExportPolicyModel struct {
-	Type  types.String   `tfsdk:"policy_type"`
-	Value []types.String `tfsdk:"value"`
+type switchPortSettingsRouteModel struct {
+	LinkName types.String                        `tfsdk:"link_name"`
+	Routes   []switchPortSettingsRouteRouteModel `tfsdk:"routes"`
 }
 
-type bgpPeerConfigModel struct {
-	LinkName types.String   `tfsdk:"link_name"`
-	Peers    []bgpPeerModel `tfsdk:"peers"`
+type switchPortSettingsRouteRouteModel struct {
+	Dst         types.String `tfsdk:"dst"`
+	GW          types.String `tfsdk:"gw"`
+	RIBPriority types.Int32  `tfsdk:"rib_priority"`
+	VID         types.Int32  `tfsdk:"vid"`
 }
 
-type bgpPeerModel struct {
-	Addr                   types.String            `tfsdk:"addr"`
-	AllowedExport          importExportPolicyModel `tfsdk:"allowed_export"`
-	AllowedImport          importExportPolicyModel `tfsdk:"allowed_import"`
-	BgpConfig              types.String            `tfsdk:"bgp_config"`
-	Communities            []types.String          `tfsdk:"communities"`
-	ConnectRetry           types.Int32             `tfsdk:"connect_retry"`
-	DelayOpen              types.Int32             `tfsdk:"delay_open"`
-	EnforceFirstAs         types.Bool              `tfsdk:"enforce_first_as"`
-	HoldTime               types.Int32             `tfsdk:"hold_time"`
-	IdleHoldTime           types.Int32             `tfsdk:"idle_hold_time"`
-	InterfaceName          types.String            `tfsdk:"interface_name"`
-	Keepalive              types.Int32             `tfsdk:"keepalive"`
-	LocalPref              types.Int32             `tfsdk:"local_pref"`
-	Md5AuthKey             types.String            `tfsdk:"md5_auth_key"`
-	MinTtl                 types.Int32             `tfsdk:"min_ttl"`
-	MultiExitDiscriminator types.Int32             `tfsdk:"multi_exit_discriminator"`
-	RemoteAsn              types.Int32             `tfsdk:"remote_asn"`
-	VlanId                 types.Int32             `tfsdk:"vlan_id"`
+func NewSwitchPortSettingsResource() resource.Resource {
+	return &switchPortSettingsResource{}
 }
 
-type switchPortSettingsModel struct {
-	ID          types.String                   `tfsdk:"id"`
-	Name        types.String                   `tfsdk:"name"`
-	Description types.String                   `tfsdk:"description"`
-	Addresses   []switchPortAddressConfigModel `tfsdk:"addresses"`
-	// TODO: more testing is needed before enabling this functionality
-	// https://github.com/oxidecomputer/terraform-provider-oxide/issues/310
-	// BgpPeers     []bgpPeerConfigModel           `tfsdk:"bgp_peers"`
-	Links        []linkConfigModel  `tfsdk:"links"`
-	PortConfig   types.String       `tfsdk:"port_config"`
-	Routes       []routeConfigModel `tfsdk:"routes"`
-	TimeCreated  types.String       `tfsdk:"time_created"`
-	TimeModified types.String       `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value     `tfsdk:"timeouts"`
+func (r *switchPortSettingsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "oxide_switch_port_settings"
 }
 
-// NewSwitchPortConfigurationResource is a helper function to simplify the provider implementation.
-func NewSwitchPortConfigurationResource() resource.Resource {
-	return &switchPortConfigurationResource{}
-}
-
-// Metadata returns the resource type name.
-func (r *switchPortConfigurationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "oxide_switch_port_configuration"
-}
-
-// Configure adds the provider configured client to the data source.
-func (r *switchPortConfigurationResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *switchPortSettingsResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -150,63 +161,36 @@ func (r *switchPortConfigurationResource) Configure(_ context.Context, req resou
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *switchPortConfigurationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *switchPortSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// Schema defines the schema for the resource.
-func (r *switchPortConfigurationResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the Switch Port Configuration.",
+				Description: "Unique, immutable, system-controlled identifier of the switch port settings.",
 			},
-
-			"name": schema.StringAttribute{
-				Required:    true,
-				Description: "Name of the Switch Port Configuration.",
-			},
-
-			"description": schema.StringAttribute{
-				Required:    true,
-				Description: "Description for the Switch Port Configuration.",
-			},
-
-			"addresses": schema.ListNestedAttribute{
-				Optional:    true,
-				Description: "List of addresses for the Switch Port Configuration.",
+			"addresses": schema.SetNestedAttribute{
+				Required: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"link_name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the link for the Switch Port Configuration.",
+							Required: true,
 						},
-						"addresses": schema.ListNestedAttribute{
-							Required:    true,
-							Description: "List of addresses for the Switch Port Configuration.",
+						"addresses": schema.SetNestedAttribute{
+							Required: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"address": schema.StringAttribute{
-										Required:    true,
-										Description: "Address for the Switch Port Configuration.",
-									},
-									"address_lot": schema.SingleNestedAttribute{
 										Required: true,
-										Attributes: map[string]schema.Attribute{
-											"id": schema.StringAttribute{
-												Computed:    true,
-												Description: "ID of the address lot.",
-											},
-											"name": schema.StringAttribute{
-												Required:    true,
-												Description: "Name of the address lot.",
-											},
-										},
 									},
-									"vlan": schema.Int32Attribute{
-										Optional:    true,
-										Description: "VLAN ID for the address.",
+									"address_lot": schema.StringAttribute{
+										Required: true,
+									},
+									"vlan_id": schema.Int32Attribute{
+										Optional: true,
 									},
 								},
 							},
@@ -214,251 +198,89 @@ func (r *switchPortConfigurationResource) Schema(ctx context.Context, _ resource
 					},
 				},
 			},
-
-			// TODO: more testing is needed before enabling this functionality
-			// https://github.com/oxidecomputer/terraform-provider-oxide/issues/310
-			// "bgp_peers": schema.SetNestedAttribute{
-			// 	Optional:    true,
-			// 	Description: "List of BGP peers for the Switch Port Configuration.",
-			// 	NestedObject: schema.NestedAttributeObject{
-			// 		Attributes: map[string]schema.Attribute{
-			// 			"link_name": schema.StringAttribute{
-			// 				Required:    true,
-			// 				Description: "Name of the link for the BGP peer configuration.",
-			// 			},
-			// 			"peers": schema.SetNestedAttribute{
-			// 				Required:    true,
-			// 				Description: "List of BGP peers for the link.",
-			// 				NestedObject: schema.NestedAttributeObject{
-			// 					Attributes: map[string]schema.Attribute{
-			// 						"addr": schema.StringAttribute{
-			// 							Required:    true,
-			// 							Description: "Address of the BGP peer.",
-			// 						},
-			// 						"allowed_export": schema.SetNestedAttribute{
-			// 							Required:    true,
-			// 							Description: "Export policy for the BGP peer.",
-			// 							NestedObject: schema.NestedAttributeObject{
-			// 								Attributes: map[string]schema.Attribute{
-			// 									"policy_type": schema.StringAttribute{
-			// 										Required:    true,
-			// 										Description: "Type of the export policy.",
-			// 									},
-			// 									"value": schema.ListAttribute{
-			// 										Required:    true,
-			// 										Description: "Values for the export policy.",
-			// 										ElementType: types.StringType,
-			// 									},
-			// 								},
-			// 							},
-			// 						},
-			// 						"allowed_import": schema.SetNestedAttribute{
-			// 							Required:    true,
-			// 							Description: "Import policy for the BGP peer.",
-			// 							NestedObject: schema.NestedAttributeObject{
-			// 								Attributes: map[string]schema.Attribute{
-			// 									"policy_type": schema.StringAttribute{
-			// 										Required:    true,
-			// 										Description: "Type of the import policy.",
-			// 									},
-			// 									"value": schema.ListAttribute{
-			// 										Required:    true,
-			// 										Description: "Values for the import policy.",
-			// 										ElementType: types.StringType,
-			// 									},
-			// 								},
-			// 							},
-			// 						},
-			// 						"bgp_config": schema.StringAttribute{
-			// 							Optional:    true,
-			// 							Description: "BGP configuration for the peer.",
-			// 						},
-			// 						"communities": schema.ListAttribute{
-			// 							Optional:    true,
-			// 							Description: "List of communities for the BGP peer.",
-			// 							ElementType: types.StringType,
-			// 						},
-			// 						"connect_retry": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Connect retry interval for the BGP peer.",
-			// 						},
-			// 						"delay_open": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Delay open interval for the BGP peer.",
-			// 						},
-			// 						"enforce_first_as": schema.BoolAttribute{
-			// 							Optional:    true,
-			// 							Description: "Whether to enforce the first AS for the BGP peer.",
-			// 						},
-			// 						"hold_time": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Hold time for the BGP peer.",
-			// 						},
-			// 						"idle_hold_time": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Idle hold time for the BGP peer.",
-			// 						},
-			// 						"interface_name": schema.StringAttribute{
-			// 							Required:    true,
-			// 							Description: "Interface name for the BGP peer.",
-			// 						},
-			// 						"keepalive": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Keepalive interval for the BGP peer.",
-			// 						},
-			// 						"local_pref": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Local preference for the BGP peer.",
-			// 						},
-			// 						"md5_auth_key": schema.StringAttribute{
-			// 							Optional:    true,
-			// 							Description: "MD5 authentication key for the BGP peer.",
-			// 						},
-			// 						"min_ttl": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Minimum TTL for the BGP peer.",
-			// 						},
-			// 						"multi_exit_discriminator": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "Multi-exit discriminator for the BGP peer.",
-			// 						},
-			// 						"remote_asn": schema.Int32Attribute{
-			// 							Required:    true,
-			// 							Description: "Remote ASN for the BGP peer.",
-			// 						},
-			// 						"vlan_id": schema.Int32Attribute{
-			// 							Optional:    true,
-			// 							Description: "VLAN ID for the BGP peer.",
-			// 						},
-			// 					},
-			// 				},
-			// 			},
-			// 		},
-			// 	},
-			// },
-
-			"links": schema.ListNestedAttribute{
-				Optional:    true,
-				Description: "List of links for the Switch Port Configuration.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the link.",
-						},
-						"autoneg": schema.BoolAttribute{
-							Required:    true,
-							Description: "Whether autonegotiation is enabled for the link.",
-						},
-						"fec": schema.StringAttribute{
-							Required:    true,
-							Description: "Forward error correction (FEC) mode for the link.",
-						},
-						"mtu": schema.Int32Attribute{
-							Required:    true,
-							Description: "Maximum transmission unit (MTU) for the link.",
-						},
-						"speed": schema.StringAttribute{
-							Required:    true,
-							Description: "Speed of the link.",
-						},
-						"lldp": schema.SingleNestedAttribute{
-							Optional:    true,
-							Description: "LLDP configuration for the link.",
-							Attributes: map[string]schema.Attribute{
-								"id": schema.StringAttribute{
-									Computed:    true,
-									Description: "ID of the LLDP configuration.",
-								},
-								"chassis_id": schema.StringAttribute{
-									Optional:    true,
-									Description: "Chassis ID for the LLDP configuration.",
-								},
-								"enabled": schema.BoolAttribute{
-									Optional:    true,
-									Description: "Whether LLDP is enabled for the link.",
-								},
-								"link_description": schema.StringAttribute{
-									Optional:    true,
-									Description: "Link description for the LLDP configuration.",
-								},
-								"link_name": schema.StringAttribute{
-									Optional:    true,
-									Description: "Link name for the LLDP configuration.",
-								},
-								"management_ip": schema.StringAttribute{
-									Optional:    true,
-									Description: "Management IP address for the LLDP configuration.",
-								},
-								"system_description": schema.StringAttribute{
-									Optional:    true,
-									Description: "System description for the LLDP configuration.",
-								},
-								"system_name": schema.StringAttribute{
-									Optional:    true,
-									Description: "System name for the LLDP configuration.",
-								},
-							},
-						},
-						"tx_eq": schema.SingleNestedAttribute{
-							Optional:    true,
-							Description: "TX equalization configuration for the link.",
-							Attributes: map[string]schema.Attribute{
-								"main": schema.Int32Attribute{
-									Optional:    true,
-									Description: "Main TX equalization value.",
-								},
-								"post1": schema.Int32Attribute{
-									Optional:    true,
-									Description: "Post 1 TX equalization value.",
-								},
-								"post2": schema.Int32Attribute{
-									Optional:    true,
-									Description: "Post 2 TX equalization value.",
-								},
-								"pre1": schema.Int32Attribute{
-									Optional:    true,
-									Description: "Pre 1 TX equalization value.",
-								},
-								"pre2": schema.Int32Attribute{
-									Optional:    true,
-									Description: "Pre 2 TX equalization value.",
-								},
-							},
-						},
-					},
-				},
-			},
-
-			"routes": schema.SetNestedAttribute{
-				Optional:    true,
-				Description: "List of routes for the Switch Port Configuration.",
+			"bgp_peers": schema.SetNestedAttribute{
+				Optional: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"link_name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the link for the route configuration.",
+							Required: true,
 						},
-						"routes": schema.SetNestedAttribute{
-							Required:    true,
-							Description: "List of routes for the link.",
+						"peers": schema.SetNestedAttribute{
+							Required: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"destination": schema.StringAttribute{
-										Required:    true,
-										Description: "Destination address for the route.",
+									"addr": schema.StringAttribute{
+										Required: true,
 									},
-									"gateway": schema.StringAttribute{
-										Required:    true,
-										Description: "Gateway address for the route.",
+									"allowed_export": schema.SingleNestedAttribute{
+										Required: true,
+										Attributes: map[string]schema.Attribute{
+											"type": schema.StringAttribute{
+												Required: true,
+											},
+											"value": schema.SetAttribute{
+												Optional:    true,
+												ElementType: types.StringType,
+											},
+										},
 									},
-									"rib_priority": schema.Int32Attribute{
-										Optional:    true,
-										Description: "RIB priority for the route.",
+									"allowed_import": schema.SingleNestedAttribute{
+										Required: true,
+										Attributes: map[string]schema.Attribute{
+											"type": schema.StringAttribute{
+												Required: true,
+											},
+											"value": schema.SetAttribute{
+												Optional:    true,
+												ElementType: types.StringType,
+											},
+										},
+									},
+									"bgp_config": schema.StringAttribute{
+										Required: true,
+									},
+									"communities": schema.SetAttribute{
+										Required:    true,
+										ElementType: types.Int64Type,
+									},
+									"connect_retry": schema.Int64Attribute{
+										Required: true,
+									},
+									"delay_open": schema.Int64Attribute{
+										Required: true,
+									},
+									"enforce_first_as": schema.BoolAttribute{
+										Required: true,
+									},
+									"hold_time": schema.Int64Attribute{
+										Required: true,
+									},
+									"idle_hold_time": schema.Int64Attribute{
+										Required: true,
+									},
+									"interface_name": schema.StringAttribute{
+										Required: true,
+									},
+									"keepalive": schema.Int64Attribute{
+										Required: true,
+									},
+									"local_pref": schema.Int64Attribute{
+										Optional: true,
+									},
+									"md5_auth_key": schema.StringAttribute{
+										Optional: true,
+									},
+									"min_ttl": schema.Int32Attribute{
+										Optional: true,
+									},
+									"multi_exit_discriminator": schema.Int64Attribute{
+										Optional: true,
+									},
+									"remote_asn": schema.Int64Attribute{
+										Optional: true,
 									},
 									"vlan_id": schema.Int32Attribute{
-										Optional:    true,
-										Description: "VLAN ID for the route.",
+										Optional: true,
 									},
 								},
 							},
@@ -466,12 +288,145 @@ func (r *switchPortConfigurationResource) Schema(ctx context.Context, _ resource
 					},
 				},
 			},
-
-			"port_config": schema.StringAttribute{
-				Required:    true,
-				Description: "Port configuration for the Switch Port Configuration.",
+			"description": schema.StringAttribute{
+				Required: true,
 			},
-
+			"groups": schema.SetAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"interfaces": schema.SetNestedAttribute{
+				Optional: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"kind": schema.SingleNestedAttribute{
+							Required: true,
+							Attributes: map[string]schema.Attribute{
+								"type": schema.StringAttribute{
+									Required: true,
+								},
+								"vid": schema.Int32Attribute{
+									Optional: true,
+								},
+							},
+						},
+						"link_name": schema.StringAttribute{
+							Required: true,
+						},
+						"v6_enabled": schema.BoolAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"links": schema.SetNestedAttribute{
+				Required: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"autoneg": schema.BoolAttribute{
+							Required: true,
+						},
+						"fec": schema.StringAttribute{
+							Optional: true,
+						},
+						"link_name": schema.StringAttribute{
+							Required: true,
+						},
+						"lldp": schema.SingleNestedAttribute{
+							Required: true,
+							Attributes: map[string]schema.Attribute{
+								"chassis_id": schema.StringAttribute{
+									Optional: true,
+								},
+								"enabled": schema.BoolAttribute{
+									Required: true,
+								},
+								"link_description": schema.StringAttribute{
+									Optional: true,
+								},
+								"link_name": schema.StringAttribute{
+									Optional: true,
+								},
+								"management_ip": schema.StringAttribute{
+									Optional: true,
+								},
+								"system_description": schema.StringAttribute{
+									Optional: true,
+								},
+								"system_name": schema.StringAttribute{
+									Optional: true,
+								},
+							},
+						},
+						"mtu": schema.Int32Attribute{
+							Required: true,
+						},
+						"speed": schema.StringAttribute{
+							Required: true,
+						},
+						"tx_eq": schema.SingleNestedAttribute{
+							Optional: true,
+							Attributes: map[string]schema.Attribute{
+								"main": schema.Int32Attribute{
+									Optional: true,
+								},
+								"post1": schema.Int32Attribute{
+									Optional: true,
+								},
+								"post2": schema.Int32Attribute{
+									Optional: true,
+								},
+								"pre1": schema.Int32Attribute{
+									Optional: true,
+								},
+								"pre2": schema.Int32Attribute{
+									Optional: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			"name": schema.StringAttribute{
+				Required: true,
+			},
+			"port_config": schema.SingleNestedAttribute{
+				Required: true,
+				Attributes: map[string]schema.Attribute{
+					"geometry": schema.StringAttribute{
+						Required: true,
+					},
+				},
+			},
+			"routes": schema.SetNestedAttribute{
+				Optional: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"link_name": schema.StringAttribute{
+							Required: true,
+						},
+						"routes": schema.SetNestedAttribute{
+							Required: true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"dst": schema.StringAttribute{
+										Required: true,
+									},
+									"gw": schema.StringAttribute{
+										Required: true,
+									},
+									"rib_priority": schema.Int32Attribute{
+										Optional: true,
+									},
+									"vid": schema.Int32Attribute{
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
@@ -490,8 +445,7 @@ func (r *switchPortConfigurationResource) Schema(ctx context.Context, _ resource
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
-func (r *switchPortConfigurationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan switchPortSettingsModel
 
 	// Read Terraform plan data into the model.
@@ -508,7 +462,7 @@ func (r *switchPortConfigurationResource) Create(ctx context.Context, req resour
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := buildParams(&plan)
+	params, _ := toOxideParams(plan)
 
 	settings, err := r.client.NetworkingSwitchPortSettingsCreate(ctx, params)
 	if err != nil {
@@ -523,20 +477,8 @@ func (r *switchPortConfigurationResource) Create(ctx context.Context, req resour
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(settings.Id)
-	plan.Description = types.StringValue(settings.Description)
 	plan.TimeCreated = types.StringValue(settings.TimeCreated.String())
 	plan.TimeModified = types.StringValue(settings.TimeModified.String())
-
-	// populate computed address lot ids
-	for i, addressConfig := range plan.Addresses {
-		for j, address := range addressConfig.Addresses {
-			for _, responseAddress := range settings.Addresses {
-				if string(responseAddress.AddressLotName) == address.AddressLot.Name.ValueString() {
-					plan.Addresses[i].Addresses[j].AddressLot.ID = types.StringValue(responseAddress.AddressLotId)
-				}
-			}
-		}
-	}
 
 	// Save plan into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -546,7 +488,7 @@ func (r *switchPortConfigurationResource) Create(ctx context.Context, req resour
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *switchPortConfigurationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state switchPortSettingsModel
 
 	// Read Terraform prior state data into the model
@@ -578,272 +520,20 @@ func (r *switchPortConfigurationResource) Read(ctx context.Context, req resource
 	tflog.Trace(ctx, fmt.Sprintf("read Switch Port Settings with ID: %v", settings.Id), map[string]any{"success": true})
 
 	// Map response body to schema
-	state.Name = types.StringValue(string(settings.Name))
 	state.ID = types.StringValue(settings.Id)
+	state.Name = types.StringValue(string(settings.Name))
 	state.Description = types.StringValue(settings.Description)
-
-	state.Addresses = []switchPortAddressConfigModel{}
-
-	// TODO: more testing is needed before enabling this functionality
-	// https://github.com/oxidecomputer/terraform-provider-oxide/issues/310
-	// state.BgpPeers = []bgpPeerConfigModel{}
-	state.Links = []linkConfigModel{}
-	state.PortConfig = types.StringValue(string(settings.Port.Geometry))
-	state.Routes = []routeConfigModel{}
-
 	state.TimeCreated = types.StringValue(settings.TimeCreated.String())
 	state.TimeModified = types.StringValue(settings.TimeModified.String())
 
-	addressMappings := make(map[string]switchPortAddressConfigModel)
-
-	for _, item := range settings.Addresses {
-		interfaceName := string(item.InterfaceName)
-
-		// fetch the address config from the map
-		val, ok := addressMappings[interfaceName]
-
-		// If the address is not already in the map, create a new entry
-		if !ok {
-			val = switchPortAddressConfigModel{}
-			val.LinkName = types.StringValue(interfaceName)
-		}
-
-		// Add the address to the existing entry
-		newAddress := switchPortAddressModel{
-			Address: types.StringValue(fmt.Sprintf("%v", item.Address)),
-		}
-
-		if item.VlanId != nil {
-			newAddress.Vlan = types.Int32Value(int32(*item.VlanId))
-		} else {
-			newAddress.Vlan = types.Int32Null()
-		}
-
-		newAddress.AddressLot.ID = types.StringValue(item.AddressLotId)
-		newAddress.AddressLot.Name = types.StringValue(string(item.AddressLotName))
-
-		val.Addresses = append(addressMappings[interfaceName].Addresses, newAddress)
-
-		// update the value stored in the map
-		addressMappings[interfaceName] = val
-	}
-
-	for _, value := range addressMappings {
-		state.Addresses = append(state.Addresses, value)
-	}
-
-	bgpPeerMappings := make(map[string]bgpPeerConfigModel)
-
-	for _, item := range settings.BgpPeers {
-		interfaceName := string(item.InterfaceName)
-
-		val, ok := bgpPeerMappings[interfaceName]
-
-		if !ok {
-			val = bgpPeerConfigModel{}
-			val.LinkName = types.StringValue(interfaceName)
-		}
-
-		newPeer := bgpPeerModel{
-			Addr: types.StringValue(item.Addr),
-			AllowedExport: importExportPolicyModel{
-				Type:  types.StringValue(string(item.AllowedExport.Type)),
-				Value: make([]types.String, len(item.AllowedExport.Value)),
-			},
-			AllowedImport: importExportPolicyModel{
-				Type:  types.StringValue(string(item.AllowedImport.Type)),
-				Value: make([]types.String, len(item.AllowedImport.Value)),
-			},
-			BgpConfig:              types.StringValue(string(item.BgpConfig)),
-			Communities:            make([]types.String, len(item.Communities)),
-			ConnectRetry:           types.Int32Null(),
-			DelayOpen:              types.Int32Null(),
-			EnforceFirstAs:         types.BoolNull(),
-			HoldTime:               types.Int32Null(),
-			IdleHoldTime:           types.Int32Null(),
-			InterfaceName:          types.StringValue(interfaceName),
-			Keepalive:              types.Int32Null(),
-			LocalPref:              types.Int32Null(),
-			Md5AuthKey:             types.StringValue(item.Md5AuthKey),
-			MinTtl:                 types.Int32Null(),
-			MultiExitDiscriminator: types.Int32Null(),
-			RemoteAsn:              types.Int32Null(),
-			VlanId:                 types.Int32Null(),
-		}
-
-		if item.ConnectRetry != nil {
-			newPeer.ConnectRetry = types.Int32Value(int32(*item.ConnectRetry))
-		}
-		if item.DelayOpen != nil {
-			newPeer.DelayOpen = types.Int32Value(int32(*item.DelayOpen))
-		}
-		if item.EnforceFirstAs != nil {
-			newPeer.EnforceFirstAs = types.BoolValue(*item.EnforceFirstAs)
-		}
-		if item.HoldTime != nil {
-			newPeer.HoldTime = types.Int32Value(int32(*item.HoldTime))
-		}
-		if item.IdleHoldTime != nil {
-			newPeer.IdleHoldTime = types.Int32Value(int32(*item.IdleHoldTime))
-		}
-		if item.Keepalive != nil {
-			newPeer.Keepalive = types.Int32Value(int32(*item.Keepalive))
-		}
-		if item.LocalPref != nil {
-			newPeer.LocalPref = types.Int32Value(int32(*item.LocalPref))
-		}
-		if item.MinTtl != nil {
-			newPeer.MinTtl = types.Int32Value(int32(*item.MinTtl))
-		}
-		if item.MultiExitDiscriminator != nil {
-			newPeer.MultiExitDiscriminator = types.Int32Value(int32(*item.MultiExitDiscriminator))
-		}
-		if item.RemoteAsn != nil {
-			newPeer.RemoteAsn = types.Int32Value(int32(*item.RemoteAsn))
-		}
-		if item.VlanId != nil {
-			newPeer.VlanId = types.Int32Value(int32(*item.VlanId))
-		}
-
-		for i, value := range item.AllowedExport.Value {
-			newPeer.AllowedExport.Value[i] = types.StringValue(fmt.Sprintf("%v", value))
-		}
-
-		for i, value := range item.AllowedImport.Value {
-			newPeer.AllowedImport.Value[i] = types.StringValue(fmt.Sprintf("%v", value))
-		}
-
-		for i, community := range item.Communities {
-			newPeer.Communities[i] = types.StringValue(community)
-		}
-
-		val.Peers = append(val.Peers, newPeer)
-		bgpPeerMappings[interfaceName] = val
-	}
-
-	// TODO: more testing is needed before enabling this functionality
-	// https://github.com/oxidecomputer/terraform-provider-oxide/issues/310
-	// for _, value := range bgpPeerMappings {
-	// 	state.BgpPeers = append(state.BgpPeers, value)
-	// }
-
-	linkMappings := make(map[string]linkConfigModel)
-
-	for _, item := range settings.Links {
-		linkName := string(item.LinkName)
-
-		val, ok := linkMappings[linkName]
-
-		if !ok {
-			val = linkConfigModel{}
-			val.Name = types.StringValue(linkName)
-			if item.Autoneg != nil {
-				val.Autoneg = *item.Autoneg
-			} else {
-				val.Autoneg = true // or a default value if applicable
-			}
-			val.Fec = types.StringValue(string(item.Fec))
-			if item.Mtu != nil {
-				val.Mtu = types.Int32Value(int32(*item.Mtu))
-			} else {
-				val.Mtu = types.Int32Null()
-			}
-			val.Speed = types.StringValue(string(item.Speed))
-
-			if item.LldpLinkConfig != nil {
-				val.Lldp = lldpLinkConfigCreateModel{
-					Id:      types.StringValue(item.LldpLinkConfig.Id),
-					Enabled: types.BoolValue(*item.LldpLinkConfig.Enabled),
-				}
-
-				if *item.LldpLinkConfig.Enabled {
-					val.Lldp.ChassisId = types.StringValue(item.LldpLinkConfig.ChassisId)
-					val.Lldp.LinkDescription = types.StringValue(item.LldpLinkConfig.LinkDescription)
-					val.Lldp.LinkName = types.StringValue(item.LldpLinkConfig.LinkName)
-					val.Lldp.ManagementIp = types.StringValue(fmt.Sprintf("%v", item.LldpLinkConfig.ManagementIp))
-					val.Lldp.SystemDescription = types.StringValue(item.LldpLinkConfig.SystemDescription)
-					val.Lldp.SystemName = types.StringValue(item.LldpLinkConfig.SystemName)
-				}
-			}
-
-			if item.TxEqConfig != nil {
-				val.TxEq = &txEqConfigModel{}
-
-				if item.TxEqConfig.Main != nil {
-					val.TxEq.Main = types.Int32Value(int32(*item.TxEqConfig.Main))
-				} else {
-					val.TxEq.Main = types.Int32Null()
-				}
-
-				if item.TxEqConfig.Post1 != nil {
-					val.TxEq.Post1 = types.Int32Value(int32(*item.TxEqConfig.Post1))
-				} else {
-					val.TxEq.Post1 = types.Int32Null()
-				}
-
-				if item.TxEqConfig.Post2 != nil {
-					val.TxEq.Post2 = types.Int32Value(int32(*item.TxEqConfig.Post2))
-				} else {
-					val.TxEq.Post2 = types.Int32Null()
-				}
-
-				if item.TxEqConfig.Pre1 != nil {
-					val.TxEq.Pre1 = types.Int32Value(int32(*item.TxEqConfig.Pre1))
-				} else {
-					val.TxEq.Pre1 = types.Int32Null()
-				}
-
-				if item.TxEqConfig.Pre2 != nil {
-					val.TxEq.Pre2 = types.Int32Value(int32(*item.TxEqConfig.Pre2))
-				} else {
-					val.TxEq.Pre2 = types.Int32Null()
-				}
-			}
-		}
-
-		linkMappings[linkName] = val
-	}
-
-	for _, value := range linkMappings {
-		state.Links = append(state.Links, value)
-	}
-
-	routeMappings := make(map[string]routeConfigModel)
-
-	for _, item := range settings.Routes {
-		interfaceName := string(item.InterfaceName)
-
-		val, ok := routeMappings[interfaceName]
-
-		if !ok {
-			val = routeConfigModel{}
-			val.LinkName = types.StringValue(interfaceName)
-		}
-
-		newRoute := routeModel{
-			Destination: types.StringValue(fmt.Sprintf("%v", item.Dst)),
-			Gateway:     types.StringValue(fmt.Sprintf("%v", item.Gw)),
-		}
-
-		if item.RibPriority != nil {
-			newRoute.RibPriority = types.Int32Value(int32(*item.RibPriority))
-		} else {
-			newRoute.RibPriority = types.Int32Null()
-		}
-
-		if item.VlanId != nil {
-			newRoute.VlanID = types.Int32Value(int32(*item.VlanId))
-		} else {
-			newRoute.VlanID = types.Int32Null()
-		}
-
-		val.Routes = append(val.Routes, newRoute)
-		routeMappings[interfaceName] = val
-	}
-
-	for _, value := range routeMappings {
-		state.Routes = append(state.Routes, value)
-	}
+	model, _ := toTerraformModel(settings)
+	state.Addresses = model.Addresses
+	state.BGPPeers = model.BGPPeers
+	state.Groups = model.Groups
+	state.Interfaces = model.Interfaces
+	state.Links = model.Links
+	state.PortConfig = model.PortConfig
+	state.Routes = model.Routes
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -853,8 +543,7 @@ func (r *switchPortConfigurationResource) Read(ctx context.Context, req resource
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *switchPortConfigurationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// plan is the resource data model for the update request.
+func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) { // plan is the resource data model for the update request.
 	var plan switchPortSettingsModel
 	// state is the resource data model for the current state.
 	var state switchPortSettingsModel
@@ -881,10 +570,7 @@ func (r *switchPortConfigurationResource) Update(ctx context.Context, req resour
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := buildParams(&plan)
-
-	// NOTE: currently the switch port settings API performs update using the same endpoint
-	// as create.
+	params, _ := toOxideParams(plan)
 
 	settings, err := r.client.NetworkingSwitchPortSettingsCreate(ctx, params)
 	if err != nil {
@@ -899,31 +585,8 @@ func (r *switchPortConfigurationResource) Update(ctx context.Context, req resour
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(settings.Id)
-	plan.Description = types.StringValue(settings.Description)
 	plan.TimeCreated = types.StringValue(settings.TimeCreated.String())
 	plan.TimeModified = types.StringValue(settings.TimeModified.String())
-
-	// populate computed address lot ids
-	for i, addressConfig := range plan.Addresses {
-		for j, address := range addressConfig.Addresses {
-			for _, responseAddress := range settings.Addresses {
-				if string(responseAddress.AddressLotName) == address.AddressLot.Name.ValueString() {
-					plan.Addresses[i].Addresses[j].AddressLot.ID = types.StringValue(responseAddress.AddressLotId)
-				}
-			}
-		}
-	}
-
-	// populate computed LLDP link config ids
-	for i, link := range plan.Links {
-		for _, responseLink := range settings.Links {
-			if link.Name.ValueString() == string(responseLink.LinkName) {
-				if responseLink.LldpLinkConfig != nil {
-					plan.Links[i].Lldp.Id = types.StringValue(responseLink.LldpLinkConfig.Id)
-				}
-			}
-		}
-	}
 
 	// Save plan into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -934,7 +597,7 @@ func (r *switchPortConfigurationResource) Update(ctx context.Context, req resour
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *switchPortConfigurationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// state is the resource data model for the current state.
 	var state switchPortSettingsModel
 
@@ -968,203 +631,332 @@ func (r *switchPortConfigurationResource) Delete(ctx context.Context, req resour
 
 }
 
-func buildParams(plan *switchPortSettingsModel) oxide.NetworkingSwitchPortSettingsCreateParams {
-	addressConfigs := []oxide.AddressConfig{}
+func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	for _, config := range plan.Addresses {
-		newConfig := oxide.AddressConfig{
-			LinkName:  oxide.Name(config.LinkName.ValueString()),
-			Addresses: []oxide.Address{},
-		}
-
-		for _, addr := range config.Addresses {
-			address := oxide.Address{
-				Address:    addr.Address.ValueString(),
-				AddressLot: oxide.NameOrId(addr.AddressLot.Name.ValueString()),
-			}
-			if !addr.Vlan.IsNull() {
-				*address.VlanId = int(addr.Vlan.ValueInt32())
-			}
-			newConfig.Addresses = append(newConfig.Addresses, address)
-		}
-
-		addressConfigs = append(addressConfigs, newConfig)
+	model := switchPortSettingsModel{
+		ID:          types.StringValue(settings.Id),
+		Name:        types.StringValue(string(settings.Name)),
+		Description: types.StringValue(settings.Description),
+		PortConfig: &switchPortSettingsPortConfigModel{
+			Geometry: types.StringValue(string(settings.Port.Geometry)),
+		},
+		TimeCreated:  types.StringValue(settings.TimeCreated.String()),
+		TimeModified: types.StringValue(settings.TimeModified.String()),
 	}
 
-	routes := []oxide.RouteConfig{}
-
-	for _, config := range plan.Routes {
-		newConfig := oxide.RouteConfig{
-			LinkName: oxide.Name(config.LinkName.ValueString()),
-			Routes:   []oxide.Route{},
+	addressesMap := make(map[string][]switchPortSettingsAddressAddressModel)
+	for _, address := range settings.Addresses {
+		if _, ok := addressesMap[string(address.InterfaceName)]; !ok {
+			addressesMap[string(address.InterfaceName)] = make([]switchPortSettingsAddressAddressModel, 0)
 		}
 
-		for _, route := range config.Routes {
-			newRoute := oxide.Route{
-				Dst: route.Destination.ValueString(),
-				Gw:  route.Gateway.ValueString(),
-			}
-
-			if !route.RibPriority.IsNull() {
-				*newRoute.RibPriority = int(route.RibPriority.ValueInt32())
-			}
-			if !route.VlanID.IsNull() {
-				*newRoute.Vid = int(route.VlanID.ValueInt32())
-			}
-
-			newConfig.Routes = append(newConfig.Routes, newRoute)
-		}
-
-		routes = append(routes, newConfig)
-	}
-
-	bgpPeerConfigs := []oxide.BgpPeerConfig{}
-
-	// TODO: more testing is needed before enabling this functionality
-	// https://github.com/oxidecomputer/terraform-provider-oxide/issues/310
-	// for _, config := range plan.BgpPeers {
-	// 	newConfig := oxide.BgpPeerConfig{
-	// 		LinkName: oxide.Name(config.LinkName.ValueString()),
-	// 		Peers:    []oxide.BgpPeer{},
-	// 	}
-
-	// 	for _, peer := range config.Peers {
-	// 		newPeer := oxide.BgpPeer{
-	// 			Addr: peer.Addr.ValueString(),
-	// 			AllowedExport: oxide.ImportExportPolicy{
-	// 				Type:  oxide.ImportExportPolicyType(peer.AllowedExport.Type.ValueString()),
-	// 				Value: make([]oxide.IpNet, len(peer.AllowedExport.Value)),
-	// 			},
-	// 			AllowedImport: oxide.ImportExportPolicy{
-	// 				Type:  oxide.ImportExportPolicyType(peer.AllowedImport.Type.ValueString()),
-	// 				Value: make([]oxide.IpNet, len(peer.AllowedImport.Value)),
-	// 			},
-	// 			BgpConfig:      oxide.NameOrId(peer.BgpConfig.ValueString()),
-	// 			Communities:    make([]string, len(peer.Communities)),
-	// 			ConnectRetry:   new(int),
-	// 			DelayOpen:      new(int),
-	// 			EnforceFirstAs: new(bool),
-	// 			HoldTime:       new(int),
-	// 			IdleHoldTime:   new(int),
-	// 			InterfaceName:  oxide.Name(peer.InterfaceName.ValueString()),
-	// 			Keepalive:      new(int),
-	// 			Md5AuthKey:     peer.Md5AuthKey.ValueString(),
-	// 		}
-
-	// 		for i, value := range peer.AllowedExport.Value {
-	// 			newPeer.AllowedExport.Value[i] = value.ValueString()
-	// 		}
-
-	// 		for i, value := range peer.AllowedImport.Value {
-	// 			newPeer.AllowedImport.Value[i] = value.ValueString()
-	// 		}
-
-	// 		for i, community := range peer.Communities {
-	// 			newPeer.Communities[i] = community.ValueString()
-	// 		}
-
-	// 		if !peer.ConnectRetry.IsNull() {
-	// 			*newPeer.ConnectRetry = int(peer.ConnectRetry.ValueInt32())
-	// 		}
-	// 		if !peer.DelayOpen.IsNull() {
-	// 			*newPeer.DelayOpen = int(peer.DelayOpen.ValueInt32())
-	// 		}
-	// 		if !peer.EnforceFirstAs.IsNull() {
-	// 			*newPeer.EnforceFirstAs = peer.EnforceFirstAs.ValueBool()
-	// 		}
-	// 		if !peer.HoldTime.IsNull() {
-	// 			*newPeer.HoldTime = int(peer.HoldTime.ValueInt32())
-	// 		}
-	// 		if !peer.IdleHoldTime.IsNull() {
-	// 			*newPeer.IdleHoldTime = int(peer.IdleHoldTime.ValueInt32())
-	// 		}
-	// 		if !peer.Keepalive.IsNull() {
-	// 			*newPeer.Keepalive = int(peer.Keepalive.ValueInt32())
-	// 		}
-	// 		if !peer.LocalPref.IsNull() {
-	// 			*newPeer.LocalPref = int(peer.LocalPref.ValueInt32())
-	// 		}
-	// 		if !peer.MinTtl.IsNull() {
-	// 			*newPeer.MinTtl = int(peer.MinTtl.ValueInt32())
-	// 		}
-	// 		if !peer.MultiExitDiscriminator.IsNull() {
-	// 			*newPeer.MultiExitDiscriminator = int(peer.MultiExitDiscriminator.ValueInt32())
-	// 		}
-	// 		if !peer.RemoteAsn.IsNull() {
-	// 			*newPeer.RemoteAsn = int(peer.RemoteAsn.ValueInt32())
-	// 		}
-	// 		if !peer.VlanId.IsNull() {
-	// 			*newPeer.VlanId = int(peer.VlanId.ValueInt32())
-	// 		}
-
-	// 		newConfig.Peers = append(newConfig.Peers, newPeer)
-	// 	}
-
-	// 	bgpPeerConfigs = append(bgpPeerConfigs, newConfig)
-	// }
-
-	linkConfigs := []oxide.LinkConfigCreate{}
-
-	for _, link := range plan.Links {
-		newLink := oxide.LinkConfigCreate{
-			LinkName: oxide.Name(link.Name.ValueString()),
-			Autoneg:  &link.Autoneg,
-			Fec:      oxide.LinkFec(link.Fec.ValueString()),
-			Mtu:      new(int),
-			Speed:    oxide.LinkSpeed(link.Speed.ValueString()),
-			Lldp: oxide.LldpLinkConfigCreate{
-				Enabled: link.Lldp.Enabled.ValueBoolPointer(),
+		addressesMap[string(address.InterfaceName)] = append(
+			addressesMap[string(address.InterfaceName)],
+			switchPortSettingsAddressAddressModel{
+				Address:    types.StringValue(address.Address.(string)),
+				AddressLot: types.StringValue(string(address.AddressLotId)),
+				VlanID:     types.Int32Value(int32(*address.VlanId)),
 			},
-		}
-
-		if link.Lldp.Enabled.ValueBool() {
-			newLink.Lldp.ChassisId = link.Lldp.ChassisId.ValueString()
-			newLink.Lldp.LinkDescription = link.Lldp.LinkDescription.ValueString()
-			newLink.Lldp.LinkName = link.Lldp.LinkName.ValueString()
-			newLink.Lldp.ManagementIp = link.Lldp.ManagementIp.ValueString()
-			newLink.Lldp.SystemDescription = link.Lldp.SystemDescription.ValueString()
-			newLink.Lldp.SystemName = link.Lldp.SystemName.ValueString()
-		}
-
-		if !link.Mtu.IsNull() {
-			*newLink.Mtu = int(link.Mtu.ValueInt32())
-		}
-
-		if link.TxEq != nil {
-			newLink.TxEq = &oxide.TxEqConfig{}
-			if !link.TxEq.Main.IsNull() {
-				*newLink.TxEq.Main = int(link.TxEq.Main.ValueInt32())
-			}
-			if !link.TxEq.Post1.IsNull() {
-				*newLink.TxEq.Post1 = int(link.TxEq.Post1.ValueInt32())
-			}
-			if !link.TxEq.Post2.IsNull() {
-				*newLink.TxEq.Post2 = int(link.TxEq.Post2.ValueInt32())
-			}
-			if !link.TxEq.Pre1.IsNull() {
-				*newLink.TxEq.Pre1 = int(link.TxEq.Pre1.ValueInt32())
-			}
-			if !link.TxEq.Pre2.IsNull() {
-				*newLink.TxEq.Pre2 = int(link.TxEq.Pre2.ValueInt32())
-			}
-		}
-
-		linkConfigs = append(linkConfigs, newLink)
+		)
 	}
+	addresses := make([]switchPortSettingsAddressModel, 0)
+	for linkName, addrs := range addressesMap {
+		addresses = append(addresses, switchPortSettingsAddressModel{
+			Addresses: addrs,
+			LinkName:  types.StringValue(linkName),
+		})
+	}
+	model.Addresses = addresses
 
-	return oxide.NetworkingSwitchPortSettingsCreateParams{
+	bgpPeersMap := make(map[string][]switchPortSettingsBGPPeerPeerModel)
+	for _, bgpPeer := range settings.BgpPeers {
+		if _, ok := bgpPeersMap[string(bgpPeer.InterfaceName)]; !ok {
+			bgpPeersMap[string(bgpPeer.InterfaceName)] = make([]switchPortSettingsBGPPeerPeerModel, 0)
+		}
+
+		allowedExportValue := make([]types.String, 0)
+		for _, elem := range bgpPeer.AllowedExport.Value {
+			allowedExportValue = append(allowedExportValue, types.StringValue(elem.(string)))
+		}
+
+		allowedImportValue := make([]types.String, 0)
+		for _, elem := range bgpPeer.AllowedImport.Value {
+			allowedImportValue = append(allowedImportValue, types.StringValue(elem.(string)))
+		}
+
+		communities := make([]types.String, 0)
+		for _, community := range bgpPeer.Communities {
+			communities = append(communities, types.StringValue(community))
+		}
+
+		bgpPeersMap[string(bgpPeer.InterfaceName)] = append(
+			bgpPeersMap[string(bgpPeer.InterfaceName)],
+			switchPortSettingsBGPPeerPeerModel{
+				Addr: types.StringValue(bgpPeer.Addr),
+				AllowedExport: &switchPortSettingsBGPPeerPeerAllowedExportModel{
+					Type:  types.StringValue(string(bgpPeer.AllowedExport.Type)),
+					Value: allowedExportValue,
+				},
+				AllowedImport: &switchPortSettingsBGPPeerPeerAllowedImportModel{
+					Type:  types.StringValue(string(bgpPeer.AllowedImport.Type)),
+					Value: allowedImportValue,
+				},
+				BGPConfig:              types.StringValue(string(bgpPeer.BgpConfig)),
+				Communities:            communities,
+				ConnectRetry:           types.Int64Value(int64(*bgpPeer.ConnectRetry)),
+				DelayOpen:              types.Int64Value(int64(*bgpPeer.DelayOpen)),
+				EnforceFirstAs:         types.BoolPointerValue(bgpPeer.EnforceFirstAs),
+				HoldTime:               types.Int64Value(int64(*bgpPeer.HoldTime)),
+				IdleHoldTime:           types.Int64Value(int64(*bgpPeer.IdleHoldTime)),
+				InterfaceName:          types.StringValue(string(bgpPeer.InterfaceName)),
+				Keepalive:              types.Int64Value(int64(*bgpPeer.Keepalive)),
+				LocalPref:              types.Int64Value(int64(*bgpPeer.LocalPref)),
+				MD5AuthKey:             types.StringValue(bgpPeer.Md5AuthKey),
+				MinTTL:                 types.Int32Value(int32(*bgpPeer.MinTtl)),
+				MultiExitDiscriminator: types.Int64Value(int64(*bgpPeer.MultiExitDiscriminator)),
+				RemoteASN:              types.Int64Value(int64(*bgpPeer.RemoteAsn)),
+				VlanID:                 types.Int32Value(int32(*bgpPeer.VlanId)),
+			},
+		)
+	}
+	bgpPeers := make([]switchPortSettingsBGPPeerModel, 0)
+	for linkName, peers := range bgpPeersMap {
+		bgpPeers = append(bgpPeers, switchPortSettingsBGPPeerModel{
+			Peers:    peers,
+			LinkName: types.StringValue(linkName),
+		})
+	}
+	model.BGPPeers = bgpPeers
+
+	groups := make([]types.String, 0)
+	for _, group := range settings.Groups {
+		groups = append(groups, types.StringValue(group.PortSettingsGroupId))
+	}
+	model.Groups = groups
+
+	interfaces := make([]switchPortSettingsInterfaceModel, 0)
+	for _, iface := range settings.Interfaces {
+		interfaces = append(interfaces, switchPortSettingsInterfaceModel{
+			Kind: &switchPortSettingsInterfaceKindModel{
+				Type: types.StringValue(string(iface.Kind)),
+			},
+			LinkName:  types.StringValue(string(iface.InterfaceName)),
+			V6Enabled: types.BoolPointerValue(iface.V6Enabled),
+		})
+	}
+	model.Interfaces = interfaces
+
+	links := make([]switchPortSettingsLinkModel, 0)
+	for _, link := range settings.Links {
+		links = append(links, switchPortSettingsLinkModel{
+			Autoneg:  types.BoolPointerValue(link.Autoneg),
+			FEC:      types.StringValue(string(link.Fec)),
+			LinkName: types.StringValue(string(link.LinkName)),
+			LLDP: &switchPortSettingsLinkLLDPModel{
+				ChassisID:         types.StringValue(link.LldpLinkConfig.ChassisId),
+				Enabled:           types.BoolPointerValue(link.LldpLinkConfig.Enabled),
+				LinkDescription:   types.StringValue(link.LldpLinkConfig.LinkDescription),
+				LinkName:          types.StringValue(string(link.LinkName)),
+				ManagementIP:      types.StringValue(link.LldpLinkConfig.ManagementIp),
+				SystemDescription: types.StringValue(link.LldpLinkConfig.SystemDescription),
+				SystemName:        types.StringValue(link.LldpLinkConfig.SystemName),
+			},
+			MTU:   types.Int32Value(int32(*link.Mtu)),
+			Speed: types.StringValue(string(link.Speed)),
+			TxEq: &switchPortSettingsLinkTxEqModel{
+				Main:  types.Int32Value(int32(*link.TxEqConfig.Main)),
+				Post1: types.Int32Value(int32(*link.TxEqConfig.Post1)),
+				Post2: types.Int32Value(int32(*link.TxEqConfig.Post2)),
+				Pre1:  types.Int32Value(int32(*link.TxEqConfig.Pre1)),
+				Pre2:  types.Int32Value(int32(*link.TxEqConfig.Pre2)),
+			},
+		})
+	}
+	model.Links = links
+
+	routesMap := make(map[string][]switchPortSettingsRouteRouteModel)
+	for _, route := range settings.Routes {
+		if _, ok := routesMap[string(route.InterfaceName)]; !ok {
+			routesMap[string(route.InterfaceName)] = make([]switchPortSettingsRouteRouteModel, 0)
+		}
+
+		routesMap[string(route.InterfaceName)] = append(
+			routesMap[string(route.InterfaceName)],
+			switchPortSettingsRouteRouteModel{
+				Dst:         types.StringValue(route.Dst.(string)),
+				GW:          types.StringValue(route.Gw),
+				RIBPriority: types.Int32Value(int32(*route.RibPriority)),
+				VID:         types.Int32Value(int32(*route.VlanId)),
+			},
+		)
+	}
+	routes := make([]switchPortSettingsRouteModel, 0)
+	for linkName, rts := range routesMap {
+		routes = append(routes, switchPortSettingsRouteModel{
+			Routes:   rts,
+			LinkName: types.StringValue(linkName),
+		})
+	}
+	model.Routes = routes
+
+	return model, diags
+}
+
+func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
+
+	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{
-			Addresses:   addressConfigs,
-			BgpPeers:    bgpPeerConfigs,
-			Description: plan.Description.ValueString(),
-			Links:       linkConfigs,
-			Name:        oxide.Name(plan.Name.ValueString()),
+			Name:        oxide.Name(model.Name.ValueString()),
+			Description: model.Description.ValueString(),
 			PortConfig: oxide.SwitchPortConfigCreate{
-				Geometry: oxide.SwitchPortGeometry(plan.PortConfig.ValueString()),
+				Geometry: oxide.SwitchPortGeometry(model.PortConfig.Geometry.ValueString()),
 			},
-			Routes:     routes,
-			Groups:     []oxide.NameOrId{},
-			Interfaces: []oxide.SwitchInterfaceConfigCreate{},
 		},
 	}
+
+	addresses := make([]oxide.AddressConfig, 0)
+	for _, address := range model.Addresses {
+		addrs := make([]oxide.Address, 0)
+		for _, addr := range address.Addresses {
+			addrs = append(addrs, oxide.Address{
+				Address:    addr.Address,
+				AddressLot: oxide.NameOrId(addr.AddressLot.ValueString()),
+				VlanId:     oxide.NewPointer(int(addr.VlanID.ValueInt32())),
+			})
+		}
+
+		addresses = append(addresses, oxide.AddressConfig{
+			LinkName:  oxide.Name(address.LinkName.ValueString()),
+			Addresses: addrs,
+		})
+	}
+	params.Body.Addresses = addresses
+
+	bgpPeers := make([]oxide.BgpPeerConfig, 0)
+	for _, bgpPeer := range model.BGPPeers {
+		peers := make([]oxide.BgpPeer, 0)
+		for _, peer := range bgpPeer.Peers {
+			allowedExportValue := make([]oxide.IpNet, 0)
+			for _, value := range peer.AllowedExport.Value {
+				allowedExportValue = append(allowedExportValue, oxide.IpNet(value.ValueString))
+			}
+
+			allowedImportValue := make([]oxide.IpNet, 0)
+			for _, value := range peer.AllowedImport.Value {
+				allowedImportValue = append(allowedImportValue, oxide.IpNet(value.ValueString))
+			}
+
+			communities := make([]string, 0)
+			for _, community := range peer.Communities {
+				communities = append(communities, community.ValueString())
+			}
+
+			peers = append(peers, oxide.BgpPeer{
+				Addr: peer.Addr.ValueString(),
+				AllowedExport: oxide.ImportExportPolicy{
+					Type:  oxide.ImportExportPolicyType(peer.AllowedExport.Type.ValueString()),
+					Value: allowedExportValue,
+				},
+				AllowedImport: oxide.ImportExportPolicy{
+					Type:  oxide.ImportExportPolicyType(peer.AllowedImport.Type.ValueString()),
+					Value: allowedImportValue,
+				},
+				BgpConfig:              oxide.NameOrId(peer.BGPConfig.ValueString()),
+				Communities:            communities,
+				ConnectRetry:           oxide.NewPointer(int(peer.ConnectRetry.ValueInt64())),
+				DelayOpen:              oxide.NewPointer(int(peer.DelayOpen.ValueInt64())),
+				EnforceFirstAs:         oxide.NewPointer(peer.EnforceFirstAs.ValueBool()),
+				HoldTime:               oxide.NewPointer(int(peer.HoldTime.ValueInt64())),
+				IdleHoldTime:           oxide.NewPointer(int(peer.IdleHoldTime.ValueInt64())),
+				InterfaceName:          oxide.Name(peer.InterfaceName.ValueString()),
+				Keepalive:              oxide.NewPointer(int(peer.Keepalive.ValueInt64())),
+				LocalPref:              oxide.NewPointer(int(peer.LocalPref.ValueInt64())),
+				Md5AuthKey:             peer.MD5AuthKey.ValueString(),
+				MinTtl:                 oxide.NewPointer(int(peer.MinTTL.ValueInt32())),
+				MultiExitDiscriminator: oxide.NewPointer(int(peer.MultiExitDiscriminator.ValueInt64())),
+				RemoteAsn:              oxide.NewPointer(int(peer.RemoteASN.ValueInt64())),
+				VlanId:                 oxide.NewPointer(int(peer.VlanID.ValueInt32())),
+			})
+		}
+
+		bgpPeers = append(bgpPeers, oxide.BgpPeerConfig{
+			LinkName: oxide.Name(bgpPeer.LinkName.ValueString()),
+			Peers:    peers,
+		})
+	}
+	params.Body.BgpPeers = bgpPeers
+
+	groups := make([]oxide.NameOrId, 0)
+	for _, group := range model.Groups {
+		groups = append(groups, oxide.NameOrId(group.ValueString()))
+	}
+	params.Body.Groups = groups
+
+	interfaces := make([]oxide.SwitchInterfaceConfigCreate, 0)
+	for _, iface := range model.Interfaces {
+		interfaces = append(interfaces, oxide.SwitchInterfaceConfigCreate{
+			Kind: oxide.SwitchInterfaceKind{
+				Type: oxide.SwitchInterfaceKindType(iface.Kind.Type.ValueString()),
+				Vid:  oxide.NewPointer(int(iface.Kind.VID.ValueInt32())),
+			},
+			LinkName:  oxide.Name(iface.LinkName.ValueString()),
+			V6Enabled: oxide.NewPointer(iface.V6Enabled.ValueBool()),
+		})
+	}
+	params.Body.Interfaces = interfaces
+
+	links := make([]oxide.LinkConfigCreate, 0)
+	for _, link := range model.Links {
+		var txeq oxide.TxEqConfig
+		if link.TxEq != nil {
+			txeq = oxide.TxEqConfig{
+				Main:  oxide.NewPointer(int(link.TxEq.Main.ValueInt32())),
+				Post1: oxide.NewPointer(int(link.TxEq.Post1.ValueInt32())),
+				Post2: oxide.NewPointer(int(link.TxEq.Post2.ValueInt32())),
+				Pre1:  oxide.NewPointer(int(link.TxEq.Pre1.ValueInt32())),
+				Pre2:  oxide.NewPointer(int(link.TxEq.Pre2.ValueInt32())),
+			}
+		}
+
+		links = append(links, oxide.LinkConfigCreate{
+			Autoneg:  link.Autoneg.ValueBoolPointer(),
+			Fec:      oxide.LinkFec(link.FEC.ValueString()),
+			LinkName: oxide.Name(link.LinkName.ValueString()),
+			Lldp: oxide.LldpLinkConfigCreate{
+				ChassisId:         link.LLDP.ChassisID.ValueString(),
+				Enabled:           link.LLDP.Enabled.ValueBoolPointer(),
+				LinkDescription:   link.LLDP.LinkDescription.ValueString(),
+				LinkName:          link.LLDP.LinkName.ValueString(),
+				ManagementIp:      link.LLDP.ManagementIP.ValueString(),
+				SystemDescription: link.LLDP.SystemDescription.ValueString(),
+				SystemName:        link.LLDP.SystemDescription.ValueString(),
+			},
+			Mtu:   oxide.NewPointer(int(link.MTU.ValueInt32())),
+			Speed: oxide.LinkSpeed(link.Speed.ValueString()),
+			TxEq:  &txeq,
+		})
+	}
+	params.Body.Links = links
+
+	routes := make([]oxide.RouteConfig, 0)
+	for _, route := range model.Routes {
+		rts := make([]oxide.Route, 0)
+		for _, rt := range route.Routes {
+			rts = append(rts, oxide.Route{
+				Dst:         oxide.IpNet(rt.Dst.ValueString()),
+				Gw:          rt.GW.ValueString(),
+				RibPriority: oxide.NewPointer(int(rt.RIBPriority.ValueInt32())),
+				Vid:         oxide.NewPointer(int(rt.VID.ValueInt32())),
+			})
+		}
+
+		routes = append(routes, oxide.RouteConfig{
+			LinkName: oxide.Name(route.LinkName.ValueString()),
+			Routes:   rts,
+		})
+	}
+	params.Body.Routes = routes
+
+	return params, nil
 }
