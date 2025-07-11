@@ -14,7 +14,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func TestAccSwitchPortSettings(t *testing.T) {
+func TestAccSwitchPortSettings_full(t *testing.T) {
 	resourceName := "oxide_switch_port_settings.test"
 
 	resource.ParallelTest(t, resource.TestCase{
