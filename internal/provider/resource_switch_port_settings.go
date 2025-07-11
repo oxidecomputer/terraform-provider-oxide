@@ -943,11 +943,21 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 	for _, route := range model.Routes {
 		rts := make([]oxide.Route, 0)
 		for _, rt := range route.Routes {
+			var ribPriority *int
+			if rt.RIBPriority.ValueInt32Pointer() != nil {
+				ribPriority = oxide.NewPointer(int(rt.RIBPriority.ValueInt32()))
+			}
+
+			var vid *int
+			if rt.VID.ValueInt32Pointer() != nil {
+				vid = oxide.NewPointer(int(rt.VID.ValueInt32()))
+			}
+
 			rts = append(rts, oxide.Route{
 				Dst:         oxide.IpNet(rt.Dst.ValueString()),
 				Gw:          rt.GW.ValueString(),
-				RibPriority: oxide.NewPointer(int(rt.RIBPriority.ValueInt32())),
-				Vid:         oxide.NewPointer(int(rt.VID.ValueInt32())),
+				RibPriority: ribPriority,
+				Vid:         vid,
 			})
 		}
 
