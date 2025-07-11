@@ -820,7 +820,7 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 		addrs := make([]oxide.Address, 0)
 		for _, addr := range address.Addresses {
 			addrs = append(addrs, oxide.Address{
-				Address:    addr.Address,
+				Address:    oxide.IpNet(addr.Address.ValueString()),
 				AddressLot: oxide.NameOrId(addr.AddressLot.ValueString()),
 				VlanId:     oxide.NewPointer(int(addr.VlanID.ValueInt32())),
 			})
