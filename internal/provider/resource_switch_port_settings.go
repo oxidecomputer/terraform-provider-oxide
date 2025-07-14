@@ -7,14 +7,15 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
@@ -55,16 +56,16 @@ type switchPortSettingsAddressAddressModel struct {
 }
 
 type switchPortSettingsBGPPeerModel struct {
-	LinkName types.String `tfsdk:"link_name"`
-	Peers    []switchPortSettingsBGPPeerPeerModel
+	LinkName types.String                         `tfsdk:"link_name"`
+	Peers    []switchPortSettingsBGPPeerPeerModel `tfsdk:"peers"`
 }
 
 type switchPortSettingsBGPPeerPeerModel struct {
-	Addr                   types.String                                     `tfsdk:"peers"`
+	Addr                   types.String                                     `tfsdk:"addr"`
 	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allow_export"`
 	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allow_import"`
 	BGPConfig              types.String                                     `tfsdk:"bgp_config"`
-	Communities            []types.String                                   `tfsdk:"communities"`
+	Communities            []types.Int64                                    `tfsdk:"communities"`
 	ConnectRetry           types.Int64                                      `tfsdk:"connect_retry"`
 	DelayOpen              types.Int64                                      `tfsdk:"delay_open"`
 	EnforceFirstAs         types.Bool                                       `tfsdk:"enforce_first_as"`
@@ -125,8 +126,8 @@ type switchPortSettingsLinkTxEqModel struct {
 	Main  types.Int32 `tfsdk:"main"`
 	Post1 types.Int32 `tfsdk:"post1"`
 	Post2 types.Int32 `tfsdk:"post2"`
-	Pre1  types.Int32 `tfsdk:"Pre1"`
-	Pre2  types.Int32 `tfsdk:"Pre2"`
+	Pre1  types.Int32 `tfsdk:"pre1"`
+	Pre2  types.Int32 `tfsdk:"pre2"`
 }
 
 type switchPortSettingsPortConfigModel struct {
@@ -526,7 +527,12 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 	state.TimeCreated = types.StringValue(settings.TimeCreated.String())
 	state.TimeModified = types.StringValue(settings.TimeModified.String())
 
-	model, _ := toTerraformModel(settings)
+	model, diags := toTerraformModel(settings)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	state.Addresses = model.Addresses
 	state.BGPPeers = model.BGPPeers
 	state.Groups = model.Groups
@@ -590,7 +596,6 @@ func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.Up
 
 	// Save plan into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -656,7 +661,12 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 			switchPortSettingsAddressAddressModel{
 				Address:    types.StringValue(address.Address.(string)),
 				AddressLot: types.StringValue(string(address.AddressLotId)),
-				VlanID:     types.Int32Value(int32(*address.VlanId)),
+				VlanID: func() types.Int32 {
+					if address.VlanId != nil {
+						return types.Int32Value(int32(*address.VlanId))
+					}
+					return types.Int32Null()
+				}(),
 			},
 		)
 	}
@@ -685,9 +695,16 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 			allowedImportValue = append(allowedImportValue, types.StringValue(elem.(string)))
 		}
 
-		communities := make([]types.String, 0)
-		for _, community := range bgpPeer.Communities {
-			communities = append(communities, types.StringValue(community))
+		communities := make([]types.Int64, 0)
+		for _, communityStr := range bgpPeer.Communities {
+			community, err := strconv.ParseInt(communityStr, 10, 64)
+			if err != nil {
+				diags.AddError(
+					"Error parsing community element",
+					fmt.Sprintf("Could not parse %s as int64: %v", communityStr, err),
+				)
+			}
+			communities = append(communities, types.Int64Value(community))
 		}
 
 		bgpPeersMap[string(bgpPeer.InterfaceName)] = append(
@@ -749,28 +766,59 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 
 	links := make([]switchPortSettingsLinkModel, 0)
 	for _, link := range settings.Links {
+		lldp := &switchPortSettingsLinkLLDPModel{}
+		if link.LldpLinkConfig != nil {
+			lldp.ChassisID = types.StringValue(link.LldpLinkConfig.ChassisId)
+			lldp.Enabled = types.BoolPointerValue(link.LldpLinkConfig.Enabled)
+			lldp.LinkDescription = types.StringValue(link.LldpLinkConfig.LinkDescription)
+			lldp.LinkName = types.StringValue(link.LldpLinkConfig.LinkName)
+			lldp.ManagementIP = types.StringValue(link.LldpLinkConfig.ManagementIp)
+			lldp.SystemDescription = types.StringValue(link.LldpLinkConfig.SystemDescription)
+			lldp.SystemName = types.StringValue(link.LldpLinkConfig.SystemName)
+		}
+
+		txEq := &switchPortSettingsLinkTxEqModel{}
+		if link.TxEqConfig != nil {
+			txEq.Main = func() types.Int32 {
+				if link.TxEqConfig.Main != nil {
+					return types.Int32Value(int32(*link.TxEqConfig.Main))
+				}
+				return types.Int32Null()
+			}()
+			txEq.Post1 = func() types.Int32 {
+				if link.TxEqConfig.Post1 != nil {
+					return types.Int32Value(int32(*link.TxEqConfig.Post1))
+				}
+				return types.Int32Null()
+			}()
+			txEq.Post2 = func() types.Int32 {
+				if link.TxEqConfig.Post2 != nil {
+					return types.Int32Value(int32(*link.TxEqConfig.Post2))
+				}
+				return types.Int32Null()
+			}()
+			txEq.Pre1 = func() types.Int32 {
+				if link.TxEqConfig.Pre1 != nil {
+					return types.Int32Value(int32(*link.TxEqConfig.Pre1))
+				}
+				return types.Int32Null()
+			}()
+			txEq.Pre2 = func() types.Int32 {
+				if link.TxEqConfig.Pre2 != nil {
+					return types.Int32Value(int32(*link.TxEqConfig.Pre2))
+				}
+				return types.Int32Null()
+			}()
+		}
+
 		links = append(links, switchPortSettingsLinkModel{
 			Autoneg:  types.BoolPointerValue(link.Autoneg),
 			FEC:      types.StringValue(string(link.Fec)),
 			LinkName: types.StringValue(string(link.LinkName)),
-			LLDP: &switchPortSettingsLinkLLDPModel{
-				ChassisID:         types.StringValue(link.LldpLinkConfig.ChassisId),
-				Enabled:           types.BoolPointerValue(link.LldpLinkConfig.Enabled),
-				LinkDescription:   types.StringValue(link.LldpLinkConfig.LinkDescription),
-				LinkName:          types.StringValue(string(link.LinkName)),
-				ManagementIP:      types.StringValue(link.LldpLinkConfig.ManagementIp),
-				SystemDescription: types.StringValue(link.LldpLinkConfig.SystemDescription),
-				SystemName:        types.StringValue(link.LldpLinkConfig.SystemName),
-			},
-			MTU:   types.Int32Value(int32(*link.Mtu)),
-			Speed: types.StringValue(string(link.Speed)),
-			TxEq: &switchPortSettingsLinkTxEqModel{
-				Main:  types.Int32Value(int32(*link.TxEqConfig.Main)),
-				Post1: types.Int32Value(int32(*link.TxEqConfig.Post1)),
-				Post2: types.Int32Value(int32(*link.TxEqConfig.Post2)),
-				Pre1:  types.Int32Value(int32(*link.TxEqConfig.Pre1)),
-				Pre2:  types.Int32Value(int32(*link.TxEqConfig.Pre2)),
-			},
+			LLDP:     lldp,
+			MTU:      types.Int32Value(int32(*link.Mtu)),
+			Speed:    types.StringValue(string(link.Speed)),
+			TxEq:     txEq,
 		})
 	}
 	model.Links = links
@@ -784,10 +832,20 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 		routesMap[string(route.InterfaceName)] = append(
 			routesMap[string(route.InterfaceName)],
 			switchPortSettingsRouteRouteModel{
-				Dst:         types.StringValue(route.Dst.(string)),
-				GW:          types.StringValue(route.Gw),
-				RIBPriority: types.Int32Value(int32(*route.RibPriority)),
-				VID:         types.Int32Value(int32(*route.VlanId)),
+				Dst: types.StringValue(route.Dst.(string)),
+				GW:  types.StringValue(route.Gw),
+				RIBPriority: func() types.Int32 {
+					if route.RibPriority != nil {
+						return types.Int32Value(int32(*route.RibPriority))
+					}
+					return types.Int32Null()
+				}(),
+				VID: func() types.Int32 {
+					if route.VlanId != nil {
+						return types.Int32Value(int32(*route.VlanId))
+					}
+					return types.Int32Null()
+				}(),
 			},
 		)
 	}
@@ -822,7 +880,12 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 			addrs = append(addrs, oxide.Address{
 				Address:    oxide.IpNet(addr.Address.ValueString()),
 				AddressLot: oxide.NameOrId(addr.AddressLot.ValueString()),
-				VlanId:     oxide.NewPointer(int(addr.VlanID.ValueInt32())),
+				VlanId: func() *int {
+					if !addr.VlanID.IsNull() {
+						return oxide.NewPointer(int(addr.VlanID.ValueInt32()))
+					}
+					return nil
+				}(),
 			})
 		}
 
@@ -839,17 +902,17 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 		for _, peer := range bgpPeer.Peers {
 			allowedExportValue := make([]oxide.IpNet, 0)
 			for _, value := range peer.AllowedExport.Value {
-				allowedExportValue = append(allowedExportValue, oxide.IpNet(value.ValueString))
+				allowedExportValue = append(allowedExportValue, oxide.IpNet(value.ValueString()))
 			}
 
 			allowedImportValue := make([]oxide.IpNet, 0)
 			for _, value := range peer.AllowedImport.Value {
-				allowedImportValue = append(allowedImportValue, oxide.IpNet(value.ValueString))
+				allowedImportValue = append(allowedImportValue, oxide.IpNet(value.ValueString()))
 			}
 
 			communities := make([]string, 0)
 			for _, community := range peer.Communities {
-				communities = append(communities, community.ValueString())
+				communities = append(communities, fmt.Sprintf("%d", community.ValueInt64()))
 			}
 
 			peers = append(peers, oxide.BgpPeer{
@@ -898,7 +961,12 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 		interfaces = append(interfaces, oxide.SwitchInterfaceConfigCreate{
 			Kind: oxide.SwitchInterfaceKind{
 				Type: oxide.SwitchInterfaceKindType(iface.Kind.Type.ValueString()),
-				Vid:  oxide.NewPointer(int(iface.Kind.VID.ValueInt32())),
+				Vid: func() *int {
+					if !iface.Kind.VID.IsNull() {
+						return oxide.NewPointer(int(iface.Kind.VID.ValueInt32()))
+					}
+					return nil
+				}(),
 			},
 			LinkName:  oxide.Name(iface.LinkName.ValueString()),
 			V6Enabled: oxide.NewPointer(iface.V6Enabled.ValueBool()),
@@ -908,9 +976,9 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 
 	links := make([]oxide.LinkConfigCreate, 0)
 	for _, link := range model.Links {
-		var txeq oxide.TxEqConfig
+		var txeq *oxide.TxEqConfig
 		if link.TxEq != nil {
-			txeq = oxide.TxEqConfig{
+			txeq = &oxide.TxEqConfig{
 				Main:  oxide.NewPointer(int(link.TxEq.Main.ValueInt32())),
 				Post1: oxide.NewPointer(int(link.TxEq.Post1.ValueInt32())),
 				Post2: oxide.NewPointer(int(link.TxEq.Post2.ValueInt32())),
@@ -930,11 +998,11 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 				LinkName:          link.LLDP.LinkName.ValueString(),
 				ManagementIp:      link.LLDP.ManagementIP.ValueString(),
 				SystemDescription: link.LLDP.SystemDescription.ValueString(),
-				SystemName:        link.LLDP.SystemDescription.ValueString(),
+				SystemName:        link.LLDP.SystemName.ValueString(),
 			},
 			Mtu:   oxide.NewPointer(int(link.MTU.ValueInt32())),
 			Speed: oxide.LinkSpeed(link.Speed.ValueString()),
-			TxEq:  &txeq,
+			TxEq:  txeq,
 		})
 	}
 	params.Body.Links = links
