@@ -650,188 +650,311 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 		TimeModified: types.StringValue(settings.TimeModified.String()),
 	}
 
-	addressesMap := make(map[string][]switchPortSettingsAddressAddressModel)
-	for _, address := range settings.Addresses {
-		if _, ok := addressesMap[string(address.InterfaceName)]; !ok {
-			addressesMap[string(address.InterfaceName)] = make([]switchPortSettingsAddressAddressModel, 0)
-		}
+	//
+	// Addresses
+	//
+	if len(settings.Addresses) > 0 {
+		linkToAddrs := make(map[string][]switchPortSettingsAddressAddressModel)
+		for _, address := range settings.Addresses {
+			link := string(address.InterfaceName)
 
-		addressesMap[string(address.InterfaceName)] = append(
-			addressesMap[string(address.InterfaceName)],
-			switchPortSettingsAddressAddressModel{
+			if _, ok := linkToAddrs[link]; !ok {
+				linkToAddrs[link] = make([]switchPortSettingsAddressAddressModel, 0)
+			}
+
+			addressModel := switchPortSettingsAddressAddressModel{
 				Address:    types.StringValue(address.Address.(string)),
 				AddressLot: types.StringValue(string(address.AddressLotId)),
 				VlanID: func() types.Int32 {
-					if address.VlanId != nil {
-						return types.Int32Value(int32(*address.VlanId))
+					if address.VlanId == nil {
+						return types.Int32Null()
 					}
-					return types.Int32Null()
+					return types.Int32Value(int32(*address.VlanId))
 				}(),
-			},
-		)
-	}
-	addresses := make([]switchPortSettingsAddressModel, 0)
-	for linkName, addrs := range addressesMap {
-		addresses = append(addresses, switchPortSettingsAddressModel{
-			Addresses: addrs,
-			LinkName:  types.StringValue(linkName),
-		})
-	}
-	model.Addresses = addresses
-
-	bgpPeersMap := make(map[string][]switchPortSettingsBGPPeerPeerModel)
-	for _, bgpPeer := range settings.BgpPeers {
-		if _, ok := bgpPeersMap[string(bgpPeer.InterfaceName)]; !ok {
-			bgpPeersMap[string(bgpPeer.InterfaceName)] = make([]switchPortSettingsBGPPeerPeerModel, 0)
-		}
-
-		allowedExportValue := make([]types.String, 0)
-		for _, elem := range bgpPeer.AllowedExport.Value {
-			allowedExportValue = append(allowedExportValue, types.StringValue(elem.(string)))
-		}
-
-		allowedImportValue := make([]types.String, 0)
-		for _, elem := range bgpPeer.AllowedImport.Value {
-			allowedImportValue = append(allowedImportValue, types.StringValue(elem.(string)))
-		}
-
-		communities := make([]types.Int64, 0)
-		for _, communityStr := range bgpPeer.Communities {
-			community, err := strconv.ParseInt(communityStr, 10, 64)
-			if err != nil {
-				diags.AddError(
-					"Error parsing community element",
-					fmt.Sprintf("Could not parse %s as int64: %v", communityStr, err),
-				)
 			}
-			communities = append(communities, types.Int64Value(community))
+
+			linkToAddrs[link] = append(linkToAddrs[link], addressModel)
 		}
 
-		bgpPeersMap[string(bgpPeer.InterfaceName)] = append(
-			bgpPeersMap[string(bgpPeer.InterfaceName)],
-			switchPortSettingsBGPPeerPeerModel{
-				Addr: types.StringValue(bgpPeer.Addr),
-				AllowedExport: &switchPortSettingsBGPPeerPeerAllowedExportModel{
-					Type:  types.StringValue(string(bgpPeer.AllowedExport.Type)),
-					Value: allowedExportValue,
+		addressModels := make([]switchPortSettingsAddressModel, 0)
+		for linkName, addrModels := range linkToAddrs {
+			addressModel := switchPortSettingsAddressModel{
+				Addresses: addrModels,
+				LinkName:  types.StringValue(linkName),
+			}
+			addressModels = append(addressModels, addressModel)
+		}
+
+		model.Addresses = addressModels
+	}
+
+	//
+	// BGP Peers
+	//
+	if len(settings.BgpPeers) > 0 {
+		linkToBGPPeer := make(map[string][]switchPortSettingsBGPPeerPeerModel)
+		for _, bgpPeer := range settings.BgpPeers {
+			link := string(bgpPeer.InterfaceName)
+
+			if _, ok := linkToBGPPeer[link]; !ok {
+				linkToBGPPeer[link] = make([]switchPortSettingsBGPPeerPeerModel, 0)
+			}
+
+			bgpPeerModel := switchPortSettingsBGPPeerPeerModel{
+				Addr:           types.StringValue(bgpPeer.Addr),
+				BGPConfig:      types.StringValue(string(bgpPeer.BgpConfig)),
+				ConnectRetry:   types.Int64Value(int64(*bgpPeer.ConnectRetry)),
+				DelayOpen:      types.Int64Value(int64(*bgpPeer.DelayOpen)),
+				EnforceFirstAs: types.BoolPointerValue(bgpPeer.EnforceFirstAs),
+				HoldTime:       types.Int64Value(int64(*bgpPeer.HoldTime)),
+				IdleHoldTime:   types.Int64Value(int64(*bgpPeer.IdleHoldTime)),
+				InterfaceName:  types.StringValue(string(bgpPeer.InterfaceName)),
+				Keepalive:      types.Int64Value(int64(*bgpPeer.Keepalive)),
+
+				// The fields below are nullable so we handle them specially.
+				LocalPref: func() types.Int64 {
+					if bgpPeer.LocalPref == nil {
+						return types.Int64Null()
+					}
+					return types.Int64Value(int64(*bgpPeer.LocalPref))
+				}(),
+				MD5AuthKey: func() types.String {
+					if bgpPeer.Md5AuthKey == "" {
+						return types.StringNull()
+					}
+					return types.StringValue(bgpPeer.Md5AuthKey)
+				}(),
+				MinTTL: func() types.Int32 {
+					if bgpPeer.MinTtl == nil {
+						return types.Int32Null()
+					}
+					return types.Int32Value(int32(*bgpPeer.MinTtl))
+				}(),
+				MultiExitDiscriminator: func() types.Int64 {
+					if bgpPeer.MultiExitDiscriminator == nil {
+						return types.Int64Null()
+					}
+					return types.Int64Value(int64(*bgpPeer.MultiExitDiscriminator))
+				}(),
+				RemoteASN: func() types.Int64 {
+					if bgpPeer.RemoteAsn == nil {
+						return types.Int64Null()
+					}
+					return types.Int64Value(int64(*bgpPeer.RemoteAsn))
+				}(),
+				VlanID: func() types.Int32 {
+					if bgpPeer.VlanId == nil {
+						return types.Int32Null()
+					}
+					return types.Int32Value(int32(*bgpPeer.VlanId))
+				}(),
+			}
+
+			bgpPeerModel.AllowedExport = &switchPortSettingsBGPPeerPeerAllowedExportModel{
+				Type: types.StringValue(string(bgpPeer.AllowedExport.Type)),
+				Value: func() []types.String {
+					res := make([]types.String, 0)
+					for _, elem := range bgpPeer.AllowedExport.Value {
+						res = append(res, types.StringValue(elem.(string)))
+					}
+					return res
+				}(),
+			}
+
+			bgpPeerModel.AllowedImport = &switchPortSettingsBGPPeerPeerAllowedImportModel{
+				Type: types.StringValue(string(bgpPeer.AllowedImport.Type)),
+				Value: func() []types.String {
+					res := make([]types.String, 0)
+					for _, elem := range bgpPeer.AllowedImport.Value {
+						res = append(res, types.StringValue(elem.(string)))
+					}
+					return res
+				}(),
+			}
+
+			bgpPeerModel.Communities = func() []types.Int64 {
+				communities := make([]types.Int64, 0)
+				for _, communityStr := range bgpPeer.Communities {
+					community, err := strconv.ParseInt(communityStr, 10, 64)
+					if err != nil {
+						diags.AddError(
+							"Error parsing community element",
+							fmt.Sprintf("Could not parse %s as int64: %v", communityStr, err),
+						)
+					}
+					communities = append(communities, types.Int64Value(community))
+				}
+				return communities
+			}()
+
+			linkToBGPPeer[link] = append(linkToBGPPeer[link], bgpPeerModel)
+		}
+
+		bgpPeersModels := make([]switchPortSettingsBGPPeerModel, 0)
+		for linkName, bgpPeers := range linkToBGPPeer {
+			bgpPeerModel := switchPortSettingsBGPPeerModel{
+				Peers:    bgpPeers,
+				LinkName: types.StringValue(linkName),
+			}
+			bgpPeersModels = append(bgpPeersModels, bgpPeerModel)
+		}
+
+		model.BGPPeers = bgpPeersModels
+	}
+
+	//
+	// Groups
+	//
+	if len(settings.Groups) > 0 {
+		groupModels := make([]types.String, 0)
+		for _, group := range settings.Groups {
+			groupModel := types.StringValue(group.PortSettingsGroupId)
+			groupModels = append(groupModels, groupModel)
+		}
+		model.Groups = groupModels
+	}
+
+	//
+	// Interfaces
+	//
+	if len(settings.Interfaces) > 0 {
+		interfaceModels := make([]switchPortSettingsInterfaceModel, 0)
+		for _, iface := range settings.Interfaces {
+			interfaceModel := switchPortSettingsInterfaceModel{
+				Kind: &switchPortSettingsInterfaceKindModel{
+					Type: types.StringValue(string(iface.Kind)),
 				},
-				AllowedImport: &switchPortSettingsBGPPeerPeerAllowedImportModel{
-					Type:  types.StringValue(string(bgpPeer.AllowedImport.Type)),
-					Value: allowedImportValue,
-				},
-				BGPConfig:              types.StringValue(string(bgpPeer.BgpConfig)),
-				Communities:            communities,
-				ConnectRetry:           types.Int64Value(int64(*bgpPeer.ConnectRetry)),
-				DelayOpen:              types.Int64Value(int64(*bgpPeer.DelayOpen)),
-				EnforceFirstAs:         types.BoolPointerValue(bgpPeer.EnforceFirstAs),
-				HoldTime:               types.Int64Value(int64(*bgpPeer.HoldTime)),
-				IdleHoldTime:           types.Int64Value(int64(*bgpPeer.IdleHoldTime)),
-				InterfaceName:          types.StringValue(string(bgpPeer.InterfaceName)),
-				Keepalive:              types.Int64Value(int64(*bgpPeer.Keepalive)),
-				LocalPref:              types.Int64Value(int64(*bgpPeer.LocalPref)),
-				MD5AuthKey:             types.StringValue(bgpPeer.Md5AuthKey),
-				MinTTL:                 types.Int32Value(int32(*bgpPeer.MinTtl)),
-				MultiExitDiscriminator: types.Int64Value(int64(*bgpPeer.MultiExitDiscriminator)),
-				RemoteASN:              types.Int64Value(int64(*bgpPeer.RemoteAsn)),
-				VlanID:                 types.Int32Value(int32(*bgpPeer.VlanId)),
-			},
-		)
+				LinkName:  types.StringValue(string(iface.InterfaceName)),
+				V6Enabled: types.BoolPointerValue(iface.V6Enabled),
+			}
+			interfaceModels = append(interfaceModels, interfaceModel)
+		}
+		model.Interfaces = interfaceModels
 	}
-	bgpPeers := make([]switchPortSettingsBGPPeerModel, 0)
-	for linkName, peers := range bgpPeersMap {
-		bgpPeers = append(bgpPeers, switchPortSettingsBGPPeerModel{
-			Peers:    peers,
-			LinkName: types.StringValue(linkName),
-		})
-	}
-	model.BGPPeers = bgpPeers
 
-	groups := make([]types.String, 0)
-	for _, group := range settings.Groups {
-		groups = append(groups, types.StringValue(group.PortSettingsGroupId))
-	}
-	model.Groups = groups
+	//
+	// Links
+	//
+	if len(settings.Links) > 0 {
+		linkModels := make([]switchPortSettingsLinkModel, 0)
+		for _, link := range settings.Links {
+			linkModel := switchPortSettingsLinkModel{
+				Autoneg: func() types.Bool {
+					if link.Autoneg == nil {
+						return types.BoolNull()
+					}
+					return types.BoolPointerValue(link.Autoneg)
+				}(),
+				FEC:      types.StringValue(string(link.Fec)),
+				LinkName: types.StringValue(string(link.LinkName)),
+				MTU: func() types.Int32 {
+					if link.Mtu == nil {
+						return types.Int32Null()
+					}
+					return types.Int32Value(int32(*link.Mtu))
+				}(),
+				Speed: types.StringValue(string(link.Speed)),
+			}
 
-	interfaces := make([]switchPortSettingsInterfaceModel, 0)
-	for _, iface := range settings.Interfaces {
-		interfaces = append(interfaces, switchPortSettingsInterfaceModel{
-			Kind: &switchPortSettingsInterfaceKindModel{
-				Type: types.StringValue(string(iface.Kind)),
-			},
-			LinkName:  types.StringValue(string(iface.InterfaceName)),
-			V6Enabled: types.BoolPointerValue(iface.V6Enabled),
-		})
-	}
-	model.Interfaces = interfaces
+			if link.LldpLinkConfig != nil {
+				linkModel.LLDP = &switchPortSettingsLinkLLDPModel{
+					Enabled: types.BoolPointerValue(link.LldpLinkConfig.Enabled),
+				}
 
-	links := make([]switchPortSettingsLinkModel, 0)
-	for _, link := range settings.Links {
-		lldp := &switchPortSettingsLinkLLDPModel{}
-		if link.LldpLinkConfig != nil {
-			lldp.ChassisID = types.StringValue(link.LldpLinkConfig.ChassisId)
-			lldp.Enabled = types.BoolPointerValue(link.LldpLinkConfig.Enabled)
-			lldp.LinkDescription = types.StringValue(link.LldpLinkConfig.LinkDescription)
-			lldp.LinkName = types.StringValue(link.LldpLinkConfig.LinkName)
-			lldp.ManagementIP = types.StringValue(link.LldpLinkConfig.ManagementIp)
-			lldp.SystemDescription = types.StringValue(link.LldpLinkConfig.SystemDescription)
-			lldp.SystemName = types.StringValue(link.LldpLinkConfig.SystemName)
+				if *link.LldpLinkConfig.Enabled {
+					linkModel.LLDP.ChassisID = func() types.String {
+						if link.LldpLinkConfig.ChassisId == "" {
+							return types.StringNull()
+						}
+						return types.StringValue(link.LldpLinkConfig.ChassisId)
+					}()
+					linkModel.LLDP.LinkDescription = func() types.String {
+						if link.LldpLinkConfig.LinkDescription == "" {
+							return types.StringNull()
+						}
+						return types.StringValue(link.LldpLinkConfig.LinkDescription)
+					}()
+					linkModel.LLDP.LinkName = func() types.String {
+						if link.LldpLinkConfig.LinkName == "" {
+							return types.StringNull()
+						}
+						return types.StringValue(link.LldpLinkConfig.LinkName)
+					}()
+					linkModel.LLDP.ManagementIP = func() types.String {
+						if link.LldpLinkConfig.ManagementIp == "" {
+							return types.StringNull()
+						}
+						return types.StringValue(link.LldpLinkConfig.ManagementIp)
+					}()
+					linkModel.LLDP.SystemDescription = func() types.String {
+						if link.LldpLinkConfig.SystemDescription == "" {
+							return types.StringNull()
+						}
+						return types.StringValue(link.LldpLinkConfig.SystemDescription)
+					}()
+					linkModel.LLDP.SystemName = func() types.String {
+						if link.LldpLinkConfig.SystemName == "" {
+							return types.StringNull()
+						}
+						return types.StringValue(link.LldpLinkConfig.SystemName)
+					}()
+				}
+			}
+
+			if link.TxEqConfig != nil {
+				linkModel.TxEq = &switchPortSettingsLinkTxEqModel{
+					Main: func() types.Int32 {
+						if link.TxEqConfig.Main == nil {
+							return types.Int32Null()
+						}
+						return types.Int32Value(int32(*link.TxEqConfig.Main))
+					}(),
+					Post1: func() types.Int32 {
+						if link.TxEqConfig.Post1 == nil {
+							return types.Int32Null()
+						}
+						return types.Int32Value(int32(*link.TxEqConfig.Post1))
+					}(),
+					Post2: func() types.Int32 {
+						if link.TxEqConfig.Post2 == nil {
+							return types.Int32Null()
+						}
+						return types.Int32Value(int32(*link.TxEqConfig.Post2))
+					}(),
+					Pre1: func() types.Int32 {
+						if link.TxEqConfig.Pre1 == nil {
+							return types.Int32Null()
+						}
+						return types.Int32Value(int32(*link.TxEqConfig.Pre1))
+					}(),
+					Pre2: func() types.Int32 {
+						if link.TxEqConfig.Pre2 == nil {
+							return types.Int32Null()
+						}
+						return types.Int32Value(int32(*link.TxEqConfig.Pre2))
+					}(),
+				}
+			}
+
+			linkModels = append(linkModels, linkModel)
 		}
 
-		txEq := &switchPortSettingsLinkTxEqModel{}
-		if link.TxEqConfig != nil {
-			txEq.Main = func() types.Int32 {
-				if link.TxEqConfig.Main != nil {
-					return types.Int32Value(int32(*link.TxEqConfig.Main))
-				}
-				return types.Int32Null()
-			}()
-			txEq.Post1 = func() types.Int32 {
-				if link.TxEqConfig.Post1 != nil {
-					return types.Int32Value(int32(*link.TxEqConfig.Post1))
-				}
-				return types.Int32Null()
-			}()
-			txEq.Post2 = func() types.Int32 {
-				if link.TxEqConfig.Post2 != nil {
-					return types.Int32Value(int32(*link.TxEqConfig.Post2))
-				}
-				return types.Int32Null()
-			}()
-			txEq.Pre1 = func() types.Int32 {
-				if link.TxEqConfig.Pre1 != nil {
-					return types.Int32Value(int32(*link.TxEqConfig.Pre1))
-				}
-				return types.Int32Null()
-			}()
-			txEq.Pre2 = func() types.Int32 {
-				if link.TxEqConfig.Pre2 != nil {
-					return types.Int32Value(int32(*link.TxEqConfig.Pre2))
-				}
-				return types.Int32Null()
-			}()
-		}
-
-		links = append(links, switchPortSettingsLinkModel{
-			Autoneg:  types.BoolPointerValue(link.Autoneg),
-			FEC:      types.StringValue(string(link.Fec)),
-			LinkName: types.StringValue(string(link.LinkName)),
-			LLDP:     lldp,
-			MTU:      types.Int32Value(int32(*link.Mtu)),
-			Speed:    types.StringValue(string(link.Speed)),
-			TxEq:     txEq,
-		})
+		model.Links = linkModels
 	}
-	model.Links = links
 
-	routesMap := make(map[string][]switchPortSettingsRouteRouteModel)
-	for _, route := range settings.Routes {
-		if _, ok := routesMap[string(route.InterfaceName)]; !ok {
-			routesMap[string(route.InterfaceName)] = make([]switchPortSettingsRouteRouteModel, 0)
-		}
+	//
+	// Routes
+	//
+	if len(settings.Routes) > 0 {
+		linkToRoutes := make(map[string][]switchPortSettingsRouteRouteModel)
+		for _, route := range settings.Routes {
+			link := string(route.InterfaceName)
 
-		routesMap[string(route.InterfaceName)] = append(
-			routesMap[string(route.InterfaceName)],
-			switchPortSettingsRouteRouteModel{
+			if _, ok := linkToRoutes[link]; !ok {
+				linkToRoutes[link] = make([]switchPortSettingsRouteRouteModel, 0)
+			}
+
+			routeModel := switchPortSettingsRouteRouteModel{
 				Dst: types.StringValue(route.Dst.(string)),
 				GW:  types.StringValue(route.Gw),
 				RIBPriority: func() types.Int32 {
@@ -846,23 +969,27 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 					}
 					return types.Int32Null()
 				}(),
-			},
-		)
+			}
+
+			linkToRoutes[link] = append(linkToRoutes[link], routeModel)
+		}
+
+		routeModels := make([]switchPortSettingsRouteModel, 0)
+		for linkName, rts := range linkToRoutes {
+			routeModel := switchPortSettingsRouteModel{
+				Routes:   rts,
+				LinkName: types.StringValue(linkName),
+			}
+			routeModels = append(routeModels, routeModel)
+		}
+
+		model.Routes = routeModels
 	}
-	routes := make([]switchPortSettingsRouteModel, 0)
-	for linkName, rts := range routesMap {
-		routes = append(routes, switchPortSettingsRouteModel{
-			Routes:   rts,
-			LinkName: types.StringValue(linkName),
-		})
-	}
-	model.Routes = routes
 
 	return model, diags
 }
 
 func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
-
 	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{
 			Name:        oxide.Name(model.Name.ValueString()),
