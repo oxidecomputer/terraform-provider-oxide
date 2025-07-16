@@ -10,10 +10,12 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
@@ -50,9 +52,9 @@ type switchPortSettingsAddressModel struct {
 }
 
 type switchPortSettingsAddressAddressModel struct {
-	Address    types.String `tfsdk:"address"`
-	AddressLot types.String `tfsdk:"address_lot"`
-	VlanID     types.Int32  `tfsdk:"vlan_id"`
+	Address      types.String `tfsdk:"address"`
+	AddressLotID types.String `tfsdk:"address_lot_id"`
+	VlanID       types.Int32  `tfsdk:"vlan_id"`
 }
 
 type switchPortSettingsBGPPeerModel struct {
@@ -187,7 +189,7 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 									"address": schema.StringAttribute{
 										Required: true,
 									},
-									"address_lot": schema.StringAttribute{
+									"address_lot_id": schema.StringAttribute{
 										Required: true,
 									},
 									"vlan_id": schema.Int32Attribute{
@@ -218,6 +220,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
 												Required: true,
+												Validators: []validator.String{
+													stringvalidator.OneOf("no_filtering", "allow"),
+												},
 											},
 											"value": schema.SetAttribute{
 												Optional:    true,
@@ -230,6 +235,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
 												Required: true,
+												Validators: []validator.String{
+													stringvalidator.OneOf("no_filtering", "allow"),
+												},
 											},
 											"value": schema.SetAttribute{
 												Optional:    true,
@@ -305,6 +313,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
 									Required: true,
+									Validators: []validator.String{
+										stringvalidator.OneOf("primary", "vlan", "loopback"),
+									},
 								},
 								"vid": schema.Int32Attribute{
 									Optional: true,
@@ -329,6 +340,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 						},
 						"fec": schema.StringAttribute{
 							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("firecode", "none", "rs"),
+							},
 						},
 						"link_name": schema.StringAttribute{
 							Required: true,
@@ -364,6 +378,19 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 						},
 						"speed": schema.StringAttribute{
 							Required: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									"speed0_g",
+									"speed1_g",
+									"speed10_g",
+									"speed25_g",
+									"speed40_g",
+									"speed50_g",
+									"speed100_g",
+									"speed200_g",
+									"speed400_g",
+								),
+							},
 						},
 						"tx_eq": schema.SingleNestedAttribute{
 							Optional: true,
@@ -396,6 +423,13 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 				Attributes: map[string]schema.Attribute{
 					"geometry": schema.StringAttribute{
 						Required: true,
+						Validators: []validator.String{
+							stringvalidator.OneOf(
+								"qsfp28x1",
+								"qsfp28x2",
+								"sfp28x4",
+							),
+						},
 					},
 				},
 			},
@@ -663,8 +697,8 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 			}
 
 			addressModel := switchPortSettingsAddressAddressModel{
-				Address:    types.StringValue(address.Address.(string)),
-				AddressLot: types.StringValue(string(address.AddressLotId)),
+				Address:      types.StringValue(address.Address.(string)),
+				AddressLotID: types.StringValue(string(address.AddressLotId)),
 				VlanID: func() types.Int32 {
 					if address.VlanId == nil {
 						return types.Int32Null()
@@ -1009,7 +1043,7 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 		for _, addressModelNested := range addressModel.Addresses {
 			address := oxide.Address{
 				Address:    oxide.IpNet(addressModelNested.Address.ValueString()),
-				AddressLot: oxide.NameOrId(addressModelNested.AddressLot.ValueString()),
+				AddressLot: oxide.NameOrId(addressModelNested.AddressLotID.ValueString()),
 				VlanId: func() *int {
 					if addressModelNested.VlanID.IsNull() {
 						return nil
