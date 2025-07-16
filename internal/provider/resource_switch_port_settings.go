@@ -1000,124 +1000,181 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 		},
 	}
 
-	addresses := make([]oxide.AddressConfig, 0)
-	for _, address := range model.Addresses {
-		addrs := make([]oxide.Address, 0)
-		for _, addr := range address.Addresses {
-			addrs = append(addrs, oxide.Address{
-				Address:    oxide.IpNet(addr.Address.ValueString()),
-				AddressLot: oxide.NameOrId(addr.AddressLot.ValueString()),
+	//
+	// Addresses
+	//
+	addressConfigs := make([]oxide.AddressConfig, 0)
+	for _, addressModel := range model.Addresses {
+		addresses := make([]oxide.Address, 0)
+		for _, addressModelNested := range addressModel.Addresses {
+			address := oxide.Address{
+				Address:    oxide.IpNet(addressModelNested.Address.ValueString()),
+				AddressLot: oxide.NameOrId(addressModelNested.AddressLot.ValueString()),
 				VlanId: func() *int {
-					if !addr.VlanID.IsNull() {
-						return oxide.NewPointer(int(addr.VlanID.ValueInt32()))
+					if addressModelNested.VlanID.IsNull() {
+						return nil
 					}
-					return nil
+					return oxide.NewPointer(int(addressModelNested.VlanID.ValueInt32()))
 				}(),
-			})
+			}
+
+			addresses = append(addresses, address)
 		}
 
-		addresses = append(addresses, oxide.AddressConfig{
-			LinkName:  oxide.Name(address.LinkName.ValueString()),
-			Addresses: addrs,
-		})
-	}
-	params.Body.Addresses = addresses
-
-	bgpPeers := make([]oxide.BgpPeerConfig, 0)
-	for _, bgpPeer := range model.BGPPeers {
-		peers := make([]oxide.BgpPeer, 0)
-		for _, peer := range bgpPeer.Peers {
-			allowedExportValue := make([]oxide.IpNet, 0)
-			for _, value := range peer.AllowedExport.Value {
-				allowedExportValue = append(allowedExportValue, oxide.IpNet(value.ValueString()))
-			}
-
-			allowedImportValue := make([]oxide.IpNet, 0)
-			for _, value := range peer.AllowedImport.Value {
-				allowedImportValue = append(allowedImportValue, oxide.IpNet(value.ValueString()))
-			}
-
-			communities := make([]string, 0)
-			for _, community := range peer.Communities {
-				communities = append(communities, fmt.Sprintf("%d", community.ValueInt64()))
-			}
-
-			peers = append(peers, oxide.BgpPeer{
-				Addr: peer.Addr.ValueString(),
-				AllowedExport: oxide.ImportExportPolicy{
-					Type:  oxide.ImportExportPolicyType(peer.AllowedExport.Type.ValueString()),
-					Value: allowedExportValue,
-				},
-				AllowedImport: oxide.ImportExportPolicy{
-					Type:  oxide.ImportExportPolicyType(peer.AllowedImport.Type.ValueString()),
-					Value: allowedImportValue,
-				},
-				BgpConfig:              oxide.NameOrId(peer.BGPConfig.ValueString()),
-				Communities:            communities,
-				ConnectRetry:           oxide.NewPointer(int(peer.ConnectRetry.ValueInt64())),
-				DelayOpen:              oxide.NewPointer(int(peer.DelayOpen.ValueInt64())),
-				EnforceFirstAs:         oxide.NewPointer(peer.EnforceFirstAs.ValueBool()),
-				HoldTime:               oxide.NewPointer(int(peer.HoldTime.ValueInt64())),
-				IdleHoldTime:           oxide.NewPointer(int(peer.IdleHoldTime.ValueInt64())),
-				InterfaceName:          oxide.Name(peer.InterfaceName.ValueString()),
-				Keepalive:              oxide.NewPointer(int(peer.Keepalive.ValueInt64())),
-				LocalPref:              oxide.NewPointer(int(peer.LocalPref.ValueInt64())),
-				Md5AuthKey:             peer.MD5AuthKey.ValueString(),
-				MinTtl:                 oxide.NewPointer(int(peer.MinTTL.ValueInt32())),
-				MultiExitDiscriminator: oxide.NewPointer(int(peer.MultiExitDiscriminator.ValueInt64())),
-				RemoteAsn:              oxide.NewPointer(int(peer.RemoteASN.ValueInt64())),
-				VlanId:                 oxide.NewPointer(int(peer.VlanID.ValueInt32())),
-			})
+		addressConfig := oxide.AddressConfig{
+			LinkName:  oxide.Name(addressModel.LinkName.ValueString()),
+			Addresses: addresses,
 		}
 
-		bgpPeers = append(bgpPeers, oxide.BgpPeerConfig{
-			LinkName: oxide.Name(bgpPeer.LinkName.ValueString()),
-			Peers:    peers,
-		})
+		addressConfigs = append(addressConfigs, addressConfig)
 	}
-	params.Body.BgpPeers = bgpPeers
+	params.Body.Addresses = addressConfigs
 
+	//
+	// BGPPeers
+	//
+	bgpPeerConfigs := make([]oxide.BgpPeerConfig, 0)
+	for _, bgpPeerModel := range model.BGPPeers {
+		bgpPeers := make([]oxide.BgpPeer, 0)
+		for _, bgpModelNested := range bgpPeerModel.Peers {
+			bgpPeer := oxide.BgpPeer{
+				Addr:           bgpModelNested.Addr.ValueString(),
+				BgpConfig:      oxide.NameOrId(bgpModelNested.BGPConfig.ValueString()),
+				ConnectRetry:   oxide.NewPointer(int(bgpModelNested.ConnectRetry.ValueInt64())),
+				DelayOpen:      oxide.NewPointer(int(bgpModelNested.DelayOpen.ValueInt64())),
+				EnforceFirstAs: oxide.NewPointer(bgpModelNested.EnforceFirstAs.ValueBool()),
+				HoldTime:       oxide.NewPointer(int(bgpModelNested.HoldTime.ValueInt64())),
+				IdleHoldTime:   oxide.NewPointer(int(bgpModelNested.IdleHoldTime.ValueInt64())),
+				InterfaceName:  oxide.Name(bgpModelNested.InterfaceName.ValueString()),
+				Keepalive:      oxide.NewPointer(int(bgpModelNested.Keepalive.ValueInt64())),
+				LocalPref: func() *int {
+					if bgpModelNested.LocalPref.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(bgpModelNested.LocalPref.ValueInt64()))
+				}(),
+				Md5AuthKey: bgpModelNested.MD5AuthKey.ValueString(),
+				MinTtl: func() *int {
+					if bgpModelNested.MinTTL.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(bgpModelNested.MinTTL.ValueInt32()))
+				}(),
+				MultiExitDiscriminator: func() *int {
+					if bgpModelNested.MultiExitDiscriminator.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(bgpModelNested.MultiExitDiscriminator.ValueInt64()))
+				}(),
+				RemoteAsn: func() *int {
+					if bgpModelNested.RemoteASN.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(bgpModelNested.RemoteASN.ValueInt64()))
+				}(),
+				VlanId: func() *int {
+					if bgpModelNested.VlanID.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(bgpModelNested.VlanID.ValueInt32()))
+				}(),
+			}
+
+			bgpPeer.AllowedExport = oxide.ImportExportPolicy{
+				Type: oxide.ImportExportPolicyType(bgpModelNested.AllowedExport.Type.ValueString()),
+				Value: func() []oxide.IpNet {
+					if len(bgpModelNested.AllowedExport.Value) == 0 {
+						return nil
+					}
+
+					values := make([]oxide.IpNet, 0)
+					for _, value := range bgpModelNested.AllowedExport.Value {
+						values = append(values, oxide.IpNet(value.ValueString()))
+					}
+
+					return values
+				}(),
+			}
+
+			bgpPeer.AllowedImport = oxide.ImportExportPolicy{
+				Type: oxide.ImportExportPolicyType(bgpModelNested.AllowedImport.Type.ValueString()),
+				Value: func() []oxide.IpNet {
+					if len(bgpModelNested.AllowedImport.Value) == 0 {
+						return nil
+					}
+
+					values := make([]oxide.IpNet, 0)
+					for _, value := range bgpModelNested.AllowedImport.Value {
+						values = append(values, oxide.IpNet(value.ValueString()))
+					}
+
+					return values
+				}(),
+			}
+
+			bgpPeer.Communities = func() []string {
+				communities := make([]string, 0)
+				for _, community := range bgpModelNested.Communities {
+					communities = append(communities, fmt.Sprintf("%d", community.ValueInt64()))
+				}
+				return communities
+			}()
+
+			bgpPeers = append(bgpPeers, bgpPeer)
+		}
+
+		bgpPeerConfig := oxide.BgpPeerConfig{
+			LinkName: oxide.Name(bgpPeerModel.LinkName.ValueString()),
+			Peers:    bgpPeers,
+		}
+
+		bgpPeerConfigs = append(bgpPeerConfigs, bgpPeerConfig)
+	}
+	params.Body.BgpPeers = bgpPeerConfigs
+
+	//
+	// Groups
+	//
 	groups := make([]oxide.NameOrId, 0)
 	for _, group := range model.Groups {
 		groups = append(groups, oxide.NameOrId(group.ValueString()))
 	}
 	params.Body.Groups = groups
 
-	interfaces := make([]oxide.SwitchInterfaceConfigCreate, 0)
-	for _, iface := range model.Interfaces {
-		interfaces = append(interfaces, oxide.SwitchInterfaceConfigCreate{
+	//
+	// Interfaces
+	//
+	interfaceConfigs := make([]oxide.SwitchInterfaceConfigCreate, 0)
+	for _, interfaceModel := range model.Interfaces {
+		interfaceConfig := oxide.SwitchInterfaceConfigCreate{
 			Kind: oxide.SwitchInterfaceKind{
-				Type: oxide.SwitchInterfaceKindType(iface.Kind.Type.ValueString()),
+				Type: oxide.SwitchInterfaceKindType(interfaceModel.Kind.Type.ValueString()),
 				Vid: func() *int {
-					if !iface.Kind.VID.IsNull() {
-						return oxide.NewPointer(int(iface.Kind.VID.ValueInt32()))
+					if interfaceModel.Kind.VID.IsNull() {
+						return nil
 					}
-					return nil
+					return oxide.NewPointer(int(interfaceModel.Kind.VID.ValueInt32()))
 				}(),
 			},
-			LinkName:  oxide.Name(iface.LinkName.ValueString()),
-			V6Enabled: oxide.NewPointer(iface.V6Enabled.ValueBool()),
-		})
-	}
-	params.Body.Interfaces = interfaces
-
-	links := make([]oxide.LinkConfigCreate, 0)
-	for _, link := range model.Links {
-		var txeq *oxide.TxEqConfig
-		if link.TxEq != nil {
-			txeq = &oxide.TxEqConfig{
-				Main:  oxide.NewPointer(int(link.TxEq.Main.ValueInt32())),
-				Post1: oxide.NewPointer(int(link.TxEq.Post1.ValueInt32())),
-				Post2: oxide.NewPointer(int(link.TxEq.Post2.ValueInt32())),
-				Pre1:  oxide.NewPointer(int(link.TxEq.Pre1.ValueInt32())),
-				Pre2:  oxide.NewPointer(int(link.TxEq.Pre2.ValueInt32())),
-			}
+			LinkName:  oxide.Name(interfaceModel.LinkName.ValueString()),
+			V6Enabled: oxide.NewPointer(interfaceModel.V6Enabled.ValueBool()),
 		}
 
-		links = append(links, oxide.LinkConfigCreate{
+		interfaceConfigs = append(interfaceConfigs, interfaceConfig)
+	}
+	params.Body.Interfaces = interfaceConfigs
+
+	//
+	// Links
+	//
+	linkConfigs := make([]oxide.LinkConfigCreate, 0)
+	for _, link := range model.Links {
+		linkConfig := oxide.LinkConfigCreate{
 			Autoneg:  link.Autoneg.ValueBoolPointer(),
 			Fec:      oxide.LinkFec(link.FEC.ValueString()),
 			LinkName: oxide.Name(link.LinkName.ValueString()),
+			Mtu:      oxide.NewPointer(int(link.MTU.ValueInt32())),
+			Speed:    oxide.LinkSpeed(link.Speed.ValueString()),
 			Lldp: oxide.LldpLinkConfigCreate{
 				ChassisId:         link.LLDP.ChassisID.ValueString(),
 				Enabled:           link.LLDP.Enabled.ValueBoolPointer(),
@@ -1127,41 +1184,82 @@ func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSet
 				SystemDescription: link.LLDP.SystemDescription.ValueString(),
 				SystemName:        link.LLDP.SystemName.ValueString(),
 			},
-			Mtu:   oxide.NewPointer(int(link.MTU.ValueInt32())),
-			Speed: oxide.LinkSpeed(link.Speed.ValueString()),
-			TxEq:  txeq,
-		})
-	}
-	params.Body.Links = links
-
-	routes := make([]oxide.RouteConfig, 0)
-	for _, route := range model.Routes {
-		rts := make([]oxide.Route, 0)
-		for _, rt := range route.Routes {
-			var ribPriority *int
-			if rt.RIBPriority.ValueInt32Pointer() != nil {
-				ribPriority = oxide.NewPointer(int(rt.RIBPriority.ValueInt32()))
-			}
-
-			var vid *int
-			if rt.VID.ValueInt32Pointer() != nil {
-				vid = oxide.NewPointer(int(rt.VID.ValueInt32()))
-			}
-
-			rts = append(rts, oxide.Route{
-				Dst:         oxide.IpNet(rt.Dst.ValueString()),
-				Gw:          rt.GW.ValueString(),
-				RibPriority: ribPriority,
-				Vid:         vid,
-			})
 		}
 
-		routes = append(routes, oxide.RouteConfig{
-			LinkName: oxide.Name(route.LinkName.ValueString()),
-			Routes:   rts,
-		})
+		if link.TxEq != nil {
+			linkConfig.TxEq = &oxide.TxEqConfig{
+				Main: func() *int {
+					if link.TxEq.Main.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(link.TxEq.Main.ValueInt32()))
+				}(),
+				Post1: func() *int {
+					if link.TxEq.Post1.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(link.TxEq.Post1.ValueInt32()))
+				}(),
+				Post2: func() *int {
+					if link.TxEq.Post2.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(link.TxEq.Post2.ValueInt32()))
+				}(),
+				Pre1: func() *int {
+					if link.TxEq.Pre1.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(link.TxEq.Pre1.ValueInt32()))
+				}(),
+				Pre2: func() *int {
+					if link.TxEq.Pre2.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(link.TxEq.Pre2.ValueInt32()))
+				}(),
+			}
+		}
+
+		linkConfigs = append(linkConfigs, linkConfig)
 	}
-	params.Body.Routes = routes
+	params.Body.Links = linkConfigs
+
+	//
+	// Routes
+	//
+	routeConfigs := make([]oxide.RouteConfig, 0)
+	for _, routeModel := range model.Routes {
+		routes := make([]oxide.Route, 0)
+		for _, routeModel := range routeModel.Routes {
+			route := oxide.Route{
+				Dst: oxide.IpNet(routeModel.Dst.ValueString()),
+				Gw:  routeModel.GW.ValueString(),
+				RibPriority: func() *int {
+					if routeModel.RIBPriority.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(routeModel.RIBPriority.ValueInt32()))
+				}(),
+				Vid: func() *int {
+					if routeModel.VID.IsNull() {
+						return nil
+					}
+					return oxide.NewPointer(int(routeModel.VID.ValueInt32()))
+				}(),
+			}
+
+			routes = append(routes, route)
+		}
+
+		routeConfig := oxide.RouteConfig{
+			LinkName: oxide.Name(routeModel.LinkName.ValueString()),
+			Routes:   routes,
+		}
+
+		routeConfigs = append(routeConfigs, routeConfig)
+	}
+	params.Body.Routes = routeConfigs
 
 	return params, nil
 }
