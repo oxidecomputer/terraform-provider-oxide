@@ -221,7 +221,10 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 											"type": schema.StringAttribute{
 												Required: true,
 												Validators: []validator.String{
-													stringvalidator.OneOf("no_filtering", "allow"),
+													stringvalidator.OneOf(
+														string(oxide.ImportExportPolicyTypeNoFiltering),
+														string(oxide.ImportExportPolicyTypeAllow),
+													),
 												},
 											},
 											"value": schema.SetAttribute{
@@ -236,7 +239,10 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 											"type": schema.StringAttribute{
 												Required: true,
 												Validators: []validator.String{
-													stringvalidator.OneOf("no_filtering", "allow"),
+													stringvalidator.OneOf(
+														string(oxide.ImportExportPolicyTypeNoFiltering),
+														string(oxide.ImportExportPolicyTypeAllow),
+													),
 												},
 											},
 											"value": schema.SetAttribute{
@@ -314,7 +320,11 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 								"type": schema.StringAttribute{
 									Required: true,
 									Validators: []validator.String{
-										stringvalidator.OneOf("primary", "vlan", "loopback"),
+										stringvalidator.OneOf(
+											string(oxide.SwitchInterfaceKindTypePrimary),
+											string(oxide.SwitchInterfaceKindTypeVlan),
+											string(oxide.SwitchInterfaceKindTypeLoopback),
+										),
 									},
 								},
 								"vid": schema.Int32Attribute{
@@ -341,7 +351,11 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 						"fec": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("firecode", "none", "rs"),
+								stringvalidator.OneOf(
+									string(oxide.LinkFecFirecode),
+									string(oxide.LinkFecNone),
+									string(oxide.LinkFecRs),
+								),
 							},
 						},
 						"link_name": schema.StringAttribute{
@@ -380,15 +394,15 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 							Required: true,
 							Validators: []validator.String{
 								stringvalidator.OneOf(
-									"speed0_g",
-									"speed1_g",
-									"speed10_g",
-									"speed25_g",
-									"speed40_g",
-									"speed50_g",
-									"speed100_g",
-									"speed200_g",
-									"speed400_g",
+									string(oxide.LinkSpeedSpeed0G),
+									string(oxide.LinkSpeedSpeed1G),
+									string(oxide.LinkSpeedSpeed10G),
+									string(oxide.LinkSpeedSpeed25G),
+									string(oxide.LinkSpeedSpeed40G),
+									string(oxide.LinkSpeedSpeed50G),
+									string(oxide.LinkSpeedSpeed100G),
+									string(oxide.LinkSpeedSpeed200G),
+									string(oxide.LinkSpeedSpeed400G),
 								),
 							},
 						},
@@ -425,9 +439,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 						Required: true,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
-								"qsfp28x1",
-								"qsfp28x2",
-								"sfp28x4",
+								string(oxide.SwitchPortGeometryQsfp28X1),
+								string(oxide.SwitchPortGeometryQsfp28X2),
+								string(oxide.SwitchPortGeometrySfp28X4),
 							),
 						},
 					},
@@ -497,7 +511,11 @@ func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.Cr
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params, _ := toOxideParams(plan)
+	params, diags := toNetworkingSwitchPortSettingsCreateParams(plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	settings, err := r.client.NetworkingSwitchPortSettingsCreate(ctx, params)
 	if err != nil {
@@ -561,7 +579,7 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 	state.TimeCreated = types.StringValue(settings.TimeCreated.String())
 	state.TimeModified = types.StringValue(settings.TimeModified.String())
 
-	model, diags := toTerraformModel(settings)
+	model, diags := toSwitchPortSettingsModel(settings)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -610,7 +628,11 @@ func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.Up
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params, _ := toOxideParams(plan)
+	params, diags := toNetworkingSwitchPortSettingsCreateParams(plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	settings, err := r.client.NetworkingSwitchPortSettingsCreate(ctx, params)
 	if err != nil {
@@ -650,7 +672,7 @@ func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.De
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	_, cancel := context.WithTimeout(ctx, deleteTimeout)
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
 	if err := r.client.NetworkingSwitchPortSettingsDelete(
@@ -670,7 +692,7 @@ func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.De
 
 }
 
-func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsModel, diag.Diagnostics) {
+func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSettingsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	model := switchPortSettingsModel{
@@ -1028,7 +1050,7 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 	return model, diags
 }
 
-func toOxideParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
+func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
 	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{
 			Name:        oxide.Name(model.Name.ValueString()),

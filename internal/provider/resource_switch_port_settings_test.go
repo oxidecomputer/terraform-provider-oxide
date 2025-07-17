@@ -15,7 +15,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// TestAccCloudResourceSwitchPortSettings_full tests whether Terraform
+// TestAccSiloResourceSwitchPortSettings_full tests whether Terraform
 // can create `oxide_switch_port_settings` resources.
 //
 // This test overwrites Oxide switch port settings which can cause result in
@@ -32,7 +32,7 @@ import (
 //
 // With all that in mind, you can run this test like so.
 //
-// TEST_ACC_NAME=TestAccCloudResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME> make testacc
+// TEST_ACC_NAME=TestAccSiloResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME> make testacc
 //
 // A future iteration of this test can make use of the currently
 // non-existent `oxide_address_lot` data source to remove the need for
@@ -40,7 +40,7 @@ import (
 // resource completely overwrites all switch port settings it is still
 // considered unsafe to run this test against anything but a simulated Omicron
 // deployment.
-func TestAccCloudResourceSwitchPortSettings_full(t *testing.T) {
+func TestAccSiloResourceSwitchPortSettings_full(t *testing.T) {
 	type resourceSwitchPortSettingsConfig struct {
 		BlockName              string
 		SwitchPortSettingsName string
