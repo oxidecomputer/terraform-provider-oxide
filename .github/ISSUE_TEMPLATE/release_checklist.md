@@ -6,7 +6,7 @@ labels: release
 ---
 
 ## Release checklist
-<!-- 
+<!--
  Please follow all of these steps in the order below.
  After completing each task put an `x` in the corresponding box,
  and paste the link to the relevant PR.
