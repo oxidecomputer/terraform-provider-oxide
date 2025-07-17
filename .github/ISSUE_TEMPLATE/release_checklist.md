@@ -10,7 +10,7 @@ labels: release
  Please follow all of these steps in the order below.
  After completing each task put an `x` in the corresponding box,
  and paste the link to the relevant PR.
---> 
+-->
 - [ ] Update the Terraform configuration version constraints in the following files to use the version you want to release.
     - [ ] [`examples`](https://github.com/oxidecomputer/terraform-provider-oxide/tree/main/examples)
     - [ ] [`docs`](https://github.com/oxidecomputer/terraform-provider-oxide/tree/main/docs)
