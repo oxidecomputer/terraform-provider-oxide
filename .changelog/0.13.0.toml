@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New resource"
+description = "`oxide_switch_port_settings` [#426](https://github.com/oxidecomputer/terraform-provider-oxide/pull/426)."
 
 [[enhancements]]
 title = ""
