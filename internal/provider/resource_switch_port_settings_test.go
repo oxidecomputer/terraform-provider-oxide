@@ -33,7 +33,7 @@ import (
 // With all that in mind, you can run this test like so.
 //
 // TEST_ACC_NAME=TestAccCloudResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME> make testacc
-// 
+//
 // A future iteration of this test can make use of the currently
 // non-existent `oxide_address_lot` data source to remove the need for
 // `OXIDE_TEST_ADDRESS_LOT_ID`. However, since the `oxide_switch_port_settings`
