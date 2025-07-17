@@ -1216,6 +1216,10 @@ func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskI
 }
 
 func filterBootDiskFromDisks(disks []oxide.InstanceDiskAttachment, boot_disk *oxide.InstanceDiskAttachment) []oxide.InstanceDiskAttachment {
+	if boot_disk == nil {
+		return disks
+	}
+
 	var filtered_disks = []oxide.InstanceDiskAttachment{}
 	for _, disk := range disks {
 		if disk == *boot_disk {
