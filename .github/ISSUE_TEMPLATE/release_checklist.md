@@ -10,7 +10,7 @@ labels: release
  Please follow all of these steps in the order below.
  After completing each task put an `x` in the corresponding box,
  and paste the link to the relevant PR.
--->
+--> 
 - [ ] Update the Terraform configuration version constraints in the following files to use the version you want to release.
     - [ ] [`examples`](https://github.com/oxidecomputer/terraform-provider-oxide/tree/main/examples)
     - [ ] [`docs`](https://github.com/oxidecomputer/terraform-provider-oxide/tree/main/docs)
@@ -18,6 +18,7 @@ labels: release
     - [ ] [`VERSION`](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/VERSION)
     - [ ] [`internal/provider/version.go`](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/oxide/version.go)
 - [ ] Update the `github.com/oxidecomputer/oxide.go` dependency to the latest release.
+- [ ] Run the acceptance tests against an environment with the same Omicron version as the Go SDK version the provider is on.
 - [ ] Generate the `CHANGELOG.md` file.
     - [ ] Run `make changelog`
     - [ ] Add the date of the release to the title
