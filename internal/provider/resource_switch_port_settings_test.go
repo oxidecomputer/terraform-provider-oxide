@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -14,6 +15,31 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
+// TestAccCloudResourceSwitchPortSettings_full tests whether Terraform
+// can create `oxide_switch_port_settings` resources.
+//
+// This test overwrites Oxide switch port settings which can cause result in
+// network connectivity issues if not careful. Read on to learn how to run this
+// test safely.
+//
+// This test assumes it's running against a simulated Omicron deployment
+// started by `cargo xtask omicron-dev run-all`. A simulated deployment
+// contains an address lot named `initial-infra` with an address of `0.0.0.0`.
+// The ID of this address lot is needed to run this test and is expected to
+// be passed to this test via the `OXIDE_TEST_ADDRESS_LOT_ID` environment
+// variable. You can query the address lots in your simulated deployment at
+// `/v1/system/networking/address-lot` to retrieve the address lot ID.
+//
+// With all that in mind, you can run this test like so.
+//
+// TEST_ACC_NAME=TestAccCloudResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME> make testacc
+// 
+// A future iteration of this test can make use of the currently
+// non-existent `oxide_address_lot` data source to remove the need for
+// `OXIDE_TEST_ADDRESS_LOT_ID`. However, since the `oxide_switch_port_settings`
+// resource completely overwrites all switch port settings it is still
+// considered unsafe to run this test against anything but a simulated Omicron
+// deployment.
 func TestAccCloudResourceSwitchPortSettings_full(t *testing.T) {
 	type resourceSwitchPortSettingsConfig struct {
 		BlockName              string
@@ -113,10 +139,11 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
   ]
 }
 `
+	// See the doc comment at [TestAccCloudResourceSwitchPortSettings_full].
+	addressLotID := os.Getenv("OXIDE_TEST_ADDRESS_LOT_ID")
 
 	switchPortSettingsName := newResourceName()
 	blockName := newBlockName("switch-port-settings")
-	addressLotID := "a7d5849e-c017-4af8-a245-fb3d48fc9912"
 	resourceName := fmt.Sprintf("oxide_switch_port_settings.%s", blockName)
 
 	initialConfig, err := parsedAccConfig(
@@ -144,7 +171,13 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			// See the doc comment at [TestAccCloudResourceSwitchPortSettings_full].
+			if addressLotID == "" {
+				t.Skip("Skipping test. Export OXIDE_TEST_ADDRESS_LOT_ID to run.")
+			}
+		},
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		CheckDestroy:             testAccSwitchPortSettingsDestroy,
 		Steps: []resource.TestStep{
