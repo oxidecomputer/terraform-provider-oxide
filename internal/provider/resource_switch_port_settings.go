@@ -879,7 +879,12 @@ func toTerraformModel(settings *oxide.SwitchPortSettings) (switchPortSettingsMod
 					}
 					return types.BoolPointerValue(link.Autoneg)
 				}(),
-				FEC:      types.StringValue(string(link.Fec)),
+				FEC: func() types.String {
+					if link.Fec == "" {
+						return types.StringNull()
+					}
+					return types.StringValue(string(link.Fec))
+				}(),
 				LinkName: types.StringValue(string(link.LinkName)),
 				MTU: func() types.Int32 {
 					if link.Mtu == nil {
