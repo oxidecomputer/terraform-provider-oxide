@@ -33,11 +33,46 @@ resource "oxide_switch_port_settings" "example" {
         },
       ]
     },
+    {
+      link_name = "phy1"
+      addresses = [
+        {
+          address        = "10.0.0.123/24"
+          address_lot_id = "a1ab8634-7973-40f1-966c-7f4a8dad7849"
+        },
+      ]
+    },
+  ]
+
+  interfaces = [
+    {
+      link_name = "phy0"
+      kind = {
+        type = "primary"
+      }
+      v6_enabled = false
+    }
+    {
+      link_name = "phy1"
+      kind = {
+        type = "primary"
+      }
+      v6_enabled = false
+    }
   ]
 
   links = [
     {
       link_name = "phy0"
+      autoneg   = false
+      mtu       = 1500
+      speed     = "speed1_g"
+      lldp = {
+        enabled = false
+      }
+    },
+    {
+      link_name = "phy1"
       autoneg   = false
       mtu       = 1500
       speed     = "speed1_g"
@@ -54,6 +89,15 @@ resource "oxide_switch_port_settings" "example" {
         {
           dst = "0.0.0.0/0"
           gw  = "192.168.1.1"
+        },
+      ]
+    },
+    {
+      link_name = "phy0"
+      routes = [
+        {
+          dst = "0.0.0.0/0"
+          gw  = "10.0.0.1"
         },
       ]
     },
@@ -113,8 +157,8 @@ resource "oxide_switch_port_settings" "example" {
 
 #### Required
 
-- `link_name` (String) Name of the link for the BGP peers configuration.
-- `peers` (Set of Object) Set of BGP peers configuration to assign to the link. See [below for nested schema](#nestedatt--bgp_peers--peers).
+- `link_name` (String) Name of the link for the BGP peer configuration.
+- `peers` (Set of Object) Set of BGP peer configuration to assign to the link. See [below for nested schema](#nestedatt--bgp_peers--peers).
 
 <a id="nestedatt--bgp_peers--peers"></a>
 
@@ -122,14 +166,14 @@ resource "oxide_switch_port_settings" "example" {
 
 #### Required
 
-- `addr` (String) Address of the host to peer with.
+- `address` (String) Address of the host to peer with.
 - `allowed_export` (Object) Export policy for the peer. See [below for nested schema](#nestedatt--bgp_peers--peers--allowed_export).
 - `allowed_import` (Object) Import policy for the peer. See [below for nested schema](#nestedatt--bgp_peers--peers--allowed_import).
 - `bgp_config` (String) Name or ID of the global BGP configuration used for establishing a session with this peer.
 - `communities` (Set of Number) BGP communities to apply to this peer's routes.
 - `connect_retry` (Number) Number of seconds to wait before retrying a TCP connection.
 - `delay_open` (Number) Number of seconds to delay sending an open request after establishing a TCP session.
-- `enforce_first_as` (Boolean) Enforce that the first autonomous system in paths received from this peer is the peer's autonomous system.
+- `enforce_first_as` (Boolean) Whether to enforce that the first autonomous system in paths received from this peer is the peer's autonomous system.
 - `hold_time` (Number) Number of seconds to hold peer connections between keepalives.
 - `idle_hold_time` (Number) Number of seconds to hold a peer in idle before attempting a new session.
 - `interface_name` (String) Name of the interface to use for this BGP peer session.
@@ -150,11 +194,11 @@ resource "oxide_switch_port_settings" "example" {
 
 #### Required
 
-- `type` (String) Type of filter to apply.
+- `type` (String) Type of filter to apply. Valid values are `no_filtering` or `allow`.
 
 #### Optional
 
-- `value` (Set of String) IPv4 or IPv6 address to apply the filter to, including the subnet mask.
+- `value` (Set of String) IPv4 or IPv6 address to apply the filter to, including the subnet mask. Only valid when `type` is `allow`.
 
 <a id="nestedatt--bgp_peers--peers--allowed_import"></a>
 
@@ -162,11 +206,11 @@ resource "oxide_switch_port_settings" "example" {
 
 #### Required
 
-- `type` (String) Type of filter to apply.
+- `type` (String) Type of filter to apply. Valid values are `no_filtering` or `allow`.
 
 #### Optional
 
-- `value` (Set of String) IPv4 or IPv6 address to apply the filter to, including the subnet mask.
+- `value` (Set of String) IPv4 or IPv6 address to apply the filter to, including the subnet mask. Only valid when `type` is `allow`.
 
 <a id="nestedatt--interfaces"></a>
 
@@ -203,11 +247,11 @@ resource "oxide_switch_port_settings" "example" {
 - `link_name` (String) Name of the link.
 - `lldp` (Object) Link Layer Discovery Protocol (LLDP) configuration. See [below for nested schema](#nestedatt--links--lldp).
 - `mtu` (Number) Maximum Transmission Unit (MTU) for this link.
-- `speed` (String) Link speed.
+- `speed` (String) Link speed. Valid values are `speed0_g`, `speed1_g`, `speed10_g`, `speed25_g`, `speed40_g`, `speed50_g`, `speed100_g`, `speed200_g`, or `speed400_g`.
 
 #### Optional
 
-- `fec` (String) Forward error correction (FEC) type.
+- `fec` (String) Forward error correction (FEC) type. Valid values are `firecode`, `none`, or `rs`.
 - `tx_eq` (Object) Transceiver equalization settings. See [below for nested schema](#nestedatt--links--tx_eq).
 
 <a id="nestedatt--links--lldp"></a>
@@ -245,7 +289,7 @@ resource "oxide_switch_port_settings" "example" {
 
 #### Required
 
-- `geometry` (String) Port geometry.
+- `geometry` (String) Port geometry. Valid values are `qsfp28x1`, `qsfp28x2`, or `sfp28x4`.
 
 <a id="nestedatt--routes"></a>
 
