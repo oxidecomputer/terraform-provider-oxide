@@ -64,8 +64,8 @@ type switchPortSettingsBGPPeerModel struct {
 
 type switchPortSettingsBGPPeerPeerModel struct {
 	Addr                   types.String                                     `tfsdk:"addr"`
-	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allow_export"`
-	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allow_import"`
+	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allowed_export"`
+	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allowed_import"`
 	BGPConfig              types.String                                     `tfsdk:"bgp_config"`
 	Communities            []types.Int64                                    `tfsdk:"communities"`
 	ConnectRetry           types.Int64                                      `tfsdk:"connect_retry"`
