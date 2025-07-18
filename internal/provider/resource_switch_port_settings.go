@@ -63,7 +63,7 @@ type switchPortSettingsBGPPeerModel struct {
 }
 
 type switchPortSettingsBGPPeerPeerModel struct {
-	Addr                   types.String                                     `tfsdk:"addr"`
+	Address                types.String                                     `tfsdk:"address"`
 	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allowed_export"`
 	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allowed_import"`
 	BGPConfig              types.String                                     `tfsdk:"bgp_config"`
@@ -226,7 +226,7 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 							Description: "Set of BGP peers configuration to assign to the link.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"addr": schema.StringAttribute{
+									"address": schema.StringAttribute{
 										Required:    true,
 										Description: "Address of the host to peer with.",
 									},
@@ -291,7 +291,7 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 									},
 									"enforce_first_as": schema.BoolAttribute{
 										Required:    true,
-										Description: "Enforce that the first autonomous system in paths received from this peer is the peer's autonomous system.",
+										Description: "Whether to enforce that the first autonomous system in paths received from this peer is the peer's autonomous system.",
 									},
 									"hold_time": schema.Int64Attribute{
 										Required:    true,
@@ -861,7 +861,7 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 			}
 
 			bgpPeerModel := switchPortSettingsBGPPeerPeerModel{
-				Addr:           types.StringValue(bgpPeer.Addr),
+				Address:        types.StringValue(bgpPeer.Addr),
 				BGPConfig:      types.StringValue(string(bgpPeer.BgpConfig)),
 				ConnectRetry:   types.Int64Value(int64(*bgpPeer.ConnectRetry)),
 				DelayOpen:      types.Int64Value(int64(*bgpPeer.DelayOpen)),
@@ -1207,7 +1207,7 @@ func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (
 		bgpPeers := make([]oxide.BgpPeer, 0)
 		for _, bgpModelNested := range bgpPeerModel.Peers {
 			bgpPeer := oxide.BgpPeer{
-				Addr:           bgpModelNested.Addr.ValueString(),
+				Addr:           bgpModelNested.Address.ValueString(),
 				BgpConfig:      oxide.NameOrId(bgpModelNested.BGPConfig.ValueString()),
 				ConnectRetry:   oxide.NewPointer(int(bgpModelNested.ConnectRetry.ValueInt64())),
 				DelayOpen:      oxide.NewPointer(int(bgpModelNested.DelayOpen.ValueInt64())),
