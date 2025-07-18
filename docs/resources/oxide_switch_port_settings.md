@@ -231,11 +231,11 @@ resource "oxide_switch_port_settings" "example" {
 
 #### Required
 
-- `type` (String) Type of the interface.
+- `type` (String) Type of the interface. Valid values are `primary`, `vlan`, and `loopback`.
 
 #### Optional
 
-- `vid` (Number) VLAN ID for the interfaces.
+- `vid` (Number) VLAN ID for the interfaces. Only valid when `type` is `vlan`.
 
 <a id="nestedatt--links"></a>
 
