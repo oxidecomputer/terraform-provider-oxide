@@ -148,14 +148,17 @@ type switchPortSettingsRouteRouteModel struct {
 	VID         types.Int32  `tfsdk:"vid"`
 }
 
+// NewSwitchPortSettingsResource contructs a Terraform resource.
 func NewSwitchPortSettingsResource() resource.Resource {
 	return &switchPortSettingsResource{}
 }
 
+// Metadata sets the metadata for the resource.
 func (r *switchPortSettingsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "oxide_switch_port_settings"
 }
 
+// Configure sets data needed by other methods for this resources.
 func (r *switchPortSettingsResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
@@ -164,10 +167,12 @@ func (r *switchPortSettingsResource) Configure(_ context.Context, req resource.C
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState contains logic on how to import the resource.
 func (r *switchPortSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+// Schema defines the Terraform configuration for this resource.
 func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
@@ -176,24 +181,30 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 				Description: "Unique, immutable, system-controlled identifier of the switch port settings.",
 			},
 			"addresses": schema.SetNestedAttribute{
-				Required: true,
+				Required:    true,
+				Description: "Address configuration for the switch port.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"link_name": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Name of the link for the address configuration.",
 						},
 						"addresses": schema.SetNestedAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Set of addresses to assign to the link.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"address": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "IPv4 or IPv6 address, including the subnet mask.",
 									},
 									"address_lot_id": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Address lot the address is allocated from.",
 									},
 									"vlan_id": schema.Int32Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "VLAN ID for the address.",
 									},
 								},
 							},
@@ -202,24 +213,30 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 				},
 			},
 			"bgp_peers": schema.SetNestedAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "BGP peer configuration for the switch port.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"link_name": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Name of the link for the BGP peers configuration.",
 						},
 						"peers": schema.SetNestedAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Set of BGP peers configuration to assign to the link.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"addr": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Address of the host to peer with.",
 									},
 									"allowed_export": schema.SingleNestedAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Export policy for the peer.",
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
-												Required: true,
+												Required:    true,
+												Description: "Type of filter to apply.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
 														string(oxide.ImportExportPolicyTypeNoFiltering),
@@ -230,14 +247,17 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 											"value": schema.SetAttribute{
 												Optional:    true,
 												ElementType: types.StringType,
+												Description: "IPv4 or IPv6 address to apply the filter to, including the subnet mask.",
 											},
 										},
 									},
 									"allowed_import": schema.SingleNestedAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Import policy for the peer.",
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
-												Required: true,
+												Required:    true,
+												Description: "Type of filter to apply.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
 														string(oxide.ImportExportPolicyTypeNoFiltering),
@@ -248,54 +268,70 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 											"value": schema.SetAttribute{
 												Optional:    true,
 												ElementType: types.StringType,
+												Description: "IPv4 or IPv6 address to apply the filter to, including the subnet mask.",
 											},
 										},
 									},
 									"bgp_config": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Name or ID of the global BGP configuration used for establishing a session with this peer.",
 									},
 									"communities": schema.SetAttribute{
 										Required:    true,
 										ElementType: types.Int64Type,
+										Description: "BGP communities to apply to this peer's routes.",
 									},
 									"connect_retry": schema.Int64Attribute{
-										Required: true,
+										Required:    true,
+										Description: "Number of seconds to wait before retrying a TCP connection.",
 									},
 									"delay_open": schema.Int64Attribute{
-										Required: true,
+										Required:    true,
+										Description: "Number of seconds to delay sending an open request after establishing a TCP session.",
 									},
 									"enforce_first_as": schema.BoolAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Enforce that the first autonomous system in paths received from this peer is the peer's autonomous system.",
 									},
 									"hold_time": schema.Int64Attribute{
-										Required: true,
+										Required:    true,
+										Description: "Number of seconds to hold peer connections between keepalives.",
 									},
 									"idle_hold_time": schema.Int64Attribute{
-										Required: true,
+										Required:    true,
+										Description: "Number of seconds to hold a peer in idle before attempting a new session.",
 									},
 									"interface_name": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Name of the interface to use for this BGP peer session.",
 									},
 									"keepalive": schema.Int64Attribute{
-										Required: true,
+										Required:    true,
+										Description: "Number of seconds between sending BGP keepalive requests.",
 									},
 									"local_pref": schema.Int64Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "BGP local preference value for routes received from this peer.",
 									},
 									"md5_auth_key": schema.StringAttribute{
-										Optional: true,
+										Optional:    true,
+										Description: "MD5 authentication key for this BGP session.",
 									},
 									"min_ttl": schema.Int32Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "Minimum acceptable TTL for BGP packets from this peer.",
 									},
 									"multi_exit_discriminator": schema.Int64Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "Multi-exit discriminator (MED) to advertise to this peer.",
 									},
 									"remote_asn": schema.Int64Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "Remote autonomous system number for this BGP peer.",
 									},
 									"vlan_id": schema.Int32Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "VLAN ID for this BGP peer session.",
 									},
 								},
 							},
@@ -304,21 +340,26 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 				},
 			},
 			"description": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "Human-readable description of the switch port settings.",
 			},
 			"groups": schema.SetAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
+				Description: "Set of port settings group IDs to include in these settings.",
 			},
 			"interfaces": schema.SetNestedAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "Interface configuration for the switch port.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"kind": schema.SingleNestedAttribute{
-							Required: true,
+							Required:    true,
+							Description: "The kind of interface this configuration represents.",
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
-									Required: true,
+									Required:    true,
+									Description: "Type of the interface.",
 									Validators: []validator.String{
 										stringvalidator.OneOf(
 											string(oxide.SwitchInterfaceKindTypePrimary),
@@ -328,28 +369,34 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 									},
 								},
 								"vid": schema.Int32Attribute{
-									Optional: true,
+									Optional:    true,
+									Description: "VLAN ID for the interfaces.",
 								},
 							},
 						},
 						"link_name": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Name of the link this interface is associated with.",
 						},
 						"v6_enabled": schema.BoolAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: "Enable IPv6 on this interface.",
 						},
 					},
 				},
 			},
 			"links": schema.SetNestedAttribute{
-				Required: true,
+				Required:    true,
+				Description: "Link configuration for the switch port.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"autoneg": schema.BoolAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Whether to enable auto-negotiation for this link.",
 						},
 						"fec": schema.StringAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: "Forward error correction (FEC) type.",
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.LinkFecFirecode),
@@ -359,39 +406,50 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 							},
 						},
 						"link_name": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Name of the link.",
 						},
 						"lldp": schema.SingleNestedAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Link Layer Discovery Protocol (LLDP) configuration.",
 							Attributes: map[string]schema.Attribute{
 								"chassis_id": schema.StringAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "LLDP chassis ID.",
 								},
 								"enabled": schema.BoolAttribute{
-									Required: true,
+									Required:    true,
+									Description: "Whether to enable LLDP on this link.",
 								},
 								"link_description": schema.StringAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "LLDP link description.",
 								},
 								"link_name": schema.StringAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "LLDP link name.",
 								},
 								"management_ip": schema.StringAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "LLDP management IP address.",
 								},
 								"system_description": schema.StringAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "LLDP system description.",
 								},
 								"system_name": schema.StringAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "LLDP system name.",
 								},
 							},
 						},
 						"mtu": schema.Int32Attribute{
-							Required: true,
+							Required:    true,
+							Description: "Maximum Transmission Unit (MTU) for this link.",
 						},
 						"speed": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Link speed.",
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.LinkSpeedSpeed0G),
@@ -407,22 +465,28 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 							},
 						},
 						"tx_eq": schema.SingleNestedAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: "Transceiver equalization settings.",
 							Attributes: map[string]schema.Attribute{
 								"main": schema.Int32Attribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Main tap equalization value.",
 								},
 								"post1": schema.Int32Attribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Post-cursor tap1 equalization value.",
 								},
 								"post2": schema.Int32Attribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Post-cursor tap2 equalization value.",
 								},
 								"pre1": schema.Int32Attribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Pre-cursor tap1 equalization value.",
 								},
 								"pre2": schema.Int32Attribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Pre-cursor tap2 equalization value.",
 								},
 							},
 						},
@@ -430,13 +494,16 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "Name of the switch port settings.",
 			},
 			"port_config": schema.SingleNestedAttribute{
-				Required: true,
+				Required:    true,
+				Description: "Physical port configuration.",
 				Attributes: map[string]schema.Attribute{
 					"geometry": schema.StringAttribute{
-						Required: true,
+						Required:    true,
+						Description: "Port geometry.",
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								string(oxide.SwitchPortGeometryQsfp28X1),
@@ -448,27 +515,34 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 				},
 			},
 			"routes": schema.SetNestedAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "Static route configuration.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"link_name": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Name of the link for these routes.",
 						},
 						"routes": schema.SetNestedAttribute{
-							Required: true,
+							Required:    true,
+							Description: "Set of static routes for this link.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"dst": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Destination network in CIDR notation.",
 									},
 									"gw": schema.StringAttribute{
-										Required: true,
+										Required:    true,
+										Description: "Gateway IP address for this route.",
 									},
 									"rib_priority": schema.Int32Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "Routing Information Base (RIB) priority for this route.",
 									},
 									"vid": schema.Int32Attribute{
-										Optional: true,
+										Optional:    true,
+										Description: "VLAN ID for this route.",
 									},
 								},
 							},
@@ -484,16 +558,17 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 			}),
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this Switch Port Configuration was created.",
+				Description: "Timestamp of when the switch port settings were created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this Switch Port Configuration was last modified.",
+				Description: "Timestamp of when the switch port settings were last modified.",
 			},
 		},
 	}
 }
 
+// Create sets the switch port settings.
 func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan switchPortSettingsModel
 
@@ -544,7 +619,7 @@ func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.Cr
 func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state switchPortSettingsModel
 
-	// Read Terraform prior state data into the model
+	// Read Terraform prior state data into the model.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -572,7 +647,7 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 
 	tflog.Trace(ctx, fmt.Sprintf("read Switch Port Settings with ID: %v", settings.Id), map[string]any{"success": true})
 
-	// Map response body to schema
+	// Map response body to schema.
 	state.ID = types.StringValue(settings.Id)
 	state.Name = types.StringValue(string(settings.Name))
 	state.Description = types.StringValue(settings.Description)
@@ -585,6 +660,9 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
+	// These fields are populated from the built Terraform model to handle the
+	// asymmetry of the API and edge cases with mapping Oxide API types to Terraform
+	// types.
 	state.Addresses = model.Addresses
 	state.BGPPeers = model.BGPPeers
 	state.Groups = model.Groups
@@ -601,19 +679,18 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
+// There is no Oxide API to update switch port settings so all the switch port
+// settings are overwritten using the `switch_port_settings_create` API.
 func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) { // plan is the resource data model for the update request.
+	// Read the Terraform plan data.
 	var plan switchPortSettingsModel
-	// state is the resource data model for the current state.
-	var state switchPortSettingsModel
-
-	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read Terraform prior state data into the state model to retrieve ID
-	// which is a computed attribute, so it won't show up in the plan.
+	// Read the Terraform state data to retreive compute attributes.
+	var state switchPortSettingsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -659,9 +736,8 @@ func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.Up
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// state is the resource data model for the current state.
+	// Read the Terraform state.
 	var state switchPortSettingsModel
-
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -672,6 +748,7 @@ func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.De
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
@@ -688,10 +765,37 @@ func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.De
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted Switch Port Settings with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 
+	tflog.Trace(ctx, fmt.Sprintf("deleted Switch Port Settings with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
 }
 
+// toSwitchPortSettingsModel converts [oxide.SwitchPortSettings]
+// to [switchPortSettingsModel]. It's used deserialize the Oxide
+// `switch_port_settings_create` API response into the Terraform data model used
+// by this resource.
+//
+// This function is quite long so let's break down the core of what it's doing.
+//
+// 1. This function handles the asymmetrical nature of the
+// `switch_port_settings_create` API. For example, the request body
+// accepts attributes such as `addresses[].addresses[].address` but returns
+// `addresses[].address`. This function handles that conversion by creating a
+// map of all the respective configurations for a given link name and using it
+// to populate the nested model.
+//
+// 2. This function assumes null values by default to prevent Terraform from
+// having a non-empty refresh plan right after a successful apply. For example,
+// assume the Terraform configuration omits the `bgp_peers` attribute. After an
+// apply, the Oxide `switch_port_settings_create` API returns `"bgp_peers": []`
+// and Terraform plans must see this as a null value to match the configuration.
+// Otherwise, the Terraform refresh plan will read the value `[]` and attempt to
+// set it back to null since the configuration had `bgp_peers` omitted. This is
+// why you'll see `if len(settings.Addresses) > 0` conditions.
+//
+// 3. The above point about assuming null values applies to other nested
+// attributes as well. That's why you'll see a bunch of anonymous functions to
+// set values to null if they are either null or their zero value as retrieved
+// from Oxide.
 func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSettingsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -1050,6 +1154,10 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 	return model, diags
 }
 
+// toNetworkingSwitchPortSettingsCreateParams converts [switchPortSettingsModel`
+// to [oxide.NetworkingSwitchPortSettingsCreateParams]. This is far simpler than
+// [toSwitchPortSettingsModel] since the Oxide `switch_port_settings_create` API
+// request body matches the Terraform schema.
 func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
 	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{
