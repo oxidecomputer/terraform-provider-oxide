@@ -7,7 +7,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -913,6 +912,9 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 			bgpPeerModel.AllowedExport = &switchPortSettingsBGPPeerPeerAllowedExportModel{
 				Type: types.StringValue(string(bgpPeer.AllowedExport.Type)),
 				Value: func() []types.String {
+					if len(bgpPeer.AllowedExport.Value) == 0 {
+						return nil
+					}
 					res := make([]types.String, 0)
 					for _, elem := range bgpPeer.AllowedExport.Value {
 						res = append(res, types.StringValue(elem.(string)))
@@ -924,6 +926,9 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 			bgpPeerModel.AllowedImport = &switchPortSettingsBGPPeerPeerAllowedImportModel{
 				Type: types.StringValue(string(bgpPeer.AllowedImport.Type)),
 				Value: func() []types.String {
+					if len(bgpPeer.AllowedImport.Value) == 0 {
+						return nil
+					}
 					res := make([]types.String, 0)
 					for _, elem := range bgpPeer.AllowedImport.Value {
 						res = append(res, types.StringValue(elem.(string)))
@@ -934,15 +939,8 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 
 			bgpPeerModel.Communities = func() []types.Int64 {
 				communities := make([]types.Int64, 0)
-				for _, communityStr := range bgpPeer.Communities {
-					community, err := strconv.ParseInt(communityStr, 10, 64)
-					if err != nil {
-						diags.AddError(
-							"Error parsing community element",
-							fmt.Sprintf("Could not parse %s as int64: %v", communityStr, err),
-						)
-					}
-					communities = append(communities, types.Int64Value(community))
+				for _, community := range bgpPeer.Communities {
+					communities = append(communities, types.Int64Value(int64(community)))
 				}
 				return communities
 			}()
@@ -1281,10 +1279,10 @@ func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (
 				}(),
 			}
 
-			bgpPeer.Communities = func() []string {
-				communities := make([]string, 0)
+			bgpPeer.Communities = func() []int {
+				communities := make([]int, 0)
 				for _, community := range bgpModelNested.Communities {
-					communities = append(communities, fmt.Sprintf("%d", community.ValueInt64()))
+					communities = append(communities, int(community.ValueInt64()))
 				}
 				return communities
 			}()
