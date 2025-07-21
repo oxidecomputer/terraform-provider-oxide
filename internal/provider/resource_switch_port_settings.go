@@ -812,7 +812,12 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 	//
 	// Addresses
 	//
-	if len(settings.Addresses) > 0 {
+	if len(settings.Addresses) == 0 {
+		diags.AddError(
+			"Unexpected empty attribute: addresses",
+			"The API returned an empty array for this required attribute.",
+		)
+	} else {
 		linkToAddrs := make(map[string][]switchPortSettingsAddressAddressModel)
 		for _, address := range settings.Addresses {
 			link := string(address.InterfaceName)
@@ -993,7 +998,12 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 	//
 	// Links
 	//
-	if len(settings.Links) > 0 {
+	if len(settings.Links) == 0 {
+		diags.AddError(
+			"Unexpected empty attribute: links",
+			"The API returned an empty array for this required attribute.",
+		)
+	} else {
 		linkModels := make([]switchPortSettingsLinkModel, 0)
 		for _, link := range settings.Links {
 			linkModel := switchPortSettingsLinkModel{
@@ -1152,7 +1162,7 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 	return model, diags
 }
 
-// toNetworkingSwitchPortSettingsCreateParams converts [switchPortSettingsModel`
+// toNetworkingSwitchPortSettingsCreateParams converts [switchPortSettingsModel]
 // to [oxide.NetworkingSwitchPortSettingsCreateParams]. This is far simpler than
 // [toSwitchPortSettingsModel] since the Oxide `switch_port_settings_create` API
 // request body matches the Terraform schema.
