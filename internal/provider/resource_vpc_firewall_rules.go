@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -77,14 +78,20 @@ type vpcFirewallRulesResourceRuleTargetModel struct {
 }
 
 type vpcFirewallRulesResourceRuleFiltersModel struct {
-	Hosts     []vpcFirewallRuleHostFilterModel `tfsdk:"hosts"`
-	Ports     types.Set                        `tfsdk:"ports"`
-	Protocols types.Set                        `tfsdk:"protocols"`
+	Hosts     []vpcFirewallRuleHostFilterModel     `tfsdk:"hosts"`
+	Ports     types.Set                            `tfsdk:"ports"`
+	Protocols []vpcFirewallRuleProtocolFilterModel `tfsdk:"protocols"`
 }
 
 type vpcFirewallRuleHostFilterModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
+}
+
+type vpcFirewallRuleProtocolFilterModel struct {
+	Type     types.String `tfsdk:"type"`
+	IcmpType types.Int32  `tfsdk:"icmp_type"`
+	IcmpCode types.String `tfsdk:"icmp_code"`
 }
 
 // Metadata returns the resource type name.
@@ -188,18 +195,41 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 										setvalidator.SizeAtLeast(1),
 									},
 								},
-								"protocols": schema.SetAttribute{
-									Description: "If present, the networking protocols this rule applies to. Possible values are: TCP, UDP and ICMP.",
+								"protocols": schema.SetNestedAttribute{
+									Description: "The protocols in a firewall rule's filter.",
 									Optional:    true,
-									ElementType: types.StringType,
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"type": schema.StringAttribute{
+												Required:    true,
+												Description: "The protocol type. Must be one of `tcp`, `udp`, or `icmp`.",
+												Validators: []validator.String{
+													stringvalidator.OneOf(
+														string(oxide.VpcFirewallRuleProtocolTypeTcp),
+														string(oxide.VpcFirewallRuleProtocolTypeUdp),
+														string(oxide.VpcFirewallRuleProtocolTypeIcmp),
+													),
+												},
+											},
+											"icmp_type": schema.Int32Attribute{
+												Optional:    true,
+												Description: "ICMP type. Only valid when type is `icmp`.",
+												Validators: []validator.Int32{
+													int32validator.Between(0, 255),
+												},
+											},
+											"icmp_code": schema.StringAttribute{
+												Optional:    true,
+												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.",
+												Validators: []validator.String{
+													stringvalidator.AlsoRequires(path.Expressions{
+														path.MatchRelative().AtParent().AtName("icmp_type"),
+													}...),
+												},
+											},
+										},
+									},
 									Validators: []validator.Set{
-										setvalidator.ValueStringsAre(stringvalidator.Any(
-											stringvalidator.OneOf(
-												string(oxide.VpcFirewallRuleProtocolTcp),
-												string(oxide.VpcFirewallRuleProtocolUdp),
-												string(oxide.VpcFirewallRuleProtocolIcmp),
-											),
-										)),
 										setvalidator.SizeAtLeast(1),
 									},
 								},
@@ -609,14 +639,25 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 		return nil, diags
 	}
 
-	var protocols = []attr.Value{}
+	var protocolModels = []vpcFirewallRuleProtocolFilterModel{}
 	for _, protocol := range filter.Protocols {
-		protocols = append(protocols, types.StringValue(string(protocol)))
-	}
-	protocolSet, diags := types.SetValue(types.StringType, protocols)
-	diags.Append(diags...)
-	if diags.HasError() {
-		return nil, diags
+		protocolModel := vpcFirewallRuleProtocolFilterModel{
+			Type: types.StringValue(string(protocol.Type)),
+			IcmpCode: func() types.String {
+				if protocol.Value.Code == "" {
+					return types.StringNull()
+				}
+				return types.StringValue(string(protocol.Value.Code))
+			}(),
+			IcmpType: func() types.Int32 {
+				if protocol.Value.IcmpType == nil {
+					return types.Int32Null()
+				}
+				return types.Int32Value(int32(*protocol.Value.IcmpType))
+			}(),
+		}
+
+		protocolModels = append(protocolModels, protocolModel)
 	}
 
 	model := vpcFirewallRulesResourceRuleFiltersModel{}
@@ -631,10 +672,10 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 		model.Ports = types.SetNull(types.StringType)
 	}
 
-	if len(protocolSet.Elements()) > 0 {
-		model.Protocols = protocolSet
+	if len(protocolModels) > 0 {
+		model.Protocols = protocolModels
 	} else {
-		model.Protocols = types.SetNull(types.StringType)
+		model.Protocols = nil
 	}
 
 	return &model, nil
@@ -674,9 +715,22 @@ func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxi
 	}
 
 	protocols := []oxide.VpcFirewallRuleProtocol{}
-	for _, protocol := range model.Protocols.Elements() {
-		p, _ := strconv.Unquote(protocol.String())
-		protocols = append(protocols, oxide.VpcFirewallRuleProtocol(p))
+	for _, protocolModel := range model.Protocols {
+		protocol := oxide.VpcFirewallRuleProtocol{
+			Type: oxide.VpcFirewallRuleProtocolType(protocolModel.Type.ValueString()),
+			Value: oxide.VpcFirewallIcmpFilter{
+				Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
+				IcmpType: func() *int {
+					if protocolModel.IcmpType.IsNull() {
+						return nil
+					}
+
+					return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
+				}(),
+			},
+		}
+
+		protocols = append(protocols, protocol)
 	}
 
 	return oxide.VpcFirewallRuleFilter{
