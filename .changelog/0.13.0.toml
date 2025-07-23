@@ -11,5 +11,5 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
+title = "`oxide_instance`"
+description = "Fixed a provider crash when applying a configuration with an empty `boot_disk_id` attribute and a non-empty `disk_attachments` attribute. [#471](https://github.com/oxidecomputer/terraform-provider-oxide/pull/471)"
