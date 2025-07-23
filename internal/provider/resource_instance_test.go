@@ -835,6 +835,81 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+func TestAccCloudResourceInstance_no_boot_disk(t *testing.T) {
+	type resourceInstanceNoBootDiskConfig struct {
+		BlockName        string
+		InstanceName     string
+		DiskBlockName    string
+		DiskName         string
+		SupportBlockName string
+	}
+
+	resourceInstanceNoBootDiskConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  host_name       = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+}
+`
+
+	instanceName := newResourceName()
+	diskName := newResourceName()
+	blockName := newBlockName("instance-no-boot-disk")
+	diskBlockName := newBlockName("disk")
+	supportBlockName := newBlockName("support")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config, err := parsedAccConfig(
+		resourceInstanceNoBootDiskConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			DiskBlockName:    diskBlockName,
+			DiskName:         diskName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceNoBootDiskConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstanceNoBootDisk(resourceName, instanceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
 func TestAccCloudResourceInstance_antiAffinityGroups(t *testing.T) {
 	type resourceInstanceAntiAffinityGroupsConfig struct {
 		BlockName                   string
@@ -1275,6 +1350,23 @@ func checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceName st
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.1"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "boot_disk_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
