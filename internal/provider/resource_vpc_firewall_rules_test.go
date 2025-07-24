@@ -52,7 +52,11 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
           }
         ]
         ports     = ["8123"]
-        protocols = ["ICMP"]
+        protocols = [
+          {
+            type = "tcp"
+          },
+        ]
       },
       targets = [
         {
@@ -123,7 +127,11 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
           }
         ]
         ports     = ["443"]
-        protocols = ["TCP"]
+        protocols = [
+          {
+            type = "tcp"
+          }
+        ]
       },
       targets = [
         {
@@ -147,7 +155,11 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
           }
         ]
         ports     = ["22"]
-        protocols = ["TCP"]
+        protocols = [
+          {
+            type = "tcp"
+          }
+        ]
       },
       targets = [
         {
@@ -190,7 +202,11 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
           }
         ]
         ports     = ["443"]
-        protocols = ["TCP"]
+        protocols = [
+          {
+            type = "tcp"
+          }
+        ]
       },
       targets = [
         {
@@ -218,6 +234,89 @@ resource "oxide_vpc" "{{.SupportBlockName2}}" {
 resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
   vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
   rules = []
+}
+`
+
+var resourceFirewallRulesUpdateConfigTpl4 = `
+data "oxide_project" "{{.SupportBlockName}}" {
+  name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.SupportBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test vpc"
+  name        = "{{.VPCName}}"
+  dns_name    = "my-vpc-dns"
+}
+
+resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
+  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+  rules = [
+    {
+      action      = "allow"
+      name        = "allow-icmp"
+      description = "ICMP rule."
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        protocols = [
+          {
+            type = "icmp"
+            icmp_type = 3
+          },
+        ]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  ]
+}
+`
+
+var resourceFirewallRulesUpdateConfigTpl5 = `
+data "oxide_project" "{{.SupportBlockName}}" {
+  name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.SupportBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test vpc"
+  name        = "{{.VPCName}}"
+  dns_name    = "my-vpc-dns"
+}
+
+resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
+  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+  rules = [
+    {
+      action      = "allow"
+      name        = "allow-icmp"
+      description = "ICMP rule."
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        protocols = [
+          {
+            type = "icmp"
+            icmp_type = 0
+            icmp_code = "1-3"
+          },
+        ]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  ]
 }
 `
 
@@ -279,6 +378,32 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 		t.Errorf("error parsing update config 3 template data: %e", err)
 	}
 
+	configUpdate4, err := parsedAccConfig(
+		resourceFirewallRulesConfig{
+			BlockName:         blockName,
+			SupportBlockName:  supportBlockName,
+			SupportBlockName2: supportBlockName2,
+			VPCName:           vpcName,
+		},
+		resourceFirewallRulesUpdateConfigTpl4,
+	)
+	if err != nil {
+		t.Errorf("error parsing update config 4 template data: %e", err)
+	}
+
+	configUpdate5, err := parsedAccConfig(
+		resourceFirewallRulesConfig{
+			BlockName:         blockName,
+			SupportBlockName:  supportBlockName,
+			SupportBlockName2: supportBlockName2,
+			VPCName:           vpcName,
+		},
+		resourceFirewallRulesUpdateConfigTpl5,
+	)
+	if err != nil {
+		t.Errorf("error parsing update config 5 template data: %e", err)
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
@@ -299,6 +424,14 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 			{
 				Config: configUpdate3,
 				Check:  checkResourceFirewallRulesUpdate3(resourceName),
+			},
+			{
+				Config: configUpdate4,
+				Check:  checkResourceFirewallRulesUpdate4(resourceName),
+			},
+			{
+				Config: configUpdate5,
+				Check:  checkResourceFirewallRulesUpdate5(resourceName),
 			},
 		},
 	})
@@ -354,7 +487,7 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.type"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.value"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "443"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "TCP"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.type", "tcp"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.targets.0.value"),
 		// Rule 2.
@@ -367,7 +500,7 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.filters.hosts.0.type"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.filters.hosts.0.value"),
 		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.ports.0", "22"),
-		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.protocols.0", "TCP"),
+		resource.TestCheckResourceAttr(resourceName, "rules.1.filters.protocols.0.type", "tcp"),
 		resource.TestCheckResourceAttr(resourceName, "rules.1.targets.0.type", "subnet"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.1.targets.0.value"),
 	}...)
@@ -389,7 +522,7 @@ func checkResourceFirewallRulesUpdate2(resourceName, vpcName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.type"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.filters.hosts.0.value"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.ports.0", "443"),
-		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0", "TCP"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.type", "tcp"),
 		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.0.targets.0.value"),
 	}...)
@@ -400,6 +533,48 @@ func checkResourceFirewallRulesUpdate3(resourceName string) resource.TestCheckFu
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 		resource.TestCheckResourceAttr(resourceName, "rules.#", "0"),
+	}...)
+}
+
+func checkResourceFirewallRulesUpdate4(resourceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		// Rule 1.
+		resource.TestCheckResourceAttr(resourceName, "rules.0.action", "allow"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "allow-icmp"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "ICMP rule."),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "inbound"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "65535"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "enabled"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.type", "icmp"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.icmp_type", "3"),
+		resource.TestCheckNoResourceAttr(resourceName, "rules.0.filters.protocols.0.icmp_code"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
+		resource.TestCheckResourceAttrSet(resourceName, "rules.0.targets.0.value"),
+	}...)
+}
+
+func checkResourceFirewallRulesUpdate5(resourceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		// Rule 1.
+		resource.TestCheckResourceAttr(resourceName, "rules.0.action", "allow"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.name", "allow-icmp"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.description", "ICMP rule."),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.direction", "inbound"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.priority", "65535"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.status", "enabled"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.type", "icmp"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.icmp_type", "0"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.filters.protocols.0.icmp_code", "1-3"),
+		resource.TestCheckResourceAttr(resourceName, "rules.0.targets.0.type", "subnet"),
+		resource.TestCheckResourceAttrSet(resourceName, "rules.0.targets.0.value"),
 	}...)
 }
 

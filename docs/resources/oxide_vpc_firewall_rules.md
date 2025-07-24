@@ -15,6 +15,8 @@ rules when updating this resource.
 
 ## Example Usage
 
+### Basic Example
+
 ```hcl
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
@@ -34,7 +36,50 @@ resource "oxide_vpc_firewall_rules" "example" {
           }
         ]
         ports     = ["443"]
-        protocols = ["TCP"]
+        protocols = ["tcp"]
+      },
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### ICMP Example
+
+```hcl
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = [
+    {
+      action      = "allow"
+      description = "Allow ICMP"
+      name        = "allow-icmp"
+      direction   = "inbound"
+      priority    = 50
+      status      = "enabled"
+      filters = {
+        protocols = [
+          # All ICMP.
+          {
+            type = "icmp",
+          },
+          # Echo Reply types.
+          {
+            type = "icmp",
+            icmp_type = 0
+          },
+          # Echo Reply types with codes 1-3.
+          {
+            type = "icmp",
+            icmp_type = 0
+            icmp_code = "1-3"
+          },
+        ]
       },
       targets = [
         {
@@ -86,7 +131,7 @@ Required:
 Optional:
 
 - `hosts` (Set) If present, the sources (if incoming) or destinations (if outgoing) this rule applies to. (see [below for nested schema](#nestedatt--hosts))
-- `protocols` (Array of Strings) If present, the networking protocols this rule applies to. Possible values are: TCP, UDP and ICMP.
+- `protocols` (Set) If present, the networking protocols this rule applies to. (see [below for nested schema](#nestedatt--protocols))
 - `ports` (Array of Strings) If present, the destination ports this rule applies to. Can be a mix of single ports (e.g., `"443"`) and port ranges (e.g., `"30000-32768"`).
 
 <a id="nestedatt--hosts"></a>
@@ -102,6 +147,19 @@ Required:
 	- For type instance: Name of the instance
 	- For type ip: IP address
 	- For type ip_net: IPv4 or IPv6 subnet
+
+<a id="nestedatt--protocols"></a>
+
+### Nested Schema for `protocols`
+
+Required:
+
+- `type` (String) The protocol type. Must be one of `tcp`, `udp`, or `icmp`.
+
+Optional:
+
+- `icmp_type` (Number) ICMP type (e.g., 0 for Echo Reply). Only valid when `type` is `icmp`.
+- `icmp_code` (String) ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.
 
 <a id="nestedatt--targets"></a>
 
