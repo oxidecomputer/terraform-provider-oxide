@@ -75,7 +75,16 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
       mtu       = 1500
       speed     = "speed1_g"
       lldp = {
-        enabled = false
+        enabled = true
+      }
+    },
+    {
+      link_name = "phy1"
+      autoneg   = false
+      mtu       = 1500
+      speed     = "speed10_g"
+      lldp = {
+        enabled = true
       }
     },
   ]
@@ -122,6 +131,15 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
       speed     = "speed1_g"
       lldp = {
         enabled = true
+      }
+    },
+    {
+      link_name = "phy1"
+      autoneg   = false
+      mtu       = 1500
+      speed     = "speed10_g"
+      lldp = {
+        enabled = false
       }
     },
   ]
@@ -219,14 +237,14 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "addresses.0.addresses.0.address_lot_id"),
 		resource.TestCheckNoResourceAttr(resourceName, "addresses.0.addresses.0.vlan_id"),
 
-		resource.TestCheckResourceAttr(resourceName, "links.#", "1"),
+		resource.TestCheckResourceAttr(resourceName, "links.#", "2"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.link_name", "phy0"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.autoneg", "false"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.fec"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.mtu", "1500"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.speed", "speed1_g"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.lldp.%", "7"),
-		resource.TestCheckResourceAttr(resourceName, "links.0.lldp.enabled", "false"),
+		resource.TestCheckResourceAttr(resourceName, "links.0.lldp.enabled", "true"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.chassis_id"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.link_description"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.link_name"),
@@ -234,6 +252,20 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.system_description"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.system_name"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.tx_eq"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.link_name", "phy1"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.autoneg", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.fec"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.mtu", "1500"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.speed", "speed10_g"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.lldp.%", "7"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.lldp.enabled", "true"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.chassis_id"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.link_description"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.link_name"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.management_ip"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.system_description"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.system_name"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.tx_eq"),
 
 		resource.TestCheckResourceAttr(resourceName, "routes.#", "1"),
 		resource.TestCheckResourceAttr(resourceName, "routes.0.link_name", "phy0"),
@@ -261,7 +293,7 @@ func checkResourceSwitchPortSettingsUpdate(resourceName string, name string) res
 		resource.TestCheckResourceAttrSet(resourceName, "addresses.0.addresses.0.address_lot_id"),
 		resource.TestCheckNoResourceAttr(resourceName, "addresses.0.addresses.0.vlan_id"),
 
-		resource.TestCheckResourceAttr(resourceName, "links.#", "1"),
+		resource.TestCheckResourceAttr(resourceName, "links.#", "2"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.link_name", "phy0"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.autoneg", "false"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.fec"),
@@ -276,6 +308,20 @@ func checkResourceSwitchPortSettingsUpdate(resourceName string, name string) res
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.system_description"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.lldp.system_name"),
 		resource.TestCheckNoResourceAttr(resourceName, "links.0.tx_eq"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.link_name", "phy1"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.autoneg", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.fec"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.mtu", "1500"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.speed", "speed10_g"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.lldp.%", "7"),
+		resource.TestCheckResourceAttr(resourceName, "links.1.lldp.enabled", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.chassis_id"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.link_description"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.link_name"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.management_ip"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.system_description"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.lldp.system_name"),
+		resource.TestCheckNoResourceAttr(resourceName, "links.1.tx_eq"),
 
 		resource.TestCheckResourceAttr(resourceName, "routes.#", "1"),
 		resource.TestCheckResourceAttr(resourceName, "routes.0.link_name", "phy0"),
