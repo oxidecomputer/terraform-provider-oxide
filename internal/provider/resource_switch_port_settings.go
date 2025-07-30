@@ -35,8 +35,6 @@ type switchPortSettingsModel struct {
 	Description  types.String                       `tfsdk:"description"`
 	Addresses    []switchPortSettingsAddressModel   `tfsdk:"addresses"`
 	BGPPeers     []switchPortSettingsBGPPeerModel   `tfsdk:"bgp_peers"`
-	Groups       []types.String                     `tfsdk:"groups"`
-	Interfaces   []switchPortSettingsInterfaceModel `tfsdk:"interfaces"`
 	Links        []switchPortSettingsLinkModel      `tfsdk:"links"`
 	PortConfig   *switchPortSettingsPortConfigModel `tfsdk:"port_config"`
 	Routes       []switchPortSettingsRouteModel     `tfsdk:"routes"`
@@ -90,17 +88,6 @@ type switchPortSettingsBGPPeerPeerAllowedExportModel struct {
 type switchPortSettingsBGPPeerPeerAllowedImportModel struct {
 	Type  types.String   `tfsdk:"type"`
 	Value []types.String `tfsdk:"value"`
-}
-
-type switchPortSettingsInterfaceModel struct {
-	Kind      *switchPortSettingsInterfaceKindModel `tfsdk:"kind"`
-	LinkName  types.String                          `tfsdk:"link_name"`
-	V6Enabled types.Bool                            `tfsdk:"v6_enabled"`
-}
-
-type switchPortSettingsInterfaceKindModel struct {
-	Type types.String `tfsdk:"type"`
-	VID  types.Int32  `tfsdk:"vid"`
 }
 
 type switchPortSettingsLinkModel struct {
@@ -341,48 +328,6 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 			"description": schema.StringAttribute{
 				Required:    true,
 				Description: "Human-readable description of the switch port settings.",
-			},
-			"groups": schema.SetAttribute{
-				Optional:    true,
-				ElementType: types.StringType,
-				Description: "Set of port settings group IDs to include in these settings.",
-			},
-			"interfaces": schema.SetNestedAttribute{
-				Optional:    true,
-				Description: "Interface configuration for the switch port.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"kind": schema.SingleNestedAttribute{
-							Required:    true,
-							Description: "The kind of interface this configuration represents.",
-							Attributes: map[string]schema.Attribute{
-								"type": schema.StringAttribute{
-									Required:    true,
-									Description: "Type of the interface.",
-									Validators: []validator.String{
-										stringvalidator.OneOf(
-											string(oxide.SwitchInterfaceKindTypePrimary),
-											string(oxide.SwitchInterfaceKindTypeVlan),
-											string(oxide.SwitchInterfaceKindTypeLoopback),
-										),
-									},
-								},
-								"vid": schema.Int32Attribute{
-									Optional:    true,
-									Description: "VLAN ID for the interfaces.",
-								},
-							},
-						},
-						"link_name": schema.StringAttribute{
-							Required:    true,
-							Description: "Name of the link this interface is associated with.",
-						},
-						"v6_enabled": schema.BoolAttribute{
-							Optional:    true,
-							Description: "Enable IPv6 on this interface.",
-						},
-					},
-				},
 			},
 			"links": schema.SetNestedAttribute{
 				Required:    true,
@@ -664,8 +609,6 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 	// types.
 	state.Addresses = model.Addresses
 	state.BGPPeers = model.BGPPeers
-	state.Groups = model.Groups
-	state.Interfaces = model.Interfaces
 	state.Links = model.Links
 	state.PortConfig = model.PortConfig
 	state.Routes = model.Routes
@@ -966,36 +909,6 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 	}
 
 	//
-	// Groups
-	//
-	if len(settings.Groups) > 0 {
-		groupModels := make([]types.String, 0)
-		for _, group := range settings.Groups {
-			groupModel := types.StringValue(group.PortSettingsGroupId)
-			groupModels = append(groupModels, groupModel)
-		}
-		model.Groups = groupModels
-	}
-
-	//
-	// Interfaces
-	//
-	if len(settings.Interfaces) > 0 {
-		interfaceModels := make([]switchPortSettingsInterfaceModel, 0)
-		for _, iface := range settings.Interfaces {
-			interfaceModel := switchPortSettingsInterfaceModel{
-				Kind: &switchPortSettingsInterfaceKindModel{
-					Type: types.StringValue(string(iface.Kind)),
-				},
-				LinkName:  types.StringValue(string(iface.InterfaceName)),
-				V6Enabled: types.BoolPointerValue(iface.V6Enabled),
-			}
-			interfaceModels = append(interfaceModels, interfaceModel)
-		}
-		model.Interfaces = interfaceModels
-	}
-
-	//
 	// Links
 	//
 	if len(settings.Links) == 0 {
@@ -1174,6 +1087,8 @@ func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (
 			PortConfig: oxide.SwitchPortConfigCreate{
 				Geometry: oxide.SwitchPortGeometry(model.PortConfig.Geometry.ValueString()),
 			},
+			Groups:     []oxide.NameOrId{},
+			Interfaces: []oxide.SwitchInterfaceConfigCreate{},
 		},
 	}
 
@@ -1308,38 +1223,6 @@ func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (
 		bgpPeerConfigs = append(bgpPeerConfigs, bgpPeerConfig)
 	}
 	params.Body.BgpPeers = bgpPeerConfigs
-
-	//
-	// Groups
-	//
-	groups := make([]oxide.NameOrId, 0)
-	for _, group := range model.Groups {
-		groups = append(groups, oxide.NameOrId(group.ValueString()))
-	}
-	params.Body.Groups = groups
-
-	//
-	// Interfaces
-	//
-	interfaceConfigs := make([]oxide.SwitchInterfaceConfigCreate, 0)
-	for _, interfaceModel := range model.Interfaces {
-		interfaceConfig := oxide.SwitchInterfaceConfigCreate{
-			Kind: oxide.SwitchInterfaceKind{
-				Type: oxide.SwitchInterfaceKindType(interfaceModel.Kind.Type.ValueString()),
-				Vid: func() *int {
-					if interfaceModel.Kind.VID.IsNull() {
-						return nil
-					}
-					return oxide.NewPointer(int(interfaceModel.Kind.VID.ValueInt32()))
-				}(),
-			},
-			LinkName:  oxide.Name(interfaceModel.LinkName.ValueString()),
-			V6Enabled: oxide.NewPointer(interfaceModel.V6Enabled.ValueBool()),
-		}
-
-		interfaceConfigs = append(interfaceConfigs, interfaceConfig)
-	}
-	params.Body.Interfaces = interfaceConfigs
 
 	//
 	// Links

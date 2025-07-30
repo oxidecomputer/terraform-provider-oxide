@@ -68,16 +68,6 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
     },
   ]
 
-  interfaces = [
-    {
-      link_name = "phy0"
-      kind = {
-        type = "primary"
-      }
-      v6_enabled = false
-    }
-  ]
-
   links = [
     {
       link_name = "phy0"
@@ -219,7 +209,6 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 		resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance testing."),
 		resource.TestCheckResourceAttr(resourceName, "port_config.geometry", "qsfp28x1"),
 		resource.TestCheckNoResourceAttr(resourceName, "bgp_peers"),
-		resource.TestCheckNoResourceAttr(resourceName, "groups"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 
@@ -229,11 +218,6 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 		resource.TestCheckResourceAttr(resourceName, "addresses.0.addresses.0.address", "0.0.0.0/0"),
 		resource.TestCheckResourceAttrSet(resourceName, "addresses.0.addresses.0.address_lot_id"),
 		resource.TestCheckNoResourceAttr(resourceName, "addresses.0.addresses.0.vlan_id"),
-
-		resource.TestCheckResourceAttr(resourceName, "interfaces.#", "1"),
-		resource.TestCheckResourceAttr(resourceName, "interfaces.0.link_name", "phy0"),
-		resource.TestCheckResourceAttr(resourceName, "interfaces.0.kind.type", "primary"),
-		resource.TestCheckResourceAttr(resourceName, "interfaces.0.v6_enabled", "false"),
 
 		resource.TestCheckResourceAttr(resourceName, "links.#", "1"),
 		resource.TestCheckResourceAttr(resourceName, "links.0.link_name", "phy0"),
@@ -267,8 +251,6 @@ func checkResourceSwitchPortSettingsUpdate(resourceName string, name string) res
 		resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance testing (updated)."),
 		resource.TestCheckResourceAttr(resourceName, "port_config.geometry", "qsfp28x1"),
 		resource.TestCheckNoResourceAttr(resourceName, "bgp_peers"),
-		resource.TestCheckNoResourceAttr(resourceName, "groups"),
-		resource.TestCheckNoResourceAttr(resourceName, "interfaces"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 
