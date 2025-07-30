@@ -4,8 +4,7 @@ page_title: "oxide_switch_port_settings Resource - terraform-provider-oxide"
 
 # oxide_switch_port_settings (Resource)
 
-This resource manages switch port settings for configuring network switch ports
-including addresses, BGP peers, interfaces, links, and routes.
+This resource manages switch port settings to configure network switch ports.
 
 !> Switch port settings defined by this resource are considered exhaustive and
 will overwrite any other switch port settings upon apply.
@@ -42,23 +41,6 @@ resource "oxide_switch_port_settings" "example" {
         },
       ]
     },
-  ]
-
-  interfaces = [
-    {
-      link_name = "phy0"
-      kind = {
-        type = "primary"
-      }
-      v6_enabled = false
-    }
-    {
-      link_name = "phy1"
-      kind = {
-        type = "primary"
-      }
-      v6_enabled = false
-    }
   ]
 
   links = [
@@ -118,8 +100,6 @@ resource "oxide_switch_port_settings" "example" {
 ### Optional
 
 - `bgp_peers` (Set of Object) BGP peer configuration for the switch port. See [below for nested schema](#nestedatt--bgp_peers).
-- `groups` (Set of String) Set of port settings group IDs to include in these settings.
-- `interfaces` (Set of Object) Interface configuration for the switch port. See [below for nested schema](#nestedatt--interfaces).
 - `routes` (Set of Object) Static route configuration. See [below for nested schema](#nestedatt--routes).
 - `timeouts` (Attribute) Timeouts for performing API operations. See [below for nested schema](#nestedatt--timeouts).
 
@@ -211,31 +191,6 @@ resource "oxide_switch_port_settings" "example" {
 #### Optional
 
 - `value` (Set of String) IPv4 or IPv6 address to apply the filter to, including the subnet mask. Only valid when `type` is `allow`.
-
-<a id="nestedatt--interfaces"></a>
-
-### Nested Schema for `interfaces`
-
-#### Required
-
-- `kind` (Object) The kind of interface this configuration represents. See [below for nested schema](#nestedatt--interfaces--kind).
-- `link_name` (String) Name of the link this interface is associated with.
-
-#### Optional
-
-- `v6_enabled` (Boolean) Enable IPv6 on this interface.
-
-<a id="nestedatt--interfaces--kind"></a>
-
-### Nested Schema for `interfaces.kind`
-
-#### Required
-
-- `type` (String) Type of the interface. Valid values are `primary`, `vlan`, and `loopback`.
-
-#### Optional
-
-- `vid` (Number) VLAN ID for the interfaces. Only valid when `type` is `vlan`.
 
 <a id="nestedatt--links"></a>
 
