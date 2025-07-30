@@ -87,6 +87,83 @@ resource "oxide_switch_port_settings" "example" {
 }
 ```
 
+### Switch Port Settings with BGP Peers
+
+```hcl
+resource "oxide_switch_port_settings" "example" {
+  name        = "example"
+  description = "Switch port settings."
+
+  port_config = {
+    geometry = "qsfp28x1"
+  }
+
+  addresses = [
+    {
+      link_name = "phy0"
+      addresses = [
+        {
+          address        = "192.168.1.123/24"
+          address_lot_id = "38223e3a-76da-400d-a1e2-8cb4d242095a"
+        },
+      ]
+    },
+  ]
+
+  bgp_peers = [
+    {
+      link_name = "phy0"
+      peers = [
+        {
+          allowed_export = {
+            type = "no_filtering"
+          }
+          allowed_import = {
+            type = "no_filtering"
+          }
+
+          addr             = "1.2.3.4"
+          bgp_config       = "aeeb1e60-b773-432a-b3e9-f677e116ac15"
+          communities      = []
+          connect_retry    = 15
+          delay_open       = 15
+          enforce_first_as = false
+          hold_time        = 15
+          idle_hold_time   = 15
+          interface_name   = "phy0"
+          keepalive        = 15
+        }
+      ]
+    }
+  ]
+
+  links = [
+    {
+      link_name = "phy0"
+      autoneg   = false
+      mtu       = 1500
+      speed     = "speed1_g"
+      lldp = {
+        enabled = false
+      }
+    },
+  ]
+
+  routes = [
+    {
+      link_name = "phy0"
+      routes = [
+        {
+          dst = "0.0.0.0/0"
+          gw  = "192.168.1.1"
+        },
+      ]
+    },
+  ]
+}
+```
+
+
 ## Schema
 
 ### Required
