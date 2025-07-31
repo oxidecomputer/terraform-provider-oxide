@@ -3,8 +3,8 @@ title = "`oxide_vpc_firewall_rules`"
 description = "Updated the schema for the `protocols` attribute to allow for more control over ICMP traffic. [#474](https://github.com/oxidecomputer/terraform-provider-oxide/pull/474)"
 
 [[features]]
-title = "New resource"
-description = "`oxide_switch_port_settings` [#426](https://github.com/oxidecomputer/terraform-provider-oxide/pull/426)."
+title = ""
+description = ""
 
 [[enhancements]]
 title = ""
