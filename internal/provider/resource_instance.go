@@ -1121,7 +1121,7 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 			})
 		case oxide.ExternalIpKindFloating:
 			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-				ID:   types.StringValue(externalIP.IpPoolId),
+				ID:   types.StringValue(externalIP.Id),
 				Type: types.StringValue(string(externalIP.Kind)),
 			})
 		default:
