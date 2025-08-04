@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/terraform-plugin-framework v1.15.0
+	github.com/hashicorp/terraform-plugin-framework v1.15.1
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.5.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
 	github.com/hashicorp/terraform-plugin-go v0.28.0
