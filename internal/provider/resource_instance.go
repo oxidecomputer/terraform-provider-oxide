@@ -885,7 +885,7 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 		},
 		Target:  []string{string(oxide.InstanceStateStopped)},
 		Timeout: timeout,
-		Refresh: func() (interface{}, string, error) {
+		Refresh: func() (any, string, error) {
 			tflog.Info(ctx, fmt.Sprintf("checking on state of instance: %v", instanceID))
 			params := oxide.InstanceViewParams{
 				Instance: oxide.NameOrId(instanceID),
@@ -1122,6 +1122,11 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 		case oxide.ExternalIpKindFloating:
 			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
 				ID:   types.StringValue(externalIP.Id),
+				Type: types.StringValue(string(externalIP.Kind)),
+			})
+		case oxide.ExternalIpKindSnat:
+			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
+				ID:   types.StringValue(externalIP.IpPoolId),
 				Type: types.StringValue(string(externalIP.Kind)),
 			})
 		default:
