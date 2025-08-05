@@ -19,4 +19,5 @@ jobs:
           OXIDE_TOKEN: ${{ secrets.COLO_OXIDE_TOKEN }}
           OXIDE_HOST: ${{ secrets.COLO_OXIDE_HOST }}
           OXIDE_TEST_IP_POOL_NAME: private
+          OXIDE_SILO_DNS_NAME: "*.oxide-preview.com"
           TEST_ACC_NAME: TestAccCloud
