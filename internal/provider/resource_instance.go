@@ -1124,11 +1124,9 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 				ID:   types.StringValue(externalIP.Id),
 				Type: types.StringValue(string(externalIP.Kind)),
 			})
+		// Skipped until the schema is updated to support SNAT external IPs.
 		case oxide.ExternalIpKindSnat:
-			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-				ID:   types.StringValue(externalIP.IpPoolId),
-				Type: types.StringValue(string(externalIP.Kind)),
-			})
+			continue
 		default:
 			diags.AddError(
 				"Invalid external IP kind:",
@@ -1413,6 +1411,9 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 				return diags
 			}
+		// It's not possible to detach an SNAT external IP. Skip it.
+		case oxide.ExternalIpKindSnat:
+			continue
 		default:
 			diags.AddError(
 				fmt.Sprintf("Cannot detach invalid external IP type %q", externalIPType.ValueString()),
