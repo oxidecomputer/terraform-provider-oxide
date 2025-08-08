@@ -65,6 +65,20 @@ Until all resources have been added you'll need to make sure your testing enviro
 - A project named "tf-acc-test".
 - At least one image.
 
+Tests that exercise the `oxide_silo` resource need a tls cert that's
+valid for the domain of the Oxide server used for acceptance tests. To
+generate and expose a certificate for the [simulated omicron
+environment](https://github.com/oxidecomputer/omicron/blob/main/docs/how-to-run-simulated.adoc),
+run
+
+```
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3650 -nodes -subj "/CN=*.sys.oxide-dev.test"
+export OXIDE_SILO_TLS_CERT=$(cat cert.pem)
+export OXIDE_SILO_TLS_KEY=$(cat key.pem)
+```
+
+Use a different `CN` for different Oxide test environments.
+
 Run `make testacc`.
 
 Eventually we'll have a GitHub action to create a Nexus server and run these tests, but for now testing will have to be run manually.
