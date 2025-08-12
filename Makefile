@@ -81,6 +81,11 @@ terrafmt: tools
 	@ echo "-> Running terraform docs codeblocks linter"
 	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt diff -f {} \;
 
+.PHONY: terrafmt-fmt
+terrafmt-fmt: tools
+	@ echo "-> Running terraform docs codeblocks linter"
+	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt fmt -f {} \;
+
 configfmt:
 	@ echo "-> Running terraform linters on .tf files"
 	@ terraform fmt -write=false -recursive -check
