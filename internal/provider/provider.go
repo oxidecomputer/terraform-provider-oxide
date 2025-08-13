@@ -161,43 +161,45 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 // DataSources defines the data sources implemented in the provider.
 func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewAddressLotDataSource,
 		NewAntiAffinityGroupDataSource,
+		NewFloatingIPDataSource,
 		NewImageDataSource,
 		NewImagesDataSource,
 		NewInstanceExternalIPsDataSource,
 		NewIpPoolDataSource,
 		NewProjectDataSource,
 		NewProjectsDataSource,
-		NewSiloDataSource,
 		NewSSHKeyDataSource,
+		NewSiloDataSource,
 		NewVPCDataSource,
 		NewVPCInternetGatewayDataSource,
 		NewVPCRouterDataSource,
 		NewVPCRouterRouteDataSource,
 		NewVPCSubnetDataSource,
-		NewFloatingIPDataSource,
 	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewAddressLotResource,
 		NewAntiAffinityGroupResource,
 		NewDiskResource,
+		NewFloatingIPResource,
+		NewIPPoolResource,
 		NewImageResource,
 		NewInstanceResource,
-		NewIPPoolResource,
 		NewIpPoolSiloLinkResource,
 		NewProjectResource,
-		NewSnapshotResource,
 		NewSSHKeyResource,
-		NewVPCResource,
-		NewVPCInternetGatewayResource,
+		NewSiloResource,
+		NewSnapshotResource,
 		NewVPCFirewallRulesResource,
+		NewVPCInternetGatewayResource,
+		NewVPCResource,
 		NewVPCRouterResource,
 		NewVPCRouterRouteResource,
 		NewVPCSubnetResource,
-		NewFloatingIPResource,
-		NewSiloResource,
 	}
 }
