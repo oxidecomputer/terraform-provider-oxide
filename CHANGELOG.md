@@ -1,3 +1,29 @@
+# 0.13.0 (2025/Aug/13)
+
+### Breaking changes
+
+- **`oxide_vpc_firewall_rules`:** Updated the schema for the `protocols` attribute to allow for more control over ICMP traffic. [#474](https://github.com/oxidecomputer/terraform-provider-oxide/pull/474)
+
+### Bug fixes
+
+- **`oxide_instance`:** Fixed a provider crash when applying a configuration with an empty `boot_disk_id` attribute and a non-empty `disk_attachments` attribute. [#471](https://github.com/oxidecomputer/terraform-provider-oxide/pull/471)
+
+### List of commits
+
+- [2b0c107](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2b0c107) release: prepare for v0.13.0 (#491)
+- [6d2c71e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6d2c71e) build(deps): bump actions/checkout from 4 to 5 (#488)
+- [78c6e58](https://github.com/oxidecomputer/terraform-provider-oxide/commit/78c6e58) Update codeowners file (#487)
+- [0ce2d9c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0ce2d9c) resource(instance): fix snat external ip compatibility (#486)
+- [5f08487](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5f08487) provider: support snat ips in external ips listing (#477)
+- [2b7553d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2b7553d) build(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.15.0 to 1.15.1 (#483)
+- [eb81321](https://github.com/oxidecomputer/terraform-provider-oxide/commit/eb81321) resource(instance): use floating ip id instead of ip pool id (#478)
+- [f2c6d2f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f2c6d2f) misc: use github team for codeowners (#482)
+- [a59b89c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a59b89c) Initial implementation for switch port settings (#426)
+- [4c73ad1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4c73ad1) resource(vpc_firewall_rules): support new api changes (#474)
+- [d42ee28](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d42ee28) resource(instance): fix provider crash when boot_disk_id is empty (#471)
+- [d725b5a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d725b5a) [docs] Improve release checklist (#472)
+- [0bfc1e7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0bfc1e7) misc: bump version to v0.13.0 (#465)
+
 # 0.12.0 (2025/Jul/09)
 
 ### Bug fixes
