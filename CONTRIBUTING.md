@@ -65,6 +65,15 @@ Until all resources have been added you'll need to make sure your testing enviro
 - A project named "tf-acc-test".
 - At least one image.
 
+Tests that exercise the `oxide_silo` resource need a tls cert that's
+valid for the domain of the Oxide server used for acceptance tests. The
+tests will generate a self-signed cert, but need to know which DNS name
+to use for it. We default to the \*.sys.oxide-dev.test wildcard used by
+the [simulated omicron
+environment](https://github.com/oxidecomputer/omicron/blob/main/docs/how-to-run-simulated.adoc).
+To override when testing against a different environment, set the
+`$OXIDE_SILO_DNS_NAME` environment variable to the relevant DNS name.
+
 Run `make testacc`.
 
 Eventually we'll have a GitHub action to create a Nexus server and run these tests, but for now testing will have to be run manually.
