@@ -29,3 +29,53 @@ jobs:
         run: make test
       - name: lint
         run: make lint
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - uses: docker/setup-compose-action@v1
+      - uses: astral-sh/setup-uv@v6
+      - name: install oxide cli
+        run: |
+          mkdir -p bin
+          wget https://github.com/oxidecomputer/oxide.rs/releases/download/v0.13.0+20250730.0.0/oxide-cli-x86_64-unknown-linux-gnu.tar.xz
+          tar xvf oxide-cli-x86_64-unknown-linux-gnu.tar.xz
+          mv oxide-cli-x86_64-unknown-linux-gnu/oxide bin
+          echo "$(pwd)/bin" >> $GITHUB_PATH
+      # Run simulated omicron in the background with docker compose.
+      # TODO(jmcarp): support tests against multiple omicron versions.
+      # TODO(jmcarp): publish this image for faster builds.
+      - name: omicron-dev
+        working-directory: acctest
+        run: |
+          docker compose build
+          docker compose up --wait --wait-timeout 900
+      # We can't use `oxide auth login` here, since it requires a browser to
+      # complete the oauth device flow. Instead, fetch an auth token using a
+      # script that simulates the browser flow.
+      - id: auth-token
+        working-directory: acctest
+        run: |
+          echo "OXIDE_TOKEN=$(uv run auth.py)" >> $GITHUB_OUTPUT
+      - name: oxide-dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y qemu-utils
+          wget https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/generic_alpine-3.22.1-x86_64-bios-tiny-r0.qcow2
+          qemu-img convert -f qcow2 -O raw generic_alpine-3.22.1-x86_64-bios-tiny-r0.qcow2 alpine.raw
+          ./scripts/acc-test-setup.sh
+        env:
+          OXIDE_HOST: http://localhost:12220
+          OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
+      - name: test
+        shell: bash
+        run: |
+          make testacc
+        env:
+          OXIDE_HOST: http://localhost:12220
+          OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
+          OXIDE_TEST_IP_POOL_NAME: default
+          OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"

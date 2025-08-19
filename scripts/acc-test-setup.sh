@@ -17,15 +17,15 @@ SILO_NAME=${OXIDE_SILO:-test-suite-silo}
 # qemu-img convert -f qcow2 -O raw generic_alpine-3.22.1-x86_64-bios-tiny-r0.qcow2 alpine.raw
 IMAGE_PATH=${OXIDE_IMAGE_PATH:-alpine.raw}
 
-# oxide project create --name $PROJECT_NAME --description $PROJECT_NAME
+oxide project create --name $PROJECT_NAME --description $PROJECT_NAME
 
-# # We need to create disks, images, etc., so override the default empty quota.
-# oxide silo quotas update --silo $SILO_NAME --cpus 100 --memory $((2 ** 40)) --storage $((2 ** 40))
+# We need to create disks, images, etc., so override the default empty quota.
+oxide silo quotas update --silo $SILO_NAME --cpus 100 --memory $((2 ** 40)) --storage $((2 ** 40))
 
-# # Set up the default IP pool, and add a range.
-# oxide ip-pool create --name default --description default
-# oxide ip-pool silo link --pool default --silo $SILO_NAME --is-default true
-# oxide ip-pool range add --first 10.0.1.0 --last 10.0.1.255 --pool default
+# Set up the default IP pool, and add a range.
+oxide ip-pool create --name default --description default
+oxide ip-pool silo link --pool default --silo $SILO_NAME --is-default true
+oxide ip-pool range add --first 10.0.1.0 --last 10.0.1.255 --pool default
 
 # The acceptance tests expect both at least a single project-scoped image and a
 # silo-scoped image. Import the same image twice, then promote one copy to the
