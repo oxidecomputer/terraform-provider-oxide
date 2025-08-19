@@ -1,0 +1,10 @@
+services:
+  omicron-dev:
+    build: .
+    command: /bin/bash -c 'source env.sh && cargo xtask omicron-dev run-all'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12220"]
+      interval: 5s
+      retries: 180
+    ports:
+    - "12220:12220"
