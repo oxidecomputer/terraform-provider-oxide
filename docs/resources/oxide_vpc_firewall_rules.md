@@ -70,12 +70,12 @@ resource "oxide_vpc_firewall_rules" "example" {
           },
           # Echo Reply types.
           {
-            type = "icmp",
+            type      = "icmp",
             icmp_type = 0
           },
           # Echo Reply types with codes 1-3.
           {
-            type = "icmp",
+            type      = "icmp",
             icmp_type = 0
             icmp_code = "1-3"
           },
