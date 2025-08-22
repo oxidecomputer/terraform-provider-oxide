@@ -108,6 +108,7 @@ func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportS
 // Schema defines the schema for the resource.
 func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Manages Oxide instances.",
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,
