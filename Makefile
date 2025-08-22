@@ -1,4 +1,5 @@
 # Build variables
+SHELL := /usr/bin/env bash
 VERSION ?= $(shell cat $(CURDIR)/VERSION)
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
@@ -47,9 +48,18 @@ test:
 	@ echo "-> Running unit tests for $(BINARY)"
 	@ go test $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS)
 
+.PHONY: docs
+docs: tools
+	@ $(GOBIN)/tfplugindocs generate
+
+.PHONY: check-docs
+check-docs: tools
+	@ $(GOBIN)/tfplugindocs generate
+	@ if ! git diff --exit-code docs; then echo 'Generated docs have changed. Re-generate with `make docs`.'; fi
+
 ## Lints all of the source files
 .PHONY: lint
-lint: golangci-lint tfproviderdocs terrafmt tfproviderlint # configfmt
+lint: golangci-lint tfproviderdocs terrafmt tfproviderlint check-docs # configfmt
 
 .PHONY: tfproviderlint
 tfproviderlint: tools
@@ -117,9 +127,10 @@ VERSION_GOLANGCILINT:=v1.64.8
 VERSION_TFPROVIDERDOCS:=v0.12.1
 VERSION_TERRAFMT:=v0.5.4
 VERSION_TFPROVIDERLINT:=v0.31.0
+VERSION_TFPLUGINDOCS:=v0.22.0
 VERSION_WHATSIT:=053446d
 
-tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint 
+tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint $(GOBIN)/tfplugindocs
 
 tools-private: $(GOBIN)/whatsit
 
@@ -170,3 +181,6 @@ $(GOBIN)/whatsit: $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT) | $(GOBIN)
 	@ echo "-> Installing whatsit..."
 	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git#$(VERSION_WHATSIT) --branch main --root ./ 
 
+$(GOBIN)/tfplugindocs:
+	@ echo "-> Installing tfplugindocs..."
+	@ go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@$(VERSION_TFPLUGINDOCS)
