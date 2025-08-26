@@ -1,0 +1,32 @@
+{
+  "rules": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "action": "allow",
+      "name": "allow-ssh",
+      "description": "SSH rule.",
+      "direction": "inbound",
+      "priority": 65535,
+      "status": "enabled",
+      "filters": {
+        "ports": [
+          "22"
+        ],
+        "protocols": [
+          {
+            "type": "tcp"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "type": "subnet",
+          "value": "default"
+        }
+      ],
+      "time_created": "2025-08-26T20:35:11.630Z",
+      "time_modified": "2025-08-26T20:35:11.630Z",
+      "vpc_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    }
+  ]
+}

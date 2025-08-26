@@ -7,6 +7,10 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -610,4 +614,120 @@ func testAccFirewallRulesDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func TestFirewallRules_r15_r16_upgrade(t *testing.T) {
+	var version atomic.Int32
+	version.Store(15)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var respFile string
+		switch version.Load() {
+		case 15:
+			respFile = "r15_get_vpc_firewall_rules.json"
+		case 16:
+			respFile = "r16_get_vpc_firewall_rules.json"
+		}
+
+		respPath := filepath.Join("test-fixtures", "resource_vpc_firewall_rules", respFile)
+		f, err := testFixtures.ReadFile(respPath)
+		if err != nil {
+			t.Errorf("failed to read file %q: %v", respPath, err)
+			http.Error(w, "failed to read file", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(f)
+	}))
+	t.Cleanup(func() {
+		ts.Close()
+	})
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"oxide": {
+						Source:            "oxidecomputer/oxide",
+						VersionConstraint: "0.12.0",
+					},
+				},
+				//lintignore:AT004
+				// Configuration must reach local test server.
+				Config: fmt.Sprintf(`
+provider "oxide" {
+  host  = "%s"
+  token = "fake"
+}
+
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  rules = [
+    {
+      action      = "allow"
+      name        = "allow-ssh"
+      description = "SSH rule."
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports     = ["22"]
+        protocols = ["TCP"]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  ]
+}
+`, ts.URL),
+			},
+			{
+				ExternalProviders:        map[string]resource.ExternalProvider{},
+				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				PreConfig: func() {
+					version.Store(16)
+				},
+				//lintignore:AT004
+				// Configuration must reach local test server.
+				Config: fmt.Sprintf(`
+provider "oxide" {
+  host  = "%s"
+  token = "fake"
+}
+
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  rules = [
+    {
+      action      = "allow"
+      name        = "allow-ssh"
+      description = "SSH rule."
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+        protocols = [
+          { type : "tcp" }
+        ]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  ]
+}
+`, ts.URL),
+			},
+		},
+	})
 }

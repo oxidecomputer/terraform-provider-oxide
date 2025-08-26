@@ -29,8 +29,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*vpcFirewallRulesResource)(nil)
-	_ resource.ResourceWithConfigure = (*vpcFirewallRulesResource)(nil)
+	_ resource.Resource                 = (*vpcFirewallRulesResource)(nil)
+	_ resource.ResourceWithConfigure    = (*vpcFirewallRulesResource)(nil)
+	_ resource.ResourceWithUpgradeState = (*vpcFirewallRulesResource)(nil)
 )
 
 // NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
@@ -112,10 +113,41 @@ func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource
 	resource.ImportStatePassthroughID(ctx, path.Root("vpc_id"), req, resp)
 }
 
+// UpgradeState upgrades the Terraform state for the oxide_vpc_firewall_rules
+// resource from a previous schema version to the current version.
+//
+// Schema upgrades are not expected to be applied sequentially, since users are
+// allowed to jump to whatever new version they choose. When adding a new
+// version, you must ensure that each of the existing StateUpgrader functios
+// are also updated to handle the new schema.
+func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: r.schemaV0(ctx),
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				var v0State vpcFirewallRulesResourceModelV0
+				resp.Diagnostics.Append(req.State.Get(ctx, &v0State)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				newState, diags := v0State.upgrade(ctx)
+				resp.Diagnostics.Append(diags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
+			},
+		},
+	}
+}
+
 // Schema defines the schema for the resource.
 func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// TODO: Make sure users can define a single block per VPC ID, not many, is this even possible?
 	resp.Schema = schema.Schema{
+		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
 				Required:    true,
