@@ -3,8 +3,8 @@
     {
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "action": "allow",
-      "name": "allow-ssh",
-      "description": "SSH rule.",
+      "name": "single-protocol",
+      "description": "Single protocol",
       "direction": "inbound",
       "priority": 65535,
       "status": "enabled",
@@ -15,6 +15,57 @@
         "protocols": [
           "TCP"
         ]
+      },
+      "targets": [
+        {
+          "type": "subnet",
+          "value": "default"
+        }
+      ],
+      "time_created": "2025-08-26T20:35:11.630Z",
+      "time_modified": "2025-08-26T20:35:11.630Z",
+      "vpc_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    },
+    {
+      "id": "b7607ab4-655c-4d8b-96b7-2610d84cf2a2",
+      "action": "allow",
+      "name": "multiple-protocols",
+      "description": "Multiple protocols",
+      "direction": "inbound",
+      "priority": 65535,
+      "status": "enabled",
+      "filters": {
+        "ports": [
+          "22"
+        ],
+        "protocols": [
+          "TCP",
+          "UDP"
+        ]
+      },
+      "targets": [
+        {
+          "type": "subnet",
+          "value": "default"
+        }
+      ],
+      "time_created": "2025-08-26T20:35:11.630Z",
+      "time_modified": "2025-08-26T20:35:11.630Z",
+      "vpc_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    },
+    {
+      "id": "60d11e18-3851-4eed-99f6-1445ae2952ee",
+      "action": "allow",
+      "name": "no-protocol",
+      "description": "No protocol",
+      "direction": "inbound",
+      "priority": 65535,
+      "status": "enabled",
+      "filters": {
+        "ports": [
+          "22"
+        ],
+        "protocols": []
       },
       "targets": [
         {

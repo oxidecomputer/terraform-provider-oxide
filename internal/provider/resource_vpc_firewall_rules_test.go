@@ -616,7 +616,7 @@ func testAccFirewallRulesDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestFirewallRules_r15_r16_upgrade(t *testing.T) {
+func TestFirewallRules_v0_upgrade(t *testing.T) {
 	var version atomic.Int32
 	version.Store(15)
 
@@ -644,19 +644,8 @@ func TestFirewallRules_r15_r16_upgrade(t *testing.T) {
 		ts.Close()
 	})
 
-	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		Steps: []resource.TestStep{
-			{
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"oxide": {
-						Source:            "oxidecomputer/oxide",
-						VersionConstraint: "0.12.0",
-					},
-				},
-				//lintignore:AT004
-				// Configuration must reach local test server.
-				Config: fmt.Sprintf(`
+	//lintignore:AT004 // Provider must connect to test server.
+	configV0 := fmt.Sprintf(`
 provider "oxide" {
   host  = "%s"
   token = "fake"
@@ -667,8 +656,8 @@ resource "oxide_vpc_firewall_rules" "test" {
   rules = [
     {
       action      = "allow"
-      name        = "allow-ssh"
-      description = "SSH rule."
+      name        = "single-protocol"
+      description = "Single protocol"
       direction   = "inbound"
       priority    = 65535
       status      = "enabled"
@@ -682,20 +671,48 @@ resource "oxide_vpc_firewall_rules" "test" {
           value = "default"
         }
       ]
+    },
+    {
+      action      = "allow"
+      name        = "multiple-protocols"
+      description = "Multiple protocols"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports     = ["22"]
+        protocols = ["TCP", "UDP"]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    },
+    {
+      action      = "allow"
+      name        = "no-protocol"
+      description = "No protocol"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
     }
   ]
 }
-`, ts.URL),
-			},
-			{
-				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-				PreConfig: func() {
-					version.Store(16)
-				},
-				//lintignore:AT004
-				// Configuration must reach local test server.
-				Config: fmt.Sprintf(`
+`, ts.URL)
+
+	//lintignore:AT004 // Provider must connect to test server.
+	configV1 := fmt.Sprintf(`
 provider "oxide" {
   host  = "%s"
   token = "fake"
@@ -706,8 +723,8 @@ resource "oxide_vpc_firewall_rules" "test" {
   rules = [
     {
       action      = "allow"
-      name        = "allow-ssh"
-      description = "SSH rule."
+      name        = "single-protocol"
+      description = "Single protocol"
       direction   = "inbound"
       priority    = 65535
       status      = "enabled"
@@ -723,10 +740,101 @@ resource "oxide_vpc_firewall_rules" "test" {
           value = "default"
         }
       ]
+    },
+    {
+      action      = "allow"
+      name        = "multiple-protocols"
+      description = "Multiple protocols"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+        protocols = [
+          { type : "tcp" },
+          { type : "udp" }
+        ]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    },
+    {
+      action      = "allow"
+      name        = "no-protocol"
+      description = "No protocol"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
     }
   ]
 }
-`, ts.URL),
+`, ts.URL)
+
+	resource.UnitTest(t, resource.TestCase{
+		PreventPostDestroyRefresh: true,
+		Steps: []resource.TestStep{
+			// Initial state with v0.12.0 and R15.
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"oxide": {
+						Source:            "oxidecomputer/oxide",
+						VersionConstraint: "0.12.0",
+					},
+				},
+				PreConfig: func() {
+					version.Store(15)
+				},
+				Config: configV0,
+			},
+			// Upgrade to current version and R16.
+			{
+				ExternalProviders:        map[string]resource.ExternalProvider{},
+				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				PreConfig: func() {
+					version.Store(16)
+				},
+				Config: configV1,
+			},
+		},
+	})
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		Steps: []resource.TestStep{
+			// Initial state with v0.13.0 and R16.
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"oxide": {
+						Source:            "oxidecomputer/oxide",
+						VersionConstraint: "0.13.0",
+					},
+				},
+				PreConfig: func() {
+					version.Store(16)
+				},
+				Config: configV1,
+			},
+			// Upgrade to current version.
+			{
+				ExternalProviders:        map[string]resource.ExternalProvider{},
+				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				PreConfig: func() {
+					version.Store(16)
+				},
+				Config: configV1,
 			},
 		},
 	})

@@ -122,24 +122,7 @@ func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource
 // are also updated to handle the new schema.
 func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
-		0: {
-			PriorSchema: r.schemaV0(ctx),
-			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-				var v0State vpcFirewallRulesResourceModelV0
-				resp.Diagnostics.Append(req.State.Get(ctx, &v0State)...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
-				newState, diags := v0State.upgrade(ctx)
-				resp.Diagnostics.Append(diags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
-				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
-			},
-		},
+		0: {StateUpgrader: r.stateUpgraderV0},
 	}
 }
 
