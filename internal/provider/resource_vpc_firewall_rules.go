@@ -118,7 +118,7 @@ func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource
 //
 // Schema upgrades are not expected to be applied sequentially, since users are
 // allowed to jump to whatever new version they choose. When adding a new
-// version, you must ensure that each of the existing StateUpgrader functios
+// version, you must ensure that each of the existing StateUpgrader functions
 // are also updated to handle the new schema.
 func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{

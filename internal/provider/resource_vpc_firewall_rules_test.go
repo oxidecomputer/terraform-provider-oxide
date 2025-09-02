@@ -784,7 +784,6 @@ resource "oxide_vpc_firewall_rules" "test" {
 `, ts.URL)
 
 	resource.UnitTest(t, resource.TestCase{
-		PreventPostDestroyRefresh: true,
 		Steps: []resource.TestStep{
 			// Initial state with v0.12.0 and R15.
 			{
@@ -811,8 +810,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 		},
 	})
 
-	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
+	resource.UnitTest(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			// Initial state with v0.13.0 and R16.
 			{
