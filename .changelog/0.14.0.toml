@@ -9,5 +9,5 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
+title = "`oxide_vpc_firewall_rules`"
+description = "Fixed the `Failed to decode resource from state` error when upgrading the provider to v0.13.0. [#501](https://github.com/oxidecomputer/terraform-provider-oxide/pull/501)"
