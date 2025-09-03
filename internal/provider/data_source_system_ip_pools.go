@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -23,6 +24,7 @@ type systemIpPoolsDataSource struct {
 }
 
 type systemIpPoolsDataSourceModel struct {
+	ID       types.String        `tfsdk:"id"`
 	Timeouts timeouts.Value      `tfsdk:"timeouts"`
 	IpPools  []systemIpPoolModel `tfsdk:"ip_pools"`
 }
@@ -35,7 +37,7 @@ type systemIpPoolModel struct {
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-// NewIpPoolDataSource initialises an ip_pool datasource
+// NewSystemIpPoolsDataSource initialises a system_ip_pools data source.
 func NewSystemIpPoolsDataSource() datasource.DataSource {
 	return &systemIpPoolsDataSource{}
 }
@@ -56,6 +58,9 @@ func (d *systemIpPoolsDataSource) Configure(_ context.Context, req datasource.Co
 func (d *systemIpPoolsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"timeouts": timeouts.Attributes(ctx),
 			"ip_pools": schema.ListNestedAttribute{
 				Computed: true,
@@ -106,13 +111,12 @@ func (d *systemIpPoolsDataSource) Read(ctx context.Context, req datasource.ReadR
 	defer cancel()
 
 	params := oxide.IpPoolListParams{
-		Limit:  oxide.NewPointer(1000000000),
 		SortBy: oxide.NameOrIdSortModeIdAscending,
 	}
-	ipPools, err := d.client.IpPoolList(ctx, params)
+	ipPools, err := d.client.IpPoolListAllPages(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to read IP pool list:",
+			"Unable to read system IP pools list:",
 			err.Error(),
 		)
 		return
@@ -120,7 +124,10 @@ func (d *systemIpPoolsDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	tflog.Trace(ctx, "read all pools from system")
 
-	for _, ipPool := range ipPools.Items {
+	// Set a unique ID for the data source payload
+	state.ID = types.StringValue(uuid.New().String())
+
+	for _, ipPool := range ipPools {
 		poolState := systemIpPoolModel{
 			Description:  types.StringValue(ipPool.Description),
 			ID:           types.StringValue(ipPool.Id),

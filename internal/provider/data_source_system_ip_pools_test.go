@@ -18,7 +18,6 @@ type dataSourceSystemIPPoolsConfig struct {
 
 var dataSourceSystemIPPoolsConfigTpl = `
 data "oxide_system_ip_pools" "{{.BlockName}}" {
-  name = "default"
   timeouts = {
     read = "1m"
   }
@@ -56,8 +55,10 @@ func checkDataSourceSystemIPPools(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttrSet(dataName, "id"),
-		resource.TestCheckResourceAttrSet(dataName, "ip_pools"),
-		resource.TestCheckResourceAttrSet(dataName, "time_created"),
-		resource.TestCheckResourceAttrSet(dataName, "time_modified"),
+		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.id"),
+		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.name"),
+		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.description"),
+		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.time_created"),
+		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.time_modified"),
 	}...)
 }

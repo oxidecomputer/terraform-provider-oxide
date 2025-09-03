@@ -3,6 +3,8 @@ title = ""
 description = ""
 
 [[features]]
+title = "New data source"
+description = "`oxide_system_ip_pools` [#505](https://github.com/oxidecomputer/terraform-provider-oxide/pull/505)."
 
 [[enhancements]]
 title = ""

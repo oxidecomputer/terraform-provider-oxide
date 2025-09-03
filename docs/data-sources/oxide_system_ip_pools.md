@@ -4,7 +4,7 @@ page_title: "oxide_system_ip_pools Data Source - terraform-provider-oxide"
 
 # oxide_system_ip_pools (Data Source)
 
-Retrieve all configured ip pools for the Oxide system
+Retrieve all configured IP pools for the Oxide system.
 
 ## Example Usage
 
@@ -18,15 +18,14 @@ data "oxide_system_ip_pools" "example" {
 
 ## Schema
 
-### Required
-
 ### Optional
 
-- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts))
+- `timeouts` (Attribute, Optional) (see [below for nested schema](#nestedatt--timeouts)).
 
 ### Read-Only
 
-- `ip_pools` (List of Objects) A list of ip pool objects configured for the system (see [below for nested schema](#nestedatt--ip_pools))
+- `id` (String) The ID of this data source.
+- `ip_pools` (List of Objects) A list of IP pool objects configured for the system (see [below for nested schema](#nestedatt--ip_pools)).
 
 <a id="nestedatt--timeouts"></a>
 
@@ -39,6 +38,8 @@ Optional:
 <a id="nestedatt--ip_pools"></a>
 
 ### Nested Schema for `ip_pools`
+
+Read-Only:
 
 - `description` (String) Description for the IP pool.
 - `id` (String) Unique, immutable, system-controlled identifier of the IP pool.
