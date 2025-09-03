@@ -13,3 +13,7 @@ description = ""
 [[bugs]]
 title = "`oxide_vpc_firewall_rules`"
 description = "Fixed the `Failed to decode resource from state` error when upgrading the provider to v0.13.0. [#501](https://github.com/oxidecomputer/terraform-provider-oxide/pull/501)"
+
+[[bugs]]
+title = "`oxide_silo`"
+description = "The `quotas.cpus` attribute no longer accepts negative values. [#506](https://github.com/oxidecomputer/terraform-provider-oxide/pull/506)"
