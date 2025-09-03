@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -141,6 +142,9 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 					"cpus": schema.Int64Attribute{
 						Required:    true,
 						Description: "Amount of virtual CPUs available for running instances in the silo.",
+						Validators: []validator.Int64{
+							int64validator.AtLeast(0),
+						},
 					},
 					"memory": schema.Int64Attribute{
 						Required:    true,
