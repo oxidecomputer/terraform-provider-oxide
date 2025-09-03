@@ -3,6 +3,10 @@ title = ""
 description = ""
 
 [[features]]
+title = "New resource"
+description = "`oxide_silo_saml_identity_provider` [#442](https://github.com/oxidecomputer/terraform-provider-oxide/pull/442)."
+
+[[features]]
 title = "New data source"
 description = "`oxide_system_ip_pools` [#505](https://github.com/oxidecomputer/terraform-provider-oxide/pull/505)."
 
@@ -11,5 +15,9 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
+title = "`oxide_vpc_firewall_rules`"
+description = "Fixed the `Failed to decode resource from state` error when upgrading the provider to v0.13.0. [#501](https://github.com/oxidecomputer/terraform-provider-oxide/pull/501)"
+
+[[bugs]]
+title = "`oxide_silo`"
+description = "The `quotas.cpus` attribute no longer accepts negative values. [#506](https://github.com/oxidecomputer/terraform-provider-oxide/pull/506)"

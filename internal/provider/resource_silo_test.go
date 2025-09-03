@@ -68,7 +68,7 @@ resource "oxide_silo" "{{.BlockName}}" {
       name        = "self-signed-wildcard"
       description = "Self-signed wildcard certificate for *.sys.r3.oxide-preview.com."
       cert        = tls_self_signed_cert.self-signed.cert_pem
-	  key         = tls_private_key.self-signed.private_key_pem
+      key         = tls_private_key.self-signed.private_key_pem
       service     = "external_api"
     },
   ]
@@ -128,7 +128,7 @@ resource "oxide_silo" "{{.BlockName}}" {
       name        = "self-signed-wildcard"
       description = "Self-signed wildcard certificate for *.sys.r3.oxide-preview.com."
       cert        = tls_self_signed_cert.self-signed.cert_pem
-	  key         = tls_private_key.self-signed.private_key_pem
+      key         = tls_private_key.self-signed.private_key_pem
       service     = "external_api"
     },
   ]
