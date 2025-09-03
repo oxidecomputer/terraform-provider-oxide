@@ -6,6 +6,10 @@ description = ""
 title = "New resource"
 description = "`oxide_silo_saml_identity_provider` [#442](https://github.com/oxidecomputer/terraform-provider-oxide/pull/442)."
 
+[[features]]
+title = "New data source"
+description = "`oxide_system_ip_pools` [#505](https://github.com/oxidecomputer/terraform-provider-oxide/pull/505)."
+
 [[enhancements]]
 title = ""
 description = ""
