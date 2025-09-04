@@ -22,8 +22,8 @@ labels: release
 - [ ] Generate the `CHANGELOG.md` file.
     - [ ] Run `make changelog`
     - [ ] Add the date of the release to the title
-- [ ] Release the new version draft by running `make tag`.
-- [ ] Verify the release is correct, it's being created from the correct tag on GitHub, and make the release live. Note: Terraform registry will silently fail to publish if the tag is incorrect, and GitHub has a habit of messing up the tag a release is created from on occasion. 
+- [ ] Release the new version draft by running `make tag`. Approve and monitor the `Release` GitHub Actions workflow.
+- [ ] Verify the release is correct, it's being created from the correct tag on GitHub, add the changelog entry to the release notes, and make the release live. Note: Terraform registry will silently fail to publish if the tag is incorrect, and GitHub has a habit of messing up the tag a release is created from on occasion. 
 - [ ] Verify the release is available on the Terraform provider registry.
 - [ ] If this is a major or minor release, create a new `MAJOR.MINOR` branch from the newly created tag.
 - [ ] Update the following files with the upcoming version.
