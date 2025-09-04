@@ -1,3 +1,30 @@
+# 0.14.0 (2025/Sep/04)
+
+### New features
+
+- **New resource:** `oxide_silo_saml_identity_provider` [#442](https://github.com/oxidecomputer/terraform-provider-oxide/pull/442).
+- **New data source:** `oxide_system_ip_pools` [#505](https://github.com/oxidecomputer/terraform-provider-oxide/pull/505).
+
+### Bug fixes
+
+- **`oxide_vpc_firewall_rules`:** Fixed the `Failed to decode resource from state` error when upgrading the provider to v0.13.0. [#501](https://github.com/oxidecomputer/terraform-provider-oxide/pull/501)
+- **`oxide_silo`:** The `quotas.cpus` attribute no longer accepts negative values. [#506](https://github.com/oxidecomputer/terraform-provider-oxide/pull/506)
+
+### List of commits
+
+- [576125d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/576125d) misc: update version to prepare for release (#509)
+- [7141d6e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7141d6e) added data_source_system_ip_pools (#505)
+- [536e0dd](https://github.com/oxidecomputer/terraform-provider-oxide/commit/536e0dd) silo: do not allow negative cpu quotas (#506)
+- [9284379](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9284379) oxide_silo_saml_identity_provider: initial resource (#442)
+- [3c960ab](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3c960ab) build(deps): bump github.com/stretchr/testify from 1.11.0 to 1.11.1 (#502)
+- [cca0824](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cca0824) docs: add changelog for #501 (#503)
+- [6c061de](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6c061de) resource(vpc_firewall_rules): add schema upgrade (#501)
+- [185b9f3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/185b9f3) build(deps): bump github.com/stretchr/testify from 1.10.0 to 1.11.0 (#499)
+- [e872fb4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e872fb4) build(deps): bump goreleaser/goreleaser-action from 6.3.0 to 6.4.0 (#496)
+- [ffc10df](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ffc10df) build(deps): bump github.com/hashicorp/terraform-plugin-testing from 1.13.2 to 1.13.3 (#495)
+- [d65a179](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d65a179) tests: support silo tests for arbitrary environments. (#484)
+- [0f5b926](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0f5b926) misc: bump to v0.14.0 (#493)
+
 # 0.13.0 (2025/Aug/13)
 
 ### Breaking changes
