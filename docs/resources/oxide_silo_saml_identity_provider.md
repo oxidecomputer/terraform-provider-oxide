@@ -50,12 +50,12 @@ resource "oxide_silo_saml_identity_provider" "example" {
 
   idp_metadata_source = {
     type = "base64_encoded_xml"
-    data = base64encode(file("${path.module}/idp-metadata.xml"))
+    data = filebase64("${path.module}/idp-metadata.xml")
   }
 
   signing_keypair = {
-    private_key = base64encode(file("${path.module}/saml-key.pem"))
-    public_cert = base64encode(file("${path.module}/saml-cert.pem"))
+    private_key = filebase64("${path.module}/saml-key.der")
+    public_cert = filebase64("${path.module}/saml-cert.der")
   }
 }
 ```
@@ -103,8 +103,8 @@ Optional:
 
 Required:
 
-- `private_key` (String, Sensitive) RSA private key (base64 encoded).
-- `public_cert` (String) Public certificate (base64 encoded).
+- `private_key` (String, Sensitive) Request signing RSA private key in PKCS#1 DER format (base64 encoded).
+- `public_cert` (String) Request signing public certificate in DER format (base64 encoded).
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
