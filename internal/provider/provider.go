@@ -201,5 +201,6 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewFloatingIPResource,
 		NewSiloResource,
 		NewSiloSamlIdentityProviderResource,
+		NewSwitchPortSettingsResource,
 	}
 }
