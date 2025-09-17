@@ -11,8 +11,23 @@ terraform {
 
 provider "oxide" {}
 
+variable "project" {
+  type        = string
+  description = "Oxide project to deploy resources in."
+}
+
+variable "source_image_id" {
+  type        = string
+  description = "Source image ID to boot the instance from."
+}
+
+variable "ssh_public_key" {
+  type        = string
+  description = "SSH public key to add to the instance."
+}
+
 data "oxide_project" "example" {
-  name = "{MY_PROJECT_NAME}"
+  name = var.project
 }
 
 resource "oxide_vpc" "example" {
@@ -33,8 +48,10 @@ resource "oxide_vpc_firewall_rules" "example" {
       priority    = 65534
       status      = "enabled"
       filters = {
-        ports     = ["22", "80"]
-        protocols = ["TCP"]
+        ports = ["22", "80"]
+        protocols = [{
+          type = "tcp"
+        }]
       },
       targets = [
         {
@@ -73,7 +90,9 @@ resource "oxide_vpc_firewall_rules" "example" {
       priority    = 65534
       status      = "enabled"
       filters = {
-        protocols = ["ICMP"]
+        protocols = [{
+          type = "icmp"
+        }]
       },
       targets = [
         {
@@ -96,13 +115,13 @@ resource "oxide_disk" "example" {
   description     = "a test disk"
   name            = "my-disk"
   size            = 21474836480
-  source_image_id = "{MY_IMAGE_ID}"
+  source_image_id = var.source_image_id
 }
 
 resource "oxide_ssh_key" "example" {
   name        = "example"
   description = "Example SSH key."
-  public_key  = "ssh-ed25519 {MY_PUBLIC_KEY}"
+  public_key  = var.ssh_public_key
 }
 
 resource "oxide_instance" "test" {
@@ -116,7 +135,7 @@ resource "oxide_instance" "test" {
   start_on_create  = true
   disk_attachments = [oxide_disk.example.id]
   ssh_public_keys  = [oxide_ssh_key.example.id]
-  external_ips      = [
+  external_ips = [
     {
       type = "ephemeral"
     }
