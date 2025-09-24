@@ -108,6 +108,9 @@ func (r *antiAffinityGroupResource) Schema(ctx context.Context, _ resource.Schem
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the anti-affinity group.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"failure_domain": schema.StringAttribute{
 				// For now this will remain as a computed attribute as there is

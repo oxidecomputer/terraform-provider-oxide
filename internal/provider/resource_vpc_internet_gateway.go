@@ -100,6 +100,9 @@ func (r *vpcInternetGatewayResource) Schema(ctx context.Context, _ resource.Sche
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC internet gateway.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,

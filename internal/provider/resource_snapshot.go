@@ -106,6 +106,9 @@ func (r *snapshotResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the snapshot.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"size": schema.Int64Attribute{
 				Computed:    true,

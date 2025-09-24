@@ -148,6 +148,9 @@ func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, re
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the image.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"size": schema.Int64Attribute{
 				Computed:    true,
