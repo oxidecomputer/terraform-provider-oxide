@@ -1,3 +1,13 @@
+# 0.14.1 (2025/Sep/24)
+
+### Bug fixes
+
+- **`oxide_silo`:** The `id` attribute no longer shows as `(known after apply)` during an update. [#529](https://github.com/oxidecomputer/terraform-provider-oxide/pull/529)
+
+### List of commits
+
+- [6c1a07c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6c1a07c) silo: use previous state for id attribute (#529)
+
 # 0.14.0 (2025/Sep/04)
 
 ### New features
