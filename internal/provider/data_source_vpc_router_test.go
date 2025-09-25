@@ -18,10 +18,21 @@ type dataSourceVPCRouterConfig struct {
 }
 
 var dataSourceVPCRouterConfigTpl = `
+data "oxide_vpc" "test" {
+  project_name = "tf-acc-test"
+  name         = "default"
+}
+
+resource "oxide_vpc_router" "{{.BlockName}}" {
+  vpc_id      = data.oxide_vpc.test.id
+  name        = "test"
+  description = "test router"
+}
+
 data "oxide_vpc_router" "{{.BlockName}}" {
   project_name = "tf-acc-test"
   vpc_name     = "default"
-  name         = "system"
+  name         = oxide_vpc_router.{{.BlockName}}.name
   timeouts = {
     read = "1m"
   }
@@ -61,10 +72,10 @@ func checkDataSourceVPCRouter(dataName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(
 			dataName,
 			"description",
-			"Routes are automatically added to this router as vpc subnets are created",
+			"test router",
 		),
-		resource.TestCheckResourceAttr(dataName, "name", "system"),
-		resource.TestCheckResourceAttr(dataName, "kind", string(oxide.VpcRouterKindSystem)),
+		resource.TestCheckResourceAttr(dataName, "name", "test"),
+		resource.TestCheckResourceAttr(dataName, "kind", string(oxide.VpcRouterKindCustom)),
 		resource.TestCheckResourceAttrSet(dataName, "vpc_id"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "time_modified"),

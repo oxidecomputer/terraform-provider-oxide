@@ -17,10 +17,21 @@ type dataSourceVPCInternetGatewayConfig struct {
 }
 
 var dataSourceVPCInternetGatewayConfigTpl = `
+data "oxide_vpc" "test" {
+  project_name = "tf-acc-test"
+  name         = "default"
+}
+
+resource "oxide_vpc_internet_gateway" "{{.BlockName}}" {
+  vpc_id      = data.oxide_vpc.test.id
+  name        = "test"
+  description = "test description"
+}
+
 data "oxide_vpc_internet_gateway" "{{.BlockName}}" {
   project_name = "tf-acc-test"
   vpc_name     = "default"
-  name         = "default"
+  name         = oxide_vpc_internet_gateway.{{.BlockName}}.name
   timeouts = {
     read = "1m"
   }
@@ -57,8 +68,8 @@ func TestAccCloudDataSourceVPCInternetGateway_full(t *testing.T) {
 func checkDataSourceVPCInternetGateway(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
-		resource.TestCheckResourceAttr(dataName, "description", "Default VPC gateway"),
-		resource.TestCheckResourceAttr(dataName, "name", "default"),
+		resource.TestCheckResourceAttr(dataName, "description", "test description"),
+		resource.TestCheckResourceAttr(dataName, "name", "test"),
 		resource.TestCheckResourceAttrSet(dataName, "vpc_id"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "time_modified"),
