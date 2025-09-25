@@ -15,9 +15,5 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
-
-[[bugs]]
-title = ""
-description = ""
+title = "`oxide_silo`"
+description = "The `id` attribute no longer shows as `(known after apply)` during an update. [#529](https://github.com/oxidecomputer/terraform-provider-oxide/pull/529)"
