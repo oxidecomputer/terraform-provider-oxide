@@ -11,8 +11,8 @@ title = ""
 description = ""
 
 [[enhancements]]
-title = ""
-description = ""
+title = "`oxide_instance`"
+description = "Support the new `auto_restart_policy` attribute. [#532](https://github.com/oxidecomputer/terraform-provider-oxide/pull/532)"
 
 [[bugs]]
 title = "`oxide_silo`"

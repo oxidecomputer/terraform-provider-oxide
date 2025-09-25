@@ -35,6 +35,7 @@ func TestAccCloudResourceInstance_full(t *testing.T) {
 		SupportBlockName2          string
 		SSHBlockName               string
 		AntiAffinityGroupBlockName string
+		AutoRestartPolicy          string
 		NicName                    string
 	}
 
@@ -89,6 +90,7 @@ resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
 resource "oxide_instance" "{{.BlockName}}" {
   anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
   project_id       	   = data.oxide_project.{{.SupportBlockName}}.id
+  auto_restart_policy  = "{{.AutoRestartPolicy}}"
   boot_disk_id     	   = oxide_disk.{{.DiskBlockName}}.id
   description      	   = "a test instance"
   name             	   = "{{.InstanceName}}"
@@ -147,6 +149,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	supportBlockNameSSHKeys := newBlockName("support-instance-ssh-keys")
 	supportBlockNameAaGroup := newBlockName("support-instance-anti-affinity-group")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
+	autoRestartPolicy := "best_effort"
 	config2, err := parsedAccConfig(
 		resourceInstanceFullConfig{
 			BlockName:                  blockName2,
@@ -160,6 +163,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			SSHBlockName:               supportBlockNameSSHKeys,
 			AntiAffinityGroupBlockName: supportBlockNameAaGroup,
 			AntiAffinityGroupName:      instanceAaGroupName,
+			AutoRestartPolicy:          autoRestartPolicy,
 		},
 		resourceInstanceFullConfigTpl,
 	)
@@ -1130,6 +1134,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
 		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "auto_restart_policy"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),

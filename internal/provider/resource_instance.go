@@ -49,6 +49,7 @@ type instanceResource struct {
 
 type instanceResourceModel struct {
 	AntiAffinityGroups types.Set                         `tfsdk:"anti_affinity_groups"`
+	AutoRestartPolicy  types.String                      `tfsdk:"auto_restart_policy"`
 	BootDiskID         types.String                      `tfsdk:"boot_disk_id"`
 	Description        types.String                      `tfsdk:"description"`
 	DiskAttachments    types.Set                         `tfsdk:"disk_attachments"`
@@ -143,6 +144,15 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"ncpus": schema.Int64Attribute{
 				Required:    true,
 				Description: "Number of CPUs allocated for this instance.",
+			},
+			"auto_restart_policy": schema.StringAttribute{
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						string(oxide.InstanceAutoRestartPolicyBestEffort),
+						string(oxide.InstanceAutoRestartPolicyNever),
+					),
+				},
 			},
 			"anti_affinity_groups": schema.SetAttribute{
 				Optional:    true,
@@ -353,7 +363,12 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		},
 	}
 
-	// Add boot disk if any
+	// Add auto-restart policy if any.
+	if !plan.AutoRestartPolicy.IsNull() {
+		params.Body.AutoRestartPolicy = oxide.InstanceAutoRestartPolicy(plan.AutoRestartPolicy.ValueString())
+	}
+
+	// Add boot disk if any.
 	if !plan.BootDiskID.IsNull() {
 		// Validate whether the boot disk ID is included in `attachments`
 		// This is necessary as the response from InstanceDiskList includes
@@ -517,6 +532,9 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if instance.BootDiskId != "" {
 		state.BootDiskID = types.StringValue(instance.BootDiskId)
 	}
+	if instance.AutoRestartPolicy != "" {
+		state.AutoRestartPolicy = types.StringValue(string(instance.AutoRestartPolicy))
+	}
 	state.Description = types.StringValue(instance.Description)
 	state.HostName = types.StringValue(string(instance.Hostname))
 	state.ID = types.StringValue(instance.Id)
@@ -669,17 +687,23 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// Due to the design of the API, when updating an instance all
 	// parameters must be set. This means we set all of the parameters
 	// even if only a single one changed.
-	if state.BootDiskID != plan.BootDiskID ||
+	if state.AutoRestartPolicy != plan.AutoRestartPolicy ||
+		state.BootDiskID != plan.BootDiskID ||
 		state.Memory != plan.Memory ||
 		state.NCPUs != plan.NCPUs {
 
 		params := oxide.InstanceUpdateParams{
 			Instance: oxide.NameOrId(state.ID.ValueString()),
 			Body: &oxide.InstanceUpdate{
-				BootDisk: oxide.NameOrId(plan.BootDiskID.ValueString()),
-				Memory:   oxide.ByteCount(plan.Memory.ValueInt64()),
-				Ncpus:    oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
+				Memory: oxide.ByteCount(plan.Memory.ValueInt64()),
+				Ncpus:  oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
 			},
+		}
+		if !plan.AutoRestartPolicy.IsNull() {
+			params.Body.AutoRestartPolicy = (*oxide.InstanceAutoRestartPolicy)(plan.AutoRestartPolicy.ValueStringPointer())
+		}
+		if !plan.BootDiskID.IsNull() {
+			params.Body.BootDisk = (*oxide.NameOrId)(plan.BootDiskID.ValueStringPointer())
 		}
 		instance, err := r.client.InstanceUpdate(ctx, params)
 		if err != nil {
