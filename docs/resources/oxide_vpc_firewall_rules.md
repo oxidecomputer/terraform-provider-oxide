@@ -36,7 +36,7 @@ resource "oxide_vpc_firewall_rules" "example" {
           }
         ]
         ports     = ["443"]
-        protocols = ["tcp"]
+        protocols = [{ type = "tcp" }]
       },
       targets = [
         {
