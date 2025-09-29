@@ -65,6 +65,9 @@ func (r *ipPoolSiloLinkResource) ImportState(ctx context.Context, req resource.I
 // Schema defines the schema for the resource.
 func (r *ipPoolSiloLinkResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages IP pool to silo links.
+`,
 		Attributes: map[string]schema.Attribute{
 			"silo_id": schema.StringAttribute{
 				Required:    true,

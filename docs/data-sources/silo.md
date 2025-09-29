@@ -3,12 +3,12 @@
 page_title: "oxide_silo Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified Silo.
 ---
 
 # oxide_silo (Data Source)
 
-
+Retrieve information about a specified Silo.
 
 ## Example Usage
 

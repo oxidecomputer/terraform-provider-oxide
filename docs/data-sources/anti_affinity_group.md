@@ -3,12 +3,12 @@
 page_title: "oxide_anti_affinity_group Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified anti-affinity group.
 ---
 
 # oxide_anti_affinity_group (Data Source)
 
-
+Retrieve information about a specified anti-affinity group.
 
 ## Example Usage
 

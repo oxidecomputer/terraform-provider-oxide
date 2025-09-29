@@ -15,6 +15,14 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
+// replaceBackticks replaces ” with `. It can be used to defined codeblocks in
+// markdown raw strings.
+//
+//	var mdString = replaceBackticks(`this is a ''code'' block`)
+func replaceBackticks(s string) string {
+	return strings.ReplaceAll(s, "''", "`")
+}
+
 func is404(err error) bool {
 	return strings.Contains(err.Error(), "Status: 404")
 }

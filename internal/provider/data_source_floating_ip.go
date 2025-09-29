@@ -70,6 +70,9 @@ func (f *floatingIPDataSource) Configure(ctx context.Context, req datasource.Con
 // Schema defines the attributes for this Oxide floating IP data source.
 func (f *floatingIPDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified floating IP.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

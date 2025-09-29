@@ -68,6 +68,9 @@ func (r *vpcInternetGatewayResource) ImportState(ctx context.Context, req resour
 // Schema defines the schema for the resource.
 func (r *vpcInternetGatewayResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages VPC internet gateways.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,

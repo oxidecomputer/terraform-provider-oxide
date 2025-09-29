@@ -77,6 +77,9 @@ func (f *floatingIPResource) ImportState(ctx context.Context, req resource.Impor
 // Schema defines the attributes for this Oxide floating IP resource.
 func (f *floatingIPResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages Oxide floating IPs.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -95,9 +98,9 @@ func (f *floatingIPResource) Schema(ctx context.Context, req resource.SchemaRequ
 				Description: "Instance ID that this floating IP is attached to, if presently attached.",
 			},
 			"ip": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "IP address for this floating IP. If unset an IP address will be chosen from the given ip_pool_id.",
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

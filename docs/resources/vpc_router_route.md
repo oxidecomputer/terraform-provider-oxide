@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_router_route Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages VPC router routes.
 ---
 
 # oxide_vpc_router_route (Resource)
 
-
+This resource manages VPC router routes.
 
 ## Example Usage
 
@@ -61,8 +61,12 @@ resource "oxide_vpc_router_route" "example" {
 
 Required:
 
-- `type` (String) Route destination type. Possible values: vpc, subnet, ip, ip_net
-- `value` (String) Depending on the type, it will be one of the following:- `vpc`: Name of the VPC - `subnet`: Name of the VPC subnet - `ip`: IP address - `ip_net`: IPv4 or IPv6 subnet
+- `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`.
+- `value` (String) Depending on the type, it will be one of the following:
+  - `vpc`: Name of the VPC
+  - `subnet`: Name of the VPC subnet
+  - `ip`: IP address
+  - `ip_net`: IPv4 or IPv6 subnet
 
 
 <a id="nestedatt--target"></a>
@@ -70,11 +74,16 @@ Required:
 
 Required:
 
-- `type` (String) Route destination type. Possible values: vpc, subnet, instance, ip, internet_gateway, drop
+- `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `instance`, `ip`, `internet_gateway`, `drop`.
 
 Optional:
 
-- `value` (String) Depending on the type, it will be one of the following:- `vpc`: Name of the VPC - `subnet`: Name of the VPC subnet - `instance`: Name of the instance- `ip`: IP address - `internet_gateway`: Name of the internet gateway
+- `value` (String) Depending on the type, it will be one of the following:
+  - `vpc`: Name of the VPC
+  - `subnet`: Name of the VPC subnet
+  - `instance`: Name of the instance
+  - `ip`: IP address
+  - `internet_gateway`: Name of the internet gateway
 
 
 <a id="nestedatt--timeouts"></a>

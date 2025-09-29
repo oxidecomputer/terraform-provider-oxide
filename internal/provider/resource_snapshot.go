@@ -68,6 +68,11 @@ func (r *snapshotResource) ImportState(ctx context.Context, req resource.ImportS
 // Schema defines the schema for the resource.
 func (r *snapshotResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages snapshots.
+
+-> This resource currently only provides create, read and delete actions. An update requires a resource replacement.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,

@@ -63,6 +63,9 @@ func (r *projectResource) ImportState(ctx context.Context, req resource.ImportSt
 // Schema defines the schema for the resource.
 func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages projects.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,

@@ -3,12 +3,12 @@
 page_title: "oxide_anti_affinity_group Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages anti-affinity groups.
 ---
 
 # oxide_anti_affinity_group (Resource)
 
-
+This resource manages anti-affinity groups.
 
 ## Example Usage
 

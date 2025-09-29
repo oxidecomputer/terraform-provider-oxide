@@ -67,6 +67,9 @@ func (r *vpcRouterResource) ImportState(ctx context.Context, req resource.Import
 // Schema defines the schema for the resource.
 func (r *vpcRouterResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages VPC routers.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,

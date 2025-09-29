@@ -59,6 +59,9 @@ func (d *vpcDataSource) Configure(_ context.Context, req datasource.ConfigureReq
 
 func (d *vpcDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified VPC.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_name": schema.StringAttribute{
 				Required:    true,
@@ -78,11 +81,11 @@ func (d *vpcDataSource) Schema(ctx context.Context, req datasource.SchemaRequest
 			},
 			"dns_name": schema.StringAttribute{
 				Computed:    true,
-				Description: "DNS Name of the VPC.",
+				Description: "DNS name of the VPC.",
 			},
 			"ipv6_prefix": schema.StringAttribute{
-				Computed:    true,
-				Description: "DNS Name of the VPC.",
+				Computed:            true,
+				MarkdownDescription: "All IPv6 subnets created from this VPC must be taken from this range, which should be a unique local address in the range `fd00::/48`. The default VPC Subnet will have the first `/64` range from this prefix.",
 			},
 			"timeouts": timeouts.Attributes(ctx),
 			"id": schema.StringAttribute{

@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_router Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages VPC routers.
 ---
 
 # oxide_vpc_router (Resource)
 
-
+This resource manages VPC routers.
 
 ## Example Usage
 

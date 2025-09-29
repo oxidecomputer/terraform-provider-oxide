@@ -3,12 +3,12 @@
 page_title: "oxide_images Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve a list of all images belonging to a silo or project.
 ---
 
 # oxide_images (Data Source)
 
-
+Retrieve a list of all images belonging to a silo or project.
 
 ## Example Usage
 

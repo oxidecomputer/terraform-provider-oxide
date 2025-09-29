@@ -3,12 +3,12 @@
 page_title: "oxide_ip_pool Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages IP pools.
 ---
 
 # oxide_ip_pool (Resource)
 
-
+This resource manages IP pools.
 
 ## Example Usage
 
@@ -36,8 +36,8 @@ resource "oxide_ip_pool" "example" {
 
 ### Required
 
-- `description` (String) Description for the IP Pool.
-- `name` (String) Name of the IP Pool.
+- `description` (String) Description for the IP pool.
+- `name` (String) Name of the IP pool.
 
 ### Optional
 
@@ -46,9 +46,9 @@ resource "oxide_ip_pool" "example" {
 
 ### Read-Only
 
-- `id` (String) Unique, immutable, system-controlled identifier of the IP Pool.
-- `time_created` (String) Timestamp of when this IP Pool was created.
-- `time_modified` (String) Timestamp of when this IP Pool was last modified.
+- `id` (String) Unique, immutable, system-controlled identifier of the IP pool.
+- `time_created` (String) Timestamp of when this IP pool was created.
+- `time_modified` (String) Timestamp of when this IP pool was last modified.
 
 <a id="nestedatt--ranges"></a>
 ### Nested Schema for `ranges`

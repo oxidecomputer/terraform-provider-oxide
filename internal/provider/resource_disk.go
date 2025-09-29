@@ -75,6 +75,15 @@ func (r *diskResource) ImportState(ctx context.Context, req resource.ImportState
 // Schema defines the schema for the resource.
 func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: replaceBackticks(`
+This resource manages disks.
+
+To create a blank disk it's necessary to set ''block_size''. Otherwise, one of ''source_image_id'' or ''source_snapshot_id'' must be set; ''block_size'' will be automatically calculated.
+
+!> Disks cannot be deleted while attached to instances. Please detach or delete associated instances before attempting to delete.
+
+-> This resource currently only provides create, read and delete actions. An update requires a resource replacement
+`),
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,

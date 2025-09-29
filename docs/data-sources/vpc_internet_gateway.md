@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_internet_gateway Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified VPC internet gateway.
 ---
 
 # oxide_vpc_internet_gateway (Data Source)
 
-
+Retrieve information about a specified VPC internet gateway.
 
 ## Example Usage
 

@@ -72,14 +72,17 @@ func (r *ipPoolResource) ImportState(ctx context.Context, req resource.ImportSta
 // Schema defines the schema for the resource.
 func (r *ipPoolResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages IP pools.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the IP Pool.",
+				Description: "Name of the IP pool.",
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the IP Pool.",
+				Description: "Description for the IP pool.",
 			},
 			"ranges": schema.ListNestedAttribute{
 				Optional: true,
@@ -104,15 +107,15 @@ func (r *ipPoolResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the IP Pool.",
+				Description: "Unique, immutable, system-controlled identifier of the IP pool.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this IP Pool was created.",
+				Description: "Timestamp of when this IP pool was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this IP Pool was last modified.",
+				Description: "Timestamp of when this IP pool was last modified.",
 			},
 		},
 	}

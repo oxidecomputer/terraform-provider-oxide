@@ -72,6 +72,9 @@ func (d *vpcRouterRouteDataSource) Configure(_ context.Context, req datasource.C
 
 func (d *vpcRouterRouteDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified VPC router route.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_name": schema.StringAttribute{
 				Required:    true,
@@ -102,15 +105,17 @@ func (d *vpcRouterRouteDataSource) Schema(ctx context.Context, req datasource.Sc
 				Description: "Selects which traffic this routing rule will apply to",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						Description: "Route destination type. Possible values: vpc, subnet, ip, ip_net",
-						Computed:    true,
+						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`",
+						Computed:            true,
 					},
 					"value": schema.StringAttribute{
-						Description: "Depending on the type, it will be one of the following:" +
-							"- `vpc`: Name of the VPC " +
-							"- `subnet`: Name of the VPC subnet " +
-							"- `ip`: IP address " +
-							"- `ip_net`: IPv4 or IPv6 subnet",
+						MarkdownDescription: replaceBackticks(`
+Depending on the type, it will be one of the following:
+  - ''vpc'': Name of the VPC
+  - ''subnet'': Name of the VPC subnet
+  - ''ip'': IP address
+  - ''ip_net'': IPv4 or IPv6 subnet
+ `),
 						Computed: true,
 					},
 				},
@@ -125,7 +130,7 @@ func (d *vpcRouterRouteDataSource) Schema(ctx context.Context, req datasource.Sc
 			},
 			"target": schema.SingleNestedAttribute{
 				Computed:    true,
-				Description: "location that matched packets should be forwarded to",
+				Description: "Location that matched packets should be forwarded to",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
 						Description: "Route destination type. Possible values: vpc, subnet, instance, ip, internet_gateway, drop",

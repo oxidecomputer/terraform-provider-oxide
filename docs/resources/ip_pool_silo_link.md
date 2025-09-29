@@ -3,12 +3,12 @@
 page_title: "oxide_ip_pool_silo_link Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages IP pool to silo links.
 ---
 
 # oxide_ip_pool_silo_link (Resource)
 
-
+This resource manages IP pool to silo links.
 
 ## Example Usage
 

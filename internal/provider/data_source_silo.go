@@ -54,6 +54,9 @@ func (d *siloDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 
 func (d *siloDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified Silo.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,

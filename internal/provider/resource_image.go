@@ -78,6 +78,9 @@ func (r *imageResource) ImportState(ctx context.Context, req resource.ImportStat
 // Schema defines the schema for the resource.
 func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages images.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,

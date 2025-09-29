@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_subnet Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages VPC subnets.
 ---
 
 # oxide_vpc_subnet (Resource)
 
-
+This resource manages VPC subnets.
 
 ## Example Usage
 

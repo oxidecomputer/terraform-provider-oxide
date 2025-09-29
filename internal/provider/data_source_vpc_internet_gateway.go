@@ -57,6 +57,9 @@ func (d *vpcInternetGatewayDataSource) Configure(_ context.Context, req datasour
 
 func (d *vpcInternetGatewayDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified VPC internet gateway.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_name": schema.StringAttribute{
 				Required:    true,

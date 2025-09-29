@@ -68,6 +68,9 @@ func (r *vpcSubnetResource) ImportState(ctx context.Context, req resource.Import
 // Schema defines the schema for the resource.
 func (r *vpcSubnetResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages VPC subnets.
+`,
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
 				Required:    true,

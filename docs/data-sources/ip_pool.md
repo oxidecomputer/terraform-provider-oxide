@@ -3,12 +3,12 @@
 page_title: "oxide_ip_pool Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified IP pool.
 ---
 
 # oxide_ip_pool (Data Source)
 
-
+Retrieve information about a specified IP pool.
 
 ## Example Usage
 
