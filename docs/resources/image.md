@@ -3,12 +3,12 @@
 page_title: "oxide_image Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages images.
 ---
 
 # oxide_image (Resource)
 
-
+This resource manages images.
 
 ## Example Usage
 

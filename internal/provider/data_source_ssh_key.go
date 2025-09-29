@@ -60,6 +60,9 @@ func (d *sshKeyDataSource) Configure(_ context.Context, req datasource.Configure
 // Schema defines the schema for the data source.
 func (d *sshKeyDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified SSH key.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

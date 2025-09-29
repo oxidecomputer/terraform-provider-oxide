@@ -3,12 +3,12 @@
 page_title: "oxide_project Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages projects.
 ---
 
 # oxide_project (Resource)
 
-
+This resource manages projects.
 
 ## Example Usage
 

@@ -3,12 +3,12 @@
 page_title: "oxide_image Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified image.
 ---
 
 # oxide_image (Data Source)
 
-
+Retrieve information about a specified image.
 
 ## Example Usage
 

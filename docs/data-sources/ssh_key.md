@@ -3,12 +3,12 @@
 page_title: "oxide_ssh_key Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified SSH key.
 ---
 
 # oxide_ssh_key (Data Source)
 
-
+Retrieve information about a specified SSH key.
 
 ## Example Usage
 

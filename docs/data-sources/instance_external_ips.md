@@ -3,12 +3,12 @@
 page_title: "oxide_instance_external_ips Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information of all external IPs associated to an instance.
 ---
 
 # oxide_instance_external_ips (Data Source)
 
-
+Retrieve information of all external IPs associated to an instance.
 
 ## Example Usage
 

@@ -3,12 +3,12 @@
 page_title: "oxide_vpc Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified VPC.
 ---
 
 # oxide_vpc (Data Source)
 
-
+Retrieve information about a specified VPC.
 
 ## Example Usage
 
@@ -37,9 +37,9 @@ data "oxide_vpc" "example" {
 ### Read-Only
 
 - `description` (String) Description for the VPC.
-- `dns_name` (String) DNS Name of the VPC.
+- `dns_name` (String) DNS name of the VPC.
 - `id` (String) Unique, immutable, system-controlled identifier of the VPC.
-- `ipv6_prefix` (String) DNS Name of the VPC.
+- `ipv6_prefix` (String) All IPv6 subnets created from this VPC must be taken from this range, which should be a unique local address in the range `fd00::/48`. The default VPC Subnet will have the first `/64` range from this prefix.
 - `project_id` (String) ID of the project that contains the VPC.
 - `system_router_id` (String) Unique, immutable, system-controlled identifier of the system router.
 - `time_created` (String) Timestamp of when this VPC was created.

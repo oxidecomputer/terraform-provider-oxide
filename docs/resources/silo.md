@@ -3,12 +3,17 @@
 page_title: "oxide_silo Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages the creation of an Oxide silo.
+  -> Only the quotas attribute supports in-place modification. Changes to other
+  attributes will result in the silo being destroyed and created anew.
 ---
 
 # oxide_silo (Resource)
 
+This resource manages the creation of an Oxide silo.
 
+-> Only the `quotas` attribute supports in-place modification. Changes to other
+attributes will result in the silo being destroyed and created anew.
 
 ## Example Usage
 
@@ -48,16 +53,16 @@ resource "oxide_silo" "example" {
 > **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
 
 - `description` (String) Human-readable free-form text about the silo.
-- `discoverable` (Boolean) Whether this silo is present in the silo_list output.
+- `discoverable` (Boolean) Whether this silo is present in the `silo_list` output.
 - `name` (String) Unique, immutable, user-controlled identifier of the silo.
 - `quotas` (Attributes) Limits the amount of provisionable CPU, memory, and storage in the silo. (see [below for nested schema](#nestedatt--quotas))
 - `tls_certificates` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Initial TLS certificates to be used for the new silo's console and API endpoints. (see [below for nested schema](#nestedatt--tls_certificates))
 
 ### Optional
 
-- `admin_group_name` (String) If set, this group will be created during Silo creation and granted the 'Silo Admin' role.
+- `admin_group_name` (String) If set, this group will be created during silo creation and granted the `Silo Admin` role.
 - `identity_mode` (String) How users and groups are managed in the silo.
-- `mapped_fleet_roles` (Map of List of String) Mapped Fleet Roles for the Silo.
+- `mapped_fleet_roles` (Map of List of String) Mapped fleet roles for the silo.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

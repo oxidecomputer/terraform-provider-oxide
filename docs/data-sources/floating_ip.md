@@ -3,12 +3,12 @@
 page_title: "oxide_floating_ip Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified floating IP.
 ---
 
 # oxide_floating_ip (Data Source)
 
-
+Retrieve information about a specified floating IP.
 
 ## Example Usage
 

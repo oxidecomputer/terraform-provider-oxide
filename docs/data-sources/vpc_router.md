@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_router Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified VPC router.
 ---
 
 # oxide_vpc_router (Data Source)
 
-
+Retrieve information about a specified VPC router.
 
 ## Example Usage
 

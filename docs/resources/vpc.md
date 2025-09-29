@@ -3,12 +3,12 @@
 page_title: "oxide_vpc Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages VPCs.
 ---
 
 # oxide_vpc (Resource)
 
-
+This resource manages VPCs.
 
 ## Example Usage
 
@@ -34,13 +34,13 @@ resource "oxide_vpc" "example" {
 ### Required
 
 - `description` (String) Description for the VPC.
-- `dns_name` (String) DNS Name of the VPC.
+- `dns_name` (String) DNS name of the VPC.
 - `name` (String) Name of the VPC.
 - `project_id` (String) ID of the project that will contain the VPC.
 
 ### Optional
 
-- `ipv6_prefix` (String) DNS Name of the VPC.
+- `ipv6_prefix` (String) DNS name of the VPC.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_internet_gateway Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages VPC internet gateways.
 ---
 
 # oxide_vpc_internet_gateway (Resource)
 
-
+This resource manages VPC internet gateways.
 
 ## Example Usage
 

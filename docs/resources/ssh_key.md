@@ -3,12 +3,12 @@
 page_title: "oxide_ssh_key Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages SSH keys.
 ---
 
 # oxide_ssh_key (Resource)
 
-
+This resource manages SSH keys.
 
 ## Example Usage
 
@@ -26,7 +26,10 @@ resource "oxide_ssh_key" "example" {
 ### Required
 
 - `description` (String) Description for the SSH key.
-- `name` (String) Name of the SSH key.
+- `name` (String) Name of the SSH key. Names must begin with a lower case ASCII letter, be
+composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and `-`,
+and may not end with a `-`. Names cannot be a UUID though they may contain a
+UUID.
 - `public_key` (String) Public SSH key.
 
 ### Optional

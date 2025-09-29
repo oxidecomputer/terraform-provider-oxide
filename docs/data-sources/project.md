@@ -3,12 +3,12 @@
 page_title: "oxide_project Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified project.
 ---
 
 # oxide_project (Data Source)
 
-
+Retrieve information about a specified project.
 
 ## Example Usage
 

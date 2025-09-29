@@ -3,12 +3,21 @@
 page_title: "oxide_disk Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages disks.
+  To create a blank disk it's necessary to set block_size. Otherwise, one of source_image_id or source_snapshot_id must be set; block_size will be automatically calculated.
+  !> Disks cannot be deleted while attached to instances. Please detach or delete associated instances before attempting to delete.
+  -> This resource currently only provides create, read and delete actions. An update requires a resource replacement
 ---
 
 # oxide_disk (Resource)
 
+This resource manages disks.
 
+To create a blank disk it's necessary to set `block_size`. Otherwise, one of `source_image_id` or `source_snapshot_id` must be set; `block_size` will be automatically calculated.
+
+!> Disks cannot be deleted while attached to instances. Please detach or delete associated instances before attempting to delete.
+
+-> This resource currently only provides create, read and delete actions. An update requires a resource replacement
 
 ## Example Usage
 

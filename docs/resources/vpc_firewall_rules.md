@@ -3,12 +3,24 @@
 page_title: "oxide_vpc_firewall_rules Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages VPC firewall rules.
+  !> Firewall rules defined by this resource are considered exhaustive and will
+  overwrite any other firewall rules for the VPC once applied.
+  !> Setting the rules attribute to [] will delete all firewall rules for the
+  VPC which may cause undesired network traffic. Please double check the firewall
+  rules when updating this resource.
 ---
 
 # oxide_vpc_firewall_rules (Resource)
 
+This resource manages VPC firewall rules.
 
+!> Firewall rules defined by this resource are considered exhaustive and will
+overwrite any other firewall rules for the VPC once applied.
+
+!> Setting the `rules` attribute to `[]` will delete all firewall rules for the
+VPC which may cause undesired network traffic. Please double check the firewall
+rules when updating this resource.
 
 ## Example Usage
 
@@ -32,7 +44,7 @@ resource "oxide_vpc_firewall_rules" "example" {
           }
         ]
         ports     = ["443"]
-        protocols = ["tcp"]
+        protocols = [{ type = "tcp" }]
       },
       targets = [
         {
@@ -108,13 +120,13 @@ resource "oxide_vpc_firewall_rules" "example" {
 
 Required:
 
-- `action` (String) Whether traffic matching the rule should be allowed or dropped. Possible values are: allow or deny
+- `action` (String) Whether traffic matching the rule should be allowed or dropped. Possible values are: `allow` or `deny`.
 - `description` (String) Description for the VPC firewall rule.
-- `direction` (String) Whether this rule is for incoming or outgoing traffic. Possible values are: inbound or outbound
+- `direction` (String) Whether this rule is for incoming or outgoing traffic. Possible values are: `inbound` or `outbound`.
 - `filters` (Attributes) Reductions on the scope of the rule. (see [below for nested schema](#nestedatt--rules--filters))
 - `name` (String) Name of the VPC firewall rule.
 - `priority` (Number) The relative priority of this rule.
-- `status` (String) Whether this rule is in effect. Possible values are: enabled or disabled
+- `status` (String) Whether this rule is in effect. Possible values are: `enabled` or `disabled`.
 - `targets` (Attributes Set) Sets of instances that the rule applies to. (see [below for nested schema](#nestedatt--rules--targets))
 
 <a id="nestedatt--rules--filters"></a>
@@ -131,8 +143,13 @@ Optional:
 
 Required:
 
-- `type` (String) The rule applies to a single or all instances of this type, or specific IPs. Possible values: vpc, subnet, instance, ip, ip_net
-- `value` (String) Depending on the type, it will be one of the following:- `vpc`: Name of the VPC - `subnet`: Name of the VPC subnet - `instance`: Name of the instance - `ip`: IP address - `ip_net`: IPv4 or IPv6 subnet
+- `type` (String) The rule applies to a single or all instances of this type, or specific IPs. Possible values: `vpc`, `subnet`, `instance`, `ip`, `ip_net`.
+- `value` (String) Depending on the type, it will be one of the following:
+  - `vpc`: Name of the VPC
+  - `subnet`: Name of the VPC subnet
+  - `instance`: Name of the instance
+  - `ip`: IP address
+  - `ip_net`: IPv4 or IPv6 subnet
 
 
 <a id="nestedatt--rules--filters--protocols"></a>
@@ -154,8 +171,13 @@ Optional:
 
 Required:
 
-- `type` (String) The rule applies to a single or all instances of this type, or specific IPs. Possible values: vpc, subnet, instance, ip, ip_net
-- `value` (String) Depending on the type, it will be one of the following:- `vpc`: Name of the VPC - `subnet`: Name of the VPC subnet - `instance`: Name of the instance - `ip`: IP address - `ip_net`: IPv4 or IPv6 subnet
+- `type` (String) The rule applies to a single or all instances of this type, or specific IPs. Possible values: `vpc`, `subnet`, `instance`, `ip`, `ip_net`.
+- `value` (String) Depending on the type, it will be one of the following:
+  - `vpc`: Name of the VPC
+  - `subnet`: Name of the VPC subnet
+  - `instance`: Name of the instance
+  - `ip`: IP address
+  - `ip_net`: IPv4 or IPv6 subnet
 
 
 

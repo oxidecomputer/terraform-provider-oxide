@@ -3,12 +3,12 @@
 page_title: "oxide_floating_ip Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  This resource manages Oxide floating IPs.
 ---
 
 # oxide_floating_ip (Resource)
 
-
+This resource manages Oxide floating IPs.
 
 ## Example Usage
 
@@ -49,7 +49,7 @@ resource "oxide_floating_ip" "example_with_address" {
 
 ### Optional
 
-- `ip` (String) IP address for this floating IP. If unset an IP address will be chosen from the given ip_pool_id.
+- `ip` (String) IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.
 - `ip_pool_id` (String) IP pool ID to allocate this floating IP from. If unset the silo's default IP pool is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 

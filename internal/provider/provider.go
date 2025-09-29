@@ -71,8 +71,8 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				},
 			},
 			"profile": schema.StringAttribute{
-				Optional:    true,
-				Description: "Profile used to authenticate. Retrieves host and token from credentials.toml",
+				Optional:            true,
+				MarkdownDescription: "Profile used to authenticate. Retrieves host and token from `credentials.toml`",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("host"),

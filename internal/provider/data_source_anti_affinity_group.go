@@ -58,6 +58,9 @@ func (d *antiAffinityGroupDataSource) Configure(_ context.Context, req datasourc
 
 func (d *antiAffinityGroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified anti-affinity group.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_name": schema.StringAttribute{
 				Required:    true,

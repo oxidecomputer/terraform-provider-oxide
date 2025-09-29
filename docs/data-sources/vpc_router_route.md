@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_router_route Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified VPC router route.
 ---
 
 # oxide_vpc_router_route (Data Source)
 
-
+Retrieve information about a specified VPC router route.
 
 ## Example Usage
 
@@ -44,7 +44,7 @@ data "oxide_vpc_router_route" "example" {
 - `destination` (Attributes) Selects which traffic this routing rule will apply to (see [below for nested schema](#nestedatt--destination))
 - `id` (String) Unique, immutable, system-controlled identifier of the VPC router route.
 - `kind` (String) Whether the VPC router is custom or system created.
-- `target` (Attributes) location that matched packets should be forwarded to (see [below for nested schema](#nestedatt--target))
+- `target` (Attributes) Location that matched packets should be forwarded to (see [below for nested schema](#nestedatt--target))
 - `time_created` (String) Timestamp of when this VPC router route was created.
 - `time_modified` (String) Timestamp of when this VPC router route was last modified.
 - `vpc_router_id` (String) ID of the VPC router that contains the VPC router route.
@@ -62,8 +62,12 @@ Optional:
 
 Read-Only:
 
-- `type` (String) Route destination type. Possible values: vpc, subnet, ip, ip_net
-- `value` (String) Depending on the type, it will be one of the following:- `vpc`: Name of the VPC - `subnet`: Name of the VPC subnet - `ip`: IP address - `ip_net`: IPv4 or IPv6 subnet
+- `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`
+- `value` (String) Depending on the type, it will be one of the following:
+  - `vpc`: Name of the VPC
+  - `subnet`: Name of the VPC subnet
+  - `ip`: IP address
+  - `ip_net`: IPv4 or IPv6 subnet
 
 
 <a id="nestedatt--target"></a>

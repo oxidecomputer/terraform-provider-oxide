@@ -3,12 +3,12 @@
 page_title: "oxide_vpc_subnet Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  
+  Retrieve information about a specified VPC subnet.
 ---
 
 # oxide_vpc_subnet (Data Source)
 
-
+Retrieve information about a specified VPC subnet.
 
 ## Example Usage
 
@@ -39,11 +39,11 @@ data "oxide_vpc_subnet" "example" {
 ### Read-Only
 
 - `description` (String) Description for the VPC subnet.
-- `id` (String) Unique, immutable, system-controlled identifier of the VPC.
+- `id` (String) Unique, immutable, system-controlled identifier of the VPC subnet.
 - `ipv4_block` (String) IPv4 address range for this VPC subnet. It must be allocated from an RFC 1918 private address range, and must not overlap with any other existing subnet in the VPC.
 - `ipv6_block` (String) IPv6 address range for this VPC subnet. It must be allocated from the RFC 4193 Unique Local Address range, with the prefix equal to the parent VPC's prefix.
-- `time_created` (String) Timestamp of when this VPC was created.
-- `time_modified` (String) Timestamp of when this VPC was last modified.
+- `time_created` (String) Timestamp of when this VPC subnet was created.
+- `time_modified` (String) Timestamp of when this VPC subnet was last modified.
 - `vpc_id` (String) ID of the VPC that contains the subnet.
 
 <a id="nestedatt--timeouts"></a>

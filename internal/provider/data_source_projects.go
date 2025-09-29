@@ -57,6 +57,9 @@ func (d *projectsDataSource) Configure(_ context.Context, req datasource.Configu
 
 func (d *projectsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve a list of projects.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
