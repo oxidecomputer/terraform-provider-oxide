@@ -10,8 +10,8 @@ PROJECT_NAME=${OXIDE_PROJECT:-tf-acc-test}
 # Default to test-suite-silo, the silo used by omicron-dev.
 SILO_NAME=${OXIDE_SILO:-test-suite-silo}
 
+# Build a sample image, if not specified by caller.
 IMAGE_PATH=${OXIDE_IMAGE_PATH:-alpine.raw}
-
 if [ ! -e "$IMAGE_PATH" ]; then
     curl -L -o alpine.qcow2 https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/generic_alpine-3.22.1-x86_64-bios-tiny-r0.qcow2
     qemu-img convert -f qcow2 -O raw alpine.qcow2 "$IMAGE_PATH"

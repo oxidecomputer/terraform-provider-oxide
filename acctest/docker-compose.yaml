@@ -1,0 +1,10 @@
+services:
+  omicron-dev:
+    build: .
+    command: /bin/bash -c 'source env.sh && cargo xtask omicron-dev run-all --nexus-config ./nexus-config.toml'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12220"]
+      interval: 5s
+      retries: 300
+    ports:
+    - "12220:12220"
