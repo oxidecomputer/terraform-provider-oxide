@@ -6,18 +6,78 @@ package provider
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 type dataSourceSiloConfig struct {
-	BlockName string
+	BlockName   string
+	SiloDNSName string
 }
 
 var dataSourceSiloConfigTpl = `
+resource "tls_private_key" "self-signed" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "self-signed" {
+  private_key_pem       = tls_private_key.self-signed.private_key_pem
+  validity_period_hours = 8760
+
+  subject {
+    common_name  = "{{.SiloDNSName}}"
+    organization = "Oxide Computer Company"
+  }
+
+  dns_names = ["{{.SiloDNSName}}"]
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+}
+
+resource "oxide_silo" "{{.BlockName}}" {
+  name          = "tf-acc-test"
+  description   = "Managed by Terraform."
+  discoverable  = true
+  identity_mode = "local_only"
+
+  quotas = {
+    cpus    = 2
+    memory  = 8589934592
+    storage = 8589934592
+  }
+
+  mapped_fleet_roles = {
+    admin  = ["admin", "collaborator"]
+    viewer = ["viewer"]
+  }
+
+  tls_certificates = [
+    {
+      name        = "self-signed-wildcard"
+      description = "Self-signed wildcard certificate for *.sys.r3.oxide-preview.com."
+      cert        = tls_self_signed_cert.self-signed.cert_pem
+      key         = tls_private_key.self-signed.private_key_pem
+      service     = "external_api"
+    },
+  ]
+
+  timeouts = {
+    create = "1m"
+    read   = "2m"
+    update = "3m"
+    delete = "4m"
+  }
+}
+
 data "oxide_silo" "{{.BlockName}}" {
-  name = "default"
+  name = oxide_silo.{{.BlockName}}.name
   timeouts = {
     read = "1m"
   }
@@ -26,9 +86,16 @@ data "oxide_silo" "{{.BlockName}}" {
 
 func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	blockName := newBlockName("datasource-silo")
+
+	dnsName := os.Getenv("OXIDE_SILO_DNS_NAME")
+	if dnsName == "" {
+		t.Skip("Skipping test. Export OXIDE_SILO_DNS_NAME to run.")
+	}
+
 	config, err := parsedAccConfig(
 		dataSourceSiloConfig{
-			BlockName: blockName,
+			BlockName:   blockName,
+			SiloDNSName: dnsName,
 		},
 		dataSourceSiloConfigTpl,
 	)
@@ -39,6 +106,11 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"tls": {
+				Source: "hashicorp/tls",
+			},
+		},
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -53,6 +125,7 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 func checkDataSourceSilo(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "name"),
+		resource.TestCheckResourceAttr(dataName, "name", "tf-acc-test"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttrSet(dataName, "discoverable"),
