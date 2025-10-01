@@ -86,6 +86,9 @@ func (r *vpcRouterResource) Schema(ctx context.Context, _ resource.SchemaRequest
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC router.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"kind": schema.StringAttribute{
 				Computed:    true,

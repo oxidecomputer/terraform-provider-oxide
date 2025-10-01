@@ -164,6 +164,9 @@ func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the image.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
