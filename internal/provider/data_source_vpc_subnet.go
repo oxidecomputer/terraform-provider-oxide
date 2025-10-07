@@ -59,6 +59,9 @@ func (d *vpcSubnetDataSource) Configure(_ context.Context, req datasource.Config
 
 func (d *vpcSubnetDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified VPC subnet.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_name": schema.StringAttribute{
 				Required:    true,
@@ -95,15 +98,15 @@ func (d *vpcSubnetDataSource) Schema(ctx context.Context, req datasource.SchemaR
 			"timeouts": timeouts.Attributes(ctx),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the VPC.",
+				Description: "Unique, immutable, system-controlled identifier of the VPC subnet.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC was created.",
+				Description: "Timestamp of when this VPC subnet was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC was last modified.",
+				Description: "Timestamp of when this VPC subnet was last modified.",
 			},
 		},
 	}

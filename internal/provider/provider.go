@@ -50,6 +50,7 @@ func (p *oxideProvider) Metadata(ctx context.Context, req provider.MetadataReque
 // Schema defines the provider-level schema for configuration data.
 func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `The Oxide Terraform provider manages Oxide resources.`,
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Optional:    true,
@@ -71,8 +72,8 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				},
 			},
 			"profile": schema.StringAttribute{
-				Optional:    true,
-				Description: "Profile used to authenticate. Retrieves host and token from credentials.toml",
+				Optional:            true,
+				MarkdownDescription: "Profile used to authenticate. Retrieves host and token from `credentials.toml.`",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("host"),

@@ -71,6 +71,9 @@ func (d *imagesDataSource) Configure(_ context.Context, req datasource.Configure
 
 func (d *imagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve a list of all images belonging to a silo or project.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Optional:    true,

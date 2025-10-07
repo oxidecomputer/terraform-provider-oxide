@@ -81,6 +81,9 @@ func (r *vpcRouterRouteResource) ImportState(ctx context.Context, req resource.I
 // Schema defines the schema for the resource.
 func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages VPC router routes.
+`,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -95,8 +98,8 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 				Description: "Selects which traffic this routing rule will apply to",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						Description: "Route destination type. Possible values: vpc, subnet, ip, ip_net",
-						Required:    true,
+						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`.",
+						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								string(oxide.RouteDestinationTypeIp),
@@ -107,11 +110,13 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 						},
 					},
 					"value": schema.StringAttribute{
-						Description: "Depending on the type, it will be one of the following:" +
-							"- `vpc`: Name of the VPC " +
-							"- `subnet`: Name of the VPC subnet " +
-							"- `ip`: IP address " +
-							"- `ip_net`: IPv4 or IPv6 subnet",
+						MarkdownDescription: replaceBackticks(`
+Depending on the type, it will be one of the following:
+  - ''vpc'': Name of the VPC
+  - ''subnet'': Name of the VPC subnet
+  - ''ip'': IP address
+  - ''ip_net'': IPv4 or IPv6 subnet
+`),
 						Required: true,
 					},
 				},
@@ -121,8 +126,8 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 				Description: "Location that matched packets should be forwarded to.",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						Description: "Route destination type. Possible values: vpc, subnet, instance, ip, internet_gateway, drop",
-						Required:    true,
+						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `instance`, `ip`, `internet_gateway`, `drop`.",
+						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								string(oxide.RouteTargetTypeDrop),
@@ -135,12 +140,14 @@ func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRe
 						},
 					},
 					"value": schema.StringAttribute{
-						Description: "Depending on the type, it will be one of the following:" +
-							"- `vpc`: Name of the VPC " +
-							"- `subnet`: Name of the VPC subnet " +
-							"- `instance`: Name of the instance" +
-							"- `ip`: IP address " +
-							"- `internet_gateway`: Name of the internet gateway",
+						Description: replaceBackticks(`
+Depending on the type, it will be one of the following:
+  - ''vpc'': Name of the VPC
+  - ''subnet'': Name of the VPC subnet
+  - ''instance'': Name of the instance
+  - ''ip'': IP address
+  - ''internet_gateway'': Name of the internet gateway
+`),
 						Optional: true,
 					},
 				},

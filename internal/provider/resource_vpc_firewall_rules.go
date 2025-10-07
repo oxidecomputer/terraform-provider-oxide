@@ -131,6 +131,16 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 	// TODO: Make sure users can define a single block per VPC ID, not many, is this even possible?
 	resp.Schema = schema.Schema{
 		Version: 1,
+		MarkdownDescription: replaceBackticks(`
+This resource manages VPC firewall rules.
+
+!> Firewall rules defined by this resource are considered exhaustive and will
+overwrite any other firewall rules for the VPC once applied.
+
+!> Setting the ''rules'' attribute to ''[]'' will delete all firewall rules for the
+VPC which may cause undesired network traffic. Please double check the firewall
+rules when updating this resource.
+`),
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
 				Required:    true,
@@ -149,8 +159,8 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"action": schema.StringAttribute{
-							Required:    true,
-							Description: "Whether traffic matching the rule should be allowed or dropped. Possible values are: allow or deny",
+							Required:            true,
+							MarkdownDescription: "Whether traffic matching the rule should be allowed or dropped. Possible values are: `allow` or `deny`.",
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.VpcFirewallRuleActionAllow),
@@ -163,8 +173,8 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 							Description: "Description for the VPC firewall rule.",
 						},
 						"direction": schema.StringAttribute{
-							Required:    true,
-							Description: "Whether this rule is for incoming or outgoing traffic. Possible values are: inbound or outbound",
+							Required:            true,
+							MarkdownDescription: "Whether this rule is for incoming or outgoing traffic. Possible values are: `inbound` or `outbound`.",
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.VpcFirewallRuleDirectionInbound),
@@ -182,8 +192,8 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
-												Description: "The rule applies to a single or all instances of this type, or specific IPs. Possible values: vpc, subnet, instance, ip, ip_net",
-												Required:    true,
+												MarkdownDescription: "The rule applies to a single or all instances of this type, or specific IPs. Possible values: `vpc`, `subnet`, `instance`, `ip`, `ip_net`.",
+												Required:            true,
 												Validators: []validator.String{
 													stringvalidator.OneOf(
 														string(oxide.VpcFirewallRuleHostFilterTypeInstance),
@@ -196,12 +206,14 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 											},
 											"value": schema.StringAttribute{
 												// Important, if the name of the associated instance is changed Terraform will not be able to sync
-												Description: "Depending on the type, it will be one of the following:" +
-													"- `vpc`: Name of the VPC " +
-													"- `subnet`: Name of the VPC subnet " +
-													"- `instance`: Name of the instance " +
-													"- `ip`: IP address " +
-													"- `ip_net`: IPv4 or IPv6 subnet",
+												MarkdownDescription: replaceBackticks(`
+Depending on the type, it will be one of the following:
+  - ''vpc'': Name of the VPC
+  - ''subnet'': Name of the VPC subnet
+  - ''instance'': Name of the instance
+  - ''ip'': IP address
+  - ''ip_net'': IPv4 or IPv6 subnet
+ `),
 												Required: true,
 											},
 										},
@@ -267,8 +279,8 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 							Description: "The relative priority of this rule.",
 						},
 						"status": schema.StringAttribute{
-							Required:    true,
-							Description: "Whether this rule is in effect. Possible values are: enabled or disabled",
+							Required:            true,
+							MarkdownDescription: "Whether this rule is in effect. Possible values are: `enabled` or `disabled`.",
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.VpcFirewallRuleStatusDisabled),
@@ -282,8 +294,8 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"type": schema.StringAttribute{
-										Description: "The rule applies to a single or all instances of this type, or specific IPs. Possible values: vpc, subnet, instance, ip, ip_net",
-										Required:    true,
+										MarkdownDescription: "The rule applies to a single or all instances of this type, or specific IPs. Possible values: `vpc`, `subnet`, `instance`, `ip`, `ip_net`.",
+										Required:            true,
 										Validators: []validator.String{
 											stringvalidator.OneOf(
 												string(oxide.VpcFirewallRuleTargetTypeInstance),
@@ -296,12 +308,14 @@ func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.Schema
 									},
 									"value": schema.StringAttribute{
 										// Important, if the name of the associated instance is changed Terraform will not be able to sync
-										Description: "Depending on the type, it will be one of the following:" +
-											"- `vpc`: Name of the VPC " +
-											"- `subnet`: Name of the VPC subnet " +
-											"- `instance`: Name of the instance " +
-											"- `ip`: IP address " +
-											"- `ip_net`: IPv4 or IPv6 subnet",
+										MarkdownDescription: replaceBackticks(`
+Depending on the type, it will be one of the following:
+  - ''vpc'': Name of the VPC
+  - ''subnet'': Name of the VPC subnet
+  - ''instance'': Name of the instance
+  - ''ip'': IP address
+  - ''ip_net'': IPv4 or IPv6 subnet
+`),
 										Required: true,
 									},
 								},

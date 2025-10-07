@@ -69,6 +69,9 @@ func (r *vpcResource) ImportState(ctx context.Context, req resource.ImportStateR
 // Schema defines the schema for the resource.
 func (r *vpcResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages VPCs.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,
@@ -87,12 +90,12 @@ func (r *vpcResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp
 			},
 			"dns_name": schema.StringAttribute{
 				Required:    true,
-				Description: "DNS Name of the VPC.",
+				Description: "DNS name of the VPC.",
 			},
 			"ipv6_prefix": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "DNS Name of the VPC.",
+				Description: "DNS name of the VPC.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},

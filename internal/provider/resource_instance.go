@@ -108,6 +108,13 @@ func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportS
 // Schema defines the schema for the resource.
 func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: replaceBackticks(`
+This resource manages instances.
+
+!> Updates will stop and start the instance.
+
+-> When setting a boot disk using ''boot_disk_id'', the boot disk ID must also be present in ''disk_attachments''.
+`),
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,
@@ -160,8 +167,8 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				ElementType: types.StringType,
 			},
 			"boot_disk_id": schema.StringAttribute{
-				Optional:    true,
-				Description: "ID of the disk the instance should be booted from.",
+				Optional:            true,
+				MarkdownDescription: "ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.",
 				Validators: []validator.String{
 					stringvalidator.AlsoRequires(
 						path.MatchRoot("disk_attachments"),
@@ -178,9 +185,9 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				},
 			},
 			"disk_attachments": schema.SetAttribute{
-				Optional:    true,
-				Description: "IDs of the disks to be attached to the instance.",
-				ElementType: types.StringType,
+				Optional:            true,
+				MarkdownDescription: "IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `book_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.",
+				ElementType:         types.StringType,
 			},
 			"ssh_public_keys": schema.SetAttribute{
 				Optional:    true,
@@ -198,7 +205,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			},
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,
-				Description: "Associated Network Interfaces.",
+				Description: "Network interface devices attached to the instance",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
@@ -284,14 +291,14 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 						// (i.e., id = null) would drift when read (e.g., id = "") and require updating
 						// in place.
 						"id": schema.StringAttribute{
-							Description: "If type is ephemeral, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If type is floating, ID of the floating IP",
-							Optional:    true,
-							Computed:    true,
-							Default:     stringdefault.StaticString(""),
+							MarkdownDescription: "If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP",
+							Optional:            true,
+							Computed:            true,
+							Default:             stringdefault.StaticString(""),
 						},
 						"type": schema.StringAttribute{
-							Description: "Type of external IP.",
-							Required:    true,
+							MarkdownDescription: "Type of external IP. Must be one of `ephemeral` or `floating`.",
+							Required:            true,
 							Validators: []validator.String{
 								stringvalidator.OneOf(
 									string(oxide.ExternalIpCreateTypeEphemeral),
@@ -304,9 +311,10 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			},
 			"user_data": schema.StringAttribute{
 				Optional: true,
-				Description: "User data for instance initialization systems (such as cloud-init). " +
-					"Must be a Base64-encoded string, as specified in RFC 4648 § 4 (+ and / characters with padding). " +
-					"Maximum 32 KiB unencoded data.",
+				MarkdownDescription: `
+User data for instance initialization systems (such as cloud-init).
+Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4).
+Maximum 32 KiB unencoded data.`,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

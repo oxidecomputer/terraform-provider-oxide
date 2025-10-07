@@ -109,6 +109,12 @@ const tlsCertificateRegEx = `^[a-zA-Z0-9-]+$`
 // Schema defines the attributes for this resource.
 func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: replaceBackticks(`
+This resource manages the creation of an Oxide silo.
+
+-> Only the ''quotas'' attribute supports in-place modification. Changes to other
+attributes will result in the silo being destroyed and created anew.
+`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -204,8 +210,8 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"discoverable": schema.BoolAttribute{
-				Required:    true,
-				Description: "Whether this silo is present in the silo_list output.",
+				Required:            true,
+				MarkdownDescription: "Whether this silo is present in the `silo_list` output.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
@@ -223,8 +229,8 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"admin_group_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "If set, this group will be created during Silo creation and granted the 'Silo Admin' role.",
+				Optional:            true,
+				MarkdownDescription: "If set, this group will be created during silo creation and granted the `Silo Admin` role.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -232,7 +238,7 @@ func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, res
 			"mapped_fleet_roles": schema.MapAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Mapped Fleet Roles for the Silo.",
+				Description: "Mapped fleet roles for the silo.",
 				Default: mapdefault.StaticValue(types.MapValueMust(
 					types.ListType{ElemType: types.StringType},
 					map[string]attr.Value{},

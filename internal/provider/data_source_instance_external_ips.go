@@ -58,6 +58,9 @@ func (d *instanceExternalIPsDataSource) Configure(_ context.Context, req datasou
 
 func (d *instanceExternalIPsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information of all external IPs associated to an instance.
+`,
 		Attributes: map[string]schema.Attribute{
 			"instance_id": schema.StringAttribute{
 				Required:    true,

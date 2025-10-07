@@ -58,6 +58,9 @@ func (d *vpcRouterDataSource) Configure(_ context.Context, req datasource.Config
 
 func (d *vpcRouterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified VPC router.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_name": schema.StringAttribute{
 				Required:    true,

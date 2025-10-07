@@ -69,14 +69,21 @@ func (r *sshKeyResource) ImportState(ctx context.Context, req resource.ImportSta
 // Schema defines the schema for the resource.
 func (r *sshKeyResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages SSH keys.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the SSH key.",
 			},
 			"name": schema.StringAttribute{
-				Required:    true,
-				Description: "Name of the SSH key.",
+				Required: true,
+				MarkdownDescription: replaceBackticks(`
+Name of the SSH key. Names must begin with a lower case ASCII letter, be
+composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and ''-'',
+and may not end with a ''-''. Names cannot be a UUID though they may contain a
+UUID.`),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

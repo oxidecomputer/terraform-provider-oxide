@@ -70,6 +70,9 @@ func (r *antiAffinityGroupResource) ImportState(ctx context.Context, req resourc
 // Schema defines the schema for the resource.
 func (r *antiAffinityGroupResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+This resource manages anti-affinity groups.
+`,
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,
