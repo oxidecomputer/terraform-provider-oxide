@@ -15,7 +15,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// replaceBackticks replaces ” with `. It can be used to defined codeblocks in
+// replaceBackticks replaces '' with `. It can be used to defined codeblocks in
 // markdown raw strings.
 //
 //	var mdString = replaceBackticks(`this is a ''code'' block`)

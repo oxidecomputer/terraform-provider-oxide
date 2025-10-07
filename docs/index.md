@@ -1,12 +1,12 @@
 ---
 page_title: "Oxide Provider"
 description: |-
-  The Oxide Terraform provider can be used to manage an Oxide rack.
+  The Oxide Terraform provider manages Oxide resources.
 ---
 
 # Oxide Provider
 
-The Oxide Terraform provider can be used to manage an Oxide rack.
+The Oxide Terraform provider manages Oxide resources.
 
 ## Authentication
 
@@ -62,5 +62,5 @@ resource "oxide_disk" "example" {
 ### Optional
 
 - `host` (String) URL of the root of the target server
-- `profile` (String) Profile used to authenticate. Retrieves host and token from `credentials.toml`
+- `profile` (String) Profile used to authenticate. Retrieves host and token from `credentials.toml.`
 - `token` (String, Sensitive) Token used to authenticate
