@@ -1,6 +1,6 @@
 services:
   omicron-dev:
-    build: .
+    image: ghcr.io/oxidecomputer/omicron-acceptance-test:4449f0156baa80430eec3a98d53b3c1d8ed06c8d
     command: /bin/bash -c 'source env.sh && cargo xtask omicron-dev run-all --nexus-config ./nexus-config.toml'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:12220"]
