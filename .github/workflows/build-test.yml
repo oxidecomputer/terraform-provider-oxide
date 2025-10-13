@@ -43,7 +43,7 @@ jobs:
           sudo docker builder prune -a
       - uses: actions/checkout@v5
       - uses: hashicorp/setup-terraform@v3
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - uses: docker/setup-compose-action@v1
