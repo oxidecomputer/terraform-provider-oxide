@@ -117,6 +117,9 @@ This resource manages VPC subnets.
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,

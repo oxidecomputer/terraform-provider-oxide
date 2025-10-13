@@ -89,6 +89,9 @@ This resource manages VPC routers.
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC router.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"kind": schema.StringAttribute{
 				Computed:    true,

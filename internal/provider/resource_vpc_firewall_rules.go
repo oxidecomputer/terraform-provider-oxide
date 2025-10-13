@@ -333,6 +333,9 @@ Depending on the type, it will be one of the following:
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the firewall rules. Specific only to Terraform.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,

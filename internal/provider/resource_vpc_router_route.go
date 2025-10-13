@@ -162,6 +162,9 @@ Depending on the type, it will be one of the following:
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the VPC router route.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"kind": schema.StringAttribute{
 				Computed:    true,
