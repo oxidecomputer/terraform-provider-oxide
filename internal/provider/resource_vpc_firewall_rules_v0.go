@@ -633,8 +633,8 @@ func (m vpcFirewallRulesResourceModelV01) upgrade() vpcFirewallRulesResourceMode
 	}
 
 	return vpcFirewallRulesResourceModel{
-		ID:           m.ID,
-		Rules:        rules,
+		ID: m.ID,
+		// Rules:        rules,
 		Timeouts:     m.Timeouts,
 		VPCID:        m.VPCID,
 		TimeCreated:  m.TimeCreated,
@@ -666,11 +666,11 @@ func (r vpcFirewallRulesResourceRuleModelV01) upgrade() vpcFirewallRulesResource
 	}
 
 	return vpcFirewallRulesResourceRuleModel{
-		Action:       r.Action,
-		Description:  r.Description,
-		Direction:    r.Direction,
-		Filters:      r.Filters.upgrade(),
-		Name:         r.Name,
+		Action:      r.Action,
+		Description: r.Description,
+		Direction:   r.Direction,
+		Filters:     r.Filters.upgrade(),
+		// Name:         r.Name,
 		Priority:     r.Priority,
 		Status:       r.Status,
 		Targets:      targets,
