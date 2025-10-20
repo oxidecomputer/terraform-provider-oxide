@@ -6,7 +6,7 @@ description: |-
   This resource manages VPC firewall rules.
   !> Firewall rules defined by this resource are considered exhaustive and will
   overwrite any other firewall rules for the VPC once applied.
-  !> Setting the rules attribute to [] will delete all firewall rules for the
+  !> Setting the rules attribute to {} will delete all firewall rules for the
   VPC which may cause undesired network traffic. Please double check the firewall
   rules when updating this resource.
 ---
@@ -18,7 +18,7 @@ This resource manages VPC firewall rules.
 !> Firewall rules defined by this resource are considered exhaustive and will
 overwrite any other firewall rules for the VPC once applied.
 
-!> Setting the `rules` attribute to `[]` will delete all firewall rules for the
+!> Setting the `rules` attribute to `{}` will delete all firewall rules for the
 VPC which may cause undesired network traffic. Please double check the firewall
 rules when updating this resource.
 
@@ -102,7 +102,7 @@ resource "oxide_vpc_firewall_rules" "example" {
 
 ### Required
 
-- `rules` (Attributes Set) Associated firewall rules. (see [below for nested schema](#nestedatt--rules))
+- `rules` (Attributes Map) Associated firewall rules. The map key defines the rule name and must follow the API requirements for VPC firewall rule name. (see [below for nested schema](#nestedatt--rules))
 - `vpc_id` (String) ID of the VPC that will have the firewall rules applied to.
 
 ### Optional
@@ -124,10 +124,13 @@ Required:
 - `description` (String) Description for the VPC firewall rule.
 - `direction` (String) Whether this rule is for incoming or outgoing traffic. Possible values are: `inbound` or `outbound`.
 - `filters` (Attributes) Reductions on the scope of the rule. (see [below for nested schema](#nestedatt--rules--filters))
-- `name` (String) Name of the VPC firewall rule.
 - `priority` (Number) The relative priority of this rule.
 - `status` (String) Whether this rule is in effect. Possible values are: `enabled` or `disabled`.
 - `targets` (Attributes Set) Sets of instances that the rule applies to. (see [below for nested schema](#nestedatt--rules--targets))
+
+Read-Only:
+
+- `name` (String) Name of the VPC firewall rule.
 
 <a id="nestedatt--rules--filters"></a>
 ### Nested Schema for `rules.filters`

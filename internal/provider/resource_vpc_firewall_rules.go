@@ -7,11 +7,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -32,6 +34,10 @@ var (
 	_ resource.Resource                 = (*vpcFirewallRulesResource)(nil)
 	_ resource.ResourceWithConfigure    = (*vpcFirewallRulesResource)(nil)
 	_ resource.ResourceWithUpgradeState = (*vpcFirewallRulesResource)(nil)
+)
+
+var (
+	vpcFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
 )
 
 // NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
@@ -61,6 +67,7 @@ type vpcFirewallRulesResourceRuleModel struct {
 	Description types.String                              `tfsdk:"description"`
 	Direction   types.String                              `tfsdk:"direction"`
 	Filters     *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
+	Name        types.String                              `tfsdk:"name"`
 	Priority    types.Int64                               `tfsdk:"priority"`
 	Status      types.String                              `tfsdk:"status"`
 	Targets     []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
@@ -121,7 +128,8 @@ func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource
 // are also updated to handle the new schema.
 func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
-		0: {StateUpgrader: r.stateUpgraderV0},
+		0: {StateUpgrader: r.stateUpgraderV01},
+		1: {StateUpgrader: r.stateUpgraderV01},
 	}
 }
 
@@ -136,7 +144,7 @@ This resource manages VPC firewall rules.
 !> Firewall rules defined by this resource are considered exhaustive and will
 overwrite any other firewall rules for the VPC once applied.
 
-!> Setting the ''rules'' attribute to ''[]'' will delete all firewall rules for the
+!> Setting the ''rules'' attribute to ''{}'' will delete all firewall rules for the
 VPC which may cause undesired network traffic. Please double check the firewall
 rules when updating this resource.
 `),
@@ -154,7 +162,15 @@ rules when updating this resource.
 			// for more information.
 			"rules": schema.MapNestedAttribute{
 				Required:    true,
-				Description: "Associated firewall rules.",
+				Description: "Associated firewall rules. The map key defines the rule name and must follow the API requirements for VPC firewall rule name.",
+				Validators: []validator.Map{
+					mapvalidator.KeysAre(
+						stringvalidator.RegexMatches(
+							vpcFirewallRuleNameRegexp,
+							`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-', and may not end with a '-'. They can be at most 63 characters long.`,
+						),
+					),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"action": schema.StringAttribute{
@@ -269,6 +285,10 @@ Depending on the type, it will be one of the following:
 								},
 							},
 						},
+						"name": schema.StringAttribute{
+							Computed:    true,
+							Description: "Name of the VPC firewall rule.",
+						},
 						"priority": schema.Int64Attribute{
 							Required:    true,
 							Description: "The relative priority of this rule.",
@@ -382,6 +402,14 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	// Response does not include single ID for the set of rules.
 	// This means we'll set it here solely for Terraform.
 	plan.ID = types.StringValue(uuid.New().String())
+
+	// The order of the response is not guaranteed to be the same as the one set
+	// by the tf files. We will be populating all values, not just computed ones
+	plan.Rules, diags = newVPCFirewallRulesModel(firewallRules.Rules)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	plan.TimeCreated = types.StringNull()
 	plan.TimeModified = types.StringNull()
@@ -622,6 +650,7 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFire
 			Action:      types.StringValue(string(rule.Action)),
 			Description: types.StringValue(rule.Description),
 			Direction:   types.StringValue(string(rule.Direction)),
+			Name:        types.StringValue(string(rule.Name)),
 			// We can safely dereference rule.Priority as it's a required field
 			Priority:     types.Int64Value(int64(*rule.Priority)),
 			Status:       types.StringValue(string(rule.Status)),
