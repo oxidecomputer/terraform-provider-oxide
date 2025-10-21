@@ -1,11 +1,10 @@
 # Basic Example
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = [
-    {
+  rules = {
+    allow-https = {
       action      = "allow"
       description = "Allow HTTPS."
-      name        = "allow-https"
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -26,17 +25,16 @@ resource "oxide_vpc_firewall_rules" "example" {
         }
       ]
     }
-  ]
+  }
 }
 
 # ICMP Example
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = [
-    {
+  rules = {
+    allow-icmp = {
       action      = "allow"
       description = "Allow ICMP"
-      name        = "allow-icmp"
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -66,5 +64,5 @@ resource "oxide_vpc_firewall_rules" "example" {
         }
       ]
     }
-  ]
+  }
 }
