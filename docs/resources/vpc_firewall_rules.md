@@ -9,6 +9,68 @@ description: |-
   !> Setting the rules attribute to {} will delete all firewall rules for the
   VPC which may cause undesired network traffic. Please double check the firewall
   rules when updating this resource.
+  Migrating rules
+  Previous versions of this resource stored firewall rules in a set. This
+  resulted in slow plans in environments with a significant number of rules.
+  Newer versions store the rules in a map for better performance, but this change
+  requires you to update your configuration files from a set to a map with the
+  rule name as key.
+  Previous rules schema:
+  
+  resource "oxide_vpc_firewall_rules" "example" {
+    vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+    rules = [
+      {
+        action      = "allow"
+        description = "Allow HTTPS."
+        name        = "allow-https"
+        direction   = "inbound"
+        priority    = 50
+        status      = "enabled"
+        filters = {
+          ports     = ["443"]
+          protocols = [{ type = "tcp" }]
+        },
+        targets = [
+          {
+            type  = "subnet"
+            value = "default"
+          }
+        ]
+      }
+    ]
+  }
+  
+  New rules schema:
+  
+  # New schema.
+  resource "oxide_vpc_firewall_rules" "example" {
+    vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+    rules = {
+      allow-https = {
+        action      = "allow"
+        description = "Allow HTTPS."
+        direction   = "inbound"
+        priority    = 50
+        status      = "enabled"
+        filters = {
+          ports     = ["443"]
+          protocols = [{ type = "tcp" }]
+        },
+        targets = [
+          {
+            type  = "subnet"
+            value = "default"
+          }
+        ]
+      }
+    }
+  }
+  
+  You can use the provider::oxide::to_vpc_firewall_rules_map provider
+  function to help you convert existing rules, but note that this function is
+  provided as a temporary solution and you should update your configuration files
+  to use the new schema as soon as possible.
 ---
 
 # oxide_vpc_firewall_rules (Resource)
@@ -22,10 +84,18 @@ overwrite any other firewall rules for the VPC once applied.
 VPC which may cause undesired network traffic. Please double check the firewall
 rules when updating this resource.
 
-## Example Usage
+### Migrating `rules`
+
+Previous versions of this resource stored firewall rules in a set. This
+resulted in slow plans in environments with a significant number of rules.
+
+Newer versions store the rules in a map for better performance, but this change
+requires you to update your configuration files from a set to a map with the
+rule name as key.
+
+Previous `rules` schema:
 
 ```terraform
-# Basic Example
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
   rules = [
@@ -33,6 +103,67 @@ resource "oxide_vpc_firewall_rules" "example" {
       action      = "allow"
       description = "Allow HTTPS."
       name        = "allow-https"
+      direction   = "inbound"
+      priority    = 50
+      status      = "enabled"
+      filters = {
+        ports     = ["443"]
+        protocols = [{ type = "tcp" }]
+      },
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  ]
+}
+```
+
+New `rules` schema:
+
+```terraform
+# New schema.
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = {
+    allow-https = {
+      action      = "allow"
+      description = "Allow HTTPS."
+      direction   = "inbound"
+      priority    = 50
+      status      = "enabled"
+      filters = {
+        ports     = ["443"]
+        protocols = [{ type = "tcp" }]
+      },
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  }
+}
+```
+
+You can use the `provider::oxide::to_vpc_firewall_rules_map` provider
+function to help you convert existing rules, but note that this function is
+provided as a temporary solution and you should update your configuration files
+to use the new schema as soon as possible.
+
+## Example Usage
+
+```terraform
+# Basic Example
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = {
+    allow-https = {
+      action      = "allow"
+      description = "Allow HTTPS."
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -53,17 +184,16 @@ resource "oxide_vpc_firewall_rules" "example" {
         }
       ]
     }
-  ]
+  }
 }
 
 # ICMP Example
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = [
-    {
+  rules = {
+    allow-icmp = {
       action      = "allow"
       description = "Allow ICMP"
-      name        = "allow-icmp"
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -93,7 +223,7 @@ resource "oxide_vpc_firewall_rules" "example" {
         }
       ]
     }
-  ]
+  }
 }
 ```
 
