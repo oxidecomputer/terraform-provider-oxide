@@ -951,6 +951,75 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `, ts.URL)
 
+	//lintignore:AT004 // Provider must connect to test server.
+	configLatest := fmt.Sprintf(`
+provider "oxide" {
+  host  = "%s"
+  token = "fake"
+}
+
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  rules = {
+    single-protocol = {
+      action      = "allow"
+      description = "Single protocol"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+        protocols = [
+          { type : "tcp" }
+        ]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    },
+    multiple-protocols = {
+      action      = "allow"
+      description = "Multiple protocols"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+        protocols = [
+          { type : "tcp" },
+          { type : "udp" }
+        ]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    },
+    no-protocol = {
+      action      = "allow"
+      description = "No protocol"
+      direction   = "inbound"
+      priority    = 65535
+      status      = "enabled"
+      filters = {
+        ports = ["22"]
+      }
+      targets = [
+        {
+          type  = "subnet"
+          value = "default"
+        }
+      ]
+    }
+  }
+}
+`, ts.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			// Initial state with v0.12.0 and R15.
@@ -973,7 +1042,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 				PreConfig: func() {
 					version.Store(16)
 				},
-				Config: configV1,
+				Config: configLatest,
 			},
 		},
 	})
@@ -1000,7 +1069,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 				PreConfig: func() {
 					version.Store(16)
 				},
-				Config: configV1,
+				Config: configLatest,
 			},
 		},
 	})
