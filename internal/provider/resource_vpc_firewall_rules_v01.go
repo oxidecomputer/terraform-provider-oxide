@@ -669,6 +669,7 @@ func (r vpcFirewallRulesResourceRuleModelV01) upgrade() vpcFirewallRulesResource
 		Action:       r.Action,
 		Description:  r.Description,
 		Direction:    r.Direction,
+		Name:         r.Name,
 		Filters:      r.Filters.upgrade(),
 		Priority:     r.Priority,
 		Status:       r.Status,
