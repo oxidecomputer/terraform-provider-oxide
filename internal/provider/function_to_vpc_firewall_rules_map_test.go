@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFunctionToVPCFirewallRulesMap(t *testing.T) {
+func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 	blockName := newBlockName("firewall_rules")
 	supportBlockName := newBlockName("support")
 	supportBlockName2 := newBlockName("support")
