@@ -84,9 +84,8 @@ This resource manages IP pool to silo links.
 				},
 			},
 			"is_default": schema.BoolAttribute{
-				Required: true,
-				Description: "Whether this is the default IP pool for a silo. " +
-					"Only a single IP pool silo link can be marked as default",
+				Required:    true,
+				Description: "Whether this is the default IP pool for a silo. Only a single IP pool silo link can be marked as default.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,

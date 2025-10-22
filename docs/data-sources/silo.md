@@ -3,12 +3,12 @@
 page_title: "oxide_silo Data Source - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  Retrieve information about a specified Silo.
+  Retrieve information about a specified silo.
 ---
 
 # oxide_silo (Data Source)
 
-Retrieve information about a specified Silo.
+Retrieve information about a specified silo.
 
 ## Example Usage
 
@@ -26,7 +26,7 @@ data "oxide_silo" "example" {
 
 ### Required
 
-- `name` (String) Name of the Silo.
+- `name` (String) Name of the silo.
 
 ### Optional
 
@@ -34,12 +34,12 @@ data "oxide_silo" "example" {
 
 ### Read-Only
 
-- `description` (String) Description for the Silo.
-- `discoverable` (Boolean) A silo where discoverable is false can be retrieved only by its ID - it will not be part of the 'list all silos' output
-- `id` (String) Unique, immutable, system-controlled identifier of the Silo.
-- `identity_mode` (String) How users and groups are managed in this Silo.
-- `time_created` (String) Timestamp of when this Silo was created.
-- `time_modified` (String) Timestamp of when this Silo was last modified.
+- `description` (String) Description for the silo.
+- `discoverable` (Boolean) A silo where discoverable is false can be retrieved only by its ID - it will not be part of the 'list all silos' output.
+- `id` (String) Unique, immutable, system-controlled identifier of the silo.
+- `identity_mode` (String) How users and groups are managed in this silo.
+- `time_created` (String) Timestamp of when this silo was created.
+- `time_modified` (String) Timestamp of when this silo was last modified.
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`

@@ -55,8 +55,8 @@ resource "oxide_ip_pool" "example" {
 
 Required:
 
-- `first_address` (String) First address in the range
-- `last_address` (String) Last address in the range
+- `first_address` (String) First address in the range.
+- `last_address` (String) Last address in the range.
 
 
 <a id="nestedatt--timeouts"></a>

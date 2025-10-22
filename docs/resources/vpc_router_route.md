@@ -39,7 +39,7 @@ resource "oxide_vpc_router_route" "example" {
 
 ### Required
 
-- `description` (String) Description for the VPC Router Route.
+- `description` (String) Description for the VPC router route.
 - `destination` (Attributes) Selects which traffic this routing rule will apply to (see [below for nested schema](#nestedatt--destination))
 - `name` (String) Name of the VPC router route.
 - `target` (Attributes) Location that matched packets should be forwarded to. (see [below for nested schema](#nestedatt--target))
@@ -63,10 +63,10 @@ Required:
 
 - `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`.
 - `value` (String) Depending on the type, it will be one of the following:
-  - `vpc`: Name of the VPC
-  - `subnet`: Name of the VPC subnet
-  - `ip`: IP address
-  - `ip_net`: IPv4 or IPv6 subnet
+  - `vpc`: Name of the VPC.
+  - `subnet`: Name of the VPC subnet.
+  - `ip`: IP address.
+  - `ip_net`: IPv4 or IPv6 subnet.
 
 
 <a id="nestedatt--target"></a>
@@ -79,11 +79,11 @@ Required:
 Optional:
 
 - `value` (String) Depending on the type, it will be one of the following:
-  - `vpc`: Name of the VPC
-  - `subnet`: Name of the VPC subnet
-  - `instance`: Name of the instance
-  - `ip`: IP address
-  - `internet_gateway`: Name of the internet gateway
+  - `vpc`: Name of the VPC.
+  - `subnet`: Name of the VPC subnet.
+  - `instance`: Name of the instance.
+  - `ip`: IP address.
+  - `internet_gateway`: Name of the internet gateway.
 
 
 <a id="nestedatt--timeouts"></a>

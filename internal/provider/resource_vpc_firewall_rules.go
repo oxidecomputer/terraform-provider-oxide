@@ -208,11 +208,11 @@ rules when updating this resource.
 												// Important, if the name of the associated instance is changed Terraform will not be able to sync
 												MarkdownDescription: replaceBackticks(`
 Depending on the type, it will be one of the following:
-  - ''vpc'': Name of the VPC
-  - ''subnet'': Name of the VPC subnet
-  - ''instance'': Name of the instance
-  - ''ip'': IP address
-  - ''ip_net'': IPv4 or IPv6 subnet
+  - ''vpc'': Name of the VPC.
+  - ''subnet'': Name of the VPC subnet.
+  - ''instance'': Name of the instance.
+  - ''ip'': IP address.
+  - ''ip_net'': IPv4 or IPv6 subnet.
  `),
 												Required: true,
 											},
@@ -310,11 +310,11 @@ Depending on the type, it will be one of the following:
 										// Important, if the name of the associated instance is changed Terraform will not be able to sync
 										MarkdownDescription: replaceBackticks(`
 Depending on the type, it will be one of the following:
-  - ''vpc'': Name of the VPC
-  - ''subnet'': Name of the VPC subnet
-  - ''instance'': Name of the instance
-  - ''ip'': IP address
-  - ''ip_net'': IPv4 or IPv6 subnet
+  - ''vpc'': Name of the VPC.
+  - ''subnet'': Name of the VPC subnet.
+  - ''instance'': Name of the instance.
+  - ''ip'': IP address.
+  - ''ip_net'': IPv4 or IPv6 subnet.
 `),
 										Required: true,
 									},

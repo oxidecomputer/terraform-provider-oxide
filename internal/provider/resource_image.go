@@ -104,15 +104,15 @@ This resource manages images.
 				},
 			},
 			"os": schema.StringAttribute{
-				Required:    true,
-				Description: "OS image distribution. Example: alpine",
+				Required:            true,
+				MarkdownDescription: replaceBackticks(`OS image distribution. Example: ''"alpine"''.`),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"version": schema.StringAttribute{
-				Required:    true,
-				Description: "OS image version. Example: 3.16.",
+				Required:            true,
+				MarkdownDescription: replaceBackticks(`OS image version. Example: ''"3.16"''.`),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

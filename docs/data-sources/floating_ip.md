@@ -36,7 +36,7 @@ data "oxide_floating_ip" "example" {
 - `description` (String) Human-readable free-form text about the floating IP.
 - `id` (String) Unique, immutable, system-controlled identifier for the floating IP.
 - `instance_id` (String) Instance ID that this floating IP is attached to, if presently attached.
-- `ip` (String) IP address for this floating IP. If unset an IP address will be chosen from the given ip_pool_id.
+- `ip` (String) IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.
 - `ip_pool_id` (String) IP pool ID to allocate this floating IP from. If unset the silo's default IP pool is used.
 - `project_id` (String) Project ID where this floating IP is located.
 - `time_created` (String) Timestamp when this floating IP was created.

@@ -62,12 +62,12 @@ Optional:
 
 Read-Only:
 
-- `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`
+- `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`.
 - `value` (String) Depending on the type, it will be one of the following:
-  - `vpc`: Name of the VPC
-  - `subnet`: Name of the VPC subnet
-  - `ip`: IP address
-  - `ip_net`: IPv4 or IPv6 subnet
+  - `vpc`: Name of the VPC.
+  - `subnet`: Name of the VPC subnet.
+  - `ip`: IP address.
+  - `ip_net`: IPv4 or IPv6 subnet.
 
 
 <a id="nestedatt--target"></a>
@@ -75,5 +75,10 @@ Read-Only:
 
 Read-Only:
 
-- `type` (String) Route destination type. Possible values: vpc, subnet, instance, ip, internet_gateway, drop
-- `value` (String) Depending on the type, it will be one of the following:- `vpc`: Name of the VPC - `subnet`: Name of the VPC subnet - `instance`: Name of the instance- `ip`: IP address - `internet_gateway`: name of the internet gateway
+- `type` (String) Route destination type. Possible values: `vpc`, `subnet`, `instance`, `ip`, `internet_gateway`, `drop`.
+- `value` (String) Depending on the type, it will be one of the following:
+  - `vpc`: Name of the VPC.
+  - `subnet`: Name of the VPC subnet.
+  - `instance`: Name of the instance.
+  - `ip`: IP address.
+  - `internet_gateway`: Name of the internet gateway.

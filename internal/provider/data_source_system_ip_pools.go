@@ -57,6 +57,9 @@ func (d *systemIpPoolsDataSource) Configure(_ context.Context, req datasource.Co
 
 func (d *systemIpPoolsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve all configured IP pools for the Oxide system.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,

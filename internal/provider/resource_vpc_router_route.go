@@ -91,7 +91,7 @@ This resource manages VPC router routes.
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the VPC Router Route.",
+				Description: "Description for the VPC router route.",
 			},
 			"destination": schema.SingleNestedAttribute{
 				Required:    true,
@@ -112,10 +112,10 @@ This resource manages VPC router routes.
 					"value": schema.StringAttribute{
 						MarkdownDescription: replaceBackticks(`
 Depending on the type, it will be one of the following:
-  - ''vpc'': Name of the VPC
-  - ''subnet'': Name of the VPC subnet
-  - ''ip'': IP address
-  - ''ip_net'': IPv4 or IPv6 subnet
+  - ''vpc'': Name of the VPC.
+  - ''subnet'': Name of the VPC subnet.
+  - ''ip'': IP address.
+  - ''ip_net'': IPv4 or IPv6 subnet.
 `),
 						Required: true,
 					},
@@ -142,11 +142,11 @@ Depending on the type, it will be one of the following:
 					"value": schema.StringAttribute{
 						Description: replaceBackticks(`
 Depending on the type, it will be one of the following:
-  - ''vpc'': Name of the VPC
-  - ''subnet'': Name of the VPC subnet
-  - ''instance'': Name of the instance
-  - ''ip'': IP address
-  - ''internet_gateway'': Name of the internet gateway
+  - ''vpc'': Name of the VPC.
+  - ''subnet'': Name of the VPC subnet.
+  - ''instance'': Name of the instance.
+  - ''ip'': IP address.
+  - ''internet_gateway'': Name of the internet gateway.
 `),
 						Optional: true,
 					},

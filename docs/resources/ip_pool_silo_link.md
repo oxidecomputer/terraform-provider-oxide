@@ -32,7 +32,7 @@ resource "oxide_ip_pool_silo_link" "example" {
 ### Required
 
 - `ip_pool_id` (String) ID of the IP pool that will be linked to the silo.
-- `is_default` (Boolean) Whether this is the default IP pool for a silo. Only a single IP pool silo link can be marked as default
+- `is_default` (Boolean) Whether this is the default IP pool for a silo. Only a single IP pool silo link can be marked as default.
 - `silo_id` (String) ID of the silo to link the IP pool to.
 
 ### Optional

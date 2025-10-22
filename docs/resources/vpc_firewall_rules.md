@@ -145,11 +145,11 @@ Required:
 
 - `type` (String) The rule applies to a single or all instances of this type, or specific IPs. Possible values: `vpc`, `subnet`, `instance`, `ip`, `ip_net`.
 - `value` (String) Depending on the type, it will be one of the following:
-  - `vpc`: Name of the VPC
-  - `subnet`: Name of the VPC subnet
-  - `instance`: Name of the instance
-  - `ip`: IP address
-  - `ip_net`: IPv4 or IPv6 subnet
+  - `vpc`: Name of the VPC.
+  - `subnet`: Name of the VPC subnet.
+  - `instance`: Name of the instance.
+  - `ip`: IP address.
+  - `ip_net`: IPv4 or IPv6 subnet.
 
 
 <a id="nestedatt--rules--filters--protocols"></a>
@@ -173,11 +173,11 @@ Required:
 
 - `type` (String) The rule applies to a single or all instances of this type, or specific IPs. Possible values: `vpc`, `subnet`, `instance`, `ip`, `ip_net`.
 - `value` (String) Depending on the type, it will be one of the following:
-  - `vpc`: Name of the VPC
-  - `subnet`: Name of the VPC subnet
-  - `instance`: Name of the instance
-  - `ip`: IP address
-  - `ip_net`: IPv4 or IPv6 subnet
+  - `vpc`: Name of the VPC.
+  - `subnet`: Name of the VPC subnet.
+  - `instance`: Name of the instance.
+  - `ip`: IP address.
+  - `ip_net`: IPv4 or IPv6 subnet.
 
 
 

@@ -91,8 +91,8 @@ Retrieve information about a specified floating IP.
 				Description: "Instance ID that this floating IP is attached to, if presently attached.",
 			},
 			"ip": schema.StringAttribute{
-				Computed:    true,
-				Description: "IP address for this floating IP. If unset an IP address will be chosen from the given ip_pool_id.",
+				Computed:            true,
+				MarkdownDescription: "IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.",
 			},
 			"ip_pool_id": schema.StringAttribute{
 				Computed:    true,

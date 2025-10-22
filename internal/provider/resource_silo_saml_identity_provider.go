@@ -75,7 +75,15 @@ func (r *siloSamlIdentityProvider) Configure(ctx context.Context, req resource.C
 
 func (r *siloSamlIdentityProvider) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a SAML identity provider (IdP) for an Oxide silo.",
+		MarkdownDescription: `
+Manages a SAML identity provider (IdP) for an Oxide silo.
+
+-> This resource does not support updates. All attributes are immutable once
+created.
+
+-> This resource does not support deletion from the Oxide API. When destroyed in
+Terraform, it will be removed from state but will continue to exist in Oxide.
+`,
 		Attributes: map[string]schema.Attribute{
 			"silo": schema.StringAttribute{
 				Required:    true,
@@ -106,7 +114,8 @@ func (r *siloSamlIdentityProvider) Schema(ctx context.Context, _ resource.Schema
 				Description: "Source of identity provider metadata (URL or base64-encoded XML).",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						Required: true,
+						Required:            true,
+						MarkdownDescription: "The type of metadata source. Must be one of: `url`, `base64_encoded_xml`.",
 						Validators: []validator.String{
 							stringvalidator.OneOf(
 								"url",
@@ -115,15 +124,15 @@ func (r *siloSamlIdentityProvider) Schema(ctx context.Context, _ resource.Schema
 						},
 					},
 					"url": schema.StringAttribute{
-						Optional:    true,
-						Description: "URL to fetch metadata from (required when type is `url`).",
+						Optional:            true,
+						MarkdownDescription: "URL to fetch metadata from (required when type is `url`). Conflicts with `data`.",
 						Validators: []validator.String{
 							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("data")),
 						},
 					},
 					"data": schema.StringAttribute{
-						Optional:    true,
-						Description: "Base64-encoded XML metadata (required when type is `base64_encoded_xml`).",
+						Optional:            true,
+						MarkdownDescription: "Base64-encoded XML metadata (required when type is `base64_encoded_xml`). Conflicts with `url`.",
 						Validators: []validator.String{
 							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("url")),
 						},

@@ -55,36 +55,36 @@ func (d *siloDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 func (d *siloDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
-Retrieve information about a specified Silo.
+Retrieve information about a specified silo.
 `,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the Silo.",
+				Description: "Name of the silo.",
 			},
 			"description": schema.StringAttribute{
 				Computed:    true,
-				Description: "Description for the Silo.",
+				Description: "Description for the silo.",
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the Silo.",
+				Description: "Unique, immutable, system-controlled identifier of the silo.",
 			},
 			"identity_mode": schema.StringAttribute{
 				Computed:    true,
-				Description: "How users and groups are managed in this Silo.",
+				Description: "How users and groups are managed in this silo.",
 			},
 			"discoverable": schema.BoolAttribute{
 				Computed:    true,
-				Description: "A silo where discoverable is false can be retrieved only by its ID - it will not be part of the 'list all silos' output",
+				Description: "A silo where discoverable is false can be retrieved only by its ID - it will not be part of the 'list all silos' output.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this Silo was created.",
+				Description: "Timestamp of when this silo was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this Silo was last modified.",
+				Description: "Timestamp of when this silo was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx),
 		},
