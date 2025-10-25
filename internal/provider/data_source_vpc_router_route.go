@@ -105,16 +105,16 @@ Retrieve information about a specified VPC router route.
 				Description: "Selects which traffic this routing rule will apply to",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`",
+						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`.",
 						Computed:            true,
 					},
 					"value": schema.StringAttribute{
 						MarkdownDescription: replaceBackticks(`
 Depending on the type, it will be one of the following:
-  - ''vpc'': Name of the VPC
-  - ''subnet'': Name of the VPC subnet
-  - ''ip'': IP address
-  - ''ip_net'': IPv4 or IPv6 subnet
+  - ''vpc'': Name of the VPC.
+  - ''subnet'': Name of the VPC subnet.
+  - ''ip'': IP address.
+  - ''ip_net'': IPv4 or IPv6 subnet.
  `),
 						Computed: true,
 					},
@@ -133,16 +133,18 @@ Depending on the type, it will be one of the following:
 				Description: "Location that matched packets should be forwarded to",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						Description: "Route destination type. Possible values: vpc, subnet, instance, ip, internet_gateway, drop",
-						Computed:    true,
+						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `instance`, `ip`, `internet_gateway`, `drop`.",
+						Computed:            true,
 					},
 					"value": schema.StringAttribute{
-						Description: "Depending on the type, it will be one of the following:" +
-							"- `vpc`: Name of the VPC " +
-							"- `subnet`: Name of the VPC subnet " +
-							"- `instance`: Name of the instance" +
-							"- `ip`: IP address " +
-							"- `internet_gateway`: name of the internet gateway",
+						MarkdownDescription: replaceBackticks(`
+Depending on the type, it will be one of the following:
+  - ''vpc'': Name of the VPC.
+  - ''subnet'': Name of the VPC subnet.
+  - ''instance'': Name of the instance.
+  - ''ip'': IP address.
+  - ''internet_gateway'': Name of the internet gateway.
+`),
 						Computed: true,
 					},
 				},

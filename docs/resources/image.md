@@ -34,10 +34,10 @@ resource "oxide_image" "example2" {
 
 - `description` (String) Description for the image.
 - `name` (String) Name of the image.
-- `os` (String) OS image distribution. Example: alpine
+- `os` (String) OS image distribution. Example: `"alpine"`.
 - `project_id` (String) ID of the project that will contain the image.
 - `source_snapshot_id` (String) Snapshot ID of the image source if applicable.
-- `version` (String) OS image version. Example: 3.16.
+- `version` (String) OS image version. Example: `"3.16"`.
 
 ### Optional
 

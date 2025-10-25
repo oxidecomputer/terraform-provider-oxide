@@ -139,7 +139,7 @@ This resource manages instances.
 			},
 			"host_name": schema.StringAttribute{
 				Required:    true,
-				Description: "Host name of the instance",
+				Description: "Host name of the instance.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -153,7 +153,8 @@ This resource manages instances.
 				Description: "Number of CPUs allocated for this instance.",
 			},
 			"auto_restart_policy": schema.StringAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "The auto-restart policy for this instance.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						string(oxide.InstanceAutoRestartPolicyBestEffort),
@@ -239,7 +240,7 @@ This resource manages instances.
 						},
 						"vpc_id": schema.StringAttribute{
 							Required:    true,
-							Description: "ID of the VPC in which to create the instance network interface",
+							Description: "ID of the VPC in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
 									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
@@ -291,7 +292,7 @@ This resource manages instances.
 						// (i.e., id = null) would drift when read (e.g., id = "") and require updating
 						// in place.
 						"id": schema.StringAttribute{
-							MarkdownDescription: "If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP",
+							MarkdownDescription: "If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP.",
 							Optional:            true,
 							Computed:            true,
 							Default:             stringdefault.StaticString(""),

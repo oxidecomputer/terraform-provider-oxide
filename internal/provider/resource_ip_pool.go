@@ -91,11 +91,11 @@ This resource manages IP pools.
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"first_address": schema.StringAttribute{
-							Description: "First address in the range",
+							Description: "First address in the range.",
 							Required:    true,
 						},
 						"last_address": schema.StringAttribute{
-							Description: "Last address in the range",
+							Description: "Last address in the range.",
 							Required:    true,
 						},
 					},
@@ -109,7 +109,7 @@ This resource manages IP pools.
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the IP Pool.",
+				Description: "Unique, immutable, system-controlled identifier of the IP pool.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

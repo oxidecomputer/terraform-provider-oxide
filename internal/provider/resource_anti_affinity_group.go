@@ -91,7 +91,7 @@ This resource manages anti-affinity groups.
 			},
 			"policy": schema.StringAttribute{
 				Required:    true,
-				Description: "Affinity policy used to describe what to do when a request cannot be satisfied",
+				Description: "Affinity policy used to describe what to do when a request cannot be satisfied.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						string(oxide.AffinityPolicyAllow),

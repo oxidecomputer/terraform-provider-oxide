@@ -106,7 +106,7 @@ resource "oxide_instance" "example" {
 ### Required
 
 - `description` (String) Description for the instance.
-- `host_name` (String) Host name of the instance
+- `host_name` (String) Host name of the instance.
 - `memory` (Number) Instance memory in bytes.
 - `name` (String) Name of the instance.
 - `ncpus` (Number) Number of CPUs allocated for this instance.
@@ -115,7 +115,7 @@ resource "oxide_instance" "example" {
 ### Optional
 
 - `anti_affinity_groups` (Set of String) IDs of the anti-affinity groups this instance should belong to.
-- `auto_restart_policy` (String)
+- `auto_restart_policy` (String) The auto-restart policy for this instance.
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `book_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
 - `external_ips` (Attributes Set) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
@@ -142,7 +142,7 @@ Required:
 
 Optional:
 
-- `id` (String) If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP
+- `id` (String) If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP.
 
 
 <a id="nestedatt--network_interfaces"></a>
@@ -153,7 +153,7 @@ Required:
 - `description` (String) Description for the instance network interface.
 - `name` (String) Name of the instance network interface.
 - `subnet_id` (String) ID of the VPC subnet in which to create the instance network interface.
-- `vpc_id` (String) ID of the VPC in which to create the instance network interface
+- `vpc_id` (String) ID of the VPC in which to create the instance network interface.
 
 Optional:
 

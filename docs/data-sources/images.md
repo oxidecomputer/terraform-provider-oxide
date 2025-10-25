@@ -21,7 +21,7 @@ data "oxide_images" "example" {}
 
 ### Optional
 
-- `project_id` (String) ID of the project which contains the images
+- `project_id` (String) ID of the project which contains the images.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

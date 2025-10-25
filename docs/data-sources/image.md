@@ -31,7 +31,7 @@ data "oxide_image" "example" {
 
 ### Optional
 
-- `project_name` (String) Name of the project which contains the images
+- `project_name` (String) Name of the project which contains the image.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
@@ -41,7 +41,7 @@ data "oxide_image" "example" {
 - `digest` (Attributes) Hash of the image contents, if applicable. (see [below for nested schema](#nestedatt--digest))
 - `id` (String) Unique, immutable, system-controlled identifier of the image.
 - `os` (String) OS image distribution.
-- `project_id` (String) ID of the project which contains the images
+- `project_id` (String) ID of the project which contains the image.
 - `size` (Number) Size of the image in bytes.
 - `time_created` (String) Timestamp of when this image was created.
 - `time_modified` (String) Timestamp of when this image was last modified.

@@ -76,7 +76,7 @@ Retrieve information about a specified image.
 			},
 			"project_name": schema.StringAttribute{
 				Optional:    true,
-				Description: "Name of the project which contains the images",
+				Description: "Name of the project which contains the image.",
 			},
 			"timeouts": timeouts.Attributes(ctx),
 			"block_size": schema.Int64Attribute{
@@ -107,7 +107,7 @@ Retrieve information about a specified image.
 			},
 			"project_id": schema.StringAttribute{
 				Computed:    true,
-				Description: "ID of the project which contains the images",
+				Description: "ID of the project which contains the image.",
 			},
 			"os": schema.StringAttribute{
 				Computed:    true,

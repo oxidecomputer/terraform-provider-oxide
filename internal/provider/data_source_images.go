@@ -77,7 +77,7 @@ Retrieve a list of all images belonging to a silo or project.
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Optional:    true,
-				Description: "ID of the project which contains the images",
+				Description: "ID of the project which contains the images.",
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
