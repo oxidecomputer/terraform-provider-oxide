@@ -27,7 +27,7 @@ import (
 )
 
 // Schemas and model definitions for upgrading the oxide_vpc_firewall_rules
-// resource from version 0.
+// resource from version 0 or version 1.
 //
 // Version 0.13.0 of the provider had breaking changes to the schema without
 // a version bump, so there are two different schemas versioned as 0. The
@@ -39,14 +39,14 @@ import (
 // https://github.com/oxidecomputer/terraform-provider-oxide/blob/v0.12.0/internal/provider/resource_vpc_firewall_rules.go
 // https://github.com/oxidecomputer/terraform-provider-oxide/blob/v0.13.0/internal/provider/resource_vpc_firewall_rules.go
 
-// stateUpgraderV0 is a StateUpgrader function to upgrades an
+// stateUpgraderV01 is a StateUpgrader function to upgrades an
 // oxide_vpc_firewall_rules resource from schema version 0 to latest.
 //
 // It must be able to handle both versions of schema v0. States in schema v0.0
 // are first upgraded to v0.1, and then the v0.1 state is upgraded to the
 // latest schema version. This way future upgrades only need to handle
 // upgrades from v0.1.
-func (r *vpcFirewallRulesResource) stateUpgraderV0(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+func (r *vpcFirewallRulesResource) stateUpgraderV01(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	var modelV01 vpcFirewallRulesResourceModelV01
 
 	// Check if we need to upgrade from v0.0 to v0.1 first.
@@ -627,9 +627,9 @@ type vpcFirewallRulesResourceModelV01 struct {
 }
 
 func (m vpcFirewallRulesResourceModelV01) upgrade() vpcFirewallRulesResourceModel {
-	rules := make([]vpcFirewallRulesResourceRuleModel, len(m.Rules))
-	for i, r := range m.Rules {
-		rules[i] = r.upgrade()
+	rules := make(map[string]vpcFirewallRulesResourceRuleModel, len(m.Rules))
+	for _, r := range m.Rules {
+		rules[r.Name.ValueString()] = r.upgrade()
 	}
 
 	return vpcFirewallRulesResourceModel{
@@ -669,8 +669,8 @@ func (r vpcFirewallRulesResourceRuleModelV01) upgrade() vpcFirewallRulesResource
 		Action:       r.Action,
 		Description:  r.Description,
 		Direction:    r.Direction,
-		Filters:      r.Filters.upgrade(),
 		Name:         r.Name,
+		Filters:      r.Filters.upgrade(),
 		Priority:     r.Priority,
 		Status:       r.Status,
 		Targets:      targets,

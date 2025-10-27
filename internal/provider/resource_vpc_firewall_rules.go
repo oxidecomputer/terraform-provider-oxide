@@ -7,11 +7,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -34,6 +36,10 @@ var (
 	_ resource.ResourceWithUpgradeState = (*vpcFirewallRulesResource)(nil)
 )
 
+var (
+	vpcFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
+)
+
 // NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
 func NewVPCFirewallRulesResource() resource.Resource {
 	return &vpcFirewallRulesResource{}
@@ -46,10 +52,10 @@ type vpcFirewallRulesResource struct {
 
 type vpcFirewallRulesResourceModel struct {
 	// This ID is specific to Terraform only
-	ID       types.String                        `tfsdk:"id"`
-	Rules    []vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
-	Timeouts timeouts.Value                      `tfsdk:"timeouts"`
-	VPCID    types.String                        `tfsdk:"vpc_id"`
+	ID       types.String                                 `tfsdk:"id"`
+	Rules    map[string]vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
+	Timeouts timeouts.Value                               `tfsdk:"timeouts"`
+	VPCID    types.String                                 `tfsdk:"vpc_id"`
 
 	// Populated from the same fields within [vpcFirewallRulesResourceRuleModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
@@ -122,7 +128,8 @@ func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource
 // are also updated to handle the new schema.
 func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
-		0: {StateUpgrader: r.stateUpgraderV0},
+		0: {StateUpgrader: r.stateUpgraderV01},
+		1: {StateUpgrader: r.stateUpgraderV01},
 	}
 }
 
@@ -130,16 +137,67 @@ func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]r
 func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// TODO: Make sure users can define a single block per VPC ID, not many, is this even possible?
 	resp.Schema = schema.Schema{
-		Version: 1,
+		Version: 2,
 		MarkdownDescription: replaceBackticks(`
 This resource manages VPC firewall rules.
 
 !> Firewall rules defined by this resource are considered exhaustive and will
 overwrite any other firewall rules for the VPC once applied.
 
-!> Setting the ''rules'' attribute to ''[]'' will delete all firewall rules for the
+!> Setting the ''rules'' attribute to ''{}'' will delete all firewall rules for the
 VPC which may cause undesired network traffic. Please double check the firewall
 rules when updating this resource.
+
+### Migrating ''rules''
+
+Previous versions of this resource stored firewall rules in a set. This
+resulted in slow plans in environments with a significant number of rules.
+
+Newer versions store the rules in a map for better performance, but this change
+requires you to update your configuration files to:
+
+1. Update the ''rules'' attribute from a set to a map.
+2. Define the ''rules'' map keys as the VPC firewall rule name. Note that this
+   key must then comply with the [Oxide
+   API](https://docs.oxide.computer/api/vpc_firewall_rules_update) requirements
+   for VPC firewall rule names.
+3. Remove the ''name'' attribute from all entries of the ''rules'' map.
+
+Previous ''rules'' schema:
+
+''''''terraform
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = [
+    {
+      name        = "allow-https"
+      action      = "allow"
+      description = "Allow HTTPS."
+      # ...
+    }
+  ]
+}
+''''''
+
+New ''rules'' schema:
+
+''''''terraform
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = {
+    allow-https = {
+      action      = "allow"
+      description = "Allow HTTPS."
+      # ...
+    }
+  }
+}
+''''''
+
+You can use the ''provider::oxide::to_vpc_firewall_rules_map'' provider
+function to help you convert existing rules, but note that this function is
+provided as a temporary solution. You should update your configuration files
+to use the new schema as soon as possible.
 `),
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
@@ -153,9 +211,17 @@ rules when updating this resource.
 			// returns updated attributes for every rule, irrespective of which rules actually
 			// change. See https://github.com/oxidecomputer/terraform-provider-oxide/issues/453
 			// for more information.
-			"rules": schema.SetNestedAttribute{
+			"rules": schema.MapNestedAttribute{
 				Required:    true,
-				Description: "Associated firewall rules.",
+				Description: "Associated firewall rules. The map key defines the rule name and must follow the API requirements for VPC firewall rule name.",
+				Validators: []validator.Map{
+					mapvalidator.KeysAre(
+						stringvalidator.RegexMatches(
+							vpcFirewallRuleNameRegexp,
+							`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-', and may not end with a '-'. They can be at most 63 characters long.`,
+						),
+					),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"action": schema.StringAttribute{
@@ -271,7 +337,7 @@ Depending on the type, it will be one of the following:
 							},
 						},
 						"name": schema.StringAttribute{
-							Required:    true,
+							Computed:    true,
 							Description: "Name of the VPC firewall rule.",
 						},
 						"priority": schema.Int64Attribute{
@@ -399,8 +465,11 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	plan.TimeCreated = types.StringNull()
 	plan.TimeModified = types.StringNull()
 	if len(plan.Rules) > 0 {
-		plan.TimeCreated = plan.Rules[0].TimeCreated
-		plan.TimeModified = plan.Rules[0].TimeModified
+		for _, rule := range plan.Rules {
+			plan.TimeCreated = rule.TimeCreated
+			plan.TimeModified = rule.TimeModified
+			break
+		}
 	}
 
 	// Save plan into Terraform state
@@ -463,8 +532,11 @@ func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRe
 	state.TimeCreated = types.StringNull()
 	state.TimeModified = types.StringNull()
 	if len(state.Rules) > 0 {
-		state.TimeCreated = state.Rules[0].TimeCreated
-		state.TimeModified = state.Rules[0].TimeModified
+		for _, rule := range state.Rules {
+			state.TimeCreated = rule.TimeCreated
+			state.TimeModified = rule.TimeModified
+			break
+		}
 	}
 
 	// Save updated data into Terraform state
@@ -533,8 +605,11 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 	plan.TimeCreated = types.StringNull()
 	plan.TimeModified = types.StringNull()
 	if len(plan.Rules) > 0 {
-		plan.TimeCreated = plan.Rules[0].TimeCreated
-		plan.TimeModified = plan.Rules[0].TimeModified
+		for _, rule := range plan.Rules {
+			plan.TimeCreated = rule.TimeCreated
+			plan.TimeModified = rule.TimeModified
+			break
+		}
 	}
 
 	// Save plan into Terraform state
@@ -583,7 +658,7 @@ func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.Dele
 
 // newVPCFirewallRulesUpdateBody builds the parameters required by the Oxide
 // vpc_firewall_rules_update API using the specified rules.
-func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
+func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	//
@@ -593,12 +668,12 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 	updateRules := make([]oxide.VpcFirewallRuleUpdate, 0)
 	body := new(oxide.VpcFirewallRuleUpdateParams)
 
-	for _, rule := range rules {
+	for ruleName, rule := range rules {
 		r := oxide.VpcFirewallRuleUpdate{
 			Action:      oxide.VpcFirewallRuleAction(rule.Action.ValueString()),
 			Description: rule.Description.ValueString(),
 			Direction:   oxide.VpcFirewallRuleDirection(rule.Direction.ValueString()),
-			Name:        oxide.Name(rule.Name.ValueString()),
+			Name:        oxide.Name(ruleName),
 			// We can safely dereference rule.Priority as it's a required field
 			Priority: oxide.NewPointer(int(*rule.Priority.ValueInt64Pointer())),
 			Status:   oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
@@ -615,11 +690,11 @@ func newVPCFirewallRulesUpdateBody(rules []vpcFirewallRulesResourceRuleModel) *o
 
 // newVPCFirewallRulesModel translates a slice of [oxide.VpcFirewallRule] into a
 // slice of [vpcFirewallRulesResourceRuleModel].
-func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
+func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	// See the comment within [newVPCFirewallRulesUpdateBody] for more information.
-	model := make([]vpcFirewallRulesResourceRuleModel, 0)
+	model := make(map[string]vpcFirewallRulesResourceRuleModel)
 
 	for _, rule := range rules {
 		m := vpcFirewallRulesResourceRuleModel{
@@ -642,7 +717,7 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) ([]vpcFirewallRules
 		}
 		m.Filters = filters
 
-		model = append(model, m)
+		model[string(rule.Name)] = m
 	}
 
 	return model, nil

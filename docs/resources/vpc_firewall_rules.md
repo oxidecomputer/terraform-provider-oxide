@@ -6,9 +6,49 @@ description: |-
   This resource manages VPC firewall rules.
   !> Firewall rules defined by this resource are considered exhaustive and will
   overwrite any other firewall rules for the VPC once applied.
-  !> Setting the rules attribute to [] will delete all firewall rules for the
+  !> Setting the rules attribute to {} will delete all firewall rules for the
   VPC which may cause undesired network traffic. Please double check the firewall
   rules when updating this resource.
+  Migrating rules
+  Previous versions of this resource stored firewall rules in a set. This
+  resulted in slow plans in environments with a significant number of rules.
+  Newer versions store the rules in a map for better performance, but this change
+  requires you to update your configuration files to:
+  Update the rules attribute from a set to a map.Define the rules map keys as the VPC firewall rule name. Note that this
+  key must then comply with the Oxide
+  API https://docs.oxide.computer/api/vpc_firewall_rules_update requirements
+  for VPC firewall rule names.Remove the name attribute from all entries of the rules map.
+  Previous rules schema:
+  
+  resource "oxide_vpc_firewall_rules" "example" {
+    vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+    rules = [
+      {
+        name        = "allow-https"
+        action      = "allow"
+        description = "Allow HTTPS."
+        # ...
+      }
+    ]
+  }
+  
+  New rules schema:
+  
+  resource "oxide_vpc_firewall_rules" "example" {
+    vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+    rules = {
+      allow-https = {
+        action      = "allow"
+        description = "Allow HTTPS."
+        # ...
+      }
+    }
+  }
+  
+  You can use the provider::oxide::to_vpc_firewall_rules_map provider
+  function to help you convert existing rules, but note that this function is
+  provided as a temporary solution. You should update your configuration files
+  to use the new schema as soon as possible.
 ---
 
 # oxide_vpc_firewall_rules (Resource)
@@ -18,9 +58,60 @@ This resource manages VPC firewall rules.
 !> Firewall rules defined by this resource are considered exhaustive and will
 overwrite any other firewall rules for the VPC once applied.
 
-!> Setting the `rules` attribute to `[]` will delete all firewall rules for the
+!> Setting the `rules` attribute to `{}` will delete all firewall rules for the
 VPC which may cause undesired network traffic. Please double check the firewall
 rules when updating this resource.
+
+### Migrating `rules`
+
+Previous versions of this resource stored firewall rules in a set. This
+resulted in slow plans in environments with a significant number of rules.
+
+Newer versions store the rules in a map for better performance, but this change
+requires you to update your configuration files to:
+
+1. Update the `rules` attribute from a set to a map.
+2. Define the `rules` map keys as the VPC firewall rule name. Note that this
+   key must then comply with the [Oxide
+   API](https://docs.oxide.computer/api/vpc_firewall_rules_update) requirements
+   for VPC firewall rule names.
+3. Remove the `name` attribute from all entries of the `rules` map.
+
+Previous `rules` schema:
+
+```terraform
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = [
+    {
+      name        = "allow-https"
+      action      = "allow"
+      description = "Allow HTTPS."
+      # ...
+    }
+  ]
+}
+```
+
+New `rules` schema:
+
+```terraform
+resource "oxide_vpc_firewall_rules" "example" {
+  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
+  rules = {
+    allow-https = {
+      action      = "allow"
+      description = "Allow HTTPS."
+      # ...
+    }
+  }
+}
+```
+
+You can use the `provider::oxide::to_vpc_firewall_rules_map` provider
+function to help you convert existing rules, but note that this function is
+provided as a temporary solution. You should update your configuration files
+to use the new schema as soon as possible.
 
 ## Example Usage
 
@@ -28,11 +119,10 @@ rules when updating this resource.
 # Basic Example
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = [
-    {
+  rules = {
+    allow-https = {
       action      = "allow"
       description = "Allow HTTPS."
-      name        = "allow-https"
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -53,17 +143,16 @@ resource "oxide_vpc_firewall_rules" "example" {
         }
       ]
     }
-  ]
+  }
 }
 
 # ICMP Example
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = [
-    {
+  rules = {
+    allow-icmp = {
       action      = "allow"
       description = "Allow ICMP"
-      name        = "allow-icmp"
       direction   = "inbound"
       priority    = 50
       status      = "enabled"
@@ -93,7 +182,7 @@ resource "oxide_vpc_firewall_rules" "example" {
         }
       ]
     }
-  ]
+  }
 }
 ```
 
@@ -102,7 +191,7 @@ resource "oxide_vpc_firewall_rules" "example" {
 
 ### Required
 
-- `rules` (Attributes Set) Associated firewall rules. (see [below for nested schema](#nestedatt--rules))
+- `rules` (Attributes Map) Associated firewall rules. The map key defines the rule name and must follow the API requirements for VPC firewall rule name. (see [below for nested schema](#nestedatt--rules))
 - `vpc_id` (String) ID of the VPC that will have the firewall rules applied to.
 
 ### Optional
@@ -124,10 +213,13 @@ Required:
 - `description` (String) Description for the VPC firewall rule.
 - `direction` (String) Whether this rule is for incoming or outgoing traffic. Possible values are: `inbound` or `outbound`.
 - `filters` (Attributes) Reductions on the scope of the rule. (see [below for nested schema](#nestedatt--rules--filters))
-- `name` (String) Name of the VPC firewall rule.
 - `priority` (Number) The relative priority of this rule.
 - `status` (String) Whether this rule is in effect. Possible values are: `enabled` or `disabled`.
 - `targets` (Attributes Set) Sets of instances that the rule applies to. (see [below for nested schema](#nestedatt--rules--targets))
+
+Read-Only:
+
+- `name` (String) Name of the VPC firewall rule.
 
 <a id="nestedatt--rules--filters"></a>
 ### Nested Schema for `rules.filters`
