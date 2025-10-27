@@ -154,8 +154,14 @@ Previous versions of this resource stored firewall rules in a set. This
 resulted in slow plans in environments with a significant number of rules.
 
 Newer versions store the rules in a map for better performance, but this change
-requires you to update your configuration files from a set to a map with the
-rule name as key.
+requires you to update your configuration files to:
+
+1. Update the ''rules'' attribute from a set to a map.
+2. Define the ''rules'' map keys as the VPC firewall rule name. Note that this
+   key must then comply with the [Oxide
+   API](https://docs.oxide.computer/api/vpc_firewall_rules_update) requirements
+   for VPC firewall rule names.
+3. Remove the ''name'' attribute from all entries of the ''rules'' map.
 
 Previous ''rules'' schema:
 
@@ -164,22 +170,10 @@ resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
   rules = [
     {
+      name        = "allow-https"
       action      = "allow"
       description = "Allow HTTPS."
-      name        = "allow-https"
-      direction   = "inbound"
-      priority    = 50
-      status      = "enabled"
-      filters = {
-        ports     = ["443"]
-        protocols = [{ type = "tcp" }]
-      },
-      targets = [
-        {
-          type  = "subnet"
-          value = "default"
-        }
-      ]
+      # ...
     }
   ]
 }
@@ -188,26 +182,13 @@ resource "oxide_vpc_firewall_rules" "example" {
 New ''rules'' schema:
 
 ''''''terraform
-# New schema.
 resource "oxide_vpc_firewall_rules" "example" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
   rules = {
     allow-https = {
       action      = "allow"
       description = "Allow HTTPS."
-      direction   = "inbound"
-      priority    = 50
-      status      = "enabled"
-      filters = {
-        ports     = ["443"]
-        protocols = [{ type = "tcp" }]
-      },
-      targets = [
-        {
-          type  = "subnet"
-          value = "default"
-        }
-      ]
+      # ...
     }
   }
 }
@@ -215,7 +196,7 @@ resource "oxide_vpc_firewall_rules" "example" {
 
 You can use the ''provider::oxide::to_vpc_firewall_rules_map'' provider
 function to help you convert existing rules, but note that this function is
-provided as a temporary solution and you should update your configuration files
+provided as a temporary solution. You should update your configuration files
 to use the new schema as soon as possible.
 `),
 		Attributes: map[string]schema.Attribute{
