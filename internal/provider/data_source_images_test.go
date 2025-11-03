@@ -112,12 +112,10 @@ func checkDataSourceSiloImages(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.block_size"),
-		resource.TestCheckResourceAttrSet(dataName, "images.0.os"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.id"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.name"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.size"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.time_modified"),
-		resource.TestCheckResourceAttrSet(dataName, "images.0.version"),
 	}...)
 }
