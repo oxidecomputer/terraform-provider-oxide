@@ -116,18 +116,18 @@ This resource manages VPC subnets.
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the VPC.",
+				Description: "Unique, immutable, system-controlled identifier of the VPC subnet.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC was created.",
+				Description: "Timestamp of when this VPC subnet was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC was last modified.",
+				Description: "Timestamp of when this VPC subnet was last modified.",
 			},
 		},
 	}

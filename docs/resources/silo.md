@@ -53,7 +53,7 @@ resource "oxide_silo" "example" {
 > **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
 
 - `description` (String) Human-readable free-form text about the silo.
-- `discoverable` (Boolean) Whether this silo is present in the `silo_list` output.
+- `discoverable` (Boolean) Whether this silo is discoverable and present in the silo list.
 - `name` (String) Unique, immutable, user-controlled identifier of the silo.
 - `quotas` (Attributes) Limits the amount of provisionable CPU, memory, and storage in the silo. (see [below for nested schema](#nestedatt--quotas))
 - `tls_certificates` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Initial TLS certificates to be used for the new silo's console and API endpoints. (see [below for nested schema](#nestedatt--tls_certificates))

@@ -211,7 +211,7 @@ attributes will result in the silo being destroyed and created anew.
 			},
 			"discoverable": schema.BoolAttribute{
 				Required:            true,
-				MarkdownDescription: "Whether this silo is present in the `silo_list` output.",
+				MarkdownDescription: "Whether this silo is discoverable and present in the silo list.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},

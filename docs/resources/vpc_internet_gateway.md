@@ -37,7 +37,7 @@ resource "oxide_vpc_internet_gateway" "example" {
 
 ### Optional
 
-- `cascade_delete` (Boolean) Whether to also delete routes targeting the VPC internet gatewaywhen deleting the VPC internet gateway.
+- `cascade_delete` (Boolean) Whether to also delete routes targeting the VPC internet gateway when deleting the VPC internet gateway.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

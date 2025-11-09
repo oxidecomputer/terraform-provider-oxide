@@ -64,9 +64,9 @@ resource "oxide_disk" "example2" {
 ### Read-Only
 
 - `device_path` (String) Path of the disk.
-- `id` (String) Unique, immutable, system-controlled identifier of the image.
-- `time_created` (String) Timestamp of when this image was created.
-- `time_modified` (String) Timestamp of when this image was last modified.
+- `id` (String) Unique, immutable, system-controlled identifier of the disk.
+- `time_created` (String) Timestamp of when this disk was created.
+- `time_modified` (String) Timestamp of when this disk was last modified.
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
