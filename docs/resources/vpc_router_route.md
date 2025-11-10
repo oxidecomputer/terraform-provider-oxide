@@ -40,9 +40,9 @@ resource "oxide_vpc_router_route" "example" {
 ### Required
 
 - `description` (String) Description for the VPC router route.
-- `destination` (Attributes) Selects which traffic this routing rule will apply to (see [below for nested schema](#nestedatt--destination))
+- `destination` (Attributes) Selects which traffic this routing rule applies to. (see [below for nested schema](#nestedatt--destination))
 - `name` (String) Name of the VPC router route.
-- `target` (Attributes) Location that matched packets should be forwarded to. (see [below for nested schema](#nestedatt--target))
+- `target` (Attributes) Location that matching packets should be forwarded to. (see [below for nested schema](#nestedatt--target))
 - `vpc_router_id` (String) ID of the VPC router route that will contain the route.
 
 ### Optional

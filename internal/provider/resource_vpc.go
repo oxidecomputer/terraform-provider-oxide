@@ -95,7 +95,7 @@ This resource manages VPCs.
 			"ipv6_prefix": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "DNS name of the VPC.",
+				Description: "IPv6 prefix of the VPC.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},

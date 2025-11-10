@@ -45,9 +45,9 @@ resource "oxide_vpc_subnet" "example" {
 
 ### Read-Only
 
-- `id` (String) Unique, immutable, system-controlled identifier of the VPC.
-- `time_created` (String) Timestamp of when this VPC was created.
-- `time_modified` (String) Timestamp of when this VPC was last modified.
+- `id` (String) Unique, immutable, system-controlled identifier of the VPC subnet.
+- `time_created` (String) Timestamp of when this VPC subnet was created.
+- `time_modified` (String) Timestamp of when this VPC subnet was last modified.
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`

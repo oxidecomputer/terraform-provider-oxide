@@ -54,7 +54,7 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Optional:    true,
-				Description: "URL of the root of the target server",
+				Description: "URL of the root of the target server.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("profile"),
@@ -64,7 +64,7 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
-				Description: "Token used to authenticate",
+				Description: "Token used to authenticate.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("profile"),
@@ -73,7 +73,7 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			},
 			"profile": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Profile used to authenticate. Retrieves host and token from `credentials.toml.`",
+				MarkdownDescription: "Profile used to authenticate. Retrieves host and token from `credentials.toml`.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("host"),

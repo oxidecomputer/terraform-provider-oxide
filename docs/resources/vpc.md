@@ -40,7 +40,7 @@ resource "oxide_vpc" "example" {
 
 ### Optional
 
-- `ipv6_prefix` (String) DNS name of the VPC.
+- `ipv6_prefix` (String) IPv6 prefix of the VPC.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

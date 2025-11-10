@@ -12,7 +12,7 @@ The Oxide Terraform provider manages Oxide resources.
 
 As a preferred method of authentication, export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables with their corresponding values.
 
-There are a two alternatives to this:
+There are two alternatives to this:
 
 ### Host and Token Arguments
 It is possible to authenticate via the optional `host` and `token` arguments. In most cases this method of authentication is not recommended. It is generally preferable to keep credential information out of the configuration.
@@ -61,6 +61,6 @@ resource "oxide_disk" "example" {
 
 ### Optional
 
-- `host` (String) URL of the root of the target server
-- `profile` (String) Profile used to authenticate. Retrieves host and token from `credentials.toml.`
-- `token` (String, Sensitive) Token used to authenticate
+- `host` (String) URL of the root of the target server.
+- `profile` (String) Profile used to authenticate. Retrieves host and token from `credentials.toml`.
+- `token` (String, Sensitive) Token used to authenticate.

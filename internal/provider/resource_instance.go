@@ -180,14 +180,14 @@ This resource manages instances.
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
-				Description: "Starts the instance on creation",
+				Description: "Whether to start the instance on creation.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"disk_attachments": schema.SetAttribute{
 				Optional:            true,
-				MarkdownDescription: "IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `book_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.",
+				MarkdownDescription: "IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.",
 				ElementType:         types.StringType,
 			},
 			"ssh_public_keys": schema.SetAttribute{
@@ -206,7 +206,7 @@ This resource manages instances.
 			},
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,
-				Description: "Network interface devices attached to the instance",
+				Description: "Network interface devices attached to the instance.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{

@@ -96,7 +96,7 @@ This resource manages VPC internet gateways.
 			"cascade_delete": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Whether to also delete routes targeting the VPC internet gateway" +
+				Description: "Whether to also delete routes targeting the VPC internet gateway " +
 					"when deleting the VPC internet gateway.",
 				Default: booldefault.StaticBool(false),
 			},

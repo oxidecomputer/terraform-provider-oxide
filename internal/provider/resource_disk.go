@@ -172,15 +172,15 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the image.",
+				Description: "Unique, immutable, system-controlled identifier of the disk.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this image was created.",
+				Description: "Timestamp of when this disk was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this image was last modified.",
+				Description: "Timestamp of when this disk was last modified.",
 			},
 		},
 	}

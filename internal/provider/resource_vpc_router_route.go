@@ -95,7 +95,7 @@ This resource manages VPC router routes.
 			},
 			"destination": schema.SingleNestedAttribute{
 				Required:    true,
-				Description: "Selects which traffic this routing rule will apply to",
+				Description: "Selects which traffic this routing rule applies to.",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
 						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `ip`, `ip_net`.",
@@ -123,7 +123,7 @@ Depending on the type, it will be one of the following:
 			},
 			"target": schema.SingleNestedAttribute{
 				Required:    true,
-				Description: "Location that matched packets should be forwarded to.",
+				Description: "Location that matching packets should be forwarded to.",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
 						MarkdownDescription: "Route destination type. Possible values: `vpc`, `subnet`, `instance`, `ip`, `internet_gateway`, `drop`.",
