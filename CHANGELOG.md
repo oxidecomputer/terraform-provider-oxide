@@ -1,3 +1,41 @@
+# 0.15.0 (2025/Nov/13)
+
+### Enhancements
+
+- **`oxide_instance`:** Support the new `auto_restart_policy` attribute. [#532](https://github.com/oxidecomputer/terraform-provider-oxide/pull/532)
+
+### Bug fixes
+
+- **`oxide_silo`:** The `id` attribute no longer shows as `(known after apply)` during an update. [#529](https://github.com/oxidecomputer/terraform-provider-oxide/pull/529)
+- **Use previous state for `id` attribute:** The `id` attribute for resources that support updates no longer shows as `(known after apply)` during an update. [#530](https://github.com/oxidecomputer/terraform-provider-oxide/pull/530)
+
+### List of commits
+
+- [bd87946](https://github.com/oxidecomputer/terraform-provider-oxide/commit/bd87946) fix: documentation typos (#548)
+- [78b35fa](https://github.com/oxidecomputer/terraform-provider-oxide/commit/78b35fa) fix: simplify omicron configuration (#549)
+- [ccb2bec](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ccb2bec) test: remove optional fields from oxide_images (#546)
+- [ae5e67d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ae5e67d) build(deps): bump github.com/hashicorp/terraform-plugin-framework-validators from 0.18.0 to 0.19.0 (#542)
+- [07c6f9a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/07c6f9a) docs: fix and standardize doc pages (#544)
+- [47b73cd](https://github.com/oxidecomputer/terraform-provider-oxide/commit/47b73cd) build(deps): bump astral-sh/setup-uv from 6 to 7 (#540)
+- [79be308](https://github.com/oxidecomputer/terraform-provider-oxide/commit/79be308) build(deps): bump actions/setup-go from 5 to 6 (#541)
+- [be89c4a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/be89c4a) provider: use previous state for id attribute (#530)
+- [a2279ca](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a2279ca) misc: use tfplugindocs to generate docs. (#498)
+- [fb7e507](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fb7e507) misc: run acceptance tests from github actions. (#497)
+- [5f37d5e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5f37d5e) misc: update tests to pass against omicron dev. (#494)
+- [60dd19c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/60dd19c) build(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.15.1 to 1.16.1 (#533)
+- [27fca76](https://github.com/oxidecomputer/terraform-provider-oxide/commit/27fca76) vpc_firewall_rules: fix incorrect example (#534)
+- [b0ec22c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b0ec22c) build(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.37.0 to 2.38.1 (#525)
+- [123510e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/123510e) build(deps): bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.5.0 to 0.6.0 (#526)
+- [c5812fb](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c5812fb) build(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.15.1 to 1.16.0 (#527)
+- [0381828](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0381828) Support instance auto restart policy. (#532)
+- [f28cf7e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f28cf7e) misc: update changelog (#531)
+- [6c1a07c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6c1a07c) silo: use previous state for id attribute (#529)
+- [2695bea](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2695bea) build(deps): bump actions/setup-go from 5 to 6 (#513)
+- [662b117](https://github.com/oxidecomputer/terraform-provider-oxide/commit/662b117) examples: update instance_resource configuration (#522)
+- [0d7e158](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0d7e158) silo_saml_identity_provider: update documentation (#514)
+- [ebd8b87](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ebd8b87) misc: update release checklist (#512)
+- [cac154a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cac154a) misc: bump version (#511)
+
 # 0.14.0 (2025/Sep/04)
 
 ### New features

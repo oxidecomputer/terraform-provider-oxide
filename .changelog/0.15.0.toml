@@ -17,3 +17,7 @@ description = "Support the new `auto_restart_policy` attribute. [#532](https://g
 [[bugs]]
 title = "`oxide_silo`"
 description = "The `id` attribute no longer shows as `(known after apply)` during an update. [#529](https://github.com/oxidecomputer/terraform-provider-oxide/pull/529)"
+
+[[bugs]]
+title = "Use previous state for `id` attribute"
+description = "The `id` attribute for resources that support updates no longer shows as `(known after apply)` during an update. [#530](https://github.com/oxidecomputer/terraform-provider-oxide/pull/530)"
