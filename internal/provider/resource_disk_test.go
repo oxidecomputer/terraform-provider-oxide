@@ -66,6 +66,16 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 				Check:  checkResourceDisk(resourceName, diskName),
 			},
 			{
+				// TODO: for some reason the time_created and time_modified
+				// values are different between the POST request that creates
+				// the resource and the GET request that reads it for import,
+				// but this only happens when running against the simulator, so
+				// refresh the state between the steps to force a GET before
+				// the import for now.
+				// https://github.com/oxidecomputer/terraform-provider-oxide/issues/551
+				RefreshState: true,
+			},
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
