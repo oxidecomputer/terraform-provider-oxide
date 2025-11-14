@@ -1,3 +1,15 @@
+# 0.16.0 (2025/Nov/14)
+
+### Breaking changes
+
+- **`oxide_vpc_firewall_rules`:** Changed the schema of the `rules` attribute from a set to a hashmap for better performance. Refer to the resource documentation for how to upgrade your configuration. [#543](https://github.com/oxidecomputer/terraform-provider-oxide/pull/543)
+
+### List of commits
+
+- [40198af](https://github.com/oxidecomputer/terraform-provider-oxide/commit/40198af) vpc_firewall_rules: switch schema to increase performance (#543)
+- [6920e83](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6920e83) ci: add backport workflow (#553)
+- [25d459d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/25d459d) chore: bump version (#552)
+
 # 0.15.0 (2025/Nov/13)
 
 ### Enhancements
