@@ -6,10 +6,6 @@ description = "Changed the schema of the `rules` attribute from a set to a hashm
 title = ""
 description = ""
 
-[[features]]
-title = ""
-description = ""
-
 [[enhancements]]
 title = ""
 description = ""
