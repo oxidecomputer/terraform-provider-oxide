@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "`oxide_vpc_firewall_rules`"
+description = "Changed the schema of the `rules` attribute from a set to a hashmap for better performance. Refer to the resource documentation for how to upgrade your configuration. [#543](https://github.com/oxidecomputer/terraform-provider-oxide/pull/543)"
 
 [[features]]
 title = ""
