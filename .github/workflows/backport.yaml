@@ -1,0 +1,33 @@
+name: "Backport"
+
+on:
+  pull_request_target:
+    types:
+      - "closed"
+      - "labeled"
+
+concurrency:
+  group: "PR #${{ github.event.pull_request.number }}"
+  cancel-in-progress: false
+
+jobs:
+  backport:
+    if: "github.event.pull_request.merged"
+    runs-on: "ubuntu-24.04"
+    steps:
+      - uses: "actions/checkout@v5"
+        with:
+          ref: "main"
+          clean: false
+          fetch-depth: 0
+      - uses: "actions/create-github-app-token@v2"
+        id: "backport-pr-app-token"
+        with:
+          app-id: "${{ vars.BACKPORT_PR_APP_ID }}"
+          private-key: "${{ secrets.BACKPORT_PR_APP_KEY }}"
+      - uses: "oxidecomputer/backport-pr-action@v0"
+        with:
+          pr: "${{ github.event.pull_request.number }}"
+          github-token: "${{ steps.backport-pr-app-token.outputs.token }}"
+          bot-name: "Oxide Backport Bot"
+          bot-email: "bot@oxidecomputer.com"
