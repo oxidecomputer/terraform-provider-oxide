@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -22,6 +23,7 @@ import (
 )
 
 var _ provider.Provider = (*oxideProvider)(nil)
+var _ provider.ProviderWithFunctions = (*oxideProvider)(nil)
 
 type oxideProvider struct {
 	// TODO: This variable should be updated to the non-dev version
@@ -202,5 +204,12 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewFloatingIPResource,
 		NewSiloResource,
 		NewSiloSamlIdentityProviderResource,
+	}
+}
+
+// Functions defines the functions implemented in the provider.
+func (p *oxideProvider) Functions(_ context.Context) []func() function.Function {
+	return []func() function.Function{
+		NewToVPCFirewallRulesMapFunction,
 	}
 }
