@@ -1,3 +1,4 @@
+TEST
 # Terraform Provider Oxide
 
 ## Requirements
