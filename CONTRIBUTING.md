@@ -86,7 +86,7 @@ Remember to update the changelog before releasing.
 
 There is a Github action that takes care of creating the artifacts and publishing to the terraform registry.
 
-To trigger the process create a tag from the local main branch and push to Github.
+To trigger the process create a tag from the local release branch (`rel/vX.Y`) and push to Github.
 
 ```console
 $ git tag v0.1.0
