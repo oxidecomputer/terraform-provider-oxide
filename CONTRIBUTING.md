@@ -86,9 +86,27 @@ Remember to update the changelog before releasing.
 
 There is a Github action that takes care of creating the artifacts and publishing to the terraform registry.
 
-To trigger the process create a tag from the local main branch and push to Github.
+To trigger the process create a tag from the local release branch (`rel/vX.Y`) and push to Github.
 
 ```console
 $ git tag v0.1.0
 $ git push origin v0.1.0
 ```
+
+## Backporting changes
+
+The repository is organized with multiple release branches, each targeting a
+specific release line. The release branches are named `rel/vX.Y` where `X.Y`
+represents the release line version.
+
+Pull requests should target the `main` branch and be backported to release
+lines as necessary.
+
+To backport a PR to the branch `rel/vX.Y` add the label
+`backport/vX.Y` to the PR. Once merged, the backport automation will create a
+new PR backporting the changes to the release branch. The backport label can
+also be added after the PR is merged.
+
+If a backport has merge conflicts, the conflicts are committed to the PR and
+you can checkout the branch to fix them. Once the changes are clean, you can
+merge the backport PR.
