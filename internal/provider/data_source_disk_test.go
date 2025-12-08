@@ -32,7 +32,8 @@ resource "oxide_disk" "{{.SupportBlockName2}}" {
 }
 
 data "oxide_disk" "{{.BlockName}}" {
-  name = oxide_disk.{{.SupportBlockName2}}.name
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = oxide_disk.{{.SupportBlockName2}}.name
   timeouts = {
     read = "1m"
   }
@@ -79,6 +80,7 @@ func checkDataSourceDisk(dataName, diskName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(dataName, "block_size", "512"),
 		resource.TestCheckResourceAttr(dataName, "device_path", "/mnt/"+diskName),
 		resource.TestCheckResourceAttrSet(dataName, "project_id"),
+		resource.TestCheckResourceAttr(dataName, "state.state", "detached"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "time_modified"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),

@@ -33,18 +33,26 @@ type diskDataSource struct {
 
 // diskDataSourceModel are the attributes that are supported on this data source.
 type diskDataSourceModel struct {
-	ID               types.String   `tfsdk:"id"`
-	Name             types.String   `tfsdk:"name"`
-	Description      types.String   `tfsdk:"description"`
-	BlockSize        types.Int64    `tfsdk:"block_size"`
-	DevicePath       types.String   `tfsdk:"device_path"`
-	ProjectID        types.String   `tfsdk:"project_id"`
-	Size             types.Int64    `tfsdk:"size"`
-	SourceImageID    types.String   `tfsdk:"source_image_id"`
-	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
-	TimeCreated      types.String   `tfsdk:"time_created"`
-	TimeModified     types.String   `tfsdk:"time_modified"`
-	Timeouts         timeouts.Value `tfsdk:"timeouts"`
+	ID           types.String              `tfsdk:"id"`
+	Name         types.String              `tfsdk:"name"`
+	Description  types.String              `tfsdk:"description"`
+	BlockSize    types.Int64               `tfsdk:"block_size"`
+	DevicePath   types.String              `tfsdk:"device_path"`
+	ProjectName  types.String              `tfsdk:"project_name"`
+	ProjectID    types.String              `tfsdk:"project_id"`
+	Size         types.Int64               `tfsdk:"size"`
+	State        *diskDataSourceModelState `tfsdk:"state"`
+	ImageID      types.String              `tfsdk:"image_id"`
+	SnapshotID   types.String              `tfsdk:"snapshot_id"`
+	TimeCreated  types.String              `tfsdk:"time_created"`
+	TimeModified types.String              `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value            `tfsdk:"timeouts"`
+}
+
+// diskDataSourceModelState are the attributes for the disk state.
+type diskDataSourceModelState struct {
+	State    types.String `tfsdk:"state"`
+	Instance types.String `tfsdk:"instance"`
 }
 
 // Metadata sets the resource type name.
@@ -76,6 +84,10 @@ Retrieve information about a specified disk.
 				Required:    true,
 				Description: "Name of the disk.",
 			},
+			"project_name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the project that contains the disk.",
+			},
 			"description": schema.StringAttribute{
 				Computed:    true,
 				Description: "Description for the disk.",
@@ -96,13 +108,27 @@ Retrieve information about a specified disk.
 				Computed:    true,
 				Description: "Size of the disk in bytes.",
 			},
-			"source_image_id": schema.StringAttribute{
+			"image_id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Image ID of the disk source if applicable.",
 			},
-			"source_snapshot_id": schema.StringAttribute{
+			"snapshot_id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Snapshot ID of the disk source if applicable.",
+			},
+			"state": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "State of the disk.",
+				Attributes: map[string]schema.Attribute{
+					"state": schema.StringAttribute{
+						Computed:    true,
+						Description: "The state of the disk (e.g., detached, attached, creating, etc.).",
+					},
+					"instance": schema.StringAttribute{
+						Computed:    true,
+						Description: "ID of the instance the disk is attached to, if any.",
+					},
+				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
@@ -136,7 +162,8 @@ func (d *diskDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	defer cancel()
 
 	params := oxide.DiskViewParams{
-		Disk: oxide.NameOrId(state.Name.ValueString()),
+		Disk:    oxide.NameOrId(state.Name.ValueString()),
+		Project: oxide.NameOrId(state.ProjectName.ValueString()),
 	}
 	disk, err := d.client.DiskView(ctx, params)
 	if err != nil {
@@ -158,12 +185,20 @@ func (d *diskDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
 	state.TimeModified = types.StringValue(disk.TimeModified.String())
 
-	// Only set SourceImageID and SourceSnapshotID if they are not empty
+	// Only set ImageID and SnapshotID if they are not empty
 	if disk.ImageId != "" {
-		state.SourceImageID = types.StringValue(disk.ImageId)
+		state.ImageID = types.StringValue(disk.ImageId)
 	}
 	if disk.SnapshotId != "" {
-		state.SourceSnapshotID = types.StringValue(disk.SnapshotId)
+		state.SnapshotID = types.StringValue(disk.SnapshotId)
+	}
+
+	// Set disk state
+	state.State = &diskDataSourceModelState{
+		State: types.StringValue(string(disk.State.State)),
+	}
+	if disk.State.Instance != "" {
+		state.State.Instance = types.StringValue(disk.State.Instance)
 	}
 
 	// Save retrieved state into Terraform state.
