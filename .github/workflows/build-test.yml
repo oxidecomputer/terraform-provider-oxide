@@ -33,9 +33,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        omicron-version:
+        omicron-branch:
           - "main"
           - "rel/v17.1/rc0"
     uses: "./.github/workflows/acceptance-sim.yml"
     with:
-      omicron-version: ${{ matrix.omicron-version }}
+      omicron-branch: ${{ matrix.omicron-branch }}
