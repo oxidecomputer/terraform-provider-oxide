@@ -3,7 +3,7 @@ name: "simulator acceptance tests"
 on:
   workflow_call:
     inputs:
-      omicron-version:
+      omicron-branch:
         type: "string"
         required: true
         default: "main"
@@ -40,7 +40,7 @@ jobs:
       - name: omicron-dev
         working-directory: acctest
         run: |
-          docker compose build --build-arg 'OMICRON_VERSION=${{ inputs.omicron-version }}'
+          docker compose build --build-arg 'OMICRON_BRANCH=${{ inputs.omicron-branch }}'
           if ! docker compose up --wait --wait-timeout 1500; then
             docker compose logs
             exit 1

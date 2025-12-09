@@ -1,8 +1,8 @@
 FROM rust
 
-ARG OMICRON_VERSION="main"
+ARG OMICRON_BRANCH="main"
 
-RUN /bin/bash -c "git clone https://github.com/oxidecomputer/omicron.git --branch '${OMICRON_VERSION}' --depth 1 && \
+RUN /bin/bash -c "git clone https://github.com/oxidecomputer/omicron.git --branch '${OMICRON_BRANCH}' --depth 1 && \
   cd omicron && \
   source env.sh && \
   ./tools/install_builder_prerequisites.sh -y -s"
