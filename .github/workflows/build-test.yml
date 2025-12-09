@@ -1,7 +1,7 @@
 name: build & test
 on:
   push:
-    branches: 
+    branches:
       - main
       - '[0-9].[0-9]+'
     paths:
@@ -12,7 +12,7 @@ on:
       - "docs/**"
       - "examples/**"
   pull_request:
-    branches: 
+    branches:
       - main
       - '[0-9].[0-9]+'
 jobs:
@@ -30,69 +30,11 @@ jobs:
       - name: lint
         run: make lint
   acceptance:
-    runs-on: ubuntu-latest
-    steps:
-      # Simulated omicron takes up a meaningful amount of disk space, and the
-      # hosted Github Actions runners don't offer much space. Clean up unused
-      # dependencies so that we don't run out of disk. Borrowed from
-      # https://carlosbecker.com/posts/github-actions-disk-space.
-      - name: "cleanup"
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
-          sudo docker builder prune -a
-      - uses: actions/checkout@v6
-      - uses: hashicorp/setup-terraform@v3
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-      - uses: docker/setup-compose-action@v1
-      - uses: astral-sh/setup-uv@v7
-      - name: install oxide cli
-        run: |
-          mkdir -p bin
-          wget https://github.com/oxidecomputer/oxide.rs/releases/download/v0.13.0+20250730.0.0/oxide-cli-x86_64-unknown-linux-gnu.tar.xz
-          tar xvf oxide-cli-x86_64-unknown-linux-gnu.tar.xz
-          mv oxide-cli-x86_64-unknown-linux-gnu/oxide bin
-          echo "$(pwd)/bin" >> $GITHUB_PATH
-      # Run simulated omicron in the background with docker compose.
-      # TODO(jmcarp): support tests against multiple omicron versions.
-      # TODO(jmcarp): publish this image for faster builds.
-      - name: omicron-dev
-        working-directory: acctest
-        run: |
-          docker compose build
-          if ! docker compose up --wait --wait-timeout 1500; then
-            docker compose logs
-            exit 1
-          fi
-      # We can't use `oxide auth login` here, since it requires a browser to
-      # complete the oauth device flow. Instead, fetch an auth token using a
-      # script that simulates the browser flow.
-      - id: auth-token
-        working-directory: acctest
-        run: |
-          echo "OXIDE_TOKEN=$(uv run auth.py)" >> $GITHUB_OUTPUT
-      # Create oxide resources necessary for acceptance tests, including an
-      # arbitrary small image.
-      - name: oxide-dependencies
-        run: |
-          # Install qemu, which we'll use to build a sample image.
-          sudo apt-get update && sudo apt-get install -y qemu-utils
-
-          if ! ./scripts/acc-test-setup.sh; then
-            docker compose logs
-            exit 1
-          fi
-        env:
-          OXIDE_HOST: http://localhost:12220
-          OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-      - name: test
-        shell: bash
-        run: |
-          make testacc
-        env:
-          OXIDE_HOST: http://localhost:12220
-          OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-          OXIDE_TEST_IP_POOL_NAME: default
-          OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"
+    strategy:
+      matrix:
+        omicron-version:
+          - "main"
+          - "rel/v17.1/rc0"
+    uses: "./.github/workflows/acceptance-sim.yml"
+    with:
+      omicron-version: ${{ matrix.omicron-version }}
