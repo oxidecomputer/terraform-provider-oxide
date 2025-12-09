@@ -165,6 +165,7 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewAntiAffinityGroupDataSource,
+		NewDiskDataSource,
 		NewImageDataSource,
 		NewImagesDataSource,
 		NewInstanceExternalIPsDataSource,
