@@ -1,3 +1,31 @@
+# 0.17.0 (2025/Dec/8)
+
+### New features
+
+- **New data source:** `oxide_disk` [#539](https://github.com/oxidecomputer/terraform-provider-oxide/pull/539).
+
+### List of commits
+
+- [3a1634e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3a1634e) disk: initial data source (#539)
+- [a9e5a8f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a9e5a8f) build(deps): bump github.com/hashicorp/terraform-plugin-log from 0.9.0 to 0.10.0 (#562)
+- [ac695d1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ac695d1) build(deps): bump actions/checkout from 5 to 6 (#563)
+- [d86d3a2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d86d3a2) build(deps): bump github.com/hashicorp/terraform-plugin-framework-timeouts from 0.6.0 to 0.7.0 (#545)
+- [e2f5cb6](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e2f5cb6) build(deps): bump golang.org/x/crypto from 0.42.0 to 0.45.0 (#561)
+- [9e6fe7c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9e6fe7c) chore: add pull request template (#559)
+- [4b8420d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4b8420d) chore: bump version (#558)
+
+# 0.16.0 (2025/Nov/14)
+
+### Breaking changes
+
+- **`oxide_vpc_firewall_rules`:** Changed the schema of the `rules` attribute from a set to a hashmap for better performance. Refer to the resource documentation for how to upgrade your configuration. [#543](https://github.com/oxidecomputer/terraform-provider-oxide/pull/543)
+
+### List of commits
+
+- [40198af](https://github.com/oxidecomputer/terraform-provider-oxide/commit/40198af) vpc_firewall_rules: switch schema to increase performance (#543)
+- [6920e83](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6920e83) ci: add backport workflow (#553)
+- [25d459d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/25d459d) chore: bump version (#552)
+
 # 0.15.0 (2025/Nov/13)
 
 ### Enhancements
