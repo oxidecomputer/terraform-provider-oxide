@@ -31,6 +31,7 @@ jobs:
         run: make lint
   acceptance:
     strategy:
+      fail-fast: false
       matrix:
         omicron-version:
           - "main"
