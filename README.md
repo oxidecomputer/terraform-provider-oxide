@@ -1,5 +1,12 @@
 # Terraform Provider Oxide
 
+## Build status
+
+| Branch | |
+| --- | --- |
+| main | [![main](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=main)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml) |
+| 0.17 | [![0.17](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=0.17)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml) |
+
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads) 1.11.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
