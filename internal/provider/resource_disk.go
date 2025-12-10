@@ -209,6 +209,15 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Size:        oxide.ByteCount(plan.Size.ValueInt64()),
+			DiskBackend: oxide.DiskBackend{
+				// As of r18, disk type must be specified as
+				// "distributed" (the only option in prior
+				// releases) or "local". For now, always set
+				// disk type to distributed. We'll support
+				// local disks as well once r18 is available
+				// for testing.
+				Type: oxide.DiskBackendTypeDistributed,
+			},
 		},
 	}
 
@@ -223,7 +232,7 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 		ds.BlockSize = oxide.BlockSize(plan.BlockSize.ValueInt64())
 		ds.Type = oxide.DiskSourceTypeBlank
 	}
-	params.Body.DiskSource = ds
+	params.Body.DiskBackend.DiskSource = ds
 
 	disk, err := r.client.DiskCreate(ctx, params)
 	if err != nil {
