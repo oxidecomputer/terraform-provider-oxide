@@ -78,8 +78,6 @@ To override when testing against a different environment, set the
 
 Run `make testacc`.
 
-Eventually we'll have a GitHub action to create a Nexus server and run these tests, but for now testing will have to be run manually.
-
 ## Releasing a new version
 
 Remember to update the changelog before releasing.
