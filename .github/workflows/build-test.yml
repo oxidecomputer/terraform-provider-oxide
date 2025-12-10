@@ -35,7 +35,6 @@ jobs:
       matrix:
         omicron-branch:
           - "main"
-          - "rel/v17.1/rc0"
     uses: "./.github/workflows/acceptance-sim.yml"
     with:
       omicron-branch: ${{ matrix.omicron-branch }}
