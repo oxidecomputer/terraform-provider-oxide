@@ -17,15 +17,19 @@ if [ ! -e "$IMAGE_PATH" ]; then
     qemu-img convert -f qcow2 -O raw alpine.qcow2 "$IMAGE_PATH"
 fi
 
-oxide project create --name $PROJECT_NAME --description $PROJECT_NAME
+if ! oxide project view --project $PROJECT_NAME > /dev/null; then
+    oxide project create --name $PROJECT_NAME --description $PROJECT_NAME
+fi
 
 # We need to create disks, images, etc., so override the default empty quota.
 oxide silo quotas update --silo $SILO_NAME --cpus 100 --memory $((2 ** 40)) --storage $((2 ** 40))
 
 # Set up the default IP pool, and add a range.
-oxide ip-pool create --name default --description default
-oxide ip-pool silo link --pool default --silo $SILO_NAME --is-default true
-oxide ip-pool range add --first 10.0.1.0 --last 10.0.1.255 --pool default
+if ! oxide ip-pool view --pool default > /dev/null; then
+    oxide ip-pool create --name default --description default
+    oxide ip-pool silo link --pool default --silo $SILO_NAME --is-default true
+    oxide ip-pool range add --first 10.0.1.0 --last 10.0.1.255 --pool default
+fi
 
 # The acceptance tests expect both at least a single project-scoped image and a
 # silo-scoped image. Import the same image twice, then promote one copy to the
