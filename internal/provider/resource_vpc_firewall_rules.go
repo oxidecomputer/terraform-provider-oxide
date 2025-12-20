@@ -115,6 +115,7 @@ func (r *vpcFirewallRulesResource) Configure(_ context.Context, req resource.Con
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing VPC firewall rules resource into Terraform state.
 func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("vpc_id"), req, resp)
 }

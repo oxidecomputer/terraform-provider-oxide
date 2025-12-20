@@ -61,6 +61,7 @@ func (r *vpcSubnetResource) Configure(_ context.Context, req resource.ConfigureR
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing VPC subnet into Terraform state.
 func (r *vpcSubnetResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

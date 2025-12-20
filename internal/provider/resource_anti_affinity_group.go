@@ -63,6 +63,7 @@ func (r *antiAffinityGroupResource) Configure(_ context.Context, req resource.Co
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing anti-affinity group into Terraform state.
 func (r *antiAffinityGroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

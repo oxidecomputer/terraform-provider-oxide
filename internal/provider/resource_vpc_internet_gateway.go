@@ -61,6 +61,7 @@ func (r *vpcInternetGatewayResource) Configure(_ context.Context, req resource.C
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports the resource state from Terraform.
 func (r *vpcInternetGatewayResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

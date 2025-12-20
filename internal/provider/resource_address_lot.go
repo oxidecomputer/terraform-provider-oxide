@@ -69,6 +69,7 @@ func (r *addressLotResource) Configure(_ context.Context, req resource.Configure
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing address lot into Terraform state.
 func (r *addressLotResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

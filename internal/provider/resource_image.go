@@ -71,6 +71,7 @@ func (r *imageResource) Configure(_ context.Context, req resource.ConfigureReque
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing image resource into Terraform state.
 func (r *imageResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

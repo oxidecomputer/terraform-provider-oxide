@@ -38,6 +38,7 @@ func NewIpPoolDataSource() datasource.DataSource {
 	return &ipPoolDataSource{}
 }
 
+// Metadata returns the data source type name.
 func (d *ipPoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = "oxide_ip_pool"
 }
@@ -51,6 +52,7 @@ func (d *ipPoolDataSource) Configure(_ context.Context, req datasource.Configure
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
+// Schema defines the schema for the data source.
 func (d *ipPoolDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
@@ -86,6 +88,7 @@ Retrieve information about a specified IP pool.
 	}
 }
 
+// Read refreshes the Terraform state with the latest data.
 func (d *ipPoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state ipPoolDataSourceModel
 

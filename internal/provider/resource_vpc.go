@@ -62,6 +62,7 @@ func (r *vpcResource) Configure(_ context.Context, req resource.ConfigureRequest
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing VPC resource into Terraform state.
 func (r *vpcResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

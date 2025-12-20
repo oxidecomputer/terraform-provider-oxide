@@ -39,6 +39,7 @@ func NewSiloDataSource() datasource.DataSource {
 	return &siloDataSource{}
 }
 
+// Metadata returns the data source type name.
 func (d *siloDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = "oxide_silo"
 }
@@ -52,6 +53,7 @@ func (d *siloDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
+// Schema defines the schema for the data source.
 func (d *siloDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
@@ -91,6 +93,7 @@ Retrieve information about a specified silo.
 	}
 }
 
+// Read refreshes the Terraform state with the latest data.
 func (d *siloDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state siloDataSourceModel
 
