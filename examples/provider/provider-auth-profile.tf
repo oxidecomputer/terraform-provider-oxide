@@ -1,0 +1,3 @@
+provider "oxide" {
+  profile = "example"
+}

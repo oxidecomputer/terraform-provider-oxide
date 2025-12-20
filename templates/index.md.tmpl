@@ -1,5 +1,5 @@
 ---
-page_title: "Oxide Provider"
+page_title: "{{ .ProviderShortName | title }} Provider"
 description: |-
 {{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
 ---
@@ -8,22 +8,32 @@ description: |-
 
 {{ .Description | trimspace }}
 
-## Authentication
-
-As a preferred method of authentication, export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables with their corresponding values.
-
-There are two alternatives to this:
-
-### Host and Token Arguments
-It is possible to authenticate via the optional `host` and `token` arguments. In most cases this method of authentication is not recommended. It is generally preferable to keep credential information out of the configuration.
-
-### Profile Argument
-Another option is to use profile-based authentication by passing the `profile` argument. If you have authenticated using the Oxide CLI with `oxide auth login --host https://$YourSiloDnsName`, a `profile` will be created in your `credentials.toml`. You can reference this `profile` directly in your Terraform provider block.
-
-Note: Cannot use `profile` with `host` and `token` arguments and vice versa.
-
+{{ if .HasExamples -}}
 ## Example Usage
 
 {{ tffile "examples/provider/provider.tf" }}
+
+## Authentication
+
+### Environment Variables
+
+Export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables. This is the
+recommended authentication method.
+
+{{ tffile "examples/provider/provider-auth-env.tf" }}
+
+### Profile
+
+Use a profile from the credentials file created via `oxide auth login`.
+
+{{ tffile "examples/provider/provider-auth-profile.tf" }}
+
+### Host & Token
+
+Set the host and token within the configuration. Use variables to keep sensitive
+credentials out of the configuration.
+
+{{ tffile "examples/provider/provider-auth-config.tf" }}
+{{- end }}
 
 {{ .SchemaMarkdown | trimspace }}

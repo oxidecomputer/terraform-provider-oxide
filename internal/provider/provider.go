@@ -52,11 +52,17 @@ func (p *oxideProvider) Metadata(ctx context.Context, req provider.MetadataReque
 // Schema defines the provider-level schema for configuration data.
 func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: `The Oxide Terraform provider manages Oxide resources.`,
+		MarkdownDescription: `
+The Oxide provider is used to declaratively manage
+[Oxide](https://oxide.computer) infrastructure.
+
+The provider uses the [Oxide Go SDK](https://github.com/oxidecomputer/oxide.go)
+to create, read, update, and delete Oxide resources.
+`,
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Optional:    true,
-				Description: "URL of the root of the target server.",
+				Description: "Oxide API host (e.g., https://oxide.sys.example.com). Conflicts with `profile`.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("profile"),
@@ -66,7 +72,7 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
-				Description: "Token used to authenticate.",
+				Description: "Oxide API token. Conflicts with `profile`.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("profile"),
@@ -75,7 +81,7 @@ func (p *oxideProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			},
 			"profile": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Profile used to authenticate. Retrieves host and token from `credentials.toml`.",
+				MarkdownDescription: "Profile to load from the Oxide credentials file. Conflicts with `host` and `token`.",
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("host"),
