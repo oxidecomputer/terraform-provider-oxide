@@ -3,8 +3,13 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New resource"
+description = "`oxide_address_lot` [#489](https://github.com/oxidecomputer/terraform-provider-oxide/pull/489)."
+
+[[features]]
+title = "New data source"
+description = "`oxide_address_lot` [#489](https://github.com/oxidecomputer/terraform-provider-oxide/pull/489)."
+
 
 [[enhancements]]
 title = ""

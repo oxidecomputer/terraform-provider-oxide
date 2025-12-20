@@ -90,15 +90,15 @@ resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
 	name              = "terraform-acc-myippool-new"
 	ranges = [
-    {
-		first_address = "172.20.15.227"
-		last_address  = "172.20.15.230"
-	},
-	{
-		first_address = "172.20.15.231"
-		last_address  = "172.20.15.233"
-	}
-  ]
+		{
+			first_address = "172.20.15.227"
+			last_address  = "172.20.15.230"
+		},
+		{
+			first_address = "172.20.15.231"
+			last_address  = "172.20.15.233"
+		}
+	]
 }
 `
 
@@ -121,10 +121,10 @@ resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
 	name              = "terraform-acc-myippool-new"
 	ranges = [
-    {
-		first_address = "172.20.15.227"
-		last_address  = "172.20.15.230"
-	}
+		{
+			first_address = "172.20.15.227"
+			last_address  = "172.20.15.230"
+		}
   ]
 }
 `
