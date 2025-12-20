@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -54,6 +55,7 @@ type instanceResourceModel struct {
 	Description        types.String                      `tfsdk:"description"`
 	DiskAttachments    types.Set                         `tfsdk:"disk_attachments"`
 	ExternalIPs        []instanceResourceExternalIPModel `tfsdk:"external_ips"`
+	ExternalIPInfo     types.Object                      `tfsdk:"external_ip_info"`
 	HostnameDeprecated types.String                      `tfsdk:"host_name"`
 	Hostname           types.String                      `tfsdk:"hostname"`
 	ID                 types.String                      `tfsdk:"id"`
@@ -86,6 +88,36 @@ type instanceResourceNICModel struct {
 type instanceResourceExternalIPModel struct {
 	ID   types.String `tfsdk:"id"`
 	Type types.String `tfsdk:"type"`
+}
+
+type instanceResourceExternalIPInfoModel struct {
+	Snat      []instanceResourceSnatIPModel      `tfsdk:"snat"`
+	Ephemeral []instanceResourceEphemeralIPModel `tfsdk:"ephemeral"`
+	Floating  []instanceResourceFloatingIPModel  `tfsdk:"floating"`
+}
+
+type instanceResourceSnatIPModel struct {
+	IP        types.String `tfsdk:"ip"`
+	IPPoolID  types.String `tfsdk:"ip_pool_id"`
+	FirstPort types.Int64  `tfsdk:"first_port"`
+	LastPort  types.Int64  `tfsdk:"last_port"`
+}
+
+type instanceResourceEphemeralIPModel struct {
+	IP       types.String `tfsdk:"ip"`
+	IPPoolID types.String `tfsdk:"ip_pool_id"`
+}
+
+type instanceResourceFloatingIPModel struct {
+	ID           types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Description  types.String `tfsdk:"description"`
+	IP           types.String `tfsdk:"ip"`
+	IPPoolID     types.String `tfsdk:"ip_pool_id"`
+	InstanceID   types.String `tfsdk:"instance_id"`
+	ProjectID    types.String `tfsdk:"project_id"`
+	TimeCreated  types.String `tfsdk:"time_created"`
+	TimeModified types.String `tfsdk:"time_modified"`
 }
 
 // Metadata returns the resource type name.
@@ -362,6 +394,99 @@ Maximum 32 KiB unencoded data.`,
 				Computed:    true,
 				Description: "Timestamp of when this instance was last modified.",
 			},
+			"external_ip_info": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "Information about the external IP addresses associated with this instance, grouped by kind.",
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
+				Attributes: map[string]schema.Attribute{
+					"snat": schema.ListNestedAttribute{
+						Computed:    true,
+						Description: "Source NAT IP addresses used for outbound connectivity.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "The IP address.",
+								},
+								"ip_pool_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the IP Pool from which the address is taken.",
+								},
+								"first_port": schema.Int64Attribute{
+									Computed:    true,
+									Description: "The first usable port within the IP address.",
+								},
+								"last_port": schema.Int64Attribute{
+									Computed:    true,
+									Description: "The last usable port within the IP address.",
+								},
+							},
+						},
+					},
+					"ephemeral": schema.ListNestedAttribute{
+						Computed:    true,
+						Description: "Ephemeral IP addresses associated with this instance.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "The IP address.",
+								},
+								"ip_pool_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the IP Pool from which the address is taken.",
+								},
+							},
+						},
+					},
+					"floating": schema.ListNestedAttribute{
+						Computed:    true,
+						Description: "Floating IP addresses attached to this instance.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Computed:    true,
+									Description: "Unique, immutable, system-controlled identifier for the floating IP.",
+								},
+								"name": schema.StringAttribute{
+									Computed:    true,
+									Description: "Unique, mutable, user-controlled identifier for the floating IP.",
+								},
+								"description": schema.StringAttribute{
+									Computed:    true,
+									Description: "Human-readable free-form text about the floating IP.",
+								},
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "The IP address.",
+								},
+								"ip_pool_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the IP Pool this floating IP belongs to.",
+								},
+								"instance_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "The ID of the instance this floating IP is attached to.",
+								},
+								"project_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "The project this floating IP exists within.",
+								},
+								"time_created": schema.StringAttribute{
+									Computed:    true,
+									Description: "Timestamp when this floating IP was created.",
+								},
+								"time_modified": schema.StringAttribute{
+									Computed:    true,
+									Description: "Timestamp when this floating IP was last modified.",
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -529,6 +654,14 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		plan.NetworkInterfaces[i].IPAddr = types.StringValue(nic.Ip)
 	}
 
+	// Populate external IP info
+	externalIPInfo, diags := newExternalIPInfoModel(ctx, r.client, instance.Id)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.ExternalIPInfo = externalIPInfo
+
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -643,6 +776,14 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if len(nicSet) > 0 {
 		state.NetworkInterfaces = nicSet
 	}
+
+	// Populate external IP info
+	externalIPInfo, diags := newExternalIPInfoModel(ctx, r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.ExternalIPInfo = externalIPInfo
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -881,6 +1022,14 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	if len(nicModel) > 0 {
 		plan.NetworkInterfaces = nicModel
 	}
+
+	// Populate external IP info
+	externalIPInfo, diags := newExternalIPInfoModel(ctx, r.client, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.ExternalIPInfo = externalIPInfo
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -1211,6 +1360,100 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 	}
 
 	return externalIPs, nil
+}
+
+// externalIPInfoAttrTypes returns the attribute types for the external_ip_info object.
+func externalIPInfoAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"snat": types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{
+			"ip":         types.StringType,
+			"ip_pool_id": types.StringType,
+			"first_port": types.Int64Type,
+			"last_port":  types.Int64Type,
+		}}},
+		"ephemeral": types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{
+			"ip":         types.StringType,
+			"ip_pool_id": types.StringType,
+		}}},
+		"floating": types.ListType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{
+			"id":            types.StringType,
+			"name":          types.StringType,
+			"description":   types.StringType,
+			"ip":            types.StringType,
+			"ip_pool_id":    types.StringType,
+			"instance_id":   types.StringType,
+			"project_id":    types.StringType,
+			"time_created":  types.StringType,
+			"time_modified": types.StringType,
+		}}},
+	}
+}
+
+// newExternalIPInfoModel fetches all external IP addresses for the instance
+// and returns them grouped by kind (snat, ephemeral, floating) as a types.Object.
+func newExternalIPInfoModel(ctx context.Context, client *oxide.Client, instanceID string) (
+	types.Object, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	externalIPResponse, err := client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
+		Instance: oxide.NameOrId(instanceID),
+	})
+	if err != nil {
+		diags.AddError(
+			"Unable to list instance external ips:",
+			"API error: "+err.Error(),
+		)
+		return types.ObjectNull(externalIPInfoAttrTypes()), diags
+	}
+
+	info := instanceResourceExternalIPInfoModel{
+		Snat:      []instanceResourceSnatIPModel{},
+		Ephemeral: []instanceResourceEphemeralIPModel{},
+		Floating:  []instanceResourceFloatingIPModel{},
+	}
+
+	for _, externalIP := range externalIPResponse.Items {
+		switch externalIP.Kind {
+		case oxide.ExternalIpKindSnat:
+			snatIP := instanceResourceSnatIPModel{
+				IP:       types.StringValue(externalIP.Ip),
+				IPPoolID: types.StringValue(externalIP.IpPoolId),
+			}
+			if externalIP.FirstPort != nil {
+				snatIP.FirstPort = types.Int64Value(int64(*externalIP.FirstPort))
+			}
+			if externalIP.LastPort != nil {
+				snatIP.LastPort = types.Int64Value(int64(*externalIP.LastPort))
+			}
+			info.Snat = append(info.Snat, snatIP)
+		case oxide.ExternalIpKindEphemeral:
+			info.Ephemeral = append(info.Ephemeral, instanceResourceEphemeralIPModel{
+				IP:       types.StringValue(externalIP.Ip),
+				IPPoolID: types.StringValue(externalIP.IpPoolId),
+			})
+		case oxide.ExternalIpKindFloating:
+			floatingIP := instanceResourceFloatingIPModel{
+				ID:          types.StringValue(externalIP.Id),
+				Name:        types.StringValue(string(externalIP.Name)),
+				Description: types.StringValue(externalIP.Description),
+				IP:          types.StringValue(externalIP.Ip),
+				IPPoolID:    types.StringValue(externalIP.IpPoolId),
+				InstanceID:  types.StringValue(externalIP.InstanceId),
+				ProjectID:   types.StringValue(externalIP.ProjectId),
+			}
+			if externalIP.TimeCreated != nil {
+				floatingIP.TimeCreated = types.StringValue(externalIP.TimeCreated.String())
+			}
+			if externalIP.TimeModified != nil {
+				floatingIP.TimeModified = types.StringValue(externalIP.TimeModified.String())
+			}
+			info.Floating = append(info.Floating, floatingIP)
+		}
+	}
+
+	result, d := types.ObjectValueFrom(ctx, externalIPInfoAttrTypes(), info)
+	diags.Append(d...)
+	return result, diags
 }
 
 type vpcAndSubnetNames struct {
