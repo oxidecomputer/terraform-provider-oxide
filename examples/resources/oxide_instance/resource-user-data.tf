@@ -2,7 +2,7 @@ resource "oxide_instance" "example" {
   project_id           = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description          = "Example instance."
   name                 = "myinstance"
-  host_name            = "myhostname"
+  hostname             = "myhostname"
   memory               = 10737418240
   ncpus                = 1
   anti_affinity_groups = ["9b9f9be1-96bf-44ad-864a-0dedae3b3999"]

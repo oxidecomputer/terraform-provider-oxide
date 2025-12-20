@@ -25,7 +25,7 @@ resource "oxide_instance" "example" {
   project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description      = "Example instance."
   name             = "myinstance"
-  host_name        = "myhostname"
+  hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
@@ -39,7 +39,7 @@ resource "oxide_instance" "example" {
   project_id           = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description          = "Example instance."
   name                 = "myinstance"
-  host_name            = "myhostname"
+  hostname             = "myhostname"
   memory               = 10737418240
   ncpus                = 1
   anti_affinity_groups = ["9b9f9be1-96bf-44ad-864a-0dedae3b3999"]
@@ -56,7 +56,7 @@ resource "oxide_instance" "example" {
   project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description      = "Example instance."
   name             = "myinstance"
-  host_name        = "myhostname"
+  hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
@@ -83,7 +83,7 @@ resource "oxide_instance" "example" {
   project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
   description      = "Example instance."
   name             = "myinstance"
-  host_name        = "myhostname"
+  hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
@@ -106,7 +106,6 @@ resource "oxide_instance" "example" {
 ### Required
 
 - `description` (String) Description for the instance.
-- `host_name` (String) Host name of the instance.
 - `memory` (Number) Instance memory in bytes.
 - `name` (String) Name of the instance.
 - `ncpus` (Number) Number of CPUs allocated for this instance.
@@ -119,6 +118,8 @@ resource "oxide_instance" "example" {
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
 - `external_ips` (Attributes Set) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
+- `host_name` (String, Deprecated) Host name of the instance.
+- `hostname` (String) Hostname of the instance.
 - `network_interfaces` (Attributes Set) Network interface devices attached to the instance. (see [below for nested schema](#nestedatt--network_interfaces))
 - `ssh_public_keys` (Set of String) An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.
 - `start_on_create` (Boolean) Whether to start the instance on creation.

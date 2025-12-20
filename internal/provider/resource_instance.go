@@ -54,7 +54,8 @@ type instanceResourceModel struct {
 	Description        types.String                      `tfsdk:"description"`
 	DiskAttachments    types.Set                         `tfsdk:"disk_attachments"`
 	ExternalIPs        []instanceResourceExternalIPModel `tfsdk:"external_ips"`
-	HostName           types.String                      `tfsdk:"host_name"`
+	HostnameDeprecated types.String                      `tfsdk:"host_name"`
+	Hostname           types.String                      `tfsdk:"hostname"`
 	ID                 types.String                      `tfsdk:"id"`
 	Memory             types.Int64                       `tfsdk:"memory"`
 	Name               types.String                      `tfsdk:"name"`
@@ -138,8 +139,21 @@ This resource manages instances.
 				},
 			},
 			"host_name": schema.StringAttribute{
-				Required:    true,
-				Description: "Host name of the instance.",
+				Optional:           true,
+				DeprecationMessage: "Use hostname instead. This attribute will be removed in the next minor version of the provider.",
+				Description:        "Host name of the instance.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"hostname": schema.StringAttribute{
+				Optional:    true,
+				Description: "Hostname of the instance.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(
+						path.MatchRoot("host_name"),
+					),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -362,12 +376,21 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	// Determine the hostname value from the new hostname attribute or the
+	// deprecated host_name attribute.
+	var hostnameValue string
+	if !plan.Hostname.IsNull() {
+		hostnameValue = plan.Hostname.ValueString()
+	} else {
+		hostnameValue = plan.HostnameDeprecated.ValueString()
+	}
+
 	params := oxide.InstanceCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.InstanceCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Hostname:    oxide.Hostname(plan.HostName.ValueString()),
+			Hostname:    oxide.Hostname(hostnameValue),
 			Memory:      oxide.ByteCount(plan.Memory.ValueInt64()),
 			Ncpus:       oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
 			Start:       plan.StartOnCreate.ValueBoolPointer(),
@@ -548,7 +571,16 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		state.AutoRestartPolicy = types.StringValue(string(instance.AutoRestartPolicy))
 	}
 	state.Description = types.StringValue(instance.Description)
-	state.HostName = types.StringValue(string(instance.Hostname))
+
+	// Always set the new hostname attribute. This ensures imports work correctly
+	// since there is no prior state during import.
+	state.Hostname = types.StringValue(string(instance.Hostname))
+	// Only set the deprecated host_name attribute if it was previously configured
+	// to avoid drift for users who haven't migrated yet.
+	if !state.HostnameDeprecated.IsNull() {
+		state.HostnameDeprecated = types.StringValue(string(instance.Hostname))
+	}
+
 	state.ID = types.StringValue(instance.Id)
 	state.Memory = types.Int64Value(int64(instance.Memory))
 	state.Name = types.StringValue(string(instance.Name))

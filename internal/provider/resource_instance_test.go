@@ -48,7 +48,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -94,7 +94,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   boot_disk_id     	   = oxide_disk.{{.DiskBlockName}}.id
   description      	   = "a test instance"
   name             	   = "{{.InstanceName}}"
-  host_name        	   = "terraform-acc-myhost"
+  hostname         	   = "terraform-acc-myhost"
   memory           	   = 1073741824
   ncpus            	   = 1
   start_on_create  	   = true
@@ -231,7 +231,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -253,7 +253,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -274,7 +274,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -391,7 +391,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   ssh_public_keys = [oxide_ssh_key.{{.SupportBlockName2}}.id]
@@ -463,7 +463,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
-  host_name        = "terraform-acc-myhost"
+  hostname         = "terraform-acc-myhost"
   memory           = 1073741824
   ncpus            = 1
   start_on_create  = false
@@ -487,7 +487,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
-  host_name        = "terraform-acc-myhost"
+  hostname         = "terraform-acc-myhost"
   memory           = 1073741824
   ncpus            = 1
   start_on_create  = false
@@ -596,7 +596,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   boot_disk_id    = oxide_disk.{{.DiskBlockName2}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = true
@@ -630,7 +630,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   boot_disk_id    = oxide_disk.{{.DiskBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = true
@@ -724,7 +724,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = true
@@ -740,7 +740,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 2
   start_on_create = true
@@ -756,7 +756,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 2147483648
   ncpus           = 2
   start_on_create = true
@@ -865,7 +865,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -942,7 +942,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
   description     	   = "a test instance"
   name            	   = "{{.InstanceName}}"
-  host_name       	   = "terraform-acc-myhost"
+  hostname        	   = "terraform-acc-myhost"
   memory          	   = 1073741824
   ncpus           	   = 1
   start_on_create 	   = false
@@ -973,7 +973,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
   description     	   = "a test instance"
   name            	   = "{{.InstanceName}}"
-  host_name       	   = "terraform-acc-myhost"
+  hostname        	   = "terraform-acc-myhost"
   memory          	   = 1073741824
   ncpus           	   = 1
   start_on_create 	   = false
@@ -1004,7 +1004,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
   description     	   = "a test instance"
   name            	   = "{{.InstanceName}}"
-  host_name       	   = "terraform-acc-myhost"
+  hostname        	   = "terraform-acc-myhost"
   memory          	   = 1073741824
   ncpus           	   = 1
   start_on_create 	   = false
@@ -1100,7 +1100,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1117,7 +1117,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1148,7 +1148,7 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
@@ -1165,7 +1165,7 @@ func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1182,7 +1182,7 @@ func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1199,7 +1199,7 @@ func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestC
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1216,7 +1216,7 @@ func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1231,7 +1231,7 @@ func checkResourceInstanceNic(resourceName, instanceName, nicName string) resour
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1256,7 +1256,7 @@ func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1272,7 +1272,7 @@ func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1288,7 +1288,7 @@ func checkResourceInstanceUpdate(resourceName, instanceName string) resource.Tes
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1303,7 +1303,7 @@ func checkResourceInstanceUpdate2(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1318,7 +1318,7 @@ func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "2147483648"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1333,7 +1333,7 @@ func checkResourceInstanceAntiAffinityGroups(resourceName, instanceName string) 
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1349,7 +1349,7 @@ func checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceName st
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1366,7 +1366,7 @@ func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),

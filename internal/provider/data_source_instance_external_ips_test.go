@@ -27,7 +27,7 @@ resource "oxide_instance" "{{.InstanceBlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
