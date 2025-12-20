@@ -70,3 +70,13 @@ Read-Only:
 
 - `type` (String) Digest type.
 - `value` (String) Digest type value.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import oxide_image.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90
+```
