@@ -101,6 +101,7 @@ func (r *instanceResource) Configure(_ context.Context, req resource.ConfigureRe
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing instance resource into Terraform state.
 func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
@@ -1621,12 +1622,12 @@ var _ validator.Set = instanceExternalIPValidator{}
 // external_ips attribute on an oxide_instance resource.
 type instanceExternalIPValidator struct{}
 
-// Description describes the validation in plain text formatting.
+// Description returns the validation description in plain text formatting.
 func (f instanceExternalIPValidator) Description(context.Context) string {
 	return "cannot have more than one ephemeral external ip"
 }
 
-// MarkdownDescription describes the validation in Markdown formatting.
+// MarkdownDescription returns the validation description in Markdown formatting.
 func (f instanceExternalIPValidator) MarkdownDescription(context.Context) string {
 	return "cannot have more than one ephemeral external ip"
 }

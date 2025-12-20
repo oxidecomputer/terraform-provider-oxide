@@ -58,6 +58,7 @@ func (r *projectResource) Configure(_ context.Context, req resource.ConfigureReq
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing project resource into Terraform state.
 func (r *projectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

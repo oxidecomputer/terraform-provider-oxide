@@ -24,6 +24,7 @@ var (
 	_ resource.ResourceWithConfigure = (*siloSamlIdentityProvider)(nil)
 )
 
+// NewSiloSamlIdentityProviderResource returns a new silo SAML identity provider resource.
 func NewSiloSamlIdentityProviderResource() resource.Resource {
 	return &siloSamlIdentityProvider{}
 }

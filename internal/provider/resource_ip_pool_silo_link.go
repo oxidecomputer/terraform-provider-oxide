@@ -58,6 +58,7 @@ func (r *ipPoolSiloLinkResource) Configure(_ context.Context, req resource.Confi
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing resource into Terraform state.
 func (r *ipPoolSiloLinkResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("ip_pool_id"), req, resp)
 }

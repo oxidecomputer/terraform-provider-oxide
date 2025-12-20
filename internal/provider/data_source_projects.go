@@ -42,6 +42,7 @@ func NewProjectsDataSource() datasource.DataSource {
 	return &projectsDataSource{}
 }
 
+// Metadata returns the data source type name.
 func (d *projectsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = "oxide_projects"
 }
@@ -55,6 +56,7 @@ func (d *projectsDataSource) Configure(_ context.Context, req datasource.Configu
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
+// Schema defines the schema for the data source.
 func (d *projectsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
@@ -96,6 +98,7 @@ Retrieve a list of projects.
 	}
 }
 
+// Read refreshes the Terraform state with the latest data.
 func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state projectsDataSourceModel
 
