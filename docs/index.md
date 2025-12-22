@@ -1,58 +1,67 @@
 ---
 page_title: "Oxide Provider"
 description: |-
-  The Oxide Terraform provider manages Oxide resources.
+  The Oxide provider is used to declaratively manage
+  Oxide https://oxide.computer infrastructure.
+  The provider uses the Oxide Go SDK https://github.com/oxidecomputer/oxide.go
+  to create, read, update, and delete Oxide resources.
 ---
 
 # Oxide Provider
 
-The Oxide Terraform provider manages Oxide resources.
+The Oxide provider is used to declaratively manage
+[Oxide](https://oxide.computer) infrastructure.
 
-## Authentication
-
-As a preferred method of authentication, export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables with their corresponding values.
-
-There are two alternatives to this:
-
-### Host and Token Arguments
-It is possible to authenticate via the optional `host` and `token` arguments. In most cases this method of authentication is not recommended. It is generally preferable to keep credential information out of the configuration.
-
-### Profile Argument
-Another option is to use profile-based authentication by passing the `profile` argument. If you have authenticated using the Oxide CLI with `oxide auth login --host https://$YourSiloDnsName`, a `profile` will be created in your `credentials.toml`. You can reference this `profile` directly in your Terraform provider block.
-
-Note: Cannot use `profile` with `host` and `token` arguments and vice versa.
+The provider uses the [Oxide Go SDK](https://github.com/oxidecomputer/oxide.go)
+to create, read, update, and delete Oxide resources.
 
 ## Example Usage
 
 ```terraform
-terraform {
-  required_version = ">= 1.11"
+# Configure the Oxide provider.
+provider "oxide" {}
 
-  required_providers {
-    oxide = {
-      source  = "oxidecomputer/oxide"
-      version = "0.18.0"
-    }
-  }
+resource "oxide_instance" "example" {
+  # ...
+}
+```
+
+## Authentication
+
+### Environment Variables
+
+Export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables. This is the
+recommended authentication method.
+
+```terraform
+provider "oxide" {}
+```
+
+### Profile
+
+Use a profile from the credentials file created via `oxide auth login`.
+
+```terraform
+provider "oxide" {
+  profile = "example"
+}
+```
+
+### Host & Token
+
+Set the host and token within the configuration. Use variables to keep sensitive
+credentials out of the configuration.
+
+```terraform
+variable "oxide_token" {
+  type        = string
+  description = "Oxide API token."
+  sensitive   = true
 }
 
 provider "oxide" {
-  # The provider will default to use $OXIDE_HOST and $OXIDE_TOKEN.
-  # If necessary they can be set explicitly (not recommended).
-  # host = "<host address>"
-  # token = "<token value>"
-
-  # Can pass in a existing profile that exists in the credentials.toml
-  # profile = "<profile name>"
-}
-
-# Create a blank disk
-resource "oxide_disk" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test disk"
-  name        = "mydisk"
-  size        = 1073741824
-  block_size  = 512
+  host  = "https://oxide.sys.example.com"
+  token = "oxide-token-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 }
 ```
 
@@ -61,6 +70,6 @@ resource "oxide_disk" "example" {
 
 ### Optional
 
-- `host` (String) URL of the root of the target server.
-- `profile` (String) Profile used to authenticate. Retrieves host and token from `credentials.toml`.
-- `token` (String, Sensitive) Token used to authenticate.
+- `host` (String) Oxide API host (e.g., https://oxide.sys.example.com). Conflicts with `profile`.
+- `profile` (String) Profile to load from the Oxide credentials file. Conflicts with `host` and `token`.
+- `token` (String, Sensitive) Oxide API token. Conflicts with `profile`.
