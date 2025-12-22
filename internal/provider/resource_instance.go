@@ -143,7 +143,9 @@ This resource manages instances.
 				DeprecationMessage: "Use hostname instead. This attribute will be removed in the next minor version of the provider.",
 				Description:        "Host name of the instance.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(
+						HostnamePlanModifier, "", "",
+					),
 				},
 			},
 			"hostname": schema.StringAttribute{
@@ -155,7 +157,9 @@ This resource manages instances.
 					),
 				},
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(
+						HostnamePlanModifier, "", "",
+					),
 				},
 			},
 			"memory": schema.Int64Attribute{
@@ -574,7 +578,9 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	// Always set the new hostname attribute. This ensures imports work correctly
 	// since there is no prior state during import.
-	state.Hostname = types.StringValue(string(instance.Hostname))
+	if !state.Hostname.IsNull() || state.Hostname.IsNull() && state.HostnameDeprecated.IsNull() {
+		state.Hostname = types.StringValue(string(instance.Hostname))
+	}
 	// Only set the deprecated host_name attribute if it was previously configured
 	// to avoid drift for users who haven't migrated yet.
 	if !state.HostnameDeprecated.IsNull() {
@@ -1712,4 +1718,31 @@ func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req valida
 		)
 		return
 	}
+}
+
+func HostnamePlanModifier(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+	var state instanceResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	switch path := req.Path.String(); path {
+	case "hostname":
+		if req.PlanValue.Equal(state.HostnameDeprecated) {
+			return
+		}
+	case "host_name":
+		if req.PlanValue.Equal(state.Hostname) {
+			return
+		}
+	default:
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			fmt.Sprintf("Invalid attribute %s", path),
+			"HostnamePlanModifier can only be used for instance hostname.",
+		)
+	}
+
+	resp.RequiresReplace = true
 }

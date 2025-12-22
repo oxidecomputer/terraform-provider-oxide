@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -1092,6 +1094,286 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportStateVerifyIgnore: []string{"start_on_create"},
 			},
 		},
+	})
+}
+
+func TestAccCloudResourceInstance_host_nameDeprecation(t *testing.T) {
+	resourceName := "oxide_instance.test_instance"
+
+	generateConfig := func(t *testing.T, name string, hostnames map[string]string) string {
+		tmplData := struct {
+			InstanceName      string
+			InstanceHostnames map[string]string
+		}{
+			InstanceName:      name,
+			InstanceHostnames: hostnames,
+		}
+
+		config, err := parsedAccConfig(tmplData, `
+data "oxide_project" "tf_acc_test" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "test_instance" {
+  project_id      = data.oxide_project.tf_acc_test.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+{{range $attr, $val := .InstanceHostnames}}
+  {{$attr}}        = "{{$val}}"
+{{end}}
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+}
+`)
+		if err != nil {
+			t.Errorf("error parsing config template data: %e", err)
+			return ""
+		}
+
+		return config
+	}
+
+	// Test no changes to remote state when updating the provider and changing
+	// attribute name from host_name to hostname.
+	t.Run("host_name migration", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:     func() { testAccPreCheck(t) },
+			CheckDestroy: testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				// Initial state using host_name.
+				{
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"oxide": {
+							Source:            "oxidecomputer/oxide",
+							VersionConstraint: "0.17.0",
+						},
+					},
+					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					Check:  resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+				},
+				// Update provider without modifying config.
+				// Expect no-op.
+				{
+					ExternalProviders:        map[string]resource.ExternalProvider{},
+					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+					Config:                   generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckNoResourceAttr(resourceName, "hostname"),
+					}...),
+				},
+				// Update host_name to hostname.
+				// Expect an in-place state update, not a resource replacement.
+				{
+					ExternalProviders:        map[string]resource.ExternalProvider{},
+					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+					Config:                   generateConfig(t, instanceName, map[string]string{"hostname": "terraform-acc-myhost"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckNoResourceAttr(resourceName, "host_name"),
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+					}...),
+				},
+			},
+		})
+	})
+
+	// Test no changes to remote state when changing attribute name from
+	// hostname to host_name.
+	t.Run("hostname rename", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				// Initial state using hostname.
+				{
+					Config: generateConfig(t, instanceName, map[string]string{"hostname": "terraform-acc-myhost"}),
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckNoResourceAttr(resourceName, "host_name"),
+					}...),
+				},
+				// Update hostname to host_name.
+				// Expect an in-place state update, not a resource replacement.
+				{
+					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckNoResourceAttr(resourceName, "hostname"),
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+					}...),
+				},
+			},
+		})
+	})
+
+	// Test instance hostname value modification and value modification with
+	// attribute rename.
+	testCases := []struct {
+		from string
+		to   string
+	}{
+		{from: "host_name", to: "hostname"},
+		{from: "hostname", to: "host_name"},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("from %s to %s", tc.from, tc.to), func(t *testing.T) {
+			instanceName := newResourceName()
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				CheckDestroy:             testAccInstanceDestroy,
+				Steps: []resource.TestStep{
+					// Initial state.
+					{
+						Config: generateConfig(t, instanceName, map[string]string{tc.from: "terraform-acc-myhost"}),
+						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost"),
+							resource.TestCheckNoResourceAttr(resourceName, tc.to),
+						}...),
+					},
+					// Update hostname value.
+					// Expect a resource replacement.
+					{
+						Config: generateConfig(t, instanceName, map[string]string{tc.from: "terraform-acc-myhost-updated"}),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+							},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost-updated"),
+							resource.TestCheckNoResourceAttr(resourceName, tc.to),
+						}...),
+					},
+					// Update hostname attribute name and value.
+					// Expect a resource replacement.
+					{
+						Config: generateConfig(t, instanceName, map[string]string{tc.to: "terraform-acc-myhost"}),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+							},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost"),
+							resource.TestCheckNoResourceAttr(resourceName, tc.from),
+						}...),
+					},
+				},
+			})
+		})
+	}
+
+	// Test resource import.
+	t.Run("import with hostname", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: generateConfig(t, instanceName, map[string]string{
+						"hostname": "terraform-acc-myhost",
+					}),
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckNoResourceAttr(resourceName, "host_name"),
+					}...),
+				},
+				{
+					ImportState:             true,
+					ResourceName:            resourceName,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"start_on_create"},
+				},
+			},
+		})
+	})
+
+	t.Run("import with host_name", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: generateConfig(t, instanceName, map[string]string{
+						"host_name": "terraform-acc-myhost",
+					}),
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckNoResourceAttr(resourceName, "hostname"),
+					}...),
+				},
+				{
+					ImportState:        true,
+					ResourceName:       resourceName,
+					ExpectNonEmptyPlan: true,
+				},
+			},
+		})
+	})
+
+	// Test that either hostname or host_name should be provided.
+	t.Run("missing hostname", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      generateConfig(t, instanceName, map[string]string{}),
+					ExpectError: regexp.MustCompile("Missing hostname"),
+				},
+			},
+		})
+	})
+
+	// Test that only host_name or hostname can be set.
+	t.Run("host_name and hostname not allowed together", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: generateConfig(t, instanceName, map[string]string{
+						"hostname":  "terraform-acc-myhost",
+						"host_name": "terraform-acc-myhost",
+					}),
+					ExpectError: regexp.MustCompile("Missing hostname"),
+				},
+			},
+		})
 	})
 }
 
