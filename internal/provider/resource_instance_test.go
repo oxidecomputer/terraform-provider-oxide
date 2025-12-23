@@ -1171,7 +1171,7 @@ resource "oxide_instance" "test_instance" {
 					}...),
 				},
 				// Update host_name to hostname.
-				// Expect an in-place state update, not a resource replacement.
+				// Expect no-op.
 				{
 					ExternalProviders:        map[string]resource.ExternalProvider{},
 					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
@@ -1209,7 +1209,7 @@ resource "oxide_instance" "test_instance" {
 					}...),
 				},
 				// Update hostname to host_name.
-				// Expect an in-place state update, not a resource replacement.
+				// Expect no-op.
 				{
 					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -1331,9 +1331,10 @@ resource "oxide_instance" "test_instance" {
 					}...),
 				},
 				{
-					ImportState:        true,
-					ResourceName:       resourceName,
-					ExpectNonEmptyPlan: true,
+					ImportState:             true,
+					ResourceName:            resourceName,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"start_on_create"},
 				},
 			},
 		})
@@ -1350,7 +1351,7 @@ resource "oxide_instance" "test_instance" {
 			Steps: []resource.TestStep{
 				{
 					Config:      generateConfig(t, instanceName, map[string]string{}),
-					ExpectError: regexp.MustCompile(`one \(and only one\) of \[host_name\] is required`),
+					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
 				},
 			},
 		})
@@ -1370,7 +1371,7 @@ resource "oxide_instance" "test_instance" {
 						"hostname":  "terraform-acc-myhost",
 						"host_name": "terraform-acc-myhost",
 					}),
-					ExpectError: regexp.MustCompile(`one \(and only one\) of \[host_name\] is required`),
+					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
 				},
 			},
 		})

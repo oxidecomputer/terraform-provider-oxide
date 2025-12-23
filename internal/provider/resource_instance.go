@@ -149,6 +149,11 @@ This resource manages instances.
 						ModifyPlanForHostnameDeprecation, "", "",
 					),
 				},
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(
+						path.MatchRoot("hostname"),
+					),
+				},
 			},
 			"hostname": schema.StringAttribute{
 				Optional:    true,
@@ -157,11 +162,6 @@ This resource manages instances.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(
 						ModifyPlanForHostnameDeprecation, "", "",
-					),
-				},
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(
-						path.MatchRoot("host_name"),
 					),
 				},
 			},
@@ -1763,8 +1763,8 @@ func ModifyPlanForHostnameDeprecation(ctx context.Context, req planmodifier.Stri
 	default:
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
-			fmt.Sprintf("Invalid attribute %s", attribute),
-			"HostnamePlanModifier can only be used for instance hostname.",
+			fmt.Sprintf("Invalid plan modifier for attribute %s", attribute),
+			"ModifyPlanForHostnameDeprecation can only be used for instance hostname attributes.",
 		)
 	}
 
