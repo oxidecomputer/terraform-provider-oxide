@@ -102,6 +102,7 @@ func (r *instanceResource) Configure(_ context.Context, req resource.ConfigureRe
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports an existing instance resource into Terraform state.
 func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
@@ -140,25 +141,27 @@ This resource manages instances.
 			},
 			"host_name": schema.StringAttribute{
 				Optional:           true,
+				Computed:           true,
 				DeprecationMessage: "Use hostname instead. This attribute will be removed in the next minor version of the provider.",
-				Description:        "Host name of the instance.",
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(
-						path.MatchRoot("hostname"),
-					),
-				},
+				Description:        "Hostname of the instance.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(
-						HostnamePlanModifier, "", "",
+						ModifyPlanForHostnameDeprecation, "", "",
 					),
 				},
 			},
 			"hostname": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Hostname of the instance.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(
-						HostnamePlanModifier, "", "",
+						ModifyPlanForHostnameDeprecation, "", "",
+					),
+				},
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(
+						path.MatchRoot("host_name"),
 					),
 				},
 			},
@@ -383,7 +386,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	// Determine the hostname value from the new hostname attribute or the
 	// deprecated host_name attribute.
 	var hostnameValue string
-	if !plan.Hostname.IsNull() {
+	if !plan.Hostname.IsNull() && !plan.Hostname.IsUnknown() {
 		hostnameValue = plan.Hostname.ValueString()
 	} else {
 		hostnameValue = plan.HostnameDeprecated.ValueString()
@@ -493,6 +496,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
+	plan.Hostname = types.StringValue(instance.Hostname)
+	plan.HostnameDeprecated = types.StringValue(instance.Hostname)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
@@ -576,16 +581,10 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	state.Description = types.StringValue(instance.Description)
 
-	// Always set the new hostname attribute. This ensures imports work correctly
-	// since there is no prior state during import.
-	if !state.Hostname.IsNull() || state.Hostname.IsNull() && state.HostnameDeprecated.IsNull() {
-		state.Hostname = types.StringValue(string(instance.Hostname))
-	}
-	// Only set the deprecated host_name attribute if it was previously configured
-	// to avoid drift for users who haven't migrated yet.
-	if !state.HostnameDeprecated.IsNull() {
-		state.HostnameDeprecated = types.StringValue(string(instance.Hostname))
-	}
+	// Set both attributes to the same value to facilitate migration across
+	// attributes.
+	state.Hostname = types.StringValue(string(instance.Hostname))
+	state.HostnameDeprecated = types.StringValue(string(instance.Hostname))
 
 	state.ID = types.StringValue(instance.Id)
 	state.Memory = types.Int64Value(int64(instance.Memory))
@@ -844,6 +843,8 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
+	plan.Hostname = types.StringValue(instance.Hostname)
+	plan.HostnameDeprecated = types.StringValue(instance.Hostname)
 	plan.ProjectID = types.StringValue(instance.ProjectId)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
@@ -1720,29 +1721,62 @@ func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req valida
 	}
 }
 
-func HostnamePlanModifier(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-	var state instanceResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
+// ModifyPlanForHostnameDeprecation modifies the plan to support the
+// deprecation of `host_name` in favor of `hostname`. This must be
+// added to both the deprecated `host_name` attribute and the new
+// `hostname` attribute. This function is responsible for setting
+// [stringplanmodifier.RequiresReplaceIfFuncResponse.RequiresReplace] to `true`
+// when it's deemed the user is actually changing the hostname value in the
+// configuration or `false` when the user is just updating their configuration
+// to comply with the deprecation.
+func ModifyPlanForHostnameDeprecation(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+	// If the configuration has a value, use it. The `ExactlyOneOf` validation
+	// handles at least one of `host_name` or `hostname` being set so there's
+	// nothing further for us to modify.
+	if !req.ConfigValue.IsNull() {
 		return
 	}
 
-	switch path := req.Path.String(); path {
+	// Check which attribute this modifier function is being called on as the logic
+	// is vice versa for `host_name` and `hostname`.
+	switch attribute := req.Path.String(); attribute {
 	case "hostname":
-		if req.PlanValue.Equal(state.HostnameDeprecated) {
+		var hostnameDeprecated types.String
+		diags := req.Config.GetAttribute(ctx, path.Root("host_name"), &hostnameDeprecated)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// The deprecated `host_name` attribute has a value. We do not need to replace
+		// the resource just because the new `hostname` attribute doesn't have a value.
+		if !hostnameDeprecated.IsNull() && !hostnameDeprecated.IsUnknown() {
 			return
 		}
 	case "host_name":
-		if req.PlanValue.Equal(state.Hostname) {
+		var hostname types.String
+		diags := req.Plan.GetAttribute(ctx, path.Root("hostname"), &hostname)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// The new `hostname` attribute has a value. We do not need to replace the
+		// resource just because the deprecated `host_name` attribute doesn't have
+		// a value.
+		if !hostname.IsUnknown() && !hostname.IsNull() {
 			return
 		}
 	default:
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
-			fmt.Sprintf("Invalid attribute %s", path),
+			fmt.Sprintf("Invalid attribute %s", attribute),
 			"HostnamePlanModifier can only be used for instance hostname.",
 		)
 	}
 
+	// If we've reached this point, it's because the actual value of either
+	// `host_name` or `hostname` was modified, which must result in the resource
+	// being replaced.
 	resp.RequiresReplace = true
 }
