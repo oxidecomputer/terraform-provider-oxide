@@ -1730,13 +1730,6 @@ func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req valida
 // configuration or `false` when the user is just updating their configuration
 // to comply with the deprecation.
 func ModifyPlanForHostnameDeprecation(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-	// If the configuration has a value, use it. The `ExactlyOneOf` validation
-	// handles at least one of `host_name` or `hostname` being set so there's
-	// nothing further for us to modify.
-	if !req.ConfigValue.IsNull() {
-		return
-	}
-
 	// Check which attribute this modifier function is being called on as the logic
 	// is vice versa for `host_name` and `hostname`.
 	switch attribute := req.Path.String(); attribute {
