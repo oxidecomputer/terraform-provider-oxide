@@ -25,6 +25,9 @@ jobs:
         with:
           app-id: "${{ vars.BACKPORT_PR_APP_ID }}"
           private-key: "${{ secrets.BACKPORT_PR_APP_KEY }}"
+          permission-contents: "write"
+          permission-pull-requests: "write"
+          permission-workflows: "write"
       - uses: "oxidecomputer/backport-pr-action@v0"
         with:
           pr: "${{ github.event.pull_request.number }}"
