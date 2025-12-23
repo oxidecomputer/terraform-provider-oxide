@@ -1350,7 +1350,7 @@ resource "oxide_instance" "test_instance" {
 			Steps: []resource.TestStep{
 				{
 					Config:      generateConfig(t, instanceName, map[string]string{}),
-					ExpectError: regexp.MustCompile("Missing hostname"),
+					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
 				},
 			},
 		})
@@ -1370,7 +1370,7 @@ resource "oxide_instance" "test_instance" {
 						"hostname":  "terraform-acc-myhost",
 						"host_name": "terraform-acc-myhost",
 					}),
-					ExpectError: regexp.MustCompile("Missing hostname"),
+					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
 				},
 			},
 		})

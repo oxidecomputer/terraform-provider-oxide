@@ -142,6 +142,11 @@ This resource manages instances.
 				Optional:           true,
 				DeprecationMessage: "Use hostname instead. This attribute will be removed in the next minor version of the provider.",
 				Description:        "Host name of the instance.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(
+						path.MatchRoot("hostname"),
+					),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(
 						HostnamePlanModifier, "", "",
@@ -151,11 +156,6 @@ This resource manages instances.
 			"hostname": schema.StringAttribute{
 				Optional:    true,
 				Description: "Hostname of the instance.",
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(
-						path.MatchRoot("host_name"),
-					),
-				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(
 						HostnamePlanModifier, "", "",
