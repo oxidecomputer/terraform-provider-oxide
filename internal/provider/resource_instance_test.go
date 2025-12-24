@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -48,7 +50,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -94,7 +96,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   boot_disk_id     	   = oxide_disk.{{.DiskBlockName}}.id
   description      	   = "a test instance"
   name             	   = "{{.InstanceName}}"
-  host_name        	   = "terraform-acc-myhost"
+  hostname         	   = "terraform-acc-myhost"
   memory           	   = 1073741824
   ncpus            	   = 1
   start_on_create  	   = true
@@ -231,7 +233,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -253,7 +255,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -274,7 +276,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -391,7 +393,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   ssh_public_keys = [oxide_ssh_key.{{.SupportBlockName2}}.id]
@@ -463,7 +465,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
-  host_name        = "terraform-acc-myhost"
+  hostname         = "terraform-acc-myhost"
   memory           = 1073741824
   ncpus            = 1
   start_on_create  = false
@@ -487,7 +489,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id       = data.oxide_project.{{.SupportBlockName}}.id
   description      = "a test instance"
   name             = "{{.InstanceName}}"
-  host_name        = "terraform-acc-myhost"
+  hostname         = "terraform-acc-myhost"
   memory           = 1073741824
   ncpus            = 1
   start_on_create  = false
@@ -596,7 +598,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   boot_disk_id    = oxide_disk.{{.DiskBlockName2}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = true
@@ -630,7 +632,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   boot_disk_id    = oxide_disk.{{.DiskBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = true
@@ -724,7 +726,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = true
@@ -740,7 +742,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 2
   start_on_create = true
@@ -756,7 +758,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 2147483648
   ncpus           = 2
   start_on_create = true
@@ -865,7 +867,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
   name            = "{{.InstanceName}}"
-  host_name       = "terraform-acc-myhost"
+  hostname        = "terraform-acc-myhost"
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
@@ -942,7 +944,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
   description     	   = "a test instance"
   name            	   = "{{.InstanceName}}"
-  host_name       	   = "terraform-acc-myhost"
+  hostname        	   = "terraform-acc-myhost"
   memory          	   = 1073741824
   ncpus           	   = 1
   start_on_create 	   = false
@@ -973,7 +975,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
   description     	   = "a test instance"
   name            	   = "{{.InstanceName}}"
-  host_name       	   = "terraform-acc-myhost"
+  hostname        	   = "terraform-acc-myhost"
   memory          	   = 1073741824
   ncpus           	   = 1
   start_on_create 	   = false
@@ -1004,7 +1006,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
   description     	   = "a test instance"
   name            	   = "{{.InstanceName}}"
-  host_name       	   = "terraform-acc-myhost"
+  hostname        	   = "terraform-acc-myhost"
   memory          	   = 1073741824
   ncpus           	   = 1
   start_on_create 	   = false
@@ -1095,12 +1097,293 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+func TestAccCloudResourceInstance_host_nameDeprecation(t *testing.T) {
+	resourceName := "oxide_instance.test_instance"
+
+	generateConfig := func(t *testing.T, name string, hostnames map[string]string) string {
+		tmplData := struct {
+			InstanceName      string
+			InstanceHostnames map[string]string
+		}{
+			InstanceName:      name,
+			InstanceHostnames: hostnames,
+		}
+
+		config, err := parsedAccConfig(tmplData, `
+data "oxide_project" "tf_acc_test" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "test_instance" {
+  project_id      = data.oxide_project.tf_acc_test.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+{{range $attr, $val := .InstanceHostnames}}
+  {{$attr}}        = "{{$val}}"
+{{end}}
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+}
+`)
+		if err != nil {
+			t.Errorf("error parsing config template data: %e", err)
+			return ""
+		}
+
+		return config
+	}
+
+	// Test no changes to remote state when updating the provider and changing
+	// attribute name from host_name to hostname.
+	t.Run("host_name migration", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:     func() { testAccPreCheck(t) },
+			CheckDestroy: testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				// Initial state using host_name.
+				{
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"oxide": {
+							Source:            "oxidecomputer/oxide",
+							VersionConstraint: "0.17.0",
+						},
+					},
+					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					Check:  resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+				},
+				// Update provider without modifying config.
+				// Expect no-op.
+				{
+					ExternalProviders:        map[string]resource.ExternalProvider{},
+					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+					Config:                   generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectEmptyPlan(),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+					}...),
+				},
+				// Update host_name to hostname.
+				// Expect no-op.
+				{
+					ExternalProviders:        map[string]resource.ExternalProvider{},
+					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+					Config:                   generateConfig(t, instanceName, map[string]string{"hostname": "terraform-acc-myhost"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionNoop),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+					}...),
+				},
+			},
+		})
+	})
+
+	// Test no changes to remote state when changing attribute name from
+	// hostname to host_name.
+	t.Run("hostname rename", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				// Initial state using hostname.
+				{
+					Config: generateConfig(t, instanceName, map[string]string{"hostname": "terraform-acc-myhost"}),
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+					}...),
+				},
+				// Update hostname to host_name.
+				// Expect no-op.
+				{
+					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionNoop),
+						},
+					},
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+					}...),
+				},
+			},
+		})
+	})
+
+	// Test instance hostname value modification and value modification with
+	// attribute rename.
+	testCases := []struct {
+		from string
+		to   string
+	}{
+		{from: "host_name", to: "hostname"},
+		{from: "hostname", to: "host_name"},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("from %s to %s", tc.from, tc.to), func(t *testing.T) {
+			instanceName := newResourceName()
+
+			resource.ParallelTest(t, resource.TestCase{
+				PreCheck:                 func() { testAccPreCheck(t) },
+				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				CheckDestroy:             testAccInstanceDestroy,
+				Steps: []resource.TestStep{
+					// Initial state.
+					{
+						Config: generateConfig(t, instanceName, map[string]string{tc.from: "terraform-acc-myhost"}),
+						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost"),
+							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost"),
+						}...),
+					},
+					// Update hostname value.
+					// Expect a resource replacement.
+					{
+						Config: generateConfig(t, instanceName, map[string]string{tc.from: "terraform-acc-myhost-updated"}),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+							},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost-updated"),
+							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost-updated"),
+						}...),
+					},
+					// Update hostname attribute name and value.
+					// Expect a resource replacement.
+					{
+						Config: generateConfig(t, instanceName, map[string]string{tc.to: "terraform-acc-myhost"}),
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+							},
+						},
+						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost"),
+							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost"),
+						}...),
+					},
+				},
+			})
+		})
+	}
+
+	// Test resource import.
+	t.Run("import with hostname", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: generateConfig(t, instanceName, map[string]string{
+						"hostname": "terraform-acc-myhost",
+					}),
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+					}...),
+				},
+				{
+					ImportState:             true,
+					ResourceName:            resourceName,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"start_on_create"},
+				},
+			},
+		})
+	})
+
+	t.Run("import with host_name", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: generateConfig(t, instanceName, map[string]string{
+						"host_name": "terraform-acc-myhost",
+					}),
+					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+					}...),
+				},
+				{
+					ImportState:             true,
+					ResourceName:            resourceName,
+					ImportStateVerify:       true,
+					ImportStateVerifyIgnore: []string{"start_on_create"},
+				},
+			},
+		})
+	})
+
+	// Test that either hostname or host_name should be provided.
+	t.Run("missing hostname", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config:      generateConfig(t, instanceName, map[string]string{}),
+					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
+				},
+			},
+		})
+	})
+
+	// Test that only host_name or hostname can be set.
+	t.Run("host_name and hostname not allowed together", func(t *testing.T) {
+		instanceName := newResourceName()
+
+		resource.ParallelTest(t, resource.TestCase{
+			PreCheck:                 func() { testAccPreCheck(t) },
+			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+			CheckDestroy:             testAccInstanceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: generateConfig(t, instanceName, map[string]string{
+						"hostname":  "terraform-acc-myhost",
+						"host_name": "terraform-acc-myhost",
+					}),
+					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
+				},
+			},
+		})
+	})
+}
+
 func checkResourceInstance(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1117,7 +1400,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1148,7 +1431,7 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
@@ -1165,7 +1448,7 @@ func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1182,7 +1465,7 @@ func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1199,7 +1482,7 @@ func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestC
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1216,7 +1499,7 @@ func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1231,7 +1514,7 @@ func checkResourceInstanceNic(resourceName, instanceName, nicName string) resour
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1256,7 +1539,7 @@ func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1272,7 +1555,7 @@ func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1288,7 +1571,7 @@ func checkResourceInstanceUpdate(resourceName, instanceName string) resource.Tes
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1303,7 +1586,7 @@ func checkResourceInstanceUpdate2(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1318,7 +1601,7 @@ func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.Te
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "2147483648"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
@@ -1333,7 +1616,7 @@ func checkResourceInstanceAntiAffinityGroups(resourceName, instanceName string) 
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1349,7 +1632,7 @@ func checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceName st
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
@@ -1366,7 +1649,7 @@ func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
 		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
-		resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
