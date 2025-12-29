@@ -23,21 +23,6 @@ jobs:
       - name: lint
         run: make lint
   acceptance:
-<<<<<<< HEAD
-    strategy:
-      fail-fast: false
-      matrix:
-        omicron-branch:
-          - "main"
-          - "rel/v17.1/rc0"
-||||||| parent of 83859fc (ci: update acceptance test workflow (#585))
-    strategy:
-      fail-fast: false
-      matrix:
-        omicron-branch:
-          - "main"
-=======
->>>>>>> 83859fc (ci: update acceptance test workflow (#585))
     uses: "./.github/workflows/acceptance-sim.yml"
     with:
-      omicron-branch: "main"
+      omicron-branch: "rel/v17"
