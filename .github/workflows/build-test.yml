@@ -4,17 +4,8 @@ on:
     branches:
       - main
       - '[0-9].[0-9]+'
-    paths:
-      - "**.go"
-      - .github/workflows/build-test.yml
-      - "go.mod"
-      - "go.sum"
-      - "docs/**"
-      - "examples/**"
+      - 'rel/v*'
   pull_request:
-    branches:
-      - main
-      - '[0-9].[0-9]+'
 jobs:
   build-test:
     runs-on: ubuntu-latest
