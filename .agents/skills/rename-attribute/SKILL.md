@@ -20,19 +20,27 @@ migrate from the old attribute to the new attribute.
 
 ### Determine Attribute Schema
 
-Use "Determine Attribute Schema" section.
+Use the "Determine Attribute Schema" section.
 
 ### Create New Attribute
 
-Use "Create New Attribute" section.
+Use the "Create New Attribute" section.
 
 ### Modify New and Old Attribute Schemas
 
-Use "Modify New and Old Attribute Schemas" section.
+Use the "Modify New and Old Attribute Schemas" section.
 
 ### Modify CRUD Methods
 
-Use "Modify CRUD Methods" section.
+Use the "Modify CRUD Methods" section.
+
+### Create Plan Modifier
+
+Use the "Create Plan Modifier" section.
+
+### Write Tests
+
+Use the "Write Tests" section.
 
 ## Determine Attribute Schema
 
@@ -167,3 +175,76 @@ attribute and use the correct `Value` method.
 		attribute = data.OldAttribute.Value()
 	}
 ```
+
+## Create Plan Modifier
+
+Create a plan modifier that both the old and new attribute will use within their
+`PlanModifiers` field using `RequiresReplaceIf`. The plan modifier must use
+the correct types for `req` and `resp` depending on the type of the attribute
+that's being renamed. Use the `types` package so that you get access to `IsNull`
+and `IsUnknown`.
+
+Here's an example plan modifier for reference with `TYPE` meant to be replaced.
+
+```go
+func ModifyPlanExample(ctx context.Context, req TYPE, resp TYPE) {
+	// Check which attribute this modifier function is being called on to support
+	// logic for both the old and the new attribute.
+	switch attribute := req.Path.String(); attribute {
+	case "NewAttribute":
+		var deprecatedAttribute types.TYPE
+		diags := req.Config.GetAttribute(ctx, path.Root("deprecated_attribute"), &deprecatedAttribute)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// The deprecated attribute has a value. We do not need to replace the resource
+		// just because the new attribute doesn't have a value.
+		if !deprecatedAttribute.IsNull() && !deprecatedAttribute.IsUnknown() {
+			return
+		}
+	case "DeprecatedAttribute":
+		var newAttribute types.TYPE
+		diags := req.Config.GetAttribute(ctx, path.Root("new_attribute"), &newAttribute)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// The new attribute has a value. We do not need to replace the resource
+		// just because the deprecated attribute doesn't have a value.
+		if !newAttribute.IsNull() && !newAttribute.IsUnknown() {
+			return
+		}
+	default:
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			fmt.Sprintf("Invalid plan modifier for attribute %s", attribute),
+			"ModifyPlanExample can only be used for deprecated_attribute and new_attribute.",
+		)
+	}
+
+	// If we've reached this point, it's because the actual value of either the
+	// deprecated attribute or new attribute was modified, which must result in the
+	// resource being replaced.
+	resp.RequiresReplace = true
+}
+```
+
+## Write Tests
+
+Write tests that test the following functionality. Utilize Go sub-tests where
+appropriate.
+
+* The provider can be updated to the version containing the rename with no
+configuration change and result in a no-op plan.
+* The attribute can be renamed from the old to the new name and vice versa and
+result in a no-op plan.
+* Changing the value of the attribute with no rename results in a resource
+replacement plan.
+* Changing the value of the attribute and renaming it results in a resource
+replacement plan.
+* The resource can be imported with eith the old or new attribute.
+* At least one of the old or new attribute must be provided. If none are
+provided or both are provided then assert on the error message.
