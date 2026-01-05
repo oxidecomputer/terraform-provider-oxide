@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
@@ -84,6 +85,91 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 	})
 }
 
+type resourceDiskTypeConfig struct {
+	BlockName        string
+	DiskName         string
+	DiskType         string
+	SupportBlockName string
+}
+
+var resourceDiskTypeConfigTpl = `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.BlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 4096
+  disk_type   = "{{.DiskType}}"
+}
+`
+
+func TestAccCloudResourceDisk_diskType(t *testing.T) {
+	diskName := newResourceName()
+	blockName := newBlockName("disk")
+	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
+	supportBlockName := newBlockName("support")
+
+	configLocal, err := parsedAccConfig(
+		resourceDiskTypeConfig{
+			BlockName:        blockName,
+			DiskName:         diskName,
+			DiskType:         "local",
+			SupportBlockName: supportBlockName,
+		},
+		resourceDiskTypeConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configDistributed, err := parsedAccConfig(
+		resourceDiskTypeConfig{
+			BlockName:        blockName,
+			DiskName:         diskName,
+			DiskType:         "distributed",
+			SupportBlockName: supportBlockName,
+		},
+		resourceDiskTypeConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccDiskDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configLocal,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk_type", "local"),
+				),
+			},
+			{
+				Config: configDistributed,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk_type", "distributed"),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -92,6 +178,7 @@ func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "size", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/"+diskName),
 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
+		resource.TestCheckResourceAttr(resourceName, "disk_type", "distributed"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

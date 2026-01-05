@@ -57,6 +57,7 @@ resource "oxide_disk" "example2" {
 ### Optional
 
 - `block_size` (Number) Size of blocks in bytes.
+- `disk_type` (String) Type of disk. Must be one of "distributed" or "local". Defaults to "distributed".
 - `source_image_id` (String) Image ID of the disk source if applicable.
 - `source_snapshot_id` (String) Snapshot ID of the disk source if applicable.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
