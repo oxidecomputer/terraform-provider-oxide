@@ -65,8 +65,6 @@ Until all resources have been added you'll need to make sure your testing enviro
 - A project named "tf-acc-test".
 - At least one image.
 
-To run tests against an empty simulated omicron environment, first provision test-related resources with `./scripts/acc-test-setup.sh`.
-
 Tests that exercise the `oxide_silo` resource need a tls cert that's
 valid for the domain of the Oxide server used for acceptance tests. The
 tests will generate a self-signed cert, but need to know which DNS name
@@ -77,6 +75,18 @@ To override when testing against a different environment, set the
 `$OXIDE_SILO_DNS_NAME` environment variable to the relevant DNS name.
 
 Run `make testacc`.
+
+To run tests against an empty simulated omicron environment, first provision
+the Docker containers with `make testacc-sim` and run the test suite with `make
+testacc-local`.
+
+To run specific test cases, set the test name pattern as the variable
+`TEST_ACC_NAME` .
+
+```
+TEST_ACC_NAME=TestAccCloudDataSourceInstanceExternalIPs_full make testacc
+TEST_ACC_NAME=TestAccCloudDataSourceInstanceExternalIPs_full make testacc-local
+```
 
 ## Releasing a new version
 

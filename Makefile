@@ -3,15 +3,22 @@ SHELL := /usr/bin/env bash
 VERSION ?= $(shell cat $(CURDIR)/VERSION)
 BINARY ?= terraform-provider-oxide_$(VERSION)
 BINARY_LOCATION ?= bin/$(BINARY)
-OS_ARCH ?= $(shell go env GOOS)_$(shell go env GOARCH)
+OS ?= $(shell go env GOOS)
+ARCH ?= $(shell go env GOARCH)
+OS_ARCH ?= $(OS)_$(ARCH)
 RELEASE_VERSION ?= $(shell cat $(CURDIR)/VERSION | sed s/-dev//g)
 export GOBIN = $(shell pwd)/bin
 
 # Terraform currently does not have a binary for Illumos.
 # The one for Solaris works fine with Illumos, so we'll need
 # to make sure we install the plugin in the solaris directory.
-ifeq ($(shell go env GOOS), illumos)
-    OS_ARCH = solaris_$(shell go env GOARCH)
+ifeq ($(OS), illumos)
+    OS_ARCH = solaris_$(ARCH)
+endif
+
+DOCKER_COMPOSE_FLAGS = --project-directory ./acctest --file ./acctest/docker-compose.yaml
+ifneq ($(ARCH), amd64)
+	DOCKER_COMPOSE_FLAGS += --file ./acctest/docker-compose-amd64.yaml
 endif
 
 PROVIDER_PATH ?= registry.terraform.io/oxidecomputer/oxide/$(VERSION)/$(OS_ARCH)/
@@ -22,6 +29,7 @@ TEST_ACC_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/provider
 TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
+TEST_ACC_OMICRON_BRANCH ?= main
 
 # Unit test variables
 TEST_ARGS ?= -timeout 10m -race -cover
@@ -90,11 +98,45 @@ configfmt:
 	@ echo "-> Running terraform linters on .tf files"
 	@ terraform fmt -write=false -recursive -check
 
+.PHONY: testacc-sim
+## Starts a simulated omicron environment suitable to run the acceptance test suite.
+testacc-sim: testacc-sim-docker testacc-sim-setup
+
+.PHONY: testacc-sim-down
+## Stops the containers of the simulated acceptance test suite environment.
+testacc-sim-down:
+	@ docker compose $(DOCKER_COMPOSE_FLAGS) down
+
+.PHONY: testacc-sim-docker
+## Starts the containers for the simulated acceptance test suite environment.
+testacc-sim-docker: export TEST_ACC_DOCKER_TAG = $(shell echo '$(TEST_ACC_OMICRON_BRANCH)' | sed 's/[^[:alnum:]]/_/g')
+testacc-sim-docker:
+	@ docker compose $(DOCKER_COMPOSE_FLAGS) build \
+		--build-arg 'OMICRON_BRANCH=$(TEST_ACC_OMICRON_BRANCH)'
+	@ docker compose $(DOCKER_COMPOSE_FLAGS) up --wait --wait-timeout 1500
+
+.PHONY: testacc-sim-token
+## Generates an auth token for the simulated acceptance test suite environment.
+testacc-sim-token:
+	@ uv run ./acctest/auth.py > ./acctest/oxide-token
+
+.PHONY: testacc-sim-setup
+## Configures the simulated acceptance test suite environment.
+testacc-sim-setup: testacc-sim-token
+	@ OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
+
 .PHONY: testacc
 ## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
 testacc:
 	@ echo "-> Running terraform acceptance tests"
 	@ TF_ACC=1 go test $(TEST_ACC) -v -count $(TEST_ACC_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TEST_ACC_ARGS) -timeout 20m -run $(TEST_ACC_NAME)
+
+.PHONY: testacc-local
+## Runs the Terraform acceptance tests locally using the simulated acceptance test suite environment.
+## Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
+testacc-local: export OXIDE_HOST=http://localhost:12220
+testacc-local: export OXIDE_TOKEN=$(shell cat ./acctest/oxide-token)
+testacc-local: testacc
 
 .PHONY: local-api
 ## Use local API language client
@@ -184,7 +226,7 @@ $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT): | $(VERSION_DIR)
 # TODO: actually release a version of whatsit to use the tag flag
 $(GOBIN)/whatsit: $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT) | $(GOBIN)
 	@ echo "-> Installing whatsit..."
-	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git#$(VERSION_WHATSIT) --branch main --root ./ 
+	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git#$(VERSION_WHATSIT) --branch main --root ./
 
 $(GOBIN)/tfplugindocs:
 	@ echo "-> Installing tfplugindocs..."

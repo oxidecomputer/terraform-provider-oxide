@@ -1,0 +1,8 @@
+services:
+  omicron-dev:
+    platform: "linux/amd64"
+    build:
+      x-bake:
+        platforms:
+          - "linux/amd64"
+        output: "type=docker"
