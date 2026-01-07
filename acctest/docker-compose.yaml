@@ -2,6 +2,7 @@ services:
   omicron-dev:
     build: "."
     image: "acctest-omicron-dev:${TEST_ACC_DOCKER_TAG:-latest}"
+    platform: "linux/amd64"
     command: "/bin/bash -c 'source env.sh && cargo xtask omicron-dev run-all'"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:12220"]

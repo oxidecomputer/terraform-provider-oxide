@@ -16,11 +16,6 @@ ifeq ($(OS), illumos)
     OS_ARCH = solaris_$(ARCH)
 endif
 
-DOCKER_COMPOSE_FLAGS = --project-directory ./acctest --file ./acctest/docker-compose.yaml
-ifneq ($(ARCH), amd64)
-	DOCKER_COMPOSE_FLAGS += --file ./acctest/docker-compose-amd64.yaml
-endif
-
 PROVIDER_PATH ?= registry.terraform.io/oxidecomputer/oxide/$(VERSION)/$(OS_ARCH)/
 PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
 
@@ -30,6 +25,7 @@ TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/provider
 TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
 TEST_ACC_OMICRON_BRANCH ?= main
+TEST_ACC_DOCKER_COMPOSE_FLAGS = --project-directory ./acctest --file ./acctest/docker-compose.yaml
 
 # Unit test variables
 TEST_ARGS ?= -timeout 10m -race -cover
@@ -105,15 +101,15 @@ testacc-sim: testacc-sim-docker testacc-sim-setup
 .PHONY: testacc-sim-down
 ## Stops the containers of the simulated acceptance test suite environment.
 testacc-sim-down:
-	@ docker compose $(DOCKER_COMPOSE_FLAGS) down
+	@ docker compose $(TEST_ACC_DOCKER_COMPOSE_FLAGS) down
 
 .PHONY: testacc-sim-docker
 ## Starts the containers for the simulated acceptance test suite environment.
 testacc-sim-docker: export TEST_ACC_DOCKER_TAG = $(shell echo '$(TEST_ACC_OMICRON_BRANCH)' | sed 's/[^[:alnum:]]/_/g')
 testacc-sim-docker:
-	@ docker compose $(DOCKER_COMPOSE_FLAGS) build \
+	@ docker compose $(TEST_ACC_DOCKER_COMPOSE_FLAGS) build \
 		--build-arg 'OMICRON_BRANCH=$(TEST_ACC_OMICRON_BRANCH)'
-	@ docker compose $(DOCKER_COMPOSE_FLAGS) up --wait --wait-timeout 1500
+	@ docker compose $(TEST_ACC_DOCKER_COMPOSE_FLAGS) up --wait --wait-timeout 1500
 
 .PHONY: testacc-sim-token
 ## Generates an auth token for the simulated acceptance test suite environment.
