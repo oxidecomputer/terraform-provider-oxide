@@ -30,8 +30,9 @@ resource "oxide_instance" "example" {
 
 ### Environment Variables
 
-Export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables. This is the
-recommended authentication method.
+Export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables, or the
+`OXIDE_PROFILE` environment variable. This is the recommended authentication
+method.
 
 ```terraform
 provider "oxide" {}
@@ -39,7 +40,9 @@ provider "oxide" {}
 
 ### Profile
 
-Use a profile from the credentials file created via `oxide auth login`.
+Use a profile from the credentials file created via `oxide auth login`. This
+can be set using the `OXIDE_PROFILE` environment variable or the `profile`
+argument in the provider configuration.
 
 ```terraform
 provider "oxide" {

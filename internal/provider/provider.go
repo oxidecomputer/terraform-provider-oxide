@@ -7,7 +7,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -97,61 +96,26 @@ to create, read, update, and delete Oxide resources.
 func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	tflog.Info(ctx, "Configuring Oxide client")
 
-	host := os.Getenv("OXIDE_HOST")
-	token := os.Getenv("OXIDE_TOKEN")
-	profile := ""
-
 	var data oxideProviderModel
 
-	// Read configuration data into model
+	// Read configuration data into model.
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
-	// Check configuration data, which should take precedence over
-	// environment variable data, if found.
+	config := oxide.Config{
+		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
+	}
+
+	// Layer in the configuration values.
 	if data.Token.ValueString() != "" {
-		token = data.Token.ValueString()
+		config.Token = data.Token.ValueString()
 	}
 	if data.Host.ValueString() != "" {
-		host = data.Host.ValueString()
+		config.Host = data.Host.ValueString()
 	}
 	if data.Profile.ValueString() != "" {
-		profile = data.Profile.ValueString()
+		config.Profile = data.Profile.ValueString()
 	}
 
-	if token == "" && profile == "" {
-		resp.Diagnostics.AddError(
-			"Missing API Token Configuration",
-			"While configuring the provider, the API token was not found in "+
-				"the OXIDE_TOKEN environment variable or "+
-				"configuration block token attribute, or profile.",
-		)
-	}
-
-	if host == "" && profile == "" {
-		resp.Diagnostics.AddError(
-			"Missing Host Configuration",
-			"While configuring the provider, the host was not found in "+
-				"the OXIDE_HOST environment variable or "+
-				"configuration block host attribute, or profile.",
-		)
-	}
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ctx = tflog.SetField(ctx, "host", host)
-	ctx = tflog.SetField(ctx, "token", token)
-	ctx = tflog.SetField(ctx, "profile", profile)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "token")
-	tflog.Debug(ctx, "Creating Oxide client")
-
-	config := oxide.Config{
-		Token:     token,
-		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
-		Host:      host,
-		Profile:   profile,
-	}
 	client, err := oxide.NewClient(&config)
 	if err != nil {
 		resp.Diagnostics.AddError(
