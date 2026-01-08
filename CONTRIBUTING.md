@@ -58,7 +58,9 @@ There is a make target to run the linters. All that's needed is `make lint`.
 
 ## Running acceptance tests
 
-To run the acceptance testing suite, you need to make sure to have either the `$OXIDE_HOST` and `$OXIDE_TOKEN` environment variables, or `$OXIDE_TEST_HOST` and `$OXIDE_TEST_TOKEN`. If you wish to use the later for a testing environment, make sure you have unset the previous first.
+To run the acceptance testing suite, you need to make sure to have either the
+`OXIDE_HOST` and `OXIDE_TOKEN`, or the `OXIDE_PROFILE` environment variables
+exported.
 
 Until all resources have been added you'll need to make sure your testing environment has the following:
 

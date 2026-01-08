@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -24,20 +23,14 @@ func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServ
 }
 
 func testAccPreCheck(t *testing.T) {
-	host, token := setAccFromEnvVar()
-
-	if host == "" || token == "" {
-		t.Fatal("Both host and token need to be set to execute acceptance tests")
+	if _, err := newTestClient(); err != nil {
+		t.Fatalf("failed to create oxide client for acceptance tests: %v", err)
 	}
 }
 
 func newTestClient() (*oxide.Client, error) {
-	host, token := setAccFromEnvVar()
-
 	config := oxide.Config{
-		Token:     token,
-		UserAgent: "terraform-provider-oxide-test",
-		Host:      host,
+		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
 	}
 	client, err := oxide.NewClient(&config)
 	if err != nil {
@@ -57,28 +50,6 @@ func parsedAccConfig(config any, tpl string) (string, error) {
 	}
 
 	return buf.String(), nil
-}
-
-func setAccFromEnvVar() (string, string) {
-	// TODO: Unsure if I should only keep the tests tokens,
-	// but will leave like this for now
-	var host, token string
-
-	if k := os.Getenv("OXIDE_HOST"); k != "" {
-		host = k
-	}
-	if k := os.Getenv("OXIDE_TEST_HOST"); k != "" {
-		host = k
-	}
-
-	if k := os.Getenv("OXIDE_TOKEN"); k != "" {
-		token = k
-	}
-	if k := os.Getenv("OXIDE_TEST_TOKEN"); k != "" {
-		token = k
-	}
-
-	return host, token
 }
 
 func newResourceName() string {

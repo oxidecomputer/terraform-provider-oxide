@@ -13,9 +13,9 @@
 
 ## Using the provider
 
-As a preferred method of authentication, export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables with their corresponding values.
+As a preferred method of authentication, export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables, or the `OXIDE_PROFILE` environment variable, with their corresponding values.
 
-Alternatively, it is possible to authenticate via the optional `host` and `token` arguments. In most cases this method of authentication is not recommended. It is generally preferable to keep credential information out of the configuration.
+Alternatively, it is possible to authenticate via the optional `host` and `token` or `profile` arguments. In most cases this method of authentication is not recommended. It is generally preferable to keep credential information out of the configuration.
 
 To generate a token, follow these steps:
 
@@ -39,10 +39,12 @@ terraform {
 }
 
 provider "oxide" {
-  # The provider will default to use $OXIDE_HOST and $OXIDE_TOKEN.
+  # The provider will default to use $OXIDE_HOST and $OXIDE_TOKEN,
+  # or $OXIDE_PROFILE.
   # If necessary they can be set explicitly (not recommended).
   # host = "<host address>"
   # token = "<token value>"
+  # profile = "<profile name>"
 }
 
 # Create a blank disk
