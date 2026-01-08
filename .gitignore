@@ -6,3 +6,8 @@ bin/
 tf/
 .crates.toml
 .crates2.json
+
+# Artifacts created when running acceptance tests locally.
+acctest/oxide-token
+alpine.qcow2
+alpine.raw
