@@ -1405,6 +1405,15 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.ephemeral.#", "1"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.ephemeral.0.ip_pool_id"),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.snat.#", "1"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.snat.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.snat.0.ip_pool_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.snat.0.first_port"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.snat.0.last_port"),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.floating.#", "0"),
 		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
@@ -1436,6 +1445,9 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
 		resource.TestCheckResourceAttrSet(resourceName, "external_ips.0.id"),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.ephemeral.#", "1"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.ephemeral.0.ip_pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -1457,6 +1469,9 @@ func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.id", ""),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.ephemeral.#", "1"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ip_info.ephemeral.0.ip_pool_id"),
 	}...)
 }
 
@@ -1473,6 +1488,8 @@ func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckNoResourceAttr(resourceName, "external_ips"),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.ephemeral.#", "0"),
+		resource.TestCheckResourceAttr(resourceName, "external_ip_info.floating.#", "0"),
 	}...)
 }
 

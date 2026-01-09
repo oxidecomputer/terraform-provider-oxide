@@ -130,6 +130,7 @@ Maximum 32 KiB unencoded data.
 
 ### Read-Only
 
+- `external_ip_info` (Attributes) Information about the external IP addresses associated with this instance, grouped by kind. (see [below for nested schema](#nestedatt--external_ip_info))
 - `id` (String) Unique, immutable, system-controlled identifier of the instance.
 - `time_created` (String) Timestamp of when this instance was created.
 - `time_modified` (String) Timestamp of when this instance was last modified.
@@ -178,6 +179,51 @@ Optional:
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+
+<a id="nestedatt--external_ip_info"></a>
+### Nested Schema for `external_ip_info`
+
+Read-Only:
+
+- `ephemeral` (Attributes List) Ephemeral IP addresses associated with this instance. (see [below for nested schema](#nestedatt--external_ip_info--ephemeral))
+- `floating` (Attributes List) Floating IP addresses attached to this instance. (see [below for nested schema](#nestedatt--external_ip_info--floating))
+- `snat` (Attributes List) Source NAT IP addresses used for outbound connectivity. (see [below for nested schema](#nestedatt--external_ip_info--snat))
+
+<a id="nestedatt--external_ip_info--ephemeral"></a>
+### Nested Schema for `external_ip_info.ephemeral`
+
+Read-Only:
+
+- `ip` (String) The IP address.
+- `ip_pool_id` (String) ID of the IP Pool from which the address is taken.
+
+
+<a id="nestedatt--external_ip_info--floating"></a>
+### Nested Schema for `external_ip_info.floating`
+
+Read-Only:
+
+- `description` (String) Human-readable free-form text about the floating IP.
+- `id` (String) Unique, immutable, system-controlled identifier for the floating IP.
+- `instance_id` (String) The ID of the instance this floating IP is attached to.
+- `ip` (String) The IP address.
+- `ip_pool_id` (String) ID of the IP Pool this floating IP belongs to.
+- `name` (String) Unique, mutable, user-controlled identifier for the floating IP.
+- `project_id` (String) The project this floating IP exists within.
+- `time_created` (String) Timestamp when this floating IP was created.
+- `time_modified` (String) Timestamp when this floating IP was last modified.
+
+
+<a id="nestedatt--external_ip_info--snat"></a>
+### Nested Schema for `external_ip_info.snat`
+
+Read-Only:
+
+- `first_port` (Number) The first usable port within the IP address.
+- `ip` (String) The IP address.
+- `ip_pool_id` (String) ID of the IP Pool from which the address is taken.
+- `last_port` (Number) The last usable port within the IP address.
 
 ## Import
 
