@@ -113,6 +113,12 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
+
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
     }
   ]
   timeouts = {
@@ -197,7 +203,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips", "network_interfaces.0.ip_stack.v4.ip_assignment"},
 			},
 		},
 	})
@@ -215,6 +221,7 @@ func TestAccCloudResourceInstance_extIPs(t *testing.T) {
 	type resourceInstanceConfig struct {
 		BlockName        string
 		InstanceName     string
+		SubnetBlockName  string
 		SupportBlockName string
 		IPPoolBlockName  string
 		IPPoolName       string
@@ -229,6 +236,12 @@ data "oxide_ip_pool" "{{.IPPoolBlockName}}" {
 	name = "{{.IPPoolName}}"
 }
 
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
@@ -237,11 +250,26 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
+
   external_ips = [
 	{
 	  type = "ephemeral"
 	  id   = data.oxide_ip_pool.{{.IPPoolBlockName}}.id
 	}
+  ]
+
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
+    },
   ]
 }
 `
@@ -251,6 +279,12 @@ data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
 
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
@@ -259,10 +293,25 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
+
   external_ips = [
 	{
 	  type = "ephemeral"
 	}
+  ]
+
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
+    },
   ]
 }
 `
@@ -293,12 +342,14 @@ resource "oxide_instance" "{{.BlockName}}" {
 	instanceName := newResourceName()
 	blockName := newBlockName("instance")
 	supportBlockName := newBlockName("support")
+	blockNameSubnet := newBlockName("instance-nic-subnet")
 	ipPoolBlockName := newBlockName("ip-pool")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
 	initialConfig, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
+			SubnetBlockName:  blockNameSubnet,
 			SupportBlockName: supportBlockName,
 			IPPoolBlockName:  ipPoolBlockName,
 			IPPoolName:       ipPoolName,
@@ -312,6 +363,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	updateConfig1, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
+			SubnetBlockName:  blockNameSubnet,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
 		},
@@ -324,6 +376,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	updateConfig2, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
+			SubnetBlockName:  blockNameSubnet,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
 		},
@@ -475,6 +528,11 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
     },
   ]
 }
@@ -555,7 +613,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportStateVerify: true,
 				// This option is only relevant for create, this means that it will
 				// never be imported
-				ImportStateVerifyIgnore: []string{"start_on_create"},
+				ImportStateVerifyIgnore: []string{"start_on_create", "network_interfaces.0.ip_stack.v4.ip_assignment"},
 			},
 		},
 	})

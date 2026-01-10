@@ -16,4 +16,17 @@ resource "oxide_instance" "example" {
       type = "floating"
     }
   ]
+  network_interfaces = [
+    {
+      subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
+      vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
+      description = "Example network interface."
+      name        = "mynic"
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
+    },
+  ]
 }

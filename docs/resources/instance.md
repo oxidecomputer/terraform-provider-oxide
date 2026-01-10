@@ -66,6 +66,15 @@ resource "oxide_instance" "example" {
       vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
       description = "Example network interface."
       name        = "mynic"
+      ip_stack = {
+        v4 = {
+          ip_assignment = "172.21.253.16"
+          transit_ips   = ["10.1.20.31"]
+        }
+        v6 = {
+          ip_assignment = "auto"
+        }
+      }
     },
   ]
   timeouts = {
@@ -97,6 +106,19 @@ resource "oxide_instance" "example" {
       type = "floating"
     }
   ]
+  network_interfaces = [
+    {
+      subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
+      vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
+      description = "Example network interface."
+      name        = "mynic"
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
+    },
+  ]
 }
 ```
 
@@ -118,7 +140,7 @@ resource "oxide_instance" "example" {
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
 - `external_ips` (Attributes Set) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
-- `host_name` (String, Deprecated) Host name of the instance.
+- `host_name` (String, Deprecated) Hostname of the instance.
 - `hostname` (String) Hostname of the instance.
 - `network_interfaces` (Attributes Set) Network interface devices attached to the instance. (see [below for nested schema](#nestedatt--network_interfaces))
 - `ssh_public_keys` (Set of String) An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.
@@ -158,7 +180,8 @@ Required:
 
 Optional:
 
-- `ip_address` (String) IP address for the instance network interface. One will be auto-assigned if not provided.
+- `ip_address` (String, Deprecated) IP address for the instance network interface. One will be auto-assigned if not provided.
+- `ip_stack` (Attributes) IP stack for the instance network interface. Defaults to dual stack with auto-assigned addresses if not provided. (see [below for nested schema](#nestedatt--network_interfaces--ip_stack))
 
 Read-Only:
 
@@ -167,6 +190,51 @@ Read-Only:
 - `primary` (Boolean) True if this is the primary network interface for the instance to which it's attached to.
 - `time_created` (String) Timestamp of when this instance network interface was created.
 - `time_modified` (String) Timestamp of when this instance network interface was last modified.
+
+<a id="nestedatt--network_interfaces--ip_stack"></a>
+### Nested Schema for `network_interfaces.ip_stack`
+
+Optional:
+
+- `v4` (Attributes) Creates an IPv4 stack for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_stack--v4))
+- `v6` (Attributes) (see [below for nested schema](#nestedatt--network_interfaces--ip_stack--v6))
+
+Read-Only:
+
+- `type` (String) The IP stack type.
+
+<a id="nestedatt--network_interfaces--ip_stack--v4"></a>
+### Nested Schema for `network_interfaces.ip_stack.v4`
+
+Required:
+
+- `ip_assignment` (String) IPv4 address for the instance network interface or "auto" to auto-assigned one.
+
+Optional:
+
+- `transit_ips` (List of String) Additional networks on which the interface can send / receive traffic.
+
+Read-Only:
+
+- `ip` (String) IPv4 address of the instance.
+
+
+<a id="nestedatt--network_interfaces--ip_stack--v6"></a>
+### Nested Schema for `network_interfaces.ip_stack.v6`
+
+Required:
+
+- `ip_assignment` (String) IPv6 address for the instance network interface or "auto" to auto-assigned one.
+
+Optional:
+
+- `transit_ips` (List of String) Additional networks on which the interface can send / receive traffic.
+
+Read-Only:
+
+- `ip` (String) IPv6 address of the instance.
+
+
 
 
 <a id="nestedatt--timeouts"></a>

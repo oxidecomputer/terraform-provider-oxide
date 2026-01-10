@@ -226,3 +226,18 @@ func Test_newNameOrIdList(t *testing.T) {
 		})
 	}
 }
+
+func Test_sliceDiffByID(t *testing.T) {
+	type DiffIDTest struct {
+		ID string
+	}
+
+	a := []DiffIDTest{
+		{ID: "a"},
+	}
+	b := []DiffIDTest{
+		{ID: "b"},
+	}
+
+	_ = sliceDiffByID(a, b, func(e DiffIDTest) any { return e.ID })
+}
