@@ -30,10 +30,12 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - name: install oxide cli
         run: |
-          mkdir -p bin
-          wget https://github.com/oxidecomputer/oxide.rs/releases/download/v0.13.0+20250730.0.0/oxide-cli-x86_64-unknown-linux-gnu.tar.xz
-          tar xvf oxide-cli-x86_64-unknown-linux-gnu.tar.xz
-          mv oxide-cli-x86_64-unknown-linux-gnu/oxide bin
+          cargo install \
+            --git https://github.com/oxidecomputer/oxide.rs \
+            --branch '${{ inputs.omicron-branch }}' \
+            --root . \
+            oxide-cli
+          ./bin/oxide version
           echo "$(pwd)/bin" >> $GITHUB_PATH
       # Run simulated omicron in the background with docker compose.
       # TODO(jmcarp): publish this image for faster builds.

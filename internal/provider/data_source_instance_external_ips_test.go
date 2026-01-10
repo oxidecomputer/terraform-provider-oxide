@@ -15,12 +15,19 @@ type dataSourceInstanceExternalIPConfig struct {
 	BlockName         string
 	InstanceName      string
 	InstanceBlockName string
+	SubnetBlockName   string
 	SupportBlockName  string
 }
 
 var datasourceInstanceExternalIPsConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
 }
 
 resource "oxide_instance" "{{.InstanceBlockName}}" {
@@ -36,6 +43,20 @@ resource "oxide_instance" "{{.InstanceBlockName}}" {
 	  type = "ephemeral"
 	}
   ]
+
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      ip_stack = {
+        v4 = {
+          ip_assignment = "auto"
+        }
+      }
+    },
+  ]
 }
 
 data "oxide_instance_external_ips" "{{.BlockName}}" {
@@ -48,12 +69,14 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
 
 func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	blockName := newBlockName("datasource-instance-external-ips")
+	blockNameSubnet := newBlockName("instance-nic-subnet")
 	config, err := parsedAccConfig(
 		dataSourceInstanceExternalIPConfig{
 			BlockName:         blockName,
 			SupportBlockName:  newBlockName("support"),
 			InstanceName:      newResourceName(),
 			InstanceBlockName: newBlockName("instance"),
+			SubnetBlockName:   blockNameSubnet,
 		},
 		datasourceInstanceExternalIPsConfigTpl,
 	)

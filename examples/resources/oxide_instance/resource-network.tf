@@ -12,6 +12,15 @@ resource "oxide_instance" "example" {
       vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
       description = "Example network interface."
       name        = "mynic"
+      ip_stack = {
+        v4 = {
+          ip_assignment = "172.21.253.16"
+          transit_ips   = ["10.1.20.31"]
+        }
+        v6 = {
+          ip_assignment = "auto"
+        }
+      }
     },
   ]
   timeouts = {
