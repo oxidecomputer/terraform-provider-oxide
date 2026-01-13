@@ -161,11 +161,40 @@ func (f *floatingIPResource) Create(ctx context.Context, req resource.CreateRequ
 	params := oxide.FloatingIpCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.FloatingIpCreate{
-			Description: plan.Description.ValueString(),
-			Ip:          plan.IP.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Pool:        oxide.NameOrId(plan.IPPoolID.ValueString()),
+			Description: plan.Description.ValueString(),
 		},
+	}
+
+	ip := plan.IP.ValueString()
+	pool := plan.IPPoolID.ValueString()
+
+	if ip != "" {
+		// Explicit IP, and explicit pool if set, otherwise uses silo's default
+		// pool for the IP version being used.
+		params.Body.AddressSelector = oxide.AddressSelector{
+			Type: oxide.AddressSelectorTypeExplicit,
+			Ip:   ip,
+			Pool: oxide.NameOrId(pool),
+		}
+	} else if pool != "" {
+		// Auto IP with explicit pool.
+		params.Body.AddressSelector = oxide.AddressSelector{
+			Type: oxide.AddressSelectorTypeAuto,
+			PoolSelector: oxide.PoolSelector{
+				Type: oxide.PoolSelectorTypeExplicit,
+				Pool: oxide.NameOrId(pool),
+			},
+		}
+	} else {
+		// Auto IP with auto IPv4 pool.
+		params.Body.AddressSelector = oxide.AddressSelector{
+			Type: oxide.AddressSelectorTypeAuto,
+			PoolSelector: oxide.PoolSelector{
+				Type:      oxide.PoolSelectorTypeAuto,
+				IpVersion: oxide.IpVersionV4,
+			},
+		}
 	}
 
 	floatingIP, err := f.client.FloatingIpCreate(ctx, params)
