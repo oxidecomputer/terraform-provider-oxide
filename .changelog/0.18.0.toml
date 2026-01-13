@@ -14,6 +14,10 @@ description = "`oxide_address_lot` [#489](https://github.com/oxidecomputer/terra
 title = "Support `OXIDE_PROFILE`"
 description = "Added support for the `OXIDE_PROFILE` environment variable within the provider configuration. [#589](https://github.com/oxidecomputer/terraform-provider-oxide/pull/589)."
 
+[[features]]
+type = "Support `config_dir` and `insecure_skip_verify`"
+description = "Added support for the `config_dir` and `insecure_skip_verify` provider configuration. [#595](https://github.com/oxidecomputer/terraform-provider-oxide/pull/595)."
+
 [[enhancements]]
 title = "`oxide_instance` attribute deprecation"
 description = "The `host_name` attribute on the `oxide_instance` resource has been deprecated in favor of `hostname`. The `host_name` attribute will be removed in the next minor version of the provider. [#577](https://github.com/oxidecomputer/terraform-provider-oxide/pulls/577)."
