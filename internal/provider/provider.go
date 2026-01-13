@@ -31,9 +31,11 @@ type oxideProvider struct {
 }
 
 type oxideProviderModel struct {
-	Host    types.String `tfsdk:"host"`
-	Token   types.String `tfsdk:"token"`
-	Profile types.String `tfsdk:"profile"`
+	Host               types.String `tfsdk:"host"`
+	Token              types.String `tfsdk:"token"`
+	Profile            types.String `tfsdk:"profile"`
+	ConfigDir          types.String `tfsdk:"config_dir"`
+	InsecureSkipVerify types.Bool   `tfsdk:"insecure_skip_verify"`
 }
 
 // New initialises a new provider
@@ -88,6 +90,14 @@ to create, read, update, and delete Oxide resources.
 					}...),
 				},
 			},
+			"config_dir": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The directory to search for Oxide credentials file.",
+			},
+			"insecure_skip_verify": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Disables TLS certificate if `true`. This is insecure and should only be used for testing or in controlled environments.",
+			},
 		},
 	}
 }
@@ -101,22 +111,27 @@ func (p *oxideProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	// Read configuration data into model.
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
-	config := oxide.Config{
-		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
+	clientOpts := []oxide.ClientOption{
+		oxide.WithUserAgent(fmt.Sprintf("terraform-provider-oxide/%s", Version)),
 	}
 
-	// Layer in the configuration values.
-	if data.Token.ValueString() != "" {
-		config.Token = data.Token.ValueString()
+	if host := data.Host.ValueString(); host != "" {
+		clientOpts = append(clientOpts, oxide.WithHost(host))
 	}
-	if data.Host.ValueString() != "" {
-		config.Host = data.Host.ValueString()
+	if token := data.Token.ValueString(); token != "" {
+		clientOpts = append(clientOpts, oxide.WithToken(token))
 	}
-	if data.Profile.ValueString() != "" {
-		config.Profile = data.Profile.ValueString()
+	if profile := data.Profile.ValueString(); profile != "" {
+		clientOpts = append(clientOpts, oxide.WithProfile(profile))
+	}
+	if dir := data.ConfigDir.ValueString(); dir != "" {
+		clientOpts = append(clientOpts, oxide.WithConfigDir(dir))
+	}
+	if data.InsecureSkipVerify.ValueBool() {
+		clientOpts = append(clientOpts, oxide.WithInsecureSkipVerify())
 	}
 
-	client, err := oxide.NewClient(&config)
+	client, err := oxide.NewClient(clientOpts...)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"An error occurred while initializing the client for the Oxide API",
