@@ -23,6 +23,12 @@ data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
 
+data "oxide_vpc_subnet" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
 resource "oxide_instance" "{{.InstanceBlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
@@ -35,6 +41,14 @@ resource "oxide_instance" "{{.InstanceBlockName}}" {
 	{
 	  type = "ephemeral"
 	}
+  ]
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+    }
   ]
 }
 

@@ -6,6 +6,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -305,6 +306,7 @@ This resource manages instances.
 				Description: "External IP addresses provided to this instance.",
 				Validators: []validator.Set{
 					instanceExternalIPValidator{},
+					setvalidator.AlsoRequires(path.MatchRoot("network_interfaces")),
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -525,8 +527,22 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		plan.NetworkInterfaces[i].TimeModified = types.StringValue(nic.TimeModified.String())
 		plan.NetworkInterfaces[i].MAC = types.StringValue(string(nic.Mac))
 		plan.NetworkInterfaces[i].Primary = types.BoolPointerValue(nic.Primary)
+
 		// Setting IPAddress as it is both computed and optional
-		plan.NetworkInterfaces[i].IPAddr = types.StringValue(nic.Ip)
+		ip := ""
+		if nic.IpStack.Type == oxide.PrivateIpStackTypeV4 {
+			stack, err := ipStackAsIPv4Stack(nic.IpStack)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Unable to read instance network interface:",
+					"Error: "+err.Error(),
+				)
+				continue
+			}
+			ip = stack.Ip
+		}
+		plan.NetworkInterfaces[i].IPAddr = types.StringValue(ip)
+
 	}
 
 	// Save plan into Terraform state
@@ -1100,10 +1116,10 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, mo
 
 		nic := oxide.InstanceNetworkInterfaceCreate{
 			Description: planNIC.Description.ValueString(),
-			Ip:          planNIC.IPAddr.ValueString(),
 			Name:        oxide.Name(planNIC.Name.ValueString()),
 			SubnetName:  oxide.Name(names.subnet),
 			VpcName:     oxide.Name(names.vpc),
+			IpConfig:    newIPStackCreate(planNIC),
 		}
 		nicParams = append(nicParams, nic)
 	}
@@ -1134,10 +1150,13 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 
 	nicSet := []instanceResourceNICModel{}
 	for _, nic := range nics.Items {
+		if nic.IpStack.Type != oxide.PrivateIpStackTypeV4 {
+			continue
+		}
+
 		n := instanceResourceNICModel{
 			Description:  types.StringValue(nic.Description),
 			ID:           types.StringValue(nic.Id),
-			IPAddr:       types.StringValue(nic.Ip),
 			MAC:          types.StringValue(string(nic.Mac)),
 			Name:         types.StringValue(string(nic.Name)),
 			Primary:      types.BoolPointerValue(nic.Primary),
@@ -1146,7 +1165,21 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 			TimeModified: types.StringValue(nic.TimeModified.String()),
 			VPCID:        types.StringValue(nic.VpcId),
 		}
+
+		stack, err := ipStackAsIPv4Stack(nic.IpStack)
+		if err != nil {
+			diags.AddError(
+				"Unable to read instance network interface:",
+				"Error: "+err.Error(),
+			)
+			continue
+		}
+		n.IPAddr = types.StringValue(stack.Ip)
+
 		nicSet = append(nicSet, n)
+	}
+	if diags.HasError() {
+		return []instanceResourceNICModel{}, diags
 	}
 
 	return nicSet, nil
@@ -1316,7 +1349,15 @@ func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxi
 
 		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
 			if ip.ID.ValueString() != "" {
-				eIP.Pool = oxide.NameOrId(ip.ID.ValueString())
+				eIP.PoolSelector = oxide.PoolSelector{
+					Type: oxide.PoolSelectorTypeExplicit,
+					Pool: oxide.NameOrId(ip.ID.ValueString()),
+				}
+			} else {
+				eIP.PoolSelector = oxide.PoolSelector{
+					Type:      oxide.PoolSelectorTypeAuto,
+					IpVersion: oxide.IpVersionV4,
+				}
 			}
 			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
 		}
@@ -1332,6 +1373,43 @@ func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxi
 	return ips
 }
 
+func ipStackAsIPv4Stack(ipStack oxide.PrivateIpStack) (oxide.PrivateIpv4Stack, error) {
+	marshalled, err := json.Marshal(ipStack.Value)
+	if err != nil {
+		return oxide.PrivateIpv4Stack{}, fmt.Errorf("failed to unmarshal IP stack value: %w", err)
+	}
+
+	var parsedStack oxide.PrivateIpv4Stack
+	if err := json.Unmarshal(marshalled, &parsedStack); err != nil {
+		return oxide.PrivateIpv4Stack{}, fmt.Errorf("failed to marshal IP stack value: %w", err)
+	}
+
+	return parsedStack, nil
+}
+
+func newIPStackCreate(model instanceResourceNICModel) oxide.PrivateIpStackCreate {
+	if ip := model.IPAddr.ValueString(); ip != "" {
+		return oxide.PrivateIpStackCreate{
+			Type: oxide.PrivateIpStackCreateTypeV4,
+			Value: oxide.PrivateIpv4StackCreate{
+				Ip: oxide.Ipv4Assignment{
+					Type:  oxide.Ipv4AssignmentTypeExplicit,
+					Value: ip,
+				},
+			},
+		}
+	}
+
+	return oxide.PrivateIpStackCreate{
+		Type: oxide.PrivateIpStackCreateTypeV4,
+		Value: oxide.PrivateIpv4StackCreate{
+			Ip: oxide.Ipv4Assignment{
+				Type: oxide.Ipv4AssignmentTypeAuto,
+			},
+		},
+	}
+}
+
 func createNICs(ctx context.Context, client *oxide.Client, models []instanceResourceNICModel, instanceID string) diag.Diagnostics {
 	for _, model := range models {
 		names, diags := retrieveVPCandSubnetNames(ctx, client, model.VPCID.ValueString(),
@@ -1345,10 +1423,10 @@ func createNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 			Instance: oxide.NameOrId(instanceID),
 			Body: &oxide.InstanceNetworkInterfaceCreate{
 				Description: model.Description.ValueString(),
-				Ip:          model.IPAddr.ValueString(),
 				Name:        oxide.Name(model.Name.ValueString()),
 				SubnetName:  oxide.Name(names.subnet),
 				VpcName:     oxide.Name(names.vpc),
+				IpConfig:    newIPStackCreate(model),
 			},
 		}
 
@@ -1402,11 +1480,28 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 		switch oxide.ExternalIpKind(externalIPType.ValueString()) {
 		case oxide.ExternalIpKindEphemeral:
-			params := oxide.InstanceEphemeralIpAttachParams{
-				Instance: oxide.NameOrId(instanceID),
-				Body: &oxide.EphemeralIpCreate{
-					Pool: oxide.NameOrId(externalIPID.ValueString()),
-				},
+			var params oxide.InstanceEphemeralIpAttachParams
+
+			if pool := externalIPID.ValueString(); pool != "" {
+				params = oxide.InstanceEphemeralIpAttachParams{
+					Instance: oxide.NameOrId(instanceID),
+					Body: &oxide.EphemeralIpCreate{
+						PoolSelector: oxide.PoolSelector{
+							Type: oxide.PoolSelectorTypeExplicit,
+							Pool: oxide.NameOrId(externalIPID.ValueString()),
+						},
+					},
+				}
+			} else {
+				params = oxide.InstanceEphemeralIpAttachParams{
+					Instance: oxide.NameOrId(instanceID),
+					Body: &oxide.EphemeralIpCreate{
+						PoolSelector: oxide.PoolSelector{
+							Type:      oxide.PoolSelectorTypeAuto,
+							IpVersion: oxide.IpVersionV4,
+						},
+					},
+				}
 			}
 
 			if _, err := client.InstanceEphemeralIpAttach(ctx, params); err != nil {
