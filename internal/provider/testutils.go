@@ -29,10 +29,9 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func newTestClient() (*oxide.Client, error) {
-	config := oxide.Config{
-		UserAgent: fmt.Sprintf("terraform-provider-oxide/%s", Version),
-	}
-	client, err := oxide.NewClient(&config)
+	client, err := oxide.NewClient(
+		oxide.WithUserAgent(fmt.Sprintf("terraform-provider-oxide/%s", Version)),
+	)
 	if err != nil {
 		return nil, err
 	}

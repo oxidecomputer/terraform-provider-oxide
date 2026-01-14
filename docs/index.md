@@ -73,6 +73,8 @@ provider "oxide" {
 
 ### Optional
 
+- `config_dir` (String) The directory to search for Oxide credentials file.
 - `host` (String) Oxide API host (e.g., https://oxide.sys.example.com). Conflicts with `profile`.
+- `insecure_skip_verify` (Boolean) Disables TLS certificate if `true`. This is insecure and should only be used for testing or in controlled environments.
 - `profile` (String) Profile to load from the Oxide credentials file. Conflicts with `host` and `token`.
 - `token` (String, Sensitive) Oxide API token. Conflicts with `profile`.
