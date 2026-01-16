@@ -433,9 +433,18 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	body, err := newVPCFirewallRulesUpdateBody(plan.Rules)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating firewall rules",
+			"Could not build request body: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcFirewallRulesUpdateParams{
 		Vpc:  oxide.NameOrId(plan.VPCID.ValueString()),
-		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
+		Body: body,
 	}
 
 	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
@@ -573,9 +582,18 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	body, err := newVPCFirewallRulesUpdateBody(plan.Rules)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC firewall rules",
+			"Could not build request body: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcFirewallRulesUpdateParams{
 		Vpc:  oxide.NameOrId(plan.VPCID.ValueString()),
-		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
+		Body: body,
 	}
 	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
 	if err != nil {
@@ -659,7 +677,7 @@ func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.Dele
 
 // newVPCFirewallRulesUpdateBody builds the parameters required by the Oxide
 // vpc_firewall_rules_update API using the specified rules.
-func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
+func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRuleModel) (*oxide.VpcFirewallRuleUpdateParams, error) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	//
@@ -670,6 +688,15 @@ func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRule
 	body := new(oxide.VpcFirewallRuleUpdateParams)
 
 	for ruleName, rule := range rules {
+		filters, err := newFilterTypeFromModel(rule.Filters)
+		if err != nil {
+			return nil, fmt.Errorf("creating filters for rule %q: %w", ruleName, err)
+		}
+		targets, err := newTargetTypeFromModel(rule.Targets)
+		if err != nil {
+			return nil, fmt.Errorf("creating targets for rule %q: %w", ruleName, err)
+		}
+
 		r := oxide.VpcFirewallRuleUpdate{
 			Action:      oxide.VpcFirewallRuleAction(rule.Action.ValueString()),
 			Description: rule.Description.ValueString(),
@@ -678,26 +705,37 @@ func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRule
 			// We can safely dereference rule.Priority as it's a required field
 			Priority: oxide.NewPointer(int(*rule.Priority.ValueInt64Pointer())),
 			Status:   oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
-			Filters:  newFilterTypeFromModel(rule.Filters),
-			Targets:  newTargetTypeFromModel(rule.Targets),
+			Filters:  filters,
+			Targets:  targets,
 		}
 
 		updateRules = append(updateRules, r)
 	}
 
 	body.Rules = updateRules
-	return body
+	return body, nil
 }
 
 // newVPCFirewallRulesModel translates a slice of [oxide.VpcFirewallRule] into a
 // slice of [vpcFirewallRulesResourceRuleModel].
 func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	// See the comment within [newVPCFirewallRulesUpdateBody] for more information.
 	model := make(map[string]vpcFirewallRulesResourceRuleModel)
 
 	for _, rule := range rules {
+		targets, err := newTargetsModelFromResponse(rule.Targets)
+		if err != nil {
+			diags.AddError(
+				"Error reading VPC firewall rule",
+				"Could not parse targets: "+err.Error(),
+			)
+			return nil, diags
+		}
+
 		m := vpcFirewallRulesResourceRuleModel{
 			Action:      types.StringValue(string(rule.Action)),
 			Description: types.StringValue(rule.Description),
@@ -706,7 +744,7 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFire
 			// We can safely dereference rule.Priority as it's a required field
 			Priority:     types.Int64Value(int64(*rule.Priority)),
 			Status:       types.StringValue(string(rule.Status)),
-			Targets:      newTargetsModelFromResponse(rule.Targets),
+			Targets:      targets,
 			TimeCreated:  types.StringValue(rule.TimeCreated.String()),
 			TimeModified: types.StringValue(rule.TimeModified.String()),
 		}
@@ -729,9 +767,17 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 
 	var hostsModel = []vpcFirewallRuleHostFilterModel{}
 	for _, h := range filter.Hosts {
+		hostValue, err := vpcFirewallRuleHostFilterValue(h)
+		if err != nil {
+			diags.AddError(
+				"Error reading VPC firewall rule",
+				"Could not parse host filter: "+err.Error(),
+			)
+			return nil, diags
+		}
 		m := vpcFirewallRuleHostFilterModel{
-			Type:  types.StringValue(string(h.Type)),
-			Value: types.StringValue(h.Value.(string)),
+			Type:  types.StringValue(string(h.Type())),
+			Value: types.StringValue(hostValue),
 		}
 
 		hostsModel = append(hostsModel, m)
@@ -789,30 +835,35 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 	return &model, nil
 }
 
-func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFirewallRulesResourceRuleTargetModel {
+func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) ([]vpcFirewallRulesResourceRuleTargetModel, error) {
 	var model []vpcFirewallRulesResourceRuleTargetModel
 
 	for _, t := range target {
+		targetValue, err := vpcFirewallRuleTargetValue(t)
+		if err != nil {
+			return nil, err
+		}
 		m := vpcFirewallRulesResourceRuleTargetModel{
-			Type:  types.StringValue(string(t.Type)),
-			Value: types.StringValue(t.Value.(string)),
+			Type:  types.StringValue(string(t.Type())),
+			Value: types.StringValue(targetValue),
 		}
 
 		model = append(model, m)
 	}
 
-	return model
+	return model, nil
 }
 
-func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxide.VpcFirewallRuleFilter {
+func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) (oxide.VpcFirewallRuleFilter, error) {
 	var hosts []oxide.VpcFirewallRuleHostFilter
 	for _, host := range model.Hosts {
-		h := oxide.VpcFirewallRuleHostFilter{
-			Type: oxide.VpcFirewallRuleHostFilterType(host.Type.ValueString()),
-			// Note: This `Name` is a quirk from the SDK which should be fixed
-			Value: oxide.Name(host.Value.ValueString()),
+		h, err := newVpcFirewallRuleHostFilter(
+			host.Type.ValueString(),
+			host.Value.ValueString(),
+		)
+		if err != nil {
+			return oxide.VpcFirewallRuleFilter{}, err
 		}
-
 		hosts = append(hosts, h)
 	}
 
@@ -845,19 +896,120 @@ func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxi
 		Hosts:     hosts,
 		Ports:     ports,
 		Protocols: protocols,
-	}
+	}, nil
 }
 
-func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) []oxide.VpcFirewallRuleTarget {
+func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) ([]oxide.VpcFirewallRuleTarget, error) {
 	var target []oxide.VpcFirewallRuleTarget
 
 	for _, m := range model {
-		t := oxide.VpcFirewallRuleTarget{
-			Type:  oxide.VpcFirewallRuleTargetType(m.Type.ValueString()),
-			Value: oxide.Name(m.Value.ValueString()),
+		t, err := newVpcFirewallRuleTarget(
+			m.Type.ValueString(),
+			m.Value.ValueString(),
+		)
+		if err != nil {
+			return nil, err
 		}
 		target = append(target, t)
 	}
 
-	return target
+	return target, nil
+}
+
+// vpcFirewallRuleHostFilterValue extracts the string value from a VpcFirewallRuleHostFilter variant.
+func vpcFirewallRuleHostFilterValue(h oxide.VpcFirewallRuleHostFilter) (string, error) {
+	switch v := h.Value.(type) {
+	case *oxide.VpcFirewallRuleHostFilterVpc:
+		return string(v.Value), nil
+	case *oxide.VpcFirewallRuleHostFilterSubnet:
+		return string(v.Value), nil
+	case *oxide.VpcFirewallRuleHostFilterInstance:
+		return string(v.Value), nil
+	case *oxide.VpcFirewallRuleHostFilterIp:
+		return v.Value, nil
+	case *oxide.VpcFirewallRuleHostFilterIpNet:
+		if s, ok := v.Value.(string); ok {
+			return s, nil
+		}
+		return fmt.Sprintf("%v", v.Value), nil
+	default:
+		return "", fmt.Errorf("unknown VPC firewall rule host filter type: %T", h.Value)
+	}
+}
+
+// vpcFirewallRuleTargetValue extracts the string value from a VpcFirewallRuleTarget variant.
+func vpcFirewallRuleTargetValue(t oxide.VpcFirewallRuleTarget) (string, error) {
+	switch v := t.Value.(type) {
+	case *oxide.VpcFirewallRuleTargetVpc:
+		return string(v.Value), nil
+	case *oxide.VpcFirewallRuleTargetSubnet:
+		return string(v.Value), nil
+	case *oxide.VpcFirewallRuleTargetInstance:
+		return string(v.Value), nil
+	case *oxide.VpcFirewallRuleTargetIp:
+		return v.Value, nil
+	case *oxide.VpcFirewallRuleTargetIpNet:
+		if s, ok := v.Value.(string); ok {
+			return s, nil
+		}
+		return fmt.Sprintf("%v", v.Value), nil
+	default:
+		return "", fmt.Errorf("unknown VPC firewall rule target type: %T", t.Value)
+	}
+}
+
+// newVpcFirewallRuleHostFilter creates a VpcFirewallRuleHostFilter from type and value strings.
+func newVpcFirewallRuleHostFilter(typeStr, value string) (oxide.VpcFirewallRuleHostFilter, error) {
+	switch typeStr {
+	case "vpc":
+		return oxide.VpcFirewallRuleHostFilter{
+			Value: &oxide.VpcFirewallRuleHostFilterVpc{Value: oxide.Name(value)},
+		}, nil
+	case "subnet":
+		return oxide.VpcFirewallRuleHostFilter{
+			Value: &oxide.VpcFirewallRuleHostFilterSubnet{Value: oxide.Name(value)},
+		}, nil
+	case "instance":
+		return oxide.VpcFirewallRuleHostFilter{
+			Value: &oxide.VpcFirewallRuleHostFilterInstance{Value: oxide.Name(value)},
+		}, nil
+	case "ip":
+		return oxide.VpcFirewallRuleHostFilter{
+			Value: &oxide.VpcFirewallRuleHostFilterIp{Value: value},
+		}, nil
+	case "ip_net":
+		return oxide.VpcFirewallRuleHostFilter{
+			Value: &oxide.VpcFirewallRuleHostFilterIpNet{Value: value},
+		}, nil
+	default:
+		return oxide.VpcFirewallRuleHostFilter{}, fmt.Errorf("unknown VPC firewall rule host filter type: %q", typeStr)
+	}
+}
+
+// newVpcFirewallRuleTarget creates a VpcFirewallRuleTarget from type and value strings.
+func newVpcFirewallRuleTarget(typeStr, value string) (oxide.VpcFirewallRuleTarget, error) {
+	switch typeStr {
+	case "vpc":
+		return oxide.VpcFirewallRuleTarget{
+			Value: &oxide.VpcFirewallRuleTargetVpc{Value: oxide.Name(value)},
+		}, nil
+	case "subnet":
+		return oxide.VpcFirewallRuleTarget{
+			Value: &oxide.VpcFirewallRuleTargetSubnet{Value: oxide.Name(value)},
+		}, nil
+	case "instance":
+		return oxide.VpcFirewallRuleTarget{
+			Value: &oxide.VpcFirewallRuleTargetInstance{Value: oxide.Name(value)},
+		}, nil
+	case "ip":
+		return oxide.VpcFirewallRuleTarget{
+			Value: &oxide.VpcFirewallRuleTargetIp{Value: value},
+		}, nil
+	case "ip_net":
+		return oxide.VpcFirewallRuleTarget{
+			Value: &oxide.VpcFirewallRuleTargetIpNet{Value: value},
+		}, nil
+	default:
+		return oxide.VpcFirewallRuleTarget{}, fmt.Errorf("unknown VPC firewall rule target type: %q", typeStr)
+	}
 }
