@@ -117,7 +117,7 @@ resource "oxide_instance" "example" {
 - `auto_restart_policy` (String) The auto-restart policy for this instance.
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
-- `external_ips` (Attributes Set) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
+- `external_ips` (Attributes) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
 - `host_name` (String, Deprecated) Hostname of the instance.
 - `hostname` (String) Hostname of the instance.
 - `network_interfaces` (Attributes Set) Network interface devices attached to the instance. (see [below for nested schema](#nestedatt--network_interfaces))
@@ -137,13 +137,36 @@ Maximum 32 KiB unencoded data.
 <a id="nestedatt--external_ips"></a>
 ### Nested Schema for `external_ips`
 
-Required:
+Optional:
 
-- `type` (String) Type of external IP. Must be one of `ephemeral` or `floating`.
+- `ephemeral` (Attributes) External ephemeral IP to attach to the instance. (see [below for nested schema](#nestedatt--external_ips--ephemeral))
+- `floating` (Attributes Set) List of external floating IPs to attach to the instance. (see [below for nested schema](#nestedatt--external_ips--floating))
+
+<a id="nestedatt--external_ips--ephemeral"></a>
+### Nested Schema for `external_ips.ephemeral`
 
 Optional:
 
-- `id` (String) If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP.
+- `ip_pool_id` (String) ID of the IP pool to allocate from. Conflicts with `ip_version`
+- `ip_version` (String) IP version to use when multiple default pools exist. Conflicts with `ip_version`
+
+Read-Only:
+
+- `ip` (String) The external ephemeral IP attached to the instance.
+
+
+<a id="nestedatt--external_ips--floating"></a>
+### Nested Schema for `external_ips.floating`
+
+Required:
+
+- `id` (String) The external floating IP ID.
+
+Read-Only:
+
+- `ip` (String) The external floating IP attached to the instance.
+- `name` (String) The name of the external floating IP attached to the instance.
+
 
 
 <a id="nestedatt--network_interfaces"></a>

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -23,7 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,8 +34,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*instanceResource)(nil)
-	_ resource.ResourceWithConfigure = (*instanceResource)(nil)
+	_ resource.Resource                 = (*instanceResource)(nil)
+	_ resource.ResourceWithConfigure    = (*instanceResource)(nil)
+	_ resource.ResourceWithUpgradeState = (*instanceResource)(nil)
 )
 
 // NewInstanceResource is a helper function to simplify the provider implementation.
@@ -49,26 +50,26 @@ type instanceResource struct {
 }
 
 type instanceResourceModel struct {
-	AntiAffinityGroups types.Set                         `tfsdk:"anti_affinity_groups"`
-	AutoRestartPolicy  types.String                      `tfsdk:"auto_restart_policy"`
-	BootDiskID         types.String                      `tfsdk:"boot_disk_id"`
-	Description        types.String                      `tfsdk:"description"`
-	DiskAttachments    types.Set                         `tfsdk:"disk_attachments"`
-	ExternalIPs        []instanceResourceExternalIPModel `tfsdk:"external_ips"`
-	HostnameDeprecated types.String                      `tfsdk:"host_name"`
-	Hostname           types.String                      `tfsdk:"hostname"`
-	ID                 types.String                      `tfsdk:"id"`
-	Memory             types.Int64                       `tfsdk:"memory"`
-	Name               types.String                      `tfsdk:"name"`
-	NetworkInterfaces  []instanceResourceNICModel        `tfsdk:"network_interfaces"`
-	NCPUs              types.Int64                       `tfsdk:"ncpus"`
-	ProjectID          types.String                      `tfsdk:"project_id"`
-	SSHPublicKeys      types.Set                         `tfsdk:"ssh_public_keys"`
-	StartOnCreate      types.Bool                        `tfsdk:"start_on_create"`
-	TimeCreated        types.String                      `tfsdk:"time_created"`
-	TimeModified       types.String                      `tfsdk:"time_modified"`
-	Timeouts           timeouts.Value                    `tfsdk:"timeouts"`
-	UserData           types.String                      `tfsdk:"user_data"`
+	AntiAffinityGroups types.Set                        `tfsdk:"anti_affinity_groups"`
+	AutoRestartPolicy  types.String                     `tfsdk:"auto_restart_policy"`
+	BootDiskID         types.String                     `tfsdk:"boot_disk_id"`
+	Description        types.String                     `tfsdk:"description"`
+	DiskAttachments    types.Set                        `tfsdk:"disk_attachments"`
+	ExternalIPs        *instanceResourceExternalIPModel `tfsdk:"external_ips"`
+	HostnameDeprecated types.String                     `tfsdk:"host_name"`
+	Hostname           types.String                     `tfsdk:"hostname"`
+	ID                 types.String                     `tfsdk:"id"`
+	Memory             types.Int64                      `tfsdk:"memory"`
+	Name               types.String                     `tfsdk:"name"`
+	NetworkInterfaces  []instanceResourceNICModel       `tfsdk:"network_interfaces"`
+	NCPUs              types.Int64                      `tfsdk:"ncpus"`
+	ProjectID          types.String                     `tfsdk:"project_id"`
+	SSHPublicKeys      types.Set                        `tfsdk:"ssh_public_keys"`
+	StartOnCreate      types.Bool                       `tfsdk:"start_on_create"`
+	TimeCreated        types.String                     `tfsdk:"time_created"`
+	TimeModified       types.String                     `tfsdk:"time_modified"`
+	Timeouts           timeouts.Value                   `tfsdk:"timeouts"`
+	UserData           types.String                     `tfsdk:"user_data"`
 }
 
 type instanceResourceNICModel struct {
@@ -85,8 +86,42 @@ type instanceResourceNICModel struct {
 }
 
 type instanceResourceExternalIPModel struct {
-	ID   types.String `tfsdk:"id"`
-	Type types.String `tfsdk:"type"`
+	Ephemeral *instanceResourceEphemeralIPModel `tfsdk:"ephemeral"`
+	Floating  []instanceResourceFloatingIPModel `tfsdk:"floating"`
+}
+
+func (ip *instanceResourceExternalIPModel) Empty() bool {
+	return ip == nil || ip.Ephemeral == nil && len(ip.Floating) == 0
+}
+
+type instanceResourceEphemeralIPModel struct {
+	IPPoolID  types.String `tfsdk:"ip_pool_id"`
+	IPVersion types.String `tfsdk:"ip_version"`
+
+	// Computed.
+	IP types.String `tfsdk:"ip"`
+}
+
+func (ip *instanceResourceEphemeralIPModel) Equal(other *instanceResourceEphemeralIPModel) bool {
+	if ip == nil || other == nil {
+		return ip == other
+	}
+
+	if !ip.IPPoolID.Equal(other.IPPoolID) {
+		return false
+	}
+	if !ip.IPVersion.Equal(other.IPVersion) {
+		return false
+	}
+	return true
+}
+
+type instanceResourceFloatingIPModel struct {
+	ID types.String `tfsdk:"id"`
+
+	// Computed.
+	IP   types.String `tfsdk:"ip"`
+	Name types.String `tfsdk:"name"`
 }
 
 // Metadata returns the resource type name.
@@ -111,6 +146,7 @@ func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportS
 // Schema defines the schema for the resource.
 func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version: 1,
 		MarkdownDescription: replaceBackticks(`
 This resource manages instances.
 
@@ -301,34 +337,69 @@ This resource manages instances.
 					},
 				},
 			},
-			"external_ips": schema.SetNestedAttribute{
+			"external_ips": schema.SingleNestedAttribute{
 				Optional:    true,
 				Description: "External IP addresses provided to this instance.",
-				Validators: []validator.Set{
-					instanceExternalIPValidator{},
-					setvalidator.AlsoRequires(path.MatchRoot("network_interfaces")),
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRoot("network_interfaces")),
+					// TODO: validate that this object is not empty.
 				},
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						// The id attribute is optional, computed, and has a default to account for the
-						// case where an instance created with an external IP using the default IP pool
-						// (i.e., id = null) would drift when read (e.g., id = "") and require updating
-						// in place.
-						"id": schema.StringAttribute{
-							MarkdownDescription: "If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP.",
-							Optional:            true,
-							Computed:            true,
-							Default:             stringdefault.StaticString(""),
-						},
-						"type": schema.StringAttribute{
-							MarkdownDescription: "Type of external IP. Must be one of `ephemeral` or `floating`.",
-							Required:            true,
-							Validators: []validator.String{
-								stringvalidator.OneOf(
-									string(oxide.ExternalIpCreateTypeEphemeral),
-									string(oxide.ExternalIpCreateTypeFloating),
-								),
+				Attributes: map[string]schema.Attribute{
+					"ephemeral": schema.SingleNestedAttribute{
+						Optional:    true,
+						Description: "External ephemeral IP to attach to the instance.",
+						Attributes: map[string]schema.Attribute{
+							"ip_pool_id": schema.StringAttribute{
+								Optional:            true,
+								Computed:            true,
+								MarkdownDescription: "ID of the IP pool to allocate from. Conflicts with `ip_version`",
+								Validators: []validator.String{
+									stringvalidator.ConflictsWith(
+										path.MatchRelative().AtParent().AtName("ip_version"),
+									),
+								},
 							},
+							"ip_version": schema.StringAttribute{
+								Optional:            true,
+								Computed:            true,
+								MarkdownDescription: "IP version to use when multiple default pools exist. Conflicts with `ip_version`",
+								Validators: []validator.String{
+									stringvalidator.ConflictsWith(
+										path.MatchRelative().AtParent().AtName("ip_pool_id"),
+									),
+									stringvalidator.OneOf(
+										string(oxide.IpVersionV4),
+										string(oxide.IpVersionV6),
+									),
+								},
+							},
+							"ip": schema.StringAttribute{
+								Computed:    true,
+								Description: "The external ephemeral IP attached to the instance.",
+							},
+						},
+					},
+					"floating": schema.SetNestedAttribute{
+						Optional:    true,
+						Description: "List of external floating IPs to attach to the instance.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Required:    true,
+									Description: "The external floating IP ID.",
+								},
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "The external floating IP attached to the instance.",
+								},
+								"name": schema.StringAttribute{
+									Computed:    true,
+									Description: "The name of the external floating IP attached to the instance.",
+								},
+							},
+						},
+						Validators: []validator.Set{
+							setvalidator.SizeAtLeast(1),
 						},
 					},
 				},
@@ -363,6 +434,72 @@ Maximum 32 KiB unencoded data.`,
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
 				Description: "Timestamp of when this instance was last modified.",
+			},
+		},
+	}
+}
+
+func (r *instanceResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: r.schemaV0(ctx),
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				var oldState instanceResourceModelV0
+
+				resp.Diagnostics.Append(req.State.Get(ctx, &oldState)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				// Migrate network interfaces.
+				var newNICs []instanceResourceNICModel
+				for _, oldNIC := range oldState.NetworkInterfaces {
+					newNICs = append(newNICs, instanceResourceNICModel(oldNIC))
+				}
+
+				// Migrate external IPs.
+				var newExtIPs *instanceResourceExternalIPModel
+				if len(oldState.ExternalIPs) > 0 {
+					newExtIPs = &instanceResourceExternalIPModel{}
+					for _, oldExtIP := range oldState.ExternalIPs {
+						switch oxide.ExternalIpKind(oldExtIP.Type.ValueString()) {
+						case oxide.ExternalIpKindEphemeral:
+							newExtIPs.Ephemeral = &instanceResourceEphemeralIPModel{
+								IPPoolID: oldExtIP.ID,
+							}
+
+						case oxide.ExternalIpKindFloating:
+							newExtIPs.Floating = append(newExtIPs.Floating, instanceResourceFloatingIPModel{
+								ID: oldExtIP.ID,
+							})
+						}
+					}
+				}
+
+				newState := instanceResourceModel{
+					AntiAffinityGroups: oldState.AntiAffinityGroups,
+					AutoRestartPolicy:  oldState.AutoRestartPolicy,
+					BootDiskID:         oldState.BootDiskID,
+					Description:        oldState.Description,
+					DiskAttachments:    oldState.DiskAttachments,
+					ExternalIPs:        newExtIPs,
+					HostnameDeprecated: oldState.HostnameDeprecated,
+					Hostname:           oldState.Hostname,
+					ID:                 oldState.ID,
+					Memory:             oldState.Memory,
+					Name:               oldState.Name,
+					NetworkInterfaces:  newNICs,
+					NCPUs:              oldState.NCPUs,
+					ProjectID:          oldState.ProjectID,
+					SSHPublicKeys:      oldState.SSHPublicKeys,
+					StartOnCreate:      oldState.StartOnCreate,
+					TimeCreated:        oldState.TimeCreated,
+					TimeModified:       oldState.TimeModified,
+					Timeouts:           oldState.Timeouts,
+					UserData:           oldState.UserData,
+				}
+
+				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 			},
 		},
 	}
@@ -545,6 +682,24 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	}
 
+	// Populate external IP information.
+	instExternalIPs, diags := newAttachedExternalIPModel(ctx, r.client, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if instExternalIPs.Ephemeral != nil {
+		plan.ExternalIPs.Ephemeral.IPPoolID = instExternalIPs.Ephemeral.IPPoolID
+		plan.ExternalIPs.Ephemeral.IPVersion = instExternalIPs.Ephemeral.IPVersion
+		plan.ExternalIPs.Ephemeral.IP = instExternalIPs.Ephemeral.IP
+	}
+
+	for i, ip := range instExternalIPs.Floating {
+		plan.ExternalIPs.Floating[i].IP = ip.IP
+		plan.ExternalIPs.Floating[i].Name = ip.Name
+	}
+
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -616,7 +771,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 	// Only set the external IPs if there are any to avoid drift.
-	if len(externalIPs) > 0 {
+	if !externalIPs.Empty() {
 		state.ExternalIPs = externalIPs
 	}
 
@@ -721,14 +876,22 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// ephemeral external IP attached to an instance at a given time and the
 	// last detachment/attachment wins.
 	{
-		externalIPsToDetach := sliceDiff(state.ExternalIPs, plan.ExternalIPs)
-		resp.Diagnostics.Append(detachExternalIPs(ctx, r.client, externalIPsToDetach, state.ID.ValueString())...)
+		resp.Diagnostics.Append(detachEphemeralIP(ctx, r.client, state.ID.ValueString(), state.ExternalIPs, plan.ExternalIPs)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		externalIPsToAttach := sliceDiff(plan.ExternalIPs, state.ExternalIPs)
-		resp.Diagnostics.Append(attachExternalIPs(ctx, r.client, externalIPsToAttach, state.ID.ValueString())...)
+		resp.Diagnostics.Append(detachFloatingIPs(ctx, r.client, state.ExternalIPs, plan.ExternalIPs)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		resp.Diagnostics.Append(attachEphemeralIP(ctx, r.client, state.ID.ValueString(), state.ExternalIPs, plan.ExternalIPs)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		resp.Diagnostics.Append(attachFloatingIPs(ctx, r.client, state.ID.ValueString(), state.ExternalIPs, plan.ExternalIPs)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -872,7 +1035,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if len(externalIPs) > 0 {
+	if !externalIPs.Empty() {
 		plan.ExternalIPs = externalIPs
 	}
 
@@ -1189,25 +1352,10 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 // specified by model, keeping the IP pool ID from the ephemeral external IP
 // from the model if one is present.
 func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model instanceResourceModel) (
-	[]instanceResourceExternalIPModel, diag.Diagnostics) {
+	*instanceResourceExternalIPModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	externalIPs := make([]instanceResourceExternalIPModel, 0)
 
-	// The [oxide.Client.InstanceExternalIpList] method does not return the IP pool
-	// ID for ephemeral external IPs. See https://github.com/oxidecomputer/omicron/issues/6825.
-	//
-	// Pull the IP pool ID out of the model to populate the external IP model that
-	// we're building to prevent erroneous Terraform diffs (e.g., state contains
-	// IP pool ID and refresh doesn't). It's safe to stop at the first ephemeral
-	// external IP encountered since the configuration enforces at most one
-	// ephemeral external IP.
-	ephemeralIPPoolID := ""
-	for _, externalIP := range model.ExternalIPs {
-		if externalIP.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
-			ephemeralIPPoolID = externalIP.ID.ValueString()
-			break
-		}
-	}
+	externalIPs := &instanceResourceExternalIPModel{}
 
 	externalIPResponse, err := client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
 		Instance: oxide.NameOrId(model.ID.ValueString()),
@@ -1220,17 +1368,27 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 		return nil, diags
 	}
 
-	for _, externalIP := range externalIPResponse.Items {
-		switch externalIP.Kind {
+	for _, ip := range externalIPResponse.Items {
+		switch ip.Kind {
 		case oxide.ExternalIpKindEphemeral:
-			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-				ID:   types.StringValue(ephemeralIPPoolID),
-				Type: types.StringValue(string(externalIP.Kind)),
-			})
+			externalIPs.Ephemeral = &instanceResourceEphemeralIPModel{
+				IPPoolID: types.StringValue(ip.IpPoolId),
+				IP:       types.StringValue(ip.Ip),
+			}
+
+			var ipVersion string
+			if isIPv4(ip.Ip) {
+				ipVersion = string(oxide.IpVersionV4)
+			} else if isIPv6(ip.Ip) {
+				ipVersion = string(oxide.IpVersionV6)
+			}
+			externalIPs.Ephemeral.IPVersion = types.StringValue(ipVersion)
+
 		case oxide.ExternalIpKindFloating:
-			externalIPs = append(externalIPs, instanceResourceExternalIPModel{
-				ID:   types.StringValue(externalIP.Id),
-				Type: types.StringValue(string(externalIP.Kind)),
+			externalIPs.Floating = append(externalIPs.Floating, instanceResourceFloatingIPModel{
+				ID:   types.StringValue(ip.Id),
+				IP:   types.StringValue(ip.Ip),
+				Name: types.StringValue(string(ip.Name)),
 			})
 		// Skipped until the schema is updated to support SNAT external IPs.
 		case oxide.ExternalIpKindSnat:
@@ -1238,7 +1396,7 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 		default:
 			diags.AddError(
 				"Invalid external IP kind:",
-				fmt.Sprintf("Encountered unexpected external IP kind: %s", externalIP.Kind),
+				fmt.Sprintf("Encountered unexpected external IP kind: %s", ip.Kind),
 			)
 		}
 	}
@@ -1341,33 +1499,38 @@ func filterBootDiskFromDisks(disks []oxide.InstanceDiskAttachment, boot_disk *ox
 	return filtered_disks
 }
 
-func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
+func newExternalIPsOnCreate(externalIPs *instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
+	if externalIPs == nil {
+		return nil
+	}
+
 	var ips []oxide.ExternalIpCreate
 
-	for _, ip := range externalIPs {
-		var eIP oxide.ExternalIpCreate
-
-		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
-			if ip.ID.ValueString() != "" {
-				eIP.PoolSelector = oxide.PoolSelector{
+	if ip := externalIPs.Ephemeral; ip != nil {
+		if pool := ip.IPPoolID.ValueString(); pool != "" {
+			ips = append(ips, oxide.ExternalIpCreate{
+				Type: oxide.ExternalIpCreateTypeEphemeral,
+				PoolSelector: oxide.PoolSelector{
 					Type: oxide.PoolSelectorTypeExplicit,
-					Pool: oxide.NameOrId(ip.ID.ValueString()),
-				}
-			} else {
-				eIP.PoolSelector = oxide.PoolSelector{
+					Pool: oxide.NameOrId(pool),
+				},
+			})
+		} else {
+			ips = append(ips, oxide.ExternalIpCreate{
+				Type: oxide.ExternalIpCreateTypeEphemeral,
+				PoolSelector: oxide.PoolSelector{
 					Type:      oxide.PoolSelectorTypeAuto,
-					IpVersion: oxide.IpVersionV4,
-				}
-			}
-			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
+					IpVersion: oxide.IpVersion(ip.IPVersion.ValueString()),
+				},
+			})
 		}
+	}
 
-		if ip.Type.ValueString() == string(oxide.ExternalIpCreateTypeFloating) {
-			eIP.FloatingIp = oxide.NameOrId(ip.ID.ValueString())
-			eIP.Type = oxide.ExternalIpCreateType(ip.Type.ValueString())
-		}
-
-		ips = append(ips, eIP)
+	for _, ip := range externalIPs.Floating {
+		ips = append(ips, oxide.ExternalIpCreate{
+			Type:       oxide.ExternalIpCreateTypeFloating,
+			FloatingIp: oxide.NameOrId(ip.ID.ValueString()),
+		})
 	}
 
 	return ips
@@ -1469,76 +1632,125 @@ func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 	return nil
 }
 
-// attachExternalIPs attaches the external IPs specified by externalIPs to the
-// instance specified by instanceID.
-func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []instanceResourceExternalIPModel, instanceID string) diag.Diagnostics {
+// attachEphemeralIP attaches an external ephemeral IP to the instance
+// specified by instanceID if necessary given the current state and plan.
+func attachEphemeralIP(ctx context.Context, client *oxide.Client, instanceID string, stateIP, planIP *instanceResourceExternalIPModel) diag.Diagnostics {
+	// No need to attach if plan doesn't have an ephemeral IP.
+	if planIP == nil || planIP.Ephemeral == nil {
+		return nil
+	}
+	// No need to attach if plan and state ephemeral IPs are equal.
+	if stateIP != nil && stateIP.Ephemeral != nil && stateIP.Ephemeral.Equal(planIP.Ephemeral) {
+		return nil
+	}
+
+	var diags diag.Diagnostics
+	var params oxide.InstanceEphemeralIpAttachParams
+
+	ipPool := planIP.Ephemeral.IPPoolID.ValueString()
+	ipVersion := planIP.Ephemeral.IPVersion.ValueString()
+
+	if ipPool != "" {
+		params = oxide.InstanceEphemeralIpAttachParams{
+			Instance: oxide.NameOrId(instanceID),
+			Body: &oxide.EphemeralIpCreate{
+				PoolSelector: oxide.PoolSelector{
+					Type: oxide.PoolSelectorTypeExplicit,
+					Pool: oxide.NameOrId(ipPool),
+				},
+			},
+		}
+	} else {
+		params = oxide.InstanceEphemeralIpAttachParams{
+			Instance: oxide.NameOrId(instanceID),
+			Body: &oxide.EphemeralIpCreate{
+				PoolSelector: oxide.PoolSelector{
+					Type:      oxide.PoolSelectorTypeAuto,
+					IpVersion: oxide.IpVersion(ipVersion),
+				},
+			},
+		}
+	}
+
+	if _, err := client.InstanceEphemeralIpAttach(ctx, params); err != nil {
+		diags.AddError(
+			fmt.Sprintf("Error attaching ephemeral external IP to instance %s", instanceID),
+			"API error: "+err.Error(),
+		)
+		return diags
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("successfully attached ephemeral external IP to instance %s", instanceID), map[string]any{"success": true})
+
+	return nil
+}
+
+// detachEphemeralIP detaches the external ephemeral IP from the instance
+// specified by instanceID if necessary given the current state and plan.
+func detachEphemeralIP(ctx context.Context, client *oxide.Client, instanceID string, stateIP, planIP *instanceResourceExternalIPModel) diag.Diagnostics {
+	// No need to detach if state doesn't have an ephemeral IP.
+	if stateIP == nil || stateIP.Ephemeral == nil {
+		return nil
+	}
+	// No need to detach if state and plan ephemeral IPs are equal.
+	if planIP != nil && planIP.Ephemeral != nil && planIP.Ephemeral.Equal(stateIP.Ephemeral) {
+		return nil
+	}
+
 	var diags diag.Diagnostics
 
-	for _, v := range externalIPs {
-		externalIPID := v.ID
-		externalIPType := v.Type
+	params := oxide.InstanceEphemeralIpDetachParams{
+		Instance: oxide.NameOrId(instanceID),
+	}
 
-		switch oxide.ExternalIpKind(externalIPType.ValueString()) {
-		case oxide.ExternalIpKindEphemeral:
-			var params oxide.InstanceEphemeralIpAttachParams
+	if err := client.InstanceEphemeralIpDetach(ctx, params); err != nil {
+		diags.AddError(
+			fmt.Sprintf("Error detaching ephemeral external IP from instance %s", instanceID),
+			"API error: "+err.Error(),
+		)
 
-			if pool := externalIPID.ValueString(); pool != "" {
-				params = oxide.InstanceEphemeralIpAttachParams{
-					Instance: oxide.NameOrId(instanceID),
-					Body: &oxide.EphemeralIpCreate{
-						PoolSelector: oxide.PoolSelector{
-							Type: oxide.PoolSelectorTypeExplicit,
-							Pool: oxide.NameOrId(externalIPID.ValueString()),
-						},
-					},
-				}
-			} else {
-				params = oxide.InstanceEphemeralIpAttachParams{
-					Instance: oxide.NameOrId(instanceID),
-					Body: &oxide.EphemeralIpCreate{
-						PoolSelector: oxide.PoolSelector{
-							Type:      oxide.PoolSelectorTypeAuto,
-							IpVersion: oxide.IpVersionV4,
-						},
-					},
-				}
-			}
+		return diags
+	}
 
-			if _, err := client.InstanceEphemeralIpAttach(ctx, params); err != nil {
-				diags.AddError(
-					fmt.Sprintf("Error attaching ephemeral external IP with ID %s", externalIPID.ValueString()),
-					"API error: "+err.Error(),
-				)
+	return nil
+}
 
-				return diags
-			}
+// attachExternalIPs attaches the necessary external floating IPs to the
+// instance specified by instanceID.
+func attachFloatingIPs(ctx context.Context, client *oxide.Client, instanceID string, stateIP, planIP *instanceResourceExternalIPModel) diag.Diagnostics {
+	// No need to attach floating IPs if the plan doesn't have any external IP.
+	if planIP == nil {
+		return nil
+	}
 
-		case oxide.ExternalIpKindFloating:
-			params := oxide.FloatingIpAttachParams{
-				FloatingIp: oxide.NameOrId(externalIPID.ValueString()),
-				Body: &oxide.FloatingIpAttach{
-					Kind:   oxide.FloatingIpParentKindInstance,
-					Parent: oxide.NameOrId(instanceID),
-				},
-			}
+	var diff []instanceResourceFloatingIPModel
+	if stateIP == nil {
+		diff = planIP.Floating
+	} else {
+		diff = sliceDiff(planIP.Floating, stateIP.Floating)
+	}
 
-			if _, err := client.FloatingIpAttach(ctx, params); err != nil {
-				diags.AddError(
-					fmt.Sprintf("Error attaching floating external IP with ID %s", externalIPID.ValueString()),
-					"API error: "+err.Error(),
-				)
+	var diags diag.Diagnostics
 
-				return diags
-			}
-		default:
+	for _, ip := range diff {
+		params := oxide.FloatingIpAttachParams{
+			FloatingIp: oxide.NameOrId(ip.ID.ValueString()),
+			Body: &oxide.FloatingIpAttach{
+				Kind:   oxide.FloatingIpParentKindInstance,
+				Parent: oxide.NameOrId(instanceID),
+			},
+		}
+
+		if _, err := client.FloatingIpAttach(ctx, params); err != nil {
 			diags.AddError(
-				fmt.Sprintf("Cannot attach invalid external IP type %q", externalIPType.ValueString()),
-				fmt.Sprintf("The external IP type must be one of: %q, %q", oxide.ExternalIpCreateTypeEphemeral, oxide.ExternalIpCreateTypeFloating),
+				fmt.Sprintf("Error attaching floating external IP with ID %s", ip.ID.ValueString()),
+				"API error: "+err.Error(),
 			)
+
 			return diags
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("successfully attached %s external IP with ID %s", externalIPType.ValueString(), externalIPID.ValueString()), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("successfully attached floating external IP with ID %s", ip.ID.ValueString()), map[string]any{"success": true})
 	}
 
 	return nil
@@ -1546,53 +1758,36 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 // detachExternalIPs detaches the external IPs specified by externalIPs from the
 // instance specified by instanceID.
-func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []instanceResourceExternalIPModel, instanceID string) diag.Diagnostics {
+func detachFloatingIPs(ctx context.Context, client *oxide.Client, stateIP, planIP *instanceResourceExternalIPModel) diag.Diagnostics {
+	// No need to detach floating IPs if the state doesn't have any external IP.
+	if stateIP == nil {
+		return nil
+	}
+
+	var diff []instanceResourceFloatingIPModel
+	if planIP == nil {
+		diff = stateIP.Floating
+	} else {
+		diff = sliceDiff(stateIP.Floating, planIP.Floating)
+	}
+
 	var diags diag.Diagnostics
 
-	for _, v := range externalIPs {
-		externalIPID := v.ID
-		externalIPType := v.Type
+	for _, ip := range diff {
+		params := oxide.FloatingIpDetachParams{
+			FloatingIp: oxide.NameOrId(ip.ID.ValueString()),
+		}
 
-		switch oxide.ExternalIpKind(externalIPType.ValueString()) {
-		case oxide.ExternalIpKindEphemeral:
-			params := oxide.InstanceEphemeralIpDetachParams{
-				Instance: oxide.NameOrId(instanceID),
-			}
-
-			if err := client.InstanceEphemeralIpDetach(ctx, params); err != nil {
-				diags.AddError(
-					fmt.Sprintf("Error detaching ephemeral external IP with ID %s", externalIPID.ValueString()),
-					"API error: "+err.Error(),
-				)
-
-				return diags
-			}
-
-		case oxide.ExternalIpKindFloating:
-			params := oxide.FloatingIpDetachParams{
-				FloatingIp: oxide.NameOrId(externalIPID.ValueString()),
-			}
-
-			if _, err := client.FloatingIpDetach(ctx, params); err != nil {
-				diags.AddError(
-					fmt.Sprintf("Error detaching floating external IP with ID %s", externalIPID.ValueString()),
-					"API error: "+err.Error(),
-				)
-
-				return diags
-			}
-		// It's not possible to detach an SNAT external IP. Skip it.
-		case oxide.ExternalIpKindSnat:
-			continue
-		default:
+		if _, err := client.FloatingIpDetach(ctx, params); err != nil {
 			diags.AddError(
-				fmt.Sprintf("Cannot detach invalid external IP type %q", externalIPType.ValueString()),
-				fmt.Sprintf("The external IP type must be one of: %q, %q", oxide.ExternalIpCreateTypeEphemeral, oxide.ExternalIpCreateTypeFloating),
+				fmt.Sprintf("Error detaching floating external IP with ID %s", ip.ID.ValueString()),
+				"API error: "+err.Error(),
 			)
+
 			return diags
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("successfully detached %s external IP with ID %s", externalIPType.ValueString(), externalIPID.ValueString()), map[string]any{"success": true})
+		tflog.Trace(ctx, fmt.Sprintf("successfully detached floating external IP with ID %s", ip.ID.ValueString()), map[string]any{"success": true})
 	}
 
 	return nil
@@ -1746,74 +1941,6 @@ func attrValueSliceContains(s []attr.Value, str string) (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-// Ensure the concrete validator satisfies the [validator.Set] interface.
-var _ validator.Set = instanceExternalIPValidator{}
-
-// instanceExternalIPValidator is a custom validator that validates the
-// external_ips attribute on an oxide_instance resource.
-type instanceExternalIPValidator struct{}
-
-// Description returns the validation description in plain text formatting.
-func (f instanceExternalIPValidator) Description(context.Context) string {
-	return "cannot have more than one ephemeral external ip"
-}
-
-// MarkdownDescription returns the validation description in Markdown formatting.
-func (f instanceExternalIPValidator) MarkdownDescription(context.Context) string {
-	return "cannot have more than one ephemeral external ip"
-}
-
-// ValidateSet validates whether a set of [instanceResourceExternalIPModel]
-// objects has at most one object with type = "ephemeral". The Terraform SDK
-// already deduplicates sets within configuration. For example, the following
-// configuration in Terraform results in a single ephemeral external IP.
-//
-//	resource "oxide_instance" "example" {
-//	  external_ips = [
-//	    { type = "ephemeral"},
-//	    { type = "ephemeral"},
-//	  ]
-//	}
-//
-// However, that deduplication does not extend to sets that contain different
-// attributes, like so.
-//
-//	resource "oxide_instance" "example" {
-//	  external_ips = [
-//	    { type = "ephemeral", id = "a58dc21d-896d-4e5a-bb77-b0922a04e553"},
-//	    { type = "ephemeral"},
-//	  ]
-//	}
-//
-// That's where this validator comes in. This validator errors with the above
-// configuration, preventing a user from using multiple ephemeral external IPs.
-func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	var externalIPs []instanceResourceExternalIPModel
-	diags := req.ConfigValue.ElementsAs(ctx, &externalIPs, false)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var ephemeralExternalIPs int
-	for _, externalIP := range externalIPs {
-		if externalIP.Type.ValueString() == string(oxide.ExternalIpCreateTypeEphemeral) {
-			ephemeralExternalIPs++
-		}
-	}
-	if ephemeralExternalIPs > 1 {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Too many external IPs with type = %q", oxide.ExternalIpCreateTypeEphemeral),
-			fmt.Sprintf("Only 1 external IP with type = %q is allowed, but found %d.", oxide.ExternalIpCreateTypeEphemeral, ephemeralExternalIPs),
-		)
-		return
-	}
 }
 
 // ModifyPlanForHostnameDeprecation modifies the plan to support the

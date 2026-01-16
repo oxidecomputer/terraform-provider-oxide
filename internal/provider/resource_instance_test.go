@@ -102,11 +102,11 @@ resource "oxide_instance" "{{.BlockName}}" {
   start_on_create  	   = true
   ssh_public_keys  	   = [oxide_ssh_key.{{.SSHBlockName}}.id]
   disk_attachments 	   = [oxide_disk.{{.DiskBlockName}}.id]
-  external_ips = [
-	{
-	  type = "ephemeral"
-	}
-  ]
+  external_ips = {
+    ephemeral = {
+      ip_version = "v4"
+    }
+  }
   network_interfaces = [
     {
       subnet_id   = data.oxide_vpc_subnet.{{.SupportBlockName2}}.id
@@ -243,12 +243,11 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips = [
-	{
-	  type = "ephemeral"
-	  id   = data.oxide_ip_pool.{{.IPPoolBlockName}}.id
-	}
-  ]
+  external_ips = {
+    ephemeral = {
+      ip_pool_id = data.oxide_ip_pool.{{.IPPoolBlockName}}.id
+    }
+  }
   network_interfaces = [
     {
       name        = "net0"
@@ -279,11 +278,9 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips = [
-	{
-	  type = "ephemeral"
-	}
-  ]
+  external_ips = {
+    ephemeral = {}
+  }
   network_interfaces = [
     {
       name        = "net0"
@@ -1432,7 +1429,9 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip_pool_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip_version"),
 		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
@@ -1462,8 +1461,9 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttrSet(resourceName, "external_ips.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip_version"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip_pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -1483,8 +1483,9 @@ func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.id", ""),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip_version"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.ip_pool_id"),
 	}...)
 }
 
