@@ -206,24 +206,38 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	destination, err := oxide.NewRouteDestination(
+		oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
+		plan.Destination.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating VPC router route",
+			"Could not create route destination: "+err.Error(),
+		)
+		return
+	}
+
+	target, err := oxide.NewRouteTarget(
+		oxide.RouteTargetType(plan.Target.Type.ValueString()),
+		plan.Target.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating VPC router route",
+			"Could not create route target: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcRouterRouteCreateParams{
 		Router: oxide.NameOrId(plan.VPCRouterID.ValueString()),
 		Body: &oxide.RouterRouteCreate{
 			Description: plan.Description.ValueString(),
-			Destination: oxide.RouteDestination{
-				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
-				Value: plan.Destination.Value.ValueString(),
-			},
-			Name: oxide.Name(plan.Name.ValueString()),
-			Target: oxide.RouteTarget{
-				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
-			},
+			Destination: destination,
+			Name:        oxide.Name(plan.Name.ValueString()),
+			Target:      target,
 		},
-	}
-
-	// When the target type is set to "drop" the value will be nil
-	if !plan.Target.Value.IsNull() {
-		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
 
 	vpcRouterRoute, err := r.client.VpcRouterRouteCreate(ctx, params)
@@ -287,17 +301,17 @@ func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequ
 	tflog.Trace(ctx, fmt.Sprintf("read VPC RouterRoute with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
 
 	dm := vpcRouterRouteDestinationModel{
-		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type)),
-		Value: types.StringValue(vpcRouterRoute.Destination.Value.(string)),
+		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type())),
+		Value: types.StringValue(vpcRouterRoute.Destination.String()),
 	}
 
 	tm := vpcRouterRouteTargetModel{
-		Type: types.StringValue(string(vpcRouterRoute.Target.Type)),
+		Type: types.StringValue(string(vpcRouterRoute.Target.Type())),
 	}
 
-	// When the target type is set to "drop" the value will be nil
-	if vpcRouterRoute.Target.Value != nil {
-		tm.Value = types.StringValue(vpcRouterRoute.Target.Value.(string))
+	// When the target type is set to "drop" the value will be empty
+	if targetValue := vpcRouterRoute.Target.String(); targetValue != "" {
+		tm.Value = types.StringValue(targetValue)
 	}
 
 	state.Description = types.StringValue(vpcRouterRoute.Description)
@@ -343,24 +357,38 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	destination, err := oxide.NewRouteDestination(
+		oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
+		plan.Destination.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC router route",
+			"Could not create route destination: "+err.Error(),
+		)
+		return
+	}
+
+	target, err := oxide.NewRouteTarget(
+		oxide.RouteTargetType(plan.Target.Type.ValueString()),
+		plan.Target.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC router route",
+			"Could not create route target: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcRouterRouteUpdateParams{
 		Route: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.RouterRouteUpdate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Destination: oxide.RouteDestination{
-				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
-				Value: plan.Destination.Value.ValueString(),
-			},
-			Target: oxide.RouteTarget{
-				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
-			},
+			Destination: destination,
+			Target:      target,
 		},
-	}
-
-	// When the target type is set to "drop" the value will be nil
-	if !plan.Target.Value.IsNull() {
-		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
 
 	vpcRouterRoute, err := r.client.VpcRouterRouteUpdate(ctx, params)

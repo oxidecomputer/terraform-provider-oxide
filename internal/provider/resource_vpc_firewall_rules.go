@@ -433,9 +433,18 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	body, err := newVPCFirewallRulesUpdateBody(plan.Rules)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating firewall rules",
+			"Could not build request body: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcFirewallRulesUpdateParams{
 		Vpc:  oxide.NameOrId(plan.VPCID.ValueString()),
-		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
+		Body: body,
 	}
 
 	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
@@ -573,9 +582,18 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	body, err := newVPCFirewallRulesUpdateBody(plan.Rules)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC firewall rules",
+			"Could not build request body: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcFirewallRulesUpdateParams{
 		Vpc:  oxide.NameOrId(plan.VPCID.ValueString()),
-		Body: newVPCFirewallRulesUpdateBody(plan.Rules),
+		Body: body,
 	}
 	firewallRules, err := r.client.VpcFirewallRulesUpdate(ctx, params)
 	if err != nil {
@@ -659,7 +677,7 @@ func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.Dele
 
 // newVPCFirewallRulesUpdateBody builds the parameters required by the Oxide
 // vpc_firewall_rules_update API using the specified rules.
-func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRuleModel) *oxide.VpcFirewallRuleUpdateParams {
+func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRuleModel) (*oxide.VpcFirewallRuleUpdateParams, error) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	//
@@ -670,6 +688,15 @@ func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRule
 	body := new(oxide.VpcFirewallRuleUpdateParams)
 
 	for ruleName, rule := range rules {
+		filters, err := newFilterTypeFromModel(rule.Filters)
+		if err != nil {
+			return nil, fmt.Errorf("error creating filters for rule %q: %w", ruleName, err)
+		}
+		targets, err := newTargetTypeFromModel(rule.Targets)
+		if err != nil {
+			return nil, fmt.Errorf("error creating targets for rule %q: %w", ruleName, err)
+		}
+
 		r := oxide.VpcFirewallRuleUpdate{
 			Action:      oxide.VpcFirewallRuleAction(rule.Action.ValueString()),
 			Description: rule.Description.ValueString(),
@@ -678,15 +705,15 @@ func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRule
 			// We can safely dereference rule.Priority as it's a required field
 			Priority: oxide.NewPointer(int(*rule.Priority.ValueInt64Pointer())),
 			Status:   oxide.VpcFirewallRuleStatus(rule.Status.ValueString()),
-			Filters:  newFilterTypeFromModel(rule.Filters),
-			Targets:  newTargetTypeFromModel(rule.Targets),
+			Filters:  filters,
+			Targets:  targets,
 		}
 
 		updateRules = append(updateRules, r)
 	}
 
 	body.Rules = updateRules
-	return body
+	return body, nil
 }
 
 // newVPCFirewallRulesModel translates a slice of [oxide.VpcFirewallRule] into a
@@ -712,7 +739,6 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFire
 		}
 
 		filters, diags := newFiltersModelFromResponse(rule.Filters)
-		diags.Append(diags...)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -730,8 +756,8 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 	var hostsModel = []vpcFirewallRuleHostFilterModel{}
 	for _, h := range filter.Hosts {
 		m := vpcFirewallRuleHostFilterModel{
-			Type:  types.StringValue(string(h.Type)),
-			Value: types.StringValue(h.Value.(string)),
+			Type:  types.StringValue(string(h.Type())),
+			Value: types.StringValue(h.String()),
 		}
 
 		hostsModel = append(hostsModel, m)
@@ -794,8 +820,8 @@ func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFire
 
 	for _, t := range target {
 		m := vpcFirewallRulesResourceRuleTargetModel{
-			Type:  types.StringValue(string(t.Type)),
-			Value: types.StringValue(t.Value.(string)),
+			Type:  types.StringValue(string(t.Type())),
+			Value: types.StringValue(t.String()),
 		}
 
 		model = append(model, m)
@@ -804,15 +830,16 @@ func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFire
 	return model
 }
 
-func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxide.VpcFirewallRuleFilter {
+func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) (oxide.VpcFirewallRuleFilter, error) {
 	var hosts []oxide.VpcFirewallRuleHostFilter
 	for _, host := range model.Hosts {
-		h := oxide.VpcFirewallRuleHostFilter{
-			Type: oxide.VpcFirewallRuleHostFilterType(host.Type.ValueString()),
-			// Note: This `Name` is a quirk from the SDK which should be fixed
-			Value: oxide.Name(host.Value.ValueString()),
+		h, err := oxide.NewVpcFirewallRuleHostFilter(
+			oxide.VpcFirewallRuleHostFilterType(host.Type.ValueString()),
+			host.Value.ValueString(),
+		)
+		if err != nil {
+			return oxide.VpcFirewallRuleFilter{}, err
 		}
-
 		hosts = append(hosts, h)
 	}
 
@@ -845,19 +872,22 @@ func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) oxi
 		Hosts:     hosts,
 		Ports:     ports,
 		Protocols: protocols,
-	}
+	}, nil
 }
 
-func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) []oxide.VpcFirewallRuleTarget {
+func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) ([]oxide.VpcFirewallRuleTarget, error) {
 	var target []oxide.VpcFirewallRuleTarget
 
 	for _, m := range model {
-		t := oxide.VpcFirewallRuleTarget{
-			Type:  oxide.VpcFirewallRuleTargetType(m.Type.ValueString()),
-			Value: oxide.Name(m.Value.ValueString()),
+		t, err := oxide.NewVpcFirewallRuleTarget(
+			oxide.VpcFirewallRuleTargetType(m.Type.ValueString()),
+			m.Value.ValueString(),
+		)
+		if err != nil {
+			return nil, err
 		}
 		target = append(target, t)
 	}
 
-	return target
+	return target, nil
 }

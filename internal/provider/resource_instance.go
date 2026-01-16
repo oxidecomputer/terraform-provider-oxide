@@ -6,7 +6,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -530,16 +529,8 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 		// Setting IPAddress as it is both computed and optional
 		ip := ""
-		if nic.IpStack.Type == oxide.PrivateIpStackTypeV4 {
-			stack, err := ipStackAsIPv4Stack(nic.IpStack)
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Unable to read instance network interface:",
-					"Error: "+err.Error(),
-				)
-				continue
-			}
-			ip = stack.Ip
+		if v4, ok := nic.IpStack.AsV4(); ok {
+			ip = v4.Value.Ip
 		}
 		plan.NetworkInterfaces[i].IPAddr = types.StringValue(ip)
 
@@ -1150,13 +1141,15 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 
 	nicSet := []instanceResourceNICModel{}
 	for _, nic := range nics.Items {
-		if nic.IpStack.Type != oxide.PrivateIpStackTypeV4 {
+		v4, ok := nic.IpStack.AsV4()
+		if !ok {
 			continue
 		}
 
 		n := instanceResourceNICModel{
 			Description:  types.StringValue(nic.Description),
 			ID:           types.StringValue(nic.Id),
+			IPAddr:       types.StringValue(v4.Value.Ip),
 			MAC:          types.StringValue(string(nic.Mac)),
 			Name:         types.StringValue(string(nic.Name)),
 			Primary:      types.BoolPointerValue(nic.Primary),
@@ -1165,16 +1158,6 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 			TimeModified: types.StringValue(nic.TimeModified.String()),
 			VPCID:        types.StringValue(nic.VpcId),
 		}
-
-		stack, err := ipStackAsIPv4Stack(nic.IpStack)
-		if err != nil {
-			diags.AddError(
-				"Unable to read instance network interface:",
-				"Error: "+err.Error(),
-			)
-			continue
-		}
-		n.IPAddr = types.StringValue(stack.Ip)
 
 		nicSet = append(nicSet, n)
 	}
@@ -1373,38 +1356,26 @@ func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxi
 	return ips
 }
 
-func ipStackAsIPv4Stack(ipStack oxide.PrivateIpStack) (oxide.PrivateIpv4Stack, error) {
-	marshalled, err := json.Marshal(ipStack.Value)
-	if err != nil {
-		return oxide.PrivateIpv4Stack{}, fmt.Errorf("failed to unmarshal IP stack value: %w", err)
-	}
-
-	var parsedStack oxide.PrivateIpv4Stack
-	if err := json.Unmarshal(marshalled, &parsedStack); err != nil {
-		return oxide.PrivateIpv4Stack{}, fmt.Errorf("failed to marshal IP stack value: %w", err)
-	}
-
-	return parsedStack, nil
-}
-
 func newIPStackCreate(model instanceResourceNICModel) oxide.PrivateIpStackCreate {
 	if ip := model.IPAddr.ValueString(); ip != "" {
 		return oxide.PrivateIpStackCreate{
-			Type: oxide.PrivateIpStackCreateTypeV4,
-			Value: oxide.PrivateIpv4StackCreate{
-				Ip: oxide.Ipv4Assignment{
-					Type:  oxide.Ipv4AssignmentTypeExplicit,
-					Value: ip,
+			Value: &oxide.PrivateIpStackCreateV4{
+				Value: oxide.PrivateIpv4StackCreate{
+					Ip: oxide.Ipv4Assignment{
+						Type:  oxide.Ipv4AssignmentTypeExplicit,
+						Value: ip,
+					},
 				},
 			},
 		}
 	}
 
 	return oxide.PrivateIpStackCreate{
-		Type: oxide.PrivateIpStackCreateTypeV4,
-		Value: oxide.PrivateIpv4StackCreate{
-			Ip: oxide.Ipv4Assignment{
-				Type: oxide.Ipv4AssignmentTypeAuto,
+		Value: &oxide.PrivateIpStackCreateV4{
+			Value: oxide.PrivateIpv4StackCreate{
+				Ip: oxide.Ipv4Assignment{
+					Type: oxide.Ipv4AssignmentTypeAuto,
+				},
 			},
 		},
 	}

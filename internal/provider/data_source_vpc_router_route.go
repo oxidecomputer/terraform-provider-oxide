@@ -197,8 +197,8 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 
 	// Parse vpcRouterRouteDestinationDataSourceModel into types.Object
 	dm := vpcRouterRouteDestinationDataSourceModel{
-		Type:  types.StringValue(string(route.Destination.Type)),
-		Value: types.StringValue(route.Destination.Value.(string)),
+		Type:  types.StringValue(string(route.Destination.Type())),
+		Value: types.StringValue(route.Destination.String()),
 	}
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
@@ -213,12 +213,12 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 
 	// Parse vpcRouterRouteTargetDataSourceModel into types.Object
 	tm := vpcRouterRouteTargetDataSourceModel{
-		Type: types.StringValue(string(route.Target.Type)),
+		Type: types.StringValue(string(route.Target.Type())),
 	}
 
-	// When the target type is set to "drop" the value will be nil
-	if route.Target.Value != nil {
-		tm.Value = types.StringValue(route.Target.Value.(string))
+	// When the target type is set to "drop" the value will be empty
+	if targetValue := route.Target.String(); targetValue != "" {
+		tm.Value = types.StringValue(targetValue)
 	}
 
 	targetAttributeTypes := map[string]attr.Type{
