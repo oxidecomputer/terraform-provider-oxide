@@ -206,24 +206,38 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	destination, err := newRouteDestination(
+		plan.Destination.Type.ValueString(),
+		plan.Destination.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating VPC router route",
+			"Could not create route destination: "+err.Error(),
+		)
+		return
+	}
+
+	target, err := newRouteTarget(
+		plan.Target.Type.ValueString(),
+		plan.Target.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating VPC router route",
+			"Could not create route target: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcRouterRouteCreateParams{
 		Router: oxide.NameOrId(plan.VPCRouterID.ValueString()),
 		Body: &oxide.RouterRouteCreate{
 			Description: plan.Description.ValueString(),
-			Destination: oxide.RouteDestination{
-				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
-				Value: plan.Destination.Value.ValueString(),
-			},
-			Name: oxide.Name(plan.Name.ValueString()),
-			Target: oxide.RouteTarget{
-				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
-			},
+			Destination: destination,
+			Name:        oxide.Name(plan.Name.ValueString()),
+			Target:      target,
 		},
-	}
-
-	// When the target type is set to "drop" the value will be nil
-	if !plan.Target.Value.IsNull() {
-		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
 
 	vpcRouterRoute, err := r.client.VpcRouterRouteCreate(ctx, params)
@@ -286,18 +300,34 @@ func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 	tflog.Trace(ctx, fmt.Sprintf("read VPC RouterRoute with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
 
+	destValue, err := routeDestinationValue(vpcRouterRoute.Destination)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading VPC router route",
+			"Could not parse route destination: "+err.Error(),
+		)
+		return
+	}
 	dm := vpcRouterRouteDestinationModel{
-		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type)),
-		Value: types.StringValue(vpcRouterRoute.Destination.Value.(string)),
+		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type())),
+		Value: types.StringValue(destValue),
 	}
 
 	tm := vpcRouterRouteTargetModel{
-		Type: types.StringValue(string(vpcRouterRoute.Target.Type)),
+		Type: types.StringValue(string(vpcRouterRoute.Target.Type())),
 	}
 
-	// When the target type is set to "drop" the value will be nil
-	if vpcRouterRoute.Target.Value != nil {
-		tm.Value = types.StringValue(vpcRouterRoute.Target.Value.(string))
+	// When the target type is set to "drop" the value will be empty
+	targetValue, err := routeTargetValue(vpcRouterRoute.Target)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading VPC router route",
+			"Could not parse route target: "+err.Error(),
+		)
+		return
+	}
+	if targetValue != "" {
+		tm.Value = types.StringValue(targetValue)
 	}
 
 	state.Description = types.StringValue(vpcRouterRoute.Description)
@@ -343,24 +373,38 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	destination, err := newRouteDestination(
+		plan.Destination.Type.ValueString(),
+		plan.Destination.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC router route",
+			"Could not create route destination: "+err.Error(),
+		)
+		return
+	}
+
+	target, err := newRouteTarget(
+		plan.Target.Type.ValueString(),
+		plan.Target.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC router route",
+			"Could not create route target: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcRouterRouteUpdateParams{
 		Route: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.RouterRouteUpdate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Destination: oxide.RouteDestination{
-				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
-				Value: plan.Destination.Value.ValueString(),
-			},
-			Target: oxide.RouteTarget{
-				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
-			},
+			Destination: destination,
+			Target:      target,
 		},
-	}
-
-	// When the target type is set to "drop" the value will be nil
-	if !plan.Target.Value.IsNull() {
-		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
 
 	vpcRouterRoute, err := r.client.VpcRouterRouteUpdate(ctx, params)
@@ -418,4 +462,60 @@ func (r *vpcRouterRouteResource) Delete(ctx context.Context, req resource.Delete
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("deleted VPC router route with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+}
+
+// newRouteDestination creates a RouteDestination from type and value strings.
+func newRouteDestination(typeStr, value string) (oxide.RouteDestination, error) {
+	switch typeStr {
+	case "ip":
+		return oxide.RouteDestination{
+			Value: &oxide.RouteDestinationIp{Value: value},
+		}, nil
+	case "ip_net":
+		return oxide.RouteDestination{
+			Value: &oxide.RouteDestinationIpNet{Value: value},
+		}, nil
+	case "vpc":
+		return oxide.RouteDestination{
+			Value: &oxide.RouteDestinationVpc{Value: oxide.Name(value)},
+		}, nil
+	case "subnet":
+		return oxide.RouteDestination{
+			Value: &oxide.RouteDestinationSubnet{Value: oxide.Name(value)},
+		}, nil
+	default:
+		return oxide.RouteDestination{}, fmt.Errorf("unknown route destination type: %q", typeStr)
+	}
+}
+
+// newRouteTarget creates a RouteTarget from type and value strings.
+func newRouteTarget(typeStr, value string) (oxide.RouteTarget, error) {
+	switch typeStr {
+	case "ip":
+		return oxide.RouteTarget{
+			Value: &oxide.RouteTargetIp{Value: value},
+		}, nil
+	case "vpc":
+		return oxide.RouteTarget{
+			Value: &oxide.RouteTargetVpc{Value: oxide.Name(value)},
+		}, nil
+	case "subnet":
+		return oxide.RouteTarget{
+			Value: &oxide.RouteTargetSubnet{Value: oxide.Name(value)},
+		}, nil
+	case "instance":
+		return oxide.RouteTarget{
+			Value: &oxide.RouteTargetInstance{Value: oxide.Name(value)},
+		}, nil
+	case "internet_gateway":
+		return oxide.RouteTarget{
+			Value: &oxide.RouteTargetInternetGateway{Value: oxide.Name(value)},
+		}, nil
+	case "drop":
+		return oxide.RouteTarget{
+			Value: &oxide.RouteTargetDrop{},
+		}, nil
+	default:
+		return oxide.RouteTarget{}, fmt.Errorf("unknown route target type: %q", typeStr)
+	}
 }

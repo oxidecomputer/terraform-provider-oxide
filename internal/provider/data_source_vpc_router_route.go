@@ -196,9 +196,17 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 	tflog.Trace(ctx, fmt.Sprintf("read VPC router route with ID: %v", route.Id), map[string]any{"success": true})
 
 	// Parse vpcRouterRouteDestinationDataSourceModel into types.Object
+	destValue, err := routeDestinationValue(route.Destination)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading VPC router route",
+			"Could not parse route destination: "+err.Error(),
+		)
+		return
+	}
 	dm := vpcRouterRouteDestinationDataSourceModel{
-		Type:  types.StringValue(string(route.Destination.Type)),
-		Value: types.StringValue(route.Destination.Value.(string)),
+		Type:  types.StringValue(string(route.Destination.Type())),
+		Value: types.StringValue(destValue),
 	}
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
@@ -213,12 +221,20 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 
 	// Parse vpcRouterRouteTargetDataSourceModel into types.Object
 	tm := vpcRouterRouteTargetDataSourceModel{
-		Type: types.StringValue(string(route.Target.Type)),
+		Type: types.StringValue(string(route.Target.Type())),
 	}
 
-	// When the target type is set to "drop" the value will be nil
-	if route.Target.Value != nil {
-		tm.Value = types.StringValue(route.Target.Value.(string))
+	// When the target type is set to "drop" the value will be empty
+	targetValue, err := routeTargetValue(route.Target)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading VPC router route",
+			"Could not parse route target: "+err.Error(),
+		)
+		return
+	}
+	if targetValue != "" {
+		tm.Value = types.StringValue(targetValue)
 	}
 
 	targetAttributeTypes := map[string]attr.Type{
@@ -244,5 +260,45 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+}
+
+// routeDestinationValue extracts the string value from a RouteDestination variant.
+func routeDestinationValue(dest oxide.RouteDestination) (string, error) {
+	switch v := dest.Value.(type) {
+	case *oxide.RouteDestinationIp:
+		return v.Value, nil
+	case *oxide.RouteDestinationIpNet:
+		if s, ok := v.Value.(string); ok {
+			return s, nil
+		}
+		return fmt.Sprintf("%v", v.Value), nil
+	case *oxide.RouteDestinationVpc:
+		return string(v.Value), nil
+	case *oxide.RouteDestinationSubnet:
+		return string(v.Value), nil
+	default:
+		return "", fmt.Errorf("unknown route destination type: %T", dest.Value)
+	}
+}
+
+// routeTargetValue extracts the string value from a RouteTarget variant.
+// Returns empty string for "drop" targets which have no value.
+func routeTargetValue(target oxide.RouteTarget) (string, error) {
+	switch v := target.Value.(type) {
+	case *oxide.RouteTargetIp:
+		return v.Value, nil
+	case *oxide.RouteTargetVpc:
+		return string(v.Value), nil
+	case *oxide.RouteTargetSubnet:
+		return string(v.Value), nil
+	case *oxide.RouteTargetInstance:
+		return string(v.Value), nil
+	case *oxide.RouteTargetInternetGateway:
+		return string(v.Value), nil
+	case *oxide.RouteTargetDrop:
+		return "", nil
+	default:
+		return "", fmt.Errorf("unknown route target type: %T", target.Value)
 	}
 }
