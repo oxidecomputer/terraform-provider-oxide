@@ -53,12 +53,12 @@ test:
 	@ go test $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS)
 
 .PHONY: docs
-docs: tools
-	@ $(GOBIN)/tfplugindocs generate
+docs:
+	@ go tool tfplugindocs generate
 
 .PHONY: check-docs
-check-docs: tools
-	@ $(GOBIN)/tfplugindocs generate
+check-docs:
+	@ go tool tfplugindocs generate
 	@ if ! git diff --exit-code docs; then echo 'Generated docs have changed. Re-generate with `make docs`.'; fi
 
 ## Lints all of the source files
@@ -66,29 +66,29 @@ check-docs: tools
 lint: golangci-lint tfproviderdocs terrafmt tfproviderlint check-docs # configfmt
 
 .PHONY: tfproviderlint
-tfproviderlint: tools
+tfproviderlint:
 	@ echo "-> Running Terraform static analysis linter"
-	@ $(GOBIN)/tfproviderlint ./...
+	@ go tool tfproviderlint ./...
 
 .PHONY: tfproviderdocs
-tfproviderdocs: tools
+tfproviderdocs:
 	@ echo "-> Running terraform provider documentation linter"
-	@ $(GOBIN)/tfproviderdocs check -provider-name $(BINARY) .
+	@ go tool tfproviderdocs check -provider-name $(BINARY) .
 
 .PHONY: golangci-lint
-golangci-lint: tools
+golangci-lint:
 	@ echo "-> Running Go linters"
-	@ $(GOBIN)/golangci-lint run -E gofmt
+	@ go tool golangci-lint run -E gofmt
 
 .PHONY: terrafmt
-terrafmt: tools
+terrafmt:
 	@ echo "-> Running terraform docs codeblocks linter"
-	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt diff -f {} \;
+	@ find ./docs -type f -name "*.md" -exec go tool terrafmt diff -f {} \;
 
 .PHONY: terrafmt-fmt
-terrafmt-fmt: tools
+terrafmt-fmt:
 	@ echo "-> Running terraform docs codeblocks linter"
-	@ find ./docs -type f -name "*.md" -exec $(GOBIN)/terrafmt fmt -f {} \;
+	@ find ./docs -type f -name "*.md" -exec go tool terrafmt fmt -f {} \;
 
 configfmt:
 	@ echo "-> Running terraform linters on .tf files"
@@ -162,68 +162,15 @@ sdk-version:
 	@ go get github.com/oxidecomputer/oxide.go@$(SDK_V)
 	@ go mod tidy
 
-# The following installs the necessary tools within the local /bin directory.
-# This way linting tools don't need to be downloaded/installed every time you
-# want to run the linters.
-VERSION_DIR:=$(GOBIN)/versions
-VERSION_GOLANGCILINT:=v1.64.8
-VERSION_TFPROVIDERDOCS:=v0.12.1
-VERSION_TERRAFMT:=v0.5.4
-VERSION_TFPROVIDERLINT:=v0.31.0
-VERSION_TFPLUGINDOCS:=v0.24.0
+# whatsit is a Rust tool used for changelog generation, installed via cargo.
 VERSION_WHATSIT:=053446d
-
-tools: $(GOBIN)/golangci-lint $(GOBIN)/tfproviderdocs $(GOBIN)/terrafmt $(GOBIN)/tfproviderlint $(GOBIN)/tfplugindocs
 
 tools-private: $(GOBIN)/whatsit
 
 $(GOBIN):
 	@ mkdir -p $(GOBIN)
 
-$(VERSION_DIR): | $(GOBIN)
-	@ mkdir -p $(GOBIN)/versions
-
-$(VERSION_DIR)/.version-golangci-lint-$(VERSION_GOLANGCILINT): | $(VERSION_DIR)
-	@ rm -f $(VERSION_DIR)/.version-golangci-lint-*
-	@ echo $(VERSION_GOLANGCILINT) > $(VERSION_DIR)/.version-golangci-lint-$(VERSION_GOLANGCILINT)
-
-$(GOBIN)/golangci-lint: $(VERSION_DIR)/.version-golangci-lint-$(VERSION_GOLANGCILINT) | $(GOBIN)
-	@ echo "-> Installing golangci-lint..."
-	@ curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOBIN) $(VERSION_GOLANGCILINT)
-
-$(VERSION_DIR)/.version-tfproviderdocs-$(VERSION_TFPROVIDERDOCS): | $(VERSION_DIR)
-	@ rm -f $(VERSION_DIR)/.version-tfproviderdocs-*
-	@ echo $(VERSION_TFPROVIDERDOCS) > $(VERSION_DIR)/.version-tfproviderdocs-$(VERSION_TFPROVIDERDOCS)
-
-$(GOBIN)/tfproviderdocs: $(VERSION_DIR)/.version-tfproviderdocs-$(VERSION_TFPROVIDERDOCS) | $(GOBIN)
-	@ echo "-> Installing tfproviderdocs..."
-	@ go install github.com/bflad/tfproviderdocs@$(VERSION_TFPROVIDERDOCS)
-
-$(VERSION_DIR)/.version-terrafmt-$(VERSION_TERRAFMT): | $(VERSION_DIR)
-	@ rm -f $(VERSION_DIR)/.version-terrafmt-*
-	@ echo $(VERSION_TERRAFMT) > $(VERSION_DIR)/.version-terrafmt-$(VERSION_TERRAFMT)
-
-$(GOBIN)/terrafmt: $(VERSION_DIR)/.version-terrafmt-$(VERSION_TERRAFMT) | $(GOBIN)
-	@ echo "-> Installing terrafmt..."
-	@ go install github.com/katbyte/terrafmt@$(VERSION_TERRAFMT)
-
-$(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT): | $(VERSION_DIR)
-	@ rm -f $(VERSION_DIR)/.version-tfproviderlint-*
-	@ echo $(VERSION_TFPROVIDERLINT) > $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT)
-
-$(GOBIN)/tfproviderlint: $(VERSION_DIR)/.version-tfproviderlint-$(VERSION_TFPROVIDERLINT) | $(GOBIN)
-	@ echo "-> Installing tfproviderlint..."
-	@ go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@$(VERSION_TFPROVIDERLINT)
-
-$(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT): | $(VERSION_DIR)
-	@ rm -f $(VERSION_DIR)/.version-whatsit-*
-	@ echo $(VERSION_WHATSIT) > $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT)
-
 # TODO: actually release a version of whatsit to use the tag flag
-$(GOBIN)/whatsit: $(VERSION_DIR)/.version-whatsit-$(VERSION_WHATSIT) | $(GOBIN)
+$(GOBIN)/whatsit: | $(GOBIN)
 	@ echo "-> Installing whatsit..."
 	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git#$(VERSION_WHATSIT) --branch main --root ./
-
-$(GOBIN)/tfplugindocs:
-	@ echo "-> Installing tfplugindocs..."
-	@ go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@$(VERSION_TFPLUGINDOCS)
