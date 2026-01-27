@@ -3,7 +3,11 @@ services:
     build: "."
     image: "acctest-omicron-dev:${TEST_ACC_DOCKER_TAG:-latest}"
     platform: "linux/amd64"
-    command: "/bin/bash -c 'source env.sh && cargo xtask omicron-dev run-all'"
+    command:
+      - "omicron-dev"
+      - "run-all"
+      - "--nexus-config=/omicron/nexus/examples/config.toml"
+      - "--gateway-config=/omicron/gateway-test-utils/configs/sp_sim_config.test.toml"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:12220"]
       interval: "5s"
