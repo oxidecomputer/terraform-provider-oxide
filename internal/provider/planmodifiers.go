@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-// RequiresReplaceUnlessEmptyStringToNull returns a resource.RequiresReplaceIfFunc that
+// RequiresReplaceUnlessEmptyStringOrNull returns a resource.RequiresReplaceIfFunc that
 // returns true unless the change is from an empty string or null.
 //
 // This is particularly helpful for creating new nested objects that cannot be modified

@@ -56,12 +56,20 @@ func NewFloatingIPResource() resource.Resource {
 
 // Metadata configures the Terraform resource name for the Oxide floating IP
 // resource.
-func (f *floatingIPResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (f *floatingIPResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_floating_ip"
 }
 
 // Configure sets up necessary data or clients needed by the floatingIPResource.
-func (f *floatingIPResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (f *floatingIPResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -70,12 +78,20 @@ func (f *floatingIPResource) Configure(ctx context.Context, req resource.Configu
 }
 
 // ImportState imports an Oxide floating IP using its ID.
-func (f *floatingIPResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (f *floatingIPResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the attributes for this Oxide floating IP resource.
-func (f *floatingIPResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (f *floatingIPResource) Schema(
+	ctx context.Context,
+	req resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages Oxide floating IPs.
@@ -142,7 +158,11 @@ This resource manages Oxide floating IPs.
 }
 
 // Create creates an Oxide floating IP using the Oxide API.
-func (f *floatingIPResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (f *floatingIPResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan floatingIPResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -206,7 +226,11 @@ func (f *floatingIPResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created floating IP with ID: %v", floatingIP.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created floating IP with ID: %v", floatingIP.Id),
+		map[string]any{"success": true},
+	)
 
 	plan.ID = types.StringValue(floatingIP.Id)
 	plan.Name = types.StringValue(string(floatingIP.Name))
@@ -225,7 +249,11 @@ func (f *floatingIPResource) Create(ctx context.Context, req resource.CreateRequ
 }
 
 // Read fetches an Oxide floating IP from the Oxide API.
-func (f *floatingIPResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (f *floatingIPResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state floatingIPResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -259,7 +287,11 @@ func (f *floatingIPResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read floating IP with ID: %v", floatingIP.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read floating IP with ID: %v", floatingIP.Id),
+		map[string]any{"success": true},
+	)
 
 	state.ID = types.StringValue(floatingIP.Id)
 	state.Name = types.StringValue(string(floatingIP.Name))
@@ -280,7 +312,11 @@ func (f *floatingIPResource) Read(ctx context.Context, req resource.ReadRequest,
 // Update updates an Oxide floating IP using the Oxide API. Not all attributes
 // can be updated. Refer to [Schema] and the floating_ip_update Oxide API
 // documentation for more information.
-func (f *floatingIPResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (f *floatingIPResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan floatingIPResourceModel
 	var state floatingIPResourceModel
 
@@ -320,7 +356,11 @@ func (f *floatingIPResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("updated floating IP with ID: %v", floatingIP.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated floating IP with ID: %v", floatingIP.Id),
+		map[string]any{"success": true},
+	)
 
 	plan.ID = types.StringValue(floatingIP.Id)
 	plan.Name = types.StringValue(string(floatingIP.Name))
@@ -339,7 +379,11 @@ func (f *floatingIPResource) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 // Delete deletes an Oxide floating IP using the Oxide API.
-func (f *floatingIPResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (f *floatingIPResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state floatingIPResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -370,5 +414,9 @@ func (f *floatingIPResource) Delete(ctx context.Context, req resource.DeleteRequ
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted floating IP with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted floating IP with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

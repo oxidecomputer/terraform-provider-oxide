@@ -1102,17 +1102,26 @@ resource "oxide_instance" "{{.BlockName}}" {
 		Steps: []resource.TestStep{
 			{
 				Config: configAntiAffinityGroups,
-				Check:  checkResourceInstanceAntiAffinityGroups(resourceName, instanceAntiAffinityGroupsName),
+				Check: checkResourceInstanceAntiAffinityGroups(
+					resourceName,
+					instanceAntiAffinityGroupsName,
+				),
 			},
 			// Add another anti-affinity group
 			{
 				Config: configAntiAffinityGroupsUpdate,
-				Check:  checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceAntiAffinityGroupsName),
+				Check: checkResourceInstanceAntiAffinityGroupsUpdate(
+					resourceName,
+					instanceAntiAffinityGroupsName,
+				),
 			},
 			// Remove an anti-affinity group
 			{
 				Config: configAntiAffinityGroupsUpdate2,
-				Check:  checkResourceInstanceAntiAffinityGroups(resourceName, instanceAntiAffinityGroupsName),
+				Check: checkResourceInstanceAntiAffinityGroups(
+					resourceName,
+					instanceAntiAffinityGroupsName,
+				),
 			},
 			{
 				ResourceName:      resourceName,
@@ -1179,23 +1188,43 @@ resource "oxide_instance" "test_instance" {
 							VersionConstraint: "0.17.0",
 						},
 					},
-					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
-					Check:  resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+					Config: generateConfig(
+						t,
+						instanceName,
+						map[string]string{"host_name": "terraform-acc-myhost"},
+					),
+					Check: resource.TestCheckResourceAttr(
+						resourceName,
+						"host_name",
+						"terraform-acc-myhost",
+					),
 				},
 				// Update provider without modifying config.
 				// Expect no-op.
 				{
 					ExternalProviders:        map[string]resource.ExternalProvider{},
 					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-					Config:                   generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					Config: generateConfig(
+						t,
+						instanceName,
+						map[string]string{"host_name": "terraform-acc-myhost"},
+					),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectEmptyPlan(),
 						},
 					},
 					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
-						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"host_name",
+							"terraform-acc-myhost",
+						),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"hostname",
+							"terraform-acc-myhost",
+						),
 					}...),
 				},
 				// Update host_name to hostname.
@@ -1203,15 +1232,30 @@ resource "oxide_instance" "test_instance" {
 				{
 					ExternalProviders:        map[string]resource.ExternalProvider{},
 					ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
-					Config:                   generateConfig(t, instanceName, map[string]string{"hostname": "terraform-acc-myhost"}),
+					Config: generateConfig(
+						t,
+						instanceName,
+						map[string]string{"hostname": "terraform-acc-myhost"},
+					),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionNoop),
+							plancheck.ExpectResourceAction(
+								resourceName,
+								plancheck.ResourceActionNoop,
+							),
 						},
 					},
 					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
-						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"host_name",
+							"terraform-acc-myhost",
+						),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"hostname",
+							"terraform-acc-myhost",
+						),
 					}...),
 				},
 			},
@@ -1230,24 +1274,51 @@ resource "oxide_instance" "test_instance" {
 			Steps: []resource.TestStep{
 				// Initial state using hostname.
 				{
-					Config: generateConfig(t, instanceName, map[string]string{"hostname": "terraform-acc-myhost"}),
+					Config: generateConfig(
+						t,
+						instanceName,
+						map[string]string{"hostname": "terraform-acc-myhost"},
+					),
 					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
-						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"hostname",
+							"terraform-acc-myhost",
+						),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"host_name",
+							"terraform-acc-myhost",
+						),
 					}...),
 				},
 				// Update hostname to host_name.
 				// Expect no-op.
 				{
-					Config: generateConfig(t, instanceName, map[string]string{"host_name": "terraform-acc-myhost"}),
+					Config: generateConfig(
+						t,
+						instanceName,
+						map[string]string{"host_name": "terraform-acc-myhost"},
+					),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionNoop),
+							plancheck.ExpectResourceAction(
+								resourceName,
+								plancheck.ResourceActionNoop,
+							),
 						},
 					},
 					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
-						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"hostname",
+							"terraform-acc-myhost",
+						),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"host_name",
+							"terraform-acc-myhost",
+						),
 					}...),
 				},
 			},
@@ -1274,38 +1345,80 @@ resource "oxide_instance" "test_instance" {
 				Steps: []resource.TestStep{
 					// Initial state.
 					{
-						Config: generateConfig(t, instanceName, map[string]string{tc.from: "terraform-acc-myhost"}),
+						Config: generateConfig(
+							t,
+							instanceName,
+							map[string]string{tc.from: "terraform-acc-myhost"},
+						),
 						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost"),
-							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost"),
+							resource.TestCheckResourceAttr(
+								resourceName,
+								tc.from,
+								"terraform-acc-myhost",
+							),
+							resource.TestCheckResourceAttr(
+								resourceName,
+								tc.to,
+								"terraform-acc-myhost",
+							),
 						}...),
 					},
 					// Update hostname value.
 					// Expect a resource replacement.
 					{
-						Config: generateConfig(t, instanceName, map[string]string{tc.from: "terraform-acc-myhost-updated"}),
+						Config: generateConfig(
+							t,
+							instanceName,
+							map[string]string{tc.from: "terraform-acc-myhost-updated"},
+						),
 						ConfigPlanChecks: resource.ConfigPlanChecks{
 							PreApply: []plancheck.PlanCheck{
-								plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+								plancheck.ExpectResourceAction(
+									resourceName,
+									plancheck.ResourceActionReplace,
+								),
 							},
 						},
 						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost-updated"),
-							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost-updated"),
+							resource.TestCheckResourceAttr(
+								resourceName,
+								tc.from,
+								"terraform-acc-myhost-updated",
+							),
+							resource.TestCheckResourceAttr(
+								resourceName,
+								tc.to,
+								"terraform-acc-myhost-updated",
+							),
 						}...),
 					},
 					// Update hostname attribute name and value.
 					// Expect a resource replacement.
 					{
-						Config: generateConfig(t, instanceName, map[string]string{tc.to: "terraform-acc-myhost"}),
+						Config: generateConfig(
+							t,
+							instanceName,
+							map[string]string{tc.to: "terraform-acc-myhost"},
+						),
 						ConfigPlanChecks: resource.ConfigPlanChecks{
 							PreApply: []plancheck.PlanCheck{
-								plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+								plancheck.ExpectResourceAction(
+									resourceName,
+									plancheck.ResourceActionReplace,
+								),
 							},
 						},
 						Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-							resource.TestCheckResourceAttr(resourceName, tc.to, "terraform-acc-myhost"),
-							resource.TestCheckResourceAttr(resourceName, tc.from, "terraform-acc-myhost"),
+							resource.TestCheckResourceAttr(
+								resourceName,
+								tc.to,
+								"terraform-acc-myhost",
+							),
+							resource.TestCheckResourceAttr(
+								resourceName,
+								tc.from,
+								"terraform-acc-myhost",
+							),
 						}...),
 					},
 				},
@@ -1327,8 +1440,16 @@ resource "oxide_instance" "test_instance" {
 						"hostname": "terraform-acc-myhost",
 					}),
 					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
-						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"hostname",
+							"terraform-acc-myhost",
+						),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"host_name",
+							"terraform-acc-myhost",
+						),
 					}...),
 				},
 				{
@@ -1354,8 +1475,16 @@ resource "oxide_instance" "test_instance" {
 						"host_name": "terraform-acc-myhost",
 					}),
 					Check: resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-						resource.TestCheckResourceAttr(resourceName, "host_name", "terraform-acc-myhost"),
-						resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"host_name",
+							"terraform-acc-myhost",
+						),
+						resource.TestCheckResourceAttr(
+							resourceName,
+							"hostname",
+							"terraform-acc-myhost",
+						),
 					}...),
 				},
 				{
@@ -1378,8 +1507,10 @@ resource "oxide_instance" "test_instance" {
 			CheckDestroy:             testAccInstanceDestroy,
 			Steps: []resource.TestStep{
 				{
-					Config:      generateConfig(t, instanceName, map[string]string{}),
-					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
+					Config: generateConfig(t, instanceName, map[string]string{}),
+					ExpectError: regexp.MustCompile(
+						`one \(and only one\) of \[hostname\] is required`,
+					),
 				},
 			},
 		})
@@ -1399,7 +1530,9 @@ resource "oxide_instance" "test_instance" {
 						"hostname":  "terraform-acc-myhost",
 						"host_name": "terraform-acc-myhost",
 					}),
-					ExpectError: regexp.MustCompile(`one \(and only one\) of \[hostname\] is required`),
+					ExpectError: regexp.MustCompile(
+						`one \(and only one\) of \[hostname\] is required`,
+					),
 				},
 			},
 		})
@@ -1433,7 +1566,11 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"network_interfaces.0.description",
+			"a sample nic",
+		),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.mac_address"),
@@ -1546,7 +1683,11 @@ func checkResourceInstanceNic(resourceName, instanceName, nicName string) resour
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.description", "a sample nic"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"network_interfaces.0.description",
+			"a sample nic",
+		),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.mac_address"),
@@ -1639,7 +1780,9 @@ func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.Te
 	}...)
 }
 
-func checkResourceInstanceAntiAffinityGroups(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceInstanceAntiAffinityGroups(
+	resourceName, instanceName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1655,7 +1798,9 @@ func checkResourceInstanceAntiAffinityGroups(resourceName, instanceName string) 
 	}...)
 }
 
-func checkResourceInstanceAntiAffinityGroupsUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceInstanceAntiAffinityGroupsUpdate(
+	resourceName, instanceName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),

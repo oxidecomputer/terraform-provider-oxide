@@ -140,12 +140,20 @@ func NewSwitchPortSettingsResource() resource.Resource {
 }
 
 // Metadata sets the metadata for the resource.
-func (r *switchPortSettingsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *switchPortSettingsResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_switch_port_settings"
 }
 
 // Configure sets data needed by other methods for this resources.
-func (r *switchPortSettingsResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *switchPortSettingsResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -154,12 +162,20 @@ func (r *switchPortSettingsResource) Configure(_ context.Context, req resource.C
 }
 
 // ImportState contains logic on how to import the resource.
-func (r *switchPortSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *switchPortSettingsResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the Terraform configuration for this resource.
-func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *switchPortSettingsResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -225,7 +241,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 												Description: "Type of filter to apply.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.ImportExportPolicyTypeNoFiltering),
+														string(
+															oxide.ImportExportPolicyTypeNoFiltering,
+														),
 														string(oxide.ImportExportPolicyTypeAllow),
 													),
 												},
@@ -246,7 +264,9 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 												Description: "Type of filter to apply.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.ImportExportPolicyTypeNoFiltering),
+														string(
+															oxide.ImportExportPolicyTypeNoFiltering,
+														),
 														string(oxide.ImportExportPolicyTypeAllow),
 													),
 												},
@@ -513,7 +533,11 @@ func (r *switchPortSettingsResource) Schema(ctx context.Context, _ resource.Sche
 }
 
 // Create sets the switch port settings.
-func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *switchPortSettingsResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan switchPortSettingsModel
 
 	// Read Terraform plan data into the model.
@@ -545,7 +569,11 @@ func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created switch port settings with ID: %v", settings.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created switch port settings with ID: %v", settings.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(settings.Id)
@@ -560,7 +588,11 @@ func (r *switchPortSettingsResource) Create(ctx context.Context, req resource.Cr
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *switchPortSettingsResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state switchPortSettingsModel
 
 	// Read Terraform prior state data into the model.
@@ -577,9 +609,12 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	settings, err := r.client.NetworkingSwitchPortSettingsView(ctx, oxide.NetworkingSwitchPortSettingsViewParams{
-		Port: oxide.NameOrId(state.ID.ValueString()),
-	})
+	settings, err := r.client.NetworkingSwitchPortSettingsView(
+		ctx,
+		oxide.NetworkingSwitchPortSettingsViewParams{
+			Port: oxide.NameOrId(state.ID.ValueString()),
+		},
+	)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -589,7 +624,11 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read Switch Port Settings with ID: %v", settings.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read Switch Port Settings with ID: %v", settings.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema.
 	state.ID = types.StringValue(settings.Id)
@@ -623,7 +662,11 @@ func (r *switchPortSettingsResource) Read(ctx context.Context, req resource.Read
 // Update updates the resource and sets the updated Terraform state on success.
 // There is no Oxide API to update switch port settings so all the switch port
 // settings are overwritten using the `switch_port_settings_create` API.
-func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) { // plan is the resource data model for the update request.
+func (r *switchPortSettingsResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) { // plan is the resource data model for the update request.
 	// Read the Terraform plan data.
 	var plan switchPortSettingsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -662,7 +705,11 @@ func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("updated switch port settings with ID: %v", settings.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated switch port settings with ID: %v", settings.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(settings.Id)
@@ -677,7 +724,11 @@ func (r *switchPortSettingsResource) Update(ctx context.Context, req resource.Up
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *switchPortSettingsResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	// Read the Terraform state.
 	var state switchPortSettingsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -708,7 +759,11 @@ func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.De
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted Switch Port Settings with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted Switch Port Settings with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }
 
 // toSwitchPortSettingsModel converts [oxide.SwitchPortSettings]
@@ -738,7 +793,9 @@ func (r *switchPortSettingsResource) Delete(ctx context.Context, req resource.De
 // attributes as well. That's why you'll see a bunch of anonymous functions to
 // set values to null if they are either null or their zero value as retrieved
 // from Oxide.
-func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSettingsModel, diag.Diagnostics) {
+func toSwitchPortSettingsModel(
+	settings *oxide.SwitchPortSettings,
+) (switchPortSettingsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	model := switchPortSettingsModel{
@@ -1079,7 +1136,9 @@ func toSwitchPortSettingsModel(settings *oxide.SwitchPortSettings) (switchPortSe
 // to [oxide.NetworkingSwitchPortSettingsCreateParams]. This is far simpler than
 // [toSwitchPortSettingsModel] since the Oxide `switch_port_settings_create` API
 // request body matches the Terraform schema.
-func toNetworkingSwitchPortSettingsCreateParams(model switchPortSettingsModel) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
+func toNetworkingSwitchPortSettingsCreateParams(
+	model switchPortSettingsModel,
+) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
 	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{
 			Name:        oxide.Name(model.Name.ValueString()),

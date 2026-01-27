@@ -42,12 +42,20 @@ type vpcInternetGatewayDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcInternetGatewayDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *vpcInternetGatewayDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_internet_gateway"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcInternetGatewayDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *vpcInternetGatewayDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -55,7 +63,11 @@ func (d *vpcInternetGatewayDataSource) Configure(_ context.Context, req datasour
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcInternetGatewayDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *vpcInternetGatewayDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified VPC internet gateway.
@@ -98,7 +110,11 @@ Retrieve information about a specified VPC internet gateway.
 	}
 }
 
-func (d *vpcInternetGatewayDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *vpcInternetGatewayDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state vpcInternetGatewayDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -128,7 +144,11 @@ func (d *vpcInternetGatewayDataSource) Read(ctx context.Context, req datasource.
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC internet gateway with ID: %v", vpcInternetGateway.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC internet gateway with ID: %v", vpcInternetGateway.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(vpcInternetGateway.Description)
 	state.ID = types.StringValue(vpcInternetGateway.Id)

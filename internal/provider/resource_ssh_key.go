@@ -48,12 +48,20 @@ type sshKeyResourceModel struct {
 }
 
 // Metadata sets the resource type name.
-func (r *sshKeyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *sshKeyResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_ssh_key"
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *sshKeyResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *sshKeyResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -62,12 +70,20 @@ func (r *sshKeyResource) Configure(_ context.Context, req resource.ConfigureRequ
 }
 
 // ImportState configures the resource to be imported by its ID.
-func (r *sshKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *sshKeyResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *sshKeyResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *sshKeyResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages SSH keys.
@@ -125,7 +141,11 @@ UUID.`),
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *sshKeyResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan sshKeyResourceModel
 
 	// Read Terraform plan data into the model.
@@ -158,7 +178,11 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("created SSH key with ID: %v", sshKey.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created SSH key with ID: %v", sshKey.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(sshKey.Id)
@@ -174,7 +198,11 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *sshKeyResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state sshKeyResourceModel
 
 	// Read Terraform prior state data into the model.
@@ -207,7 +235,11 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read SSH key with ID: %v", sshKey.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read SSH key with ID: %v", sshKey.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(sshKey.Description)
 	state.ID = types.StringValue(sshKey.Id)
@@ -229,7 +261,11 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 // to tell Terraform to destroy and create this resource upon change to its
 // attributes. If an update API is created in the future this method should be
 // implemented.
-func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *sshKeyResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	resp.Diagnostics.AddError(
 		"Error updating SSH key",
 		"the oxide API currently does not support updating SSH keys",
@@ -237,7 +273,11 @@ func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *sshKeyResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state sshKeyResourceModel
 
 	// Read Terraform prior state data into the model
@@ -266,5 +306,9 @@ func (r *sshKeyResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted SSH key with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted SSH key with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

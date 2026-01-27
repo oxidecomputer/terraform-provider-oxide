@@ -54,12 +54,20 @@ func NewFloatingIPDataSource() datasource.DataSource {
 
 // Metadata configures the Terraform data source name for the Oxide floating IP
 // data source.
-func (f *floatingIPDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (f *floatingIPDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_floating_ip"
 }
 
 // Configure sets up necessary data or clients needed by the floatingIPDataSource.
-func (f *floatingIPDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (f *floatingIPDataSource) Configure(
+	ctx context.Context,
+	req datasource.ConfigureRequest,
+	resp *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -68,7 +76,11 @@ func (f *floatingIPDataSource) Configure(ctx context.Context, req datasource.Con
 }
 
 // Schema defines the attributes for this Oxide floating IP data source.
-func (f *floatingIPDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (f *floatingIPDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified floating IP.
@@ -122,7 +134,11 @@ Retrieve information about a specified floating IP.
 }
 
 // Read fetches an Oxide floating IP from the Oxide API.
-func (f *floatingIPDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (f *floatingIPDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state floatingIPDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -157,7 +173,11 @@ func (f *floatingIPDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read floating IP with ID: %v", floatingIP.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read floating IP with ID: %v", floatingIP.Id),
+		map[string]any{"success": true},
+	)
 
 	state.ID = types.StringValue(floatingIP.Id)
 	state.Name = types.StringValue(string(floatingIP.Name))

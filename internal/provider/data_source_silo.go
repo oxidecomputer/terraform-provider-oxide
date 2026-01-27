@@ -40,12 +40,20 @@ func NewSiloDataSource() datasource.DataSource {
 }
 
 // Metadata returns the data source type name.
-func (d *siloDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *siloDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_silo"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *siloDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *siloDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -54,7 +62,11 @@ func (d *siloDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 }
 
 // Schema defines the schema for the data source.
-func (d *siloDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *siloDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified silo.
@@ -94,7 +106,11 @@ Retrieve information about a specified silo.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *siloDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *siloDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state siloDataSourceModel
 
 	// Read Terraform configuration data into the model

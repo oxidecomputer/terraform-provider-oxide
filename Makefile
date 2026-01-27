@@ -78,7 +78,12 @@ tfproviderdocs:
 .PHONY: golangci-lint
 golangci-lint:
 	@ echo "-> Running Go linters"
-	@ go tool golangci-lint run -E gofmt
+	@ go tool golangci-lint run
+
+.PHONY: golangci-fmt
+golangci-fmt:
+	@ echo "-> Formatting Go code"
+	@ go tool golangci-lint fmt
 
 .PHONY: terrafmt
 terrafmt:

@@ -58,12 +58,20 @@ type imageResourceDigestModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *imageResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *imageResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_image"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *imageResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *imageResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -72,12 +80,20 @@ func (r *imageResource) Configure(_ context.Context, req resource.ConfigureReque
 }
 
 // ImportState imports an existing image resource into Terraform state.
-func (r *imageResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *imageResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *imageResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *imageResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages images.
@@ -105,8 +121,10 @@ This resource manages images.
 				},
 			},
 			"os": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: replaceBackticks(`OS image distribution. Example: ''"alpine"''.`),
+				Required: true,
+				MarkdownDescription: replaceBackticks(
+					`OS image distribution. Example: ''"alpine"''.`,
+				),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -170,7 +188,11 @@ This resource manages images.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *imageResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan imageResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -210,7 +232,11 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created image with ID: %v", image.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created image with ID: %v", image.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(image.Id)
@@ -247,7 +273,11 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *imageResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state imageResourceModel
 
 	// Read Terraform prior state data into the model
@@ -281,7 +311,11 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read image with ID: %v", image.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read image with ID: %v", image.Id),
+		map[string]any{"success": true},
+	)
 
 	state.BlockSize = types.Int64Null()
 	if image.BlockSize > 0 {
@@ -326,14 +360,22 @@ func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *imageResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *imageResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	resp.Diagnostics.AddError(
 		"Error updating image",
 		"the oxide API currently does not support updating images")
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *imageResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *imageResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state imageResourceModel
 
 	// Read Terraform prior state data into the model

@@ -106,7 +106,11 @@ func checkResourceProject(resourceName, projectName string) resource.TestCheckFu
 func checkResourceProjectUpdate(resourceName, projectName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a new description for project"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"description",
+			"a new description for project",
+		),
 		resource.TestCheckResourceAttr(resourceName, "name", projectName),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

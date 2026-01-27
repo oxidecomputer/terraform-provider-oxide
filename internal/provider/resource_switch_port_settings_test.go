@@ -32,7 +32,8 @@ import (
 //
 // With all that in mind, you can run this test like so.
 //
-// TEST_ACC_NAME=TestAccSiloResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME> make testacc
+// TEST_ACC_NAME=TestAccSiloResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME>
+// make testacc
 //
 // A future iteration of this test can make use of the currently
 // non-existent `oxide_address_lot` data source to remove the need for
@@ -224,7 +225,11 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", name),
-		resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance testing."),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"description",
+			"Terraform acceptance testing.",
+		),
 		resource.TestCheckResourceAttr(resourceName, "port_config.geometry", "qsfp28x1"),
 		resource.TestCheckNoResourceAttr(resourceName, "bgp_peers"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -233,7 +238,11 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 		resource.TestCheckResourceAttr(resourceName, "addresses.#", "1"),
 		resource.TestCheckResourceAttr(resourceName, "addresses.0.link_name", "phy0"),
 		resource.TestCheckResourceAttr(resourceName, "addresses.0.addresses.#", "1"),
-		resource.TestCheckResourceAttr(resourceName, "addresses.0.addresses.0.address", "0.0.0.0/0"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"addresses.0.addresses.0.address",
+			"0.0.0.0/0",
+		),
 		resource.TestCheckResourceAttrSet(resourceName, "addresses.0.addresses.0.address_lot_id"),
 		resource.TestCheckNoResourceAttr(resourceName, "addresses.0.addresses.0.vlan_id"),
 
@@ -276,11 +285,18 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 	}...)
 }
 
-func checkResourceSwitchPortSettingsUpdate(resourceName string, name string) resource.TestCheckFunc {
+func checkResourceSwitchPortSettingsUpdate(
+	resourceName string,
+	name string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", name),
-		resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance testing (updated)."),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"description",
+			"Terraform acceptance testing (updated).",
+		),
 		resource.TestCheckResourceAttr(resourceName, "port_config.geometry", "qsfp28x1"),
 		resource.TestCheckNoResourceAttr(resourceName, "bgp_peers"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -289,7 +305,11 @@ func checkResourceSwitchPortSettingsUpdate(resourceName string, name string) res
 		resource.TestCheckResourceAttr(resourceName, "addresses.#", "1"),
 		resource.TestCheckResourceAttr(resourceName, "addresses.0.link_name", "phy0"),
 		resource.TestCheckResourceAttr(resourceName, "addresses.0.addresses.#", "1"),
-		resource.TestCheckResourceAttr(resourceName, "addresses.0.addresses.0.address", "0.0.0.0/0"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"addresses.0.addresses.0.address",
+			"0.0.0.0/0",
+		),
 		resource.TestCheckResourceAttrSet(resourceName, "addresses.0.addresses.0.address_lot_id"),
 		resource.TestCheckNoResourceAttr(resourceName, "addresses.0.addresses.0.vlan_id"),
 

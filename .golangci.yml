@@ -1,0 +1,28 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - godoclint
+  disable:
+    - errcheck
+  settings:
+    godoclint:
+      default-rule-set: basic
+      rules:
+        - max-len
+      options:
+        max-len:
+          length: 100
+
+formatters:
+  enable:
+    - gofmt
+    - golines
+  settings:
+    golines:
+      max-len: 100
+      shorten-comments: true
+
+run:
+  timeout: 5m

@@ -6,7 +6,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -90,12 +89,20 @@ type instanceResourceExternalIPModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *instanceResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *instanceResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_instance"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *instanceResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *instanceResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -104,12 +111,20 @@ func (r *instanceResource) Configure(_ context.Context, req resource.ConfigureRe
 }
 
 // ImportState imports an existing instance resource into Terraform state.
-func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *instanceResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *instanceResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: replaceBackticks(`
 This resource manages instances.
@@ -310,9 +325,10 @@ This resource manages instances.
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						// The id attribute is optional, computed, and has a default to account for the
-						// case where an instance created with an external IP using the default IP pool
-						// (i.e., id = null) would drift when read (e.g., id = "") and require updating
+						// The id attribute is optional, computed, and has a default to account for
+						// the case where an instance created with an external IP using the default
+						// IP pool (i.e., id = null) would drift when read (e.g., id = "") and
+						// require updating
 						// in place.
 						"id": schema.StringAttribute{
 							MarkdownDescription: "If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP.",
@@ -369,7 +385,11 @@ Maximum 32 KiB unencoded data.`,
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *instanceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *instanceResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan instanceResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -409,7 +429,9 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Add auto-restart policy if any.
 	if !plan.AutoRestartPolicy.IsNull() {
-		params.Body.AutoRestartPolicy = oxide.InstanceAutoRestartPolicy(plan.AutoRestartPolicy.ValueString())
+		params.Body.AutoRestartPolicy = oxide.InstanceAutoRestartPolicy(
+			plan.AutoRestartPolicy.ValueString(),
+		)
 	}
 
 	// Add boot disk if any.
@@ -417,7 +439,10 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		// Validate whether the boot disk ID is included in `attachments`
 		// This is necessary as the response from InstanceDiskList includes
 		// the boot disk and would result in an inconsistent state in terraform
-		isBootIDPresent, err := attrValueSliceContains(plan.DiskAttachments.Elements(), plan.BootDiskID.ValueString())
+		isBootIDPresent, err := attrValueSliceContains(
+			plan.DiskAttachments.Elements(),
+			plan.BootDiskID.ValueString(),
+		)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error unquoting disk attachments",
@@ -471,8 +496,9 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	// The control plane API counts the BootDisk and the Disk attachments when it calculates the limit on disk attachments.
-	// If bootdisk is set explicitly, we don't want it to be in the API call, but we need it in the state entry.
+	// The control plane API counts the BootDisk and the Disk attachments when it calculates the
+	// limit on disk attachments. If bootdisk is set explicitly, we don't want it to be in the API
+	// call, but we need it in the state entry.
 	params.Body.Disks = filterBootDiskFromDisks(disks, params.Body.BootDisk)
 
 	externalIPs := newExternalIPsOnCreate(plan.ExternalIPs)
@@ -494,7 +520,11 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created instance with ID: %v", instance.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created instance with ID: %v", instance.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
@@ -519,7 +549,11 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 			// Otherwise the state won't be saved.
 			continue
 		}
-		tflog.Trace(ctx, fmt.Sprintf("read instance network interface with ID: %v", nic.Id), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("read instance network interface with ID: %v", nic.Id),
+			map[string]any{"success": true},
+		)
 
 		// Map response body to schema and populate Computed attribute values
 		plan.NetworkInterfaces[i].ID = types.StringValue(nic.Id)
@@ -529,19 +563,18 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		plan.NetworkInterfaces[i].Primary = types.BoolPointerValue(nic.Primary)
 
 		// Setting IPAddress as it is both computed and optional
-		ip := ""
-		if nic.IpStack.Type == oxide.PrivateIpStackTypeV4 {
-			stack, err := ipStackAsIPv4Stack(nic.IpStack)
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Unable to read instance network interface:",
-					"Error: "+err.Error(),
-				)
-				continue
-			}
-			ip = stack.Ip
+		// TODO: Add IPv6 support.
+		v4, ok := nic.IpStack.AsV4()
+		if !ok {
+			resp.Diagnostics.AddError(
+				"Error creating instance network interface",
+				"Expected IPv4 stack, got: "+string(
+					nic.IpStack.Type(),
+				)+". IPv6 support is in progress.",
+			)
+			return
 		}
-		plan.NetworkInterfaces[i].IPAddr = types.StringValue(ip)
+		plan.NetworkInterfaces[i].IPAddr = types.StringValue(v4.Value.Ip)
 
 	}
 
@@ -553,7 +586,11 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *instanceResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state instanceResourceModel
 
 	// Read Terraform prior state data into the model
@@ -587,7 +624,11 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read instance with ID: %v", instance.Id),
+		map[string]any{"success": true},
+	)
 
 	if instance.BootDiskId != "" {
 		state.BootDiskID = types.StringValue(instance.BootDiskId)
@@ -630,7 +671,11 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 		state.SSHPublicKeys = keySet
 	}
 
-	antiAffinityGroupSet, diags := newAssociatedAntiAffinityGroupsOnCreateSet(ctx, r.client, state.ID.ValueString())
+	antiAffinityGroupSet, diags := newAssociatedAntiAffinityGroupsOnCreateSet(
+		ctx,
+		r.client,
+		state.ID.ValueString(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -668,7 +713,11 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *instanceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *instanceResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan instanceResourceModel
 	var state instanceResourceModel
 
@@ -713,7 +762,11 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 
 	// Update external IPs.
 	// We detach external IPs first to account for the case where an ephemeral
@@ -722,13 +775,15 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	// last detachment/attachment wins.
 	{
 		externalIPsToDetach := sliceDiff(state.ExternalIPs, plan.ExternalIPs)
-		resp.Diagnostics.Append(detachExternalIPs(ctx, r.client, externalIPsToDetach, state.ID.ValueString())...)
+		resp.Diagnostics.Append(
+			detachExternalIPs(ctx, r.client, externalIPsToDetach, state.ID.ValueString())...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
 		externalIPsToAttach := sliceDiff(plan.ExternalIPs, state.ExternalIPs)
-		resp.Diagnostics.Append(attachExternalIPs(ctx, r.client, externalIPsToAttach, state.ID.ValueString())...)
+		resp.Diagnostics.Append(
+			attachExternalIPs(ctx, r.client, externalIPsToAttach, state.ID.ValueString())...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -765,7 +820,9 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 			},
 		}
 		if !plan.AutoRestartPolicy.IsNull() {
-			params.Body.AutoRestartPolicy = (*oxide.InstanceAutoRestartPolicy)(plan.AutoRestartPolicy.ValueStringPointer())
+			params.Body.AutoRestartPolicy = (*oxide.InstanceAutoRestartPolicy)(
+				plan.AutoRestartPolicy.ValueStringPointer(),
+			)
 		}
 		if !plan.BootDiskID.IsNull() {
 			params.Body.BootDisk = (*oxide.NameOrId)(plan.BootDiskID.ValueStringPointer())
@@ -780,7 +837,9 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 
 		tflog.Trace(ctx, fmt.Sprintf(
-			"updated boot disk forinstance with ID: %v", instance.Id), map[string]any{"success": true},
+			"updated boot disk forinstance with ID: %v",
+			instance.Id,
+		), map[string]any{"success": true},
 		)
 	}
 
@@ -818,14 +877,21 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 	// Check plan and if it has an ID that the state doesn't then add it
 	antiAffinityGroupsToAdd := sliceDiff(planAntiAffinityGroups, stateAntiAffinityGroups)
-	resp.Diagnostics.Append(addAntiAffinityGroups(ctx, r.client, antiAffinityGroupsToAdd, state.ID.ValueString())...)
+	resp.Diagnostics.Append(
+		addAntiAffinityGroups(ctx, r.client, antiAffinityGroupsToAdd, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Check state and if it has an ID that the plan doesn't then remove it
 	antiAffinityGroupsToRemove := sliceDiff(stateAntiAffinityGroups, planAntiAffinityGroups)
-	resp.Diagnostics.Append(removeAntiAffinityGroups(ctx, r.client, antiAffinityGroupsToRemove, state.ID.ValueString())...)
+	resp.Diagnostics.Append(
+		removeAntiAffinityGroups(
+			ctx,
+			r.client,
+			antiAffinityGroupsToRemove,
+			state.ID.ValueString(),
+		)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -855,7 +921,11 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instance.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read instance with ID: %v", instance.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(instance.Id)
@@ -906,7 +976,11 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *instanceResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state instanceResourceModel
 
 	// Read Terraform prior state data into the model
@@ -942,7 +1016,11 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("stopped instance with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 
 	params2 := oxide.InstanceDeleteParams{
 		Instance: oxide.NameOrId(state.ID.ValueString()),
@@ -956,10 +1034,19 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted instance with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted instance with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }
 
-func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time.Duration, instanceID string) diag.Diagnostics {
+func waitForInstanceStop(
+	ctx context.Context,
+	client *oxide.Client,
+	timeout time.Duration,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	stateConfig := retry.StateChangeConf{
@@ -984,11 +1071,19 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 			instance, err := client.InstanceView(ctx, params)
 			if err != nil {
 				if !is404(err) {
-					return nil, "nil", fmt.Errorf("while polling for the status of instance %v: %v", instanceID, err)
+					return nil, "nil", fmt.Errorf(
+						"while polling for the status of instance %v: %v",
+						instanceID,
+						err,
+					)
 				}
 				return instance, "", nil
 			}
-			tflog.Trace(ctx, fmt.Sprintf("read instance with ID: %v", instanceID), map[string]any{"success": true})
+			tflog.Trace(
+				ctx,
+				fmt.Sprintf("read instance with ID: %v", instanceID),
+				map[string]any{"success": true},
+			)
 			return instance, string(instance.RunState), nil
 		},
 	}
@@ -1005,7 +1100,11 @@ func waitForInstanceStop(ctx context.Context, client *oxide.Client, timeout time
 	return nil
 }
 
-func newAttachedDisksSet(ctx context.Context, client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
+func newAttachedDisksSet(
+	ctx context.Context,
+	client *oxide.Client,
+	instanceID string,
+) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	params := oxide.InstanceDiskListParams{
@@ -1035,7 +1134,11 @@ func newAttachedDisksSet(ctx context.Context, client *oxide.Client, instanceID s
 	return diskSet, nil
 }
 
-func newAssociatedSSHKeysOnCreateSet(ctx context.Context, client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
+func newAssociatedSSHKeysOnCreateSet(
+	ctx context.Context,
+	client *oxide.Client,
+	instanceID string,
+) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	params := oxide.InstanceSshPublicKeyListParams{
@@ -1065,7 +1168,11 @@ func newAssociatedSSHKeysOnCreateSet(ctx context.Context, client *oxide.Client, 
 	return keySet, nil
 }
 
-func newAssociatedAntiAffinityGroupsOnCreateSet(ctx context.Context, client *oxide.Client, instanceID string) (types.Set, diag.Diagnostics) {
+func newAssociatedAntiAffinityGroupsOnCreateSet(
+	ctx context.Context,
+	client *oxide.Client,
+	instanceID string,
+) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	params := oxide.InstanceAntiAffinityGroupListParams{
@@ -1095,7 +1202,11 @@ func newAssociatedAntiAffinityGroupsOnCreateSet(ctx context.Context, client *oxi
 	return groupSet, nil
 }
 
-func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, model []instanceResourceNICModel) (
+func newNetworkInterfaceAttachment(
+	ctx context.Context,
+	client *oxide.Client,
+	model []instanceResourceNICModel,
+) (
 	oxide.InstanceNetworkInterfaceAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -1131,7 +1242,11 @@ func newNetworkInterfaceAttachment(ctx context.Context, client *oxide.Client, mo
 	return nicAttachment, nil
 }
 
-func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client, instanceID string) (
+func newAttachedNetworkInterfacesModel(
+	ctx context.Context,
+	client *oxide.Client,
+	instanceID string,
+) (
 	[]instanceResourceNICModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -1150,13 +1265,22 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 
 	nicSet := []instanceResourceNICModel{}
 	for _, nic := range nics.Items {
-		if nic.IpStack.Type != oxide.PrivateIpStackTypeV4 {
-			continue
+		// TODO: Add IPv6 support.
+		v4, ok := nic.IpStack.AsV4()
+		if !ok {
+			diags.AddError(
+				"Error reading instance network interface",
+				"Expected IPv4 stack, got: "+string(
+					nic.IpStack.Type(),
+				)+". IPv6 support is in progress.",
+			)
+			return []instanceResourceNICModel{}, diags
 		}
 
 		n := instanceResourceNICModel{
 			Description:  types.StringValue(nic.Description),
 			ID:           types.StringValue(nic.Id),
+			IPAddr:       types.StringValue(v4.Value.Ip),
 			MAC:          types.StringValue(string(nic.Mac)),
 			Name:         types.StringValue(string(nic.Name)),
 			Primary:      types.BoolPointerValue(nic.Primary),
@@ -1165,16 +1289,6 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 			TimeModified: types.StringValue(nic.TimeModified.String()),
 			VPCID:        types.StringValue(nic.VpcId),
 		}
-
-		stack, err := ipStackAsIPv4Stack(nic.IpStack)
-		if err != nil {
-			diags.AddError(
-				"Unable to read instance network interface:",
-				"Error: "+err.Error(),
-			)
-			continue
-		}
-		n.IPAddr = types.StringValue(stack.Ip)
 
 		nicSet = append(nicSet, n)
 	}
@@ -1188,7 +1302,11 @@ func newAttachedNetworkInterfacesModel(ctx context.Context, client *oxide.Client
 // newAttachedExternalIPModel fetches the external IP addresses for the instance
 // specified by model, keeping the IP pool ID from the ephemeral external IP
 // from the model if one is present.
-func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model instanceResourceModel) (
+func newAttachedExternalIPModel(
+	ctx context.Context,
+	client *oxide.Client,
+	model instanceResourceModel,
+) (
 	[]instanceResourceExternalIPModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	externalIPs := make([]instanceResourceExternalIPModel, 0)
@@ -1209,9 +1327,12 @@ func newAttachedExternalIPModel(ctx context.Context, client *oxide.Client, model
 		}
 	}
 
-	externalIPResponse, err := client.InstanceExternalIpList(ctx, oxide.InstanceExternalIpListParams{
-		Instance: oxide.NameOrId(model.ID.ValueString()),
-	})
+	externalIPResponse, err := client.InstanceExternalIpList(
+		ctx,
+		oxide.InstanceExternalIpListParams{
+			Instance: oxide.NameOrId(model.ID.ValueString()),
+		},
+	)
 	if err != nil {
 		diags.AddError(
 			"Unable to list instance external ips:",
@@ -1290,7 +1411,11 @@ func retrieveVPCandSubnetNames(ctx context.Context, client *oxide.Client, vpcID,
 	}, nil
 }
 
-func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskIDs types.Set) ([]oxide.InstanceDiskAttachment, diag.Diagnostics) {
+func newDiskAttachmentsOnCreate(
+	ctx context.Context,
+	client *oxide.Client,
+	diskIDs types.Set,
+) ([]oxide.InstanceDiskAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var disks = []oxide.InstanceDiskAttachment{}
 	for _, diskAttch := range diskIDs.Elements() {
@@ -1326,7 +1451,10 @@ func newDiskAttachmentsOnCreate(ctx context.Context, client *oxide.Client, diskI
 	return disks, diags
 }
 
-func filterBootDiskFromDisks(disks []oxide.InstanceDiskAttachment, boot_disk *oxide.InstanceDiskAttachment) []oxide.InstanceDiskAttachment {
+func filterBootDiskFromDisks(
+	disks []oxide.InstanceDiskAttachment,
+	boot_disk *oxide.InstanceDiskAttachment,
+) []oxide.InstanceDiskAttachment {
 	if boot_disk == nil {
 		return disks
 	}
@@ -1341,7 +1469,9 @@ func filterBootDiskFromDisks(disks []oxide.InstanceDiskAttachment, boot_disk *ox
 	return filtered_disks
 }
 
-func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
+func newExternalIPsOnCreate(
+	externalIPs []instanceResourceExternalIPModel,
+) []oxide.ExternalIpCreate {
 	var ips []oxide.ExternalIpCreate
 
 	for _, ip := range externalIPs {
@@ -1373,44 +1503,37 @@ func newExternalIPsOnCreate(externalIPs []instanceResourceExternalIPModel) []oxi
 	return ips
 }
 
-func ipStackAsIPv4Stack(ipStack oxide.PrivateIpStack) (oxide.PrivateIpv4Stack, error) {
-	marshalled, err := json.Marshal(ipStack.Value)
-	if err != nil {
-		return oxide.PrivateIpv4Stack{}, fmt.Errorf("failed to unmarshal IP stack value: %w", err)
-	}
-
-	var parsedStack oxide.PrivateIpv4Stack
-	if err := json.Unmarshal(marshalled, &parsedStack); err != nil {
-		return oxide.PrivateIpv4Stack{}, fmt.Errorf("failed to marshal IP stack value: %w", err)
-	}
-
-	return parsedStack, nil
-}
-
 func newIPStackCreate(model instanceResourceNICModel) oxide.PrivateIpStackCreate {
 	if ip := model.IPAddr.ValueString(); ip != "" {
 		return oxide.PrivateIpStackCreate{
-			Type: oxide.PrivateIpStackCreateTypeV4,
-			Value: oxide.PrivateIpv4StackCreate{
-				Ip: oxide.Ipv4Assignment{
-					Type:  oxide.Ipv4AssignmentTypeExplicit,
-					Value: ip,
+			Value: &oxide.PrivateIpStackCreateV4{
+				Value: oxide.PrivateIpv4StackCreate{
+					Ip: oxide.Ipv4Assignment{
+						Type:  oxide.Ipv4AssignmentTypeExplicit,
+						Value: ip,
+					},
 				},
 			},
 		}
 	}
 
 	return oxide.PrivateIpStackCreate{
-		Type: oxide.PrivateIpStackCreateTypeV4,
-		Value: oxide.PrivateIpv4StackCreate{
-			Ip: oxide.Ipv4Assignment{
-				Type: oxide.Ipv4AssignmentTypeAuto,
+		Value: &oxide.PrivateIpStackCreateV4{
+			Value: oxide.PrivateIpv4StackCreate{
+				Ip: oxide.Ipv4Assignment{
+					Type: oxide.Ipv4AssignmentTypeAuto,
+				},
 			},
 		},
 	}
 }
 
-func createNICs(ctx context.Context, client *oxide.Client, models []instanceResourceNICModel, instanceID string) diag.Diagnostics {
+func createNICs(
+	ctx context.Context,
+	client *oxide.Client,
+	models []instanceResourceNICModel,
+	instanceID string,
+) diag.Diagnostics {
 	for _, model := range models {
 		names, diags := retrieveVPCandSubnetNames(ctx, client, model.VPCID.ValueString(),
 			model.SubnetID.ValueString())
@@ -1445,7 +1568,11 @@ func createNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 	return nil
 }
 
-func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceResourceNICModel) diag.Diagnostics {
+func deleteNICs(
+	ctx context.Context,
+	client *oxide.Client,
+	models []instanceResourceNICModel,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, model := range models {
@@ -1462,8 +1589,11 @@ func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 				return diags
 			}
 		}
-		tflog.Trace(ctx, fmt.Sprintf("deleted instance network interface with ID: %v", model.ID.ValueString()),
-			map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("deleted instance network interface with ID: %v", model.ID.ValueString()),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
@@ -1471,7 +1601,12 @@ func deleteNICs(ctx context.Context, client *oxide.Client, models []instanceReso
 
 // attachExternalIPs attaches the external IPs specified by externalIPs to the
 // instance specified by instanceID.
-func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []instanceResourceExternalIPModel, instanceID string) diag.Diagnostics {
+func attachExternalIPs(
+	ctx context.Context,
+	client *oxide.Client,
+	externalIPs []instanceResourceExternalIPModel,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, v := range externalIPs {
@@ -1506,7 +1641,10 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if _, err := client.InstanceEphemeralIpAttach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error attaching ephemeral external IP with ID %s", externalIPID.ValueString()),
+					fmt.Sprintf(
+						"Error attaching ephemeral external IP with ID %s",
+						externalIPID.ValueString(),
+					),
 					"API error: "+err.Error(),
 				)
 
@@ -1524,7 +1662,10 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if _, err := client.FloatingIpAttach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error attaching floating external IP with ID %s", externalIPID.ValueString()),
+					fmt.Sprintf(
+						"Error attaching floating external IP with ID %s",
+						externalIPID.ValueString(),
+					),
 					"API error: "+err.Error(),
 				)
 
@@ -1532,13 +1673,28 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 			}
 		default:
 			diags.AddError(
-				fmt.Sprintf("Cannot attach invalid external IP type %q", externalIPType.ValueString()),
-				fmt.Sprintf("The external IP type must be one of: %q, %q", oxide.ExternalIpCreateTypeEphemeral, oxide.ExternalIpCreateTypeFloating),
+				fmt.Sprintf(
+					"Cannot attach invalid external IP type %q",
+					externalIPType.ValueString(),
+				),
+				fmt.Sprintf(
+					"The external IP type must be one of: %q, %q",
+					oxide.ExternalIpCreateTypeEphemeral,
+					oxide.ExternalIpCreateTypeFloating,
+				),
 			)
 			return diags
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("successfully attached %s external IP with ID %s", externalIPType.ValueString(), externalIPID.ValueString()), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf(
+				"successfully attached %s external IP with ID %s",
+				externalIPType.ValueString(),
+				externalIPID.ValueString(),
+			),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
@@ -1546,7 +1702,12 @@ func attachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 // detachExternalIPs detaches the external IPs specified by externalIPs from the
 // instance specified by instanceID.
-func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []instanceResourceExternalIPModel, instanceID string) diag.Diagnostics {
+func detachExternalIPs(
+	ctx context.Context,
+	client *oxide.Client,
+	externalIPs []instanceResourceExternalIPModel,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, v := range externalIPs {
@@ -1561,7 +1722,10 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if err := client.InstanceEphemeralIpDetach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error detaching ephemeral external IP with ID %s", externalIPID.ValueString()),
+					fmt.Sprintf(
+						"Error detaching ephemeral external IP with ID %s",
+						externalIPID.ValueString(),
+					),
 					"API error: "+err.Error(),
 				)
 
@@ -1575,7 +1739,10 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 
 			if _, err := client.FloatingIpDetach(ctx, params); err != nil {
 				diags.AddError(
-					fmt.Sprintf("Error detaching floating external IP with ID %s", externalIPID.ValueString()),
+					fmt.Sprintf(
+						"Error detaching floating external IP with ID %s",
+						externalIPID.ValueString(),
+					),
 					"API error: "+err.Error(),
 				)
 
@@ -1586,19 +1753,39 @@ func detachExternalIPs(ctx context.Context, client *oxide.Client, externalIPs []
 			continue
 		default:
 			diags.AddError(
-				fmt.Sprintf("Cannot detach invalid external IP type %q", externalIPType.ValueString()),
-				fmt.Sprintf("The external IP type must be one of: %q, %q", oxide.ExternalIpCreateTypeEphemeral, oxide.ExternalIpCreateTypeFloating),
+				fmt.Sprintf(
+					"Cannot detach invalid external IP type %q",
+					externalIPType.ValueString(),
+				),
+				fmt.Sprintf(
+					"The external IP type must be one of: %q, %q",
+					oxide.ExternalIpCreateTypeEphemeral,
+					oxide.ExternalIpCreateTypeFloating,
+				),
 			)
 			return diags
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("successfully detached %s external IP with ID %s", externalIPType.ValueString(), externalIPID.ValueString()), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf(
+				"successfully detached %s external IP with ID %s",
+				externalIPType.ValueString(),
+				externalIPID.ValueString(),
+			),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
 }
 
-func attachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, instanceID string) diag.Diagnostics {
+func attachDisks(
+	ctx context.Context,
+	client *oxide.Client,
+	disks []attr.Value,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, v := range disks {
@@ -1626,13 +1813,22 @@ func attachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 			// TODO: Should this return here or should I continue trying to attach the other disks?
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("attached disk with ID: %v", v), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("attached disk with ID: %v", v),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
 }
 
-func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, instanceID string) diag.Diagnostics {
+func detachDisks(
+	ctx context.Context,
+	client *oxide.Client,
+	disks []attr.Value,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, v := range disks {
@@ -1660,14 +1856,22 @@ func detachDisks(ctx context.Context, client *oxide.Client, disks []attr.Value, 
 			// TODO: Should this return here or should I continue trying to detach the other disks?
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("detached disk with ID: %v", v), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("detached disk with ID: %v", v),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
 }
 
 func addAntiAffinityGroups(
-	ctx context.Context, client *oxide.Client, groups []attr.Value, instanceID string) diag.Diagnostics {
+	ctx context.Context,
+	client *oxide.Client,
+	groups []attr.Value,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, v := range groups {
@@ -1692,14 +1896,26 @@ func addAntiAffinityGroups(
 			)
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("added anti-affinity group with ID: %v to instance with ID: %v", id, instanceID), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf(
+				"added anti-affinity group with ID: %v to instance with ID: %v",
+				id,
+				instanceID,
+			),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
 }
 
 func removeAntiAffinityGroups(
-	ctx context.Context, client *oxide.Client, groups []attr.Value, instanceID string) diag.Diagnostics {
+	ctx context.Context,
+	client *oxide.Client,
+	groups []attr.Value,
+	instanceID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, v := range groups {
@@ -1729,7 +1945,15 @@ func removeAntiAffinityGroups(
 			)
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("removed anti-affinity group with ID %v to instance with ID %v", id, instanceID), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf(
+				"removed anti-affinity group with ID %v to instance with ID %v",
+				id,
+				instanceID,
+			),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil
@@ -1789,7 +2013,11 @@ func (f instanceExternalIPValidator) MarkdownDescription(context.Context) string
 //
 // That's where this validator comes in. This validator errors with the above
 // configuration, preventing a user from using multiple ephemeral external IPs.
-func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req validator.SetRequest, resp *validator.SetResponse) {
+func (f instanceExternalIPValidator) ValidateSet(
+	ctx context.Context,
+	req validator.SetRequest,
+	resp *validator.SetResponse,
+) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
@@ -1809,8 +2037,15 @@ func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req valida
 	}
 	if ephemeralExternalIPs > 1 {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf("Too many external IPs with type = %q", oxide.ExternalIpCreateTypeEphemeral),
-			fmt.Sprintf("Only 1 external IP with type = %q is allowed, but found %d.", oxide.ExternalIpCreateTypeEphemeral, ephemeralExternalIPs),
+			fmt.Sprintf(
+				"Too many external IPs with type = %q",
+				oxide.ExternalIpCreateTypeEphemeral,
+			),
+			fmt.Sprintf(
+				"Only 1 external IP with type = %q is allowed, but found %d.",
+				oxide.ExternalIpCreateTypeEphemeral,
+				ephemeralExternalIPs,
+			),
 		)
 		return
 	}
@@ -1824,7 +2059,11 @@ func (f instanceExternalIPValidator) ValidateSet(ctx context.Context, req valida
 // when it's deemed the user is actually changing the hostname value in the
 // configuration or `false` when the user is just updating their configuration
 // to comply with the deprecation.
-func ModifyPlanForHostnameDeprecation(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+func ModifyPlanForHostnameDeprecation(
+	ctx context.Context,
+	req planmodifier.StringRequest,
+	resp *stringplanmodifier.RequiresReplaceIfFuncResponse,
+) {
 	// Check which attribute this modifier function is being called on as the logic
 	// is vice versa for `host_name` and `hostname`.
 	switch attribute := req.Path.String(); attribute {

@@ -205,12 +205,18 @@ func Test_newNameOrIdList(t *testing.T) {
 	}{
 		{
 			name: "success double quote",
-			args: []attr.Value{types.StringValue("d72b0406-dd16-4373-ba2e-b7016ede6c3c"), types.StringValue("bob")},
+			args: []attr.Value{
+				types.StringValue("d72b0406-dd16-4373-ba2e-b7016ede6c3c"),
+				types.StringValue("bob"),
+			},
 			want: []oxide.NameOrId{"d72b0406-dd16-4373-ba2e-b7016ede6c3c", "bob"},
 		},
 		{
 			name: "success backtick",
-			args: []attr.Value{types.StringValue(`d72b0406-dd16-4373-ba2e-b7016ede6c3c`), types.StringValue(`bob`)},
+			args: []attr.Value{
+				types.StringValue(`d72b0406-dd16-4373-ba2e-b7016ede6c3c`),
+				types.StringValue(`bob`),
+			},
 			want: []oxide.NameOrId{"d72b0406-dd16-4373-ba2e-b7016ede6c3c", "bob"},
 		},
 	}

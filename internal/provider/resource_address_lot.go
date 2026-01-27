@@ -56,12 +56,20 @@ type addressLotResourceBlockModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *addressLotResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *addressLotResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_address_lot"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *addressLotResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *addressLotResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -70,12 +78,20 @@ func (r *addressLotResource) Configure(_ context.Context, req resource.Configure
 }
 
 // ImportState imports an existing address lot into Terraform state.
-func (r *addressLotResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *addressLotResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *addressLotResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *addressLotResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -153,7 +169,11 @@ func (r *addressLotResource) Schema(ctx context.Context, _ resource.SchemaReques
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *addressLotResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *addressLotResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan addressLotResourceModel
 
 	// Read Terraform plan data into the model
@@ -193,7 +213,11 @@ func (r *addressLotResource) Create(ctx context.Context, req resource.CreateRequ
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("created address lot with ID: %v", lot.Lot.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created address lot with ID: %v", lot.Lot.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(lot.Lot.Id)
@@ -219,7 +243,11 @@ func (r *addressLotResource) Create(ctx context.Context, req resource.CreateRequ
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *addressLotResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *addressLotResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state addressLotResourceModel
 
 	// Read Terraform prior state data into the model
@@ -247,7 +275,11 @@ func (r *addressLotResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 	lot := addressLot.Lot
-	tflog.Trace(ctx, fmt.Sprintf("read address lot with ID: %v", lot.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read address lot with ID: %v", lot.Id),
+		map[string]any{"success": true},
+	)
 
 	state.ID = types.StringValue(lot.Id)
 	state.Name = types.StringValue(string(lot.Name))
@@ -274,9 +306,14 @@ func (r *addressLotResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-// Note: the API doesn't currently support updating an Address Lot in place, so we leave this implementation blank and mark all attributes with RequiresReplace.
+// Note: the API doesn't currently support updating an Address Lot in place, so we leave this
+// implementation blank and mark all attributes with RequiresReplace.
 // TODO: support in-place updates.
-func (r *addressLotResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *addressLotResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	resp.Diagnostics.AddError(
 		"Error updating address lot",
 		"the oxide API currently does not support updating address lots",
@@ -284,7 +321,11 @@ func (r *addressLotResource) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *addressLotResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *addressLotResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state addressLotResourceModel
 
 	// Read Terraform prior state data into the model
@@ -314,5 +355,9 @@ func (r *addressLotResource) Delete(ctx context.Context, req resource.DeleteRequ
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted Address Lot with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted Address Lot with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

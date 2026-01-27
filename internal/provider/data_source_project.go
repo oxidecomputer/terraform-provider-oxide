@@ -37,12 +37,20 @@ func NewProjectDataSource() datasource.DataSource {
 	return &projectDataSource{}
 }
 
-func (d *projectDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *projectDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_project"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *projectDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *projectDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -50,7 +58,11 @@ func (d *projectDataSource) Configure(_ context.Context, req datasource.Configur
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *projectDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *projectDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified project.
@@ -81,7 +93,11 @@ Retrieve information about a specified project.
 	}
 }
 
-func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *projectDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state projectDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -110,7 +126,11 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read project with ID: %v", project.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read project with ID: %v", project.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to model
 	state.Description = types.StringValue(project.Description)

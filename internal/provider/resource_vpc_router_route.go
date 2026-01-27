@@ -61,12 +61,20 @@ type vpcRouterRouteTargetModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *vpcRouterRouteResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *vpcRouterRouteResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_router_route"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcRouterRouteResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *vpcRouterRouteResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -75,12 +83,20 @@ func (r *vpcRouterRouteResource) Configure(_ context.Context, req resource.Confi
 }
 
 // ImportState imports the resource state from Terraform state.
-func (r *vpcRouterRouteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *vpcRouterRouteResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcRouterRouteResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *vpcRouterRouteResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages VPC router routes.
@@ -190,7 +206,11 @@ Depending on the type, it will be one of the following:
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *vpcRouterRouteResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan vpcRouterRouteResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -206,24 +226,38 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	destination, err := oxide.NewRouteDestination(
+		oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
+		plan.Destination.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating VPC router route",
+			"Could not create route destination: "+err.Error(),
+		)
+		return
+	}
+
+	target, err := oxide.NewRouteTarget(
+		oxide.RouteTargetType(plan.Target.Type.ValueString()),
+		plan.Target.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating VPC router route",
+			"Could not create route target: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcRouterRouteCreateParams{
 		Router: oxide.NameOrId(plan.VPCRouterID.ValueString()),
 		Body: &oxide.RouterRouteCreate{
 			Description: plan.Description.ValueString(),
-			Destination: oxide.RouteDestination{
-				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
-				Value: plan.Destination.Value.ValueString(),
-			},
-			Name: oxide.Name(plan.Name.ValueString()),
-			Target: oxide.RouteTarget{
-				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
-			},
+			Destination: destination,
+			Name:        oxide.Name(plan.Name.ValueString()),
+			Target:      target,
 		},
-	}
-
-	// When the target type is set to "drop" the value will be nil
-	if !plan.Target.Value.IsNull() {
-		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
 
 	vpcRouterRoute, err := r.client.VpcRouterRouteCreate(ctx, params)
@@ -235,7 +269,11 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created VPC router route with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created VPC router route with ID: %v", vpcRouterRoute.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouterRoute.Id)
@@ -251,7 +289,11 @@ func (r *vpcRouterRouteResource) Create(ctx context.Context, req resource.Create
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *vpcRouterRouteResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state vpcRouterRouteResourceModel
 
 	// Read Terraform prior state data into the model
@@ -284,20 +326,24 @@ func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequ
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC RouterRoute with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC RouterRoute with ID: %v", vpcRouterRoute.Id),
+		map[string]any{"success": true},
+	)
 
 	dm := vpcRouterRouteDestinationModel{
-		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type)),
-		Value: types.StringValue(vpcRouterRoute.Destination.Value.(string)),
+		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type())),
+		Value: types.StringValue(vpcRouterRoute.Destination.String()),
 	}
 
 	tm := vpcRouterRouteTargetModel{
-		Type: types.StringValue(string(vpcRouterRoute.Target.Type)),
+		Type: types.StringValue(string(vpcRouterRoute.Target.Type())),
 	}
 
-	// When the target type is set to "drop" the value will be nil
-	if vpcRouterRoute.Target.Value != nil {
-		tm.Value = types.StringValue(vpcRouterRoute.Target.Value.(string))
+	// When the target type is set to "drop" the value will be empty
+	if targetValue := vpcRouterRoute.Target.String(); targetValue != "" {
+		tm.Value = types.StringValue(targetValue)
 	}
 
 	state.Description = types.StringValue(vpcRouterRoute.Description)
@@ -318,7 +364,11 @@ func (r *vpcRouterRouteResource) Read(ctx context.Context, req resource.ReadRequ
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *vpcRouterRouteResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan vpcRouterRouteResourceModel
 	var state vpcRouterRouteResourceModel
 
@@ -343,24 +393,38 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	destination, err := oxide.NewRouteDestination(
+		oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
+		plan.Destination.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC router route",
+			"Could not create route destination: "+err.Error(),
+		)
+		return
+	}
+
+	target, err := oxide.NewRouteTarget(
+		oxide.RouteTargetType(plan.Target.Type.ValueString()),
+		plan.Target.Value.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating VPC router route",
+			"Could not create route target: "+err.Error(),
+		)
+		return
+	}
+
 	params := oxide.VpcRouterRouteUpdateParams{
 		Route: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.RouterRouteUpdate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Destination: oxide.RouteDestination{
-				Type:  oxide.RouteDestinationType(plan.Destination.Type.ValueString()),
-				Value: plan.Destination.Value.ValueString(),
-			},
-			Target: oxide.RouteTarget{
-				Type: oxide.RouteTargetType(plan.Target.Type.ValueString()),
-			},
+			Destination: destination,
+			Target:      target,
 		},
-	}
-
-	// When the target type is set to "drop" the value will be nil
-	if !plan.Target.Value.IsNull() {
-		params.Body.Target.Value = plan.Target.Value.ValueString()
 	}
 
 	vpcRouterRoute, err := r.client.VpcRouterRouteUpdate(ctx, params)
@@ -371,7 +435,11 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("updated VPC router route with ID: %v", vpcRouterRoute.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated VPC router route with ID: %v", vpcRouterRoute.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouterRoute.Id)
@@ -387,7 +455,11 @@ func (r *vpcRouterRouteResource) Update(ctx context.Context, req resource.Update
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcRouterRouteResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *vpcRouterRouteResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state vpcRouterRouteResourceModel
 
 	// Read Terraform prior state data into the model
@@ -417,5 +489,9 @@ func (r *vpcRouterRouteResource) Delete(ctx context.Context, req resource.Delete
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted VPC router route with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted VPC router route with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

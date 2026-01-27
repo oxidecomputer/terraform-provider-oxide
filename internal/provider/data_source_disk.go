@@ -56,12 +56,20 @@ type diskDataSourceModelState struct {
 }
 
 // Metadata sets the resource type name.
-func (d *diskDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *diskDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_disk"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *diskDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *diskDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -70,7 +78,11 @@ func (d *diskDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 }
 
 // Schema defines the schema for the data source.
-func (d *diskDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *diskDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified disk.
@@ -144,7 +156,11 @@ Retrieve information about a specified disk.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *diskDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *diskDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state diskDataSourceModel
 
 	// Read Terraform configuration data into the model.

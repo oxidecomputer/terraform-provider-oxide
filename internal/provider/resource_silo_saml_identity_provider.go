@@ -62,11 +62,19 @@ type siloSamlIdentityProviderMetadataSourceModel struct {
 	Data types.String `tfsdk:"data"`
 }
 
-func (r *siloSamlIdentityProvider) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *siloSamlIdentityProvider) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_silo_saml_identity_provider"
 }
 
-func (r *siloSamlIdentityProvider) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *siloSamlIdentityProvider) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -74,7 +82,11 @@ func (r *siloSamlIdentityProvider) Configure(ctx context.Context, req resource.C
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *siloSamlIdentityProvider) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *siloSamlIdentityProvider) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Manages a SAML identity provider (IdP) for an Oxide silo.
@@ -128,14 +140,18 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 						Optional:            true,
 						MarkdownDescription: "URL to fetch metadata from (required when type is `url`). Conflicts with `data`.",
 						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("data")),
+							stringvalidator.ConflictsWith(
+								path.MatchRelative().AtParent().AtName("data"),
+							),
 						},
 					},
 					"data": schema.StringAttribute{
 						Optional:            true,
 						MarkdownDescription: "Base64-encoded XML metadata (required when type is `base64_encoded_xml`). Conflicts with `url`.",
 						Validators: []validator.String{
-							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("url")),
+							stringvalidator.ConflictsWith(
+								path.MatchRelative().AtParent().AtName("url"),
+							),
 						},
 					},
 				},
@@ -190,7 +206,11 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 	}
 }
 
-func (r *siloSamlIdentityProvider) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *siloSamlIdentityProvider) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan siloSamlIdentityProviderResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -249,7 +269,11 @@ func (r *siloSamlIdentityProvider) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created SAML identity provider with ID: %v", idpConfig.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created SAML identity provider with ID: %v", idpConfig.Id),
+		map[string]any{"success": true},
+	)
 
 	plan.ID = types.StringValue(idpConfig.Id)
 	plan.TimeCreated = types.StringValue(idpConfig.TimeCreated.String())
@@ -261,7 +285,11 @@ func (r *siloSamlIdentityProvider) Create(ctx context.Context, req resource.Crea
 	}
 }
 
-func (r *siloSamlIdentityProvider) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *siloSamlIdentityProvider) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state siloSamlIdentityProviderResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -295,7 +323,11 @@ func (r *siloSamlIdentityProvider) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read SAML identity provider with ID: %v", idpConfig.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read SAML identity provider with ID: %v", idpConfig.Id),
+		map[string]any{"success": true},
+	)
 
 	state.ID = types.StringValue(idpConfig.Id)
 	state.TimeCreated = types.StringValue(idpConfig.TimeCreated.String())
@@ -320,7 +352,11 @@ func (r *siloSamlIdentityProvider) Read(ctx context.Context, req resource.ReadRe
 //
 // An error is added to the diagnostics so that Terraform will stop execution
 // and prompt the user to fix their configuration.
-func (r *siloSamlIdentityProvider) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *siloSamlIdentityProvider) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	resp.Diagnostics.AddError(
 		"The oxide_silo_saml_identity_provider resource does not support updates.",
 		"This resource represents immutable silo SAML identity provider configuration. Please update your Terraform configuration to match the state.",
@@ -333,7 +369,11 @@ func (r *siloSamlIdentityProvider) Update(ctx context.Context, req resource.Upda
 // A warning is added to the diagnostics so that the resource will be removed
 // from the state and Terraform execution will continue and prompt the user on
 // what happened.
-func (r *siloSamlIdentityProvider) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *siloSamlIdentityProvider) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	resp.Diagnostics.AddWarning(
 		"The oxide_silo_saml_identity_provider resource does not support deletion.",
 		"This resource represents immutable silo SAML identity provider configuration. The resource will be removed from Terraform state but not from Oxide.",

@@ -44,12 +44,20 @@ type sshKeyDataSourceModel struct {
 }
 
 // Metadata sets the resource type name.
-func (d *sshKeyDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *sshKeyDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_ssh_key"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *sshKeyDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *sshKeyDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -58,7 +66,11 @@ func (d *sshKeyDataSource) Configure(_ context.Context, req datasource.Configure
 }
 
 // Schema defines the schema for the data source.
-func (d *sshKeyDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *sshKeyDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified SSH key.
@@ -98,7 +110,11 @@ Retrieve information about a specified SSH key.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *sshKeyDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state sshKeyDataSourceModel
 
 	// Read Terraform configuration data into the model.
@@ -126,7 +142,11 @@ func (d *sshKeyDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read SSH key with ID: %v", sshKey.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read SSH key with ID: %v", sshKey.Id),
+		map[string]any{"success": true},
+	)
 
 	state.ID = types.StringValue(sshKey.Id)
 	state.Name = types.StringValue(string(sshKey.Name))
