@@ -15,8 +15,12 @@ title = "Support `OXIDE_PROFILE`"
 description = "Added support for the `OXIDE_PROFILE` environment variable within the provider configuration. [#589](https://github.com/oxidecomputer/terraform-provider-oxide/pull/589)."
 
 [[features]]
-type = "Support `config_dir` and `insecure_skip_verify`"
+title = "Support `config_dir` and `insecure_skip_verify`"
 description = "Added support for the `config_dir` and `insecure_skip_verify` provider configuration. [#595](https://github.com/oxidecomputer/terraform-provider-oxide/pull/595)."
+
+[[features]]
+title = "Support `disk_type` in disk resource."
+description = "Added support for the `disk_type` attribute for the `oxide_disk` resource. [#587](https://github.com/oxidecomputer/terraform-provider-oxide/pull/587)."
 
 [[enhancements]]
 title = "`oxide_instance` attribute deprecation"

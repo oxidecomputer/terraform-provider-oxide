@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -43,6 +44,7 @@ type diskResourceModel struct {
 	BlockSize        types.Int64    `tfsdk:"block_size"`
 	Description      types.String   `tfsdk:"description"`
 	DevicePath       types.String   `tfsdk:"device_path"`
+	DiskType         types.String   `tfsdk:"disk_type"`
 	ID               types.String   `tfsdk:"id"`
 	SourceImageID    types.String   `tfsdk:"source_image_id"`
 	Name             types.String   `tfsdk:"name"`
@@ -176,6 +178,21 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 					int64planmodifier.RequiresReplace(),
 				},
 			},
+			"disk_type": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: `Type of disk. Must be one of "distributed" or "local". Defaults to "distributed".`,
+				Default:     stringdefault.StaticString(string(oxide.DiskBackendTypeDistributed)),
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						string(oxide.DiskBackendTypeDistributed),
+						string(oxide.DiskBackendTypeLocal),
+					),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
@@ -231,13 +248,7 @@ func (r *diskResource) Create(
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Size:        oxide.ByteCount(plan.Size.ValueInt64()),
 			DiskBackend: oxide.DiskBackend{
-				// As of r18, disk type must be specified as
-				// "distributed" (the only option in prior
-				// releases) or "local". For now, always set
-				// disk type to distributed. We'll support
-				// local disks as well once r18 is available
-				// for testing.
-				Type: oxide.DiskBackendTypeDistributed,
+				Type: oxide.DiskBackendType(plan.DiskType.ValueString()),
 			},
 		},
 	}
@@ -274,6 +285,7 @@ func (r *diskResource) Create(
 	plan.ID = types.StringValue(disk.Id)
 	plan.DevicePath = types.StringValue(disk.DevicePath)
 	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
+	plan.DiskType = types.StringValue(string(disk.DiskType))
 	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
 	plan.TimeModified = types.StringValue(disk.TimeModified.String())
 
@@ -327,6 +339,7 @@ func (r *diskResource) Read(
 	state.BlockSize = types.Int64Value(int64(disk.BlockSize))
 	state.Description = types.StringValue(disk.Description)
 	state.DevicePath = types.StringValue(disk.DevicePath)
+	state.DiskType = types.StringValue(string(disk.DiskType))
 	state.ID = types.StringValue(disk.Id)
 	state.Name = types.StringValue(string(disk.Name))
 	state.ProjectID = types.StringValue(disk.ProjectId)
