@@ -42,12 +42,20 @@ func NewSystemIpPoolsDataSource() datasource.DataSource {
 	return &systemIpPoolsDataSource{}
 }
 
-func (d *systemIpPoolsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *systemIpPoolsDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_system_ip_pools"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *systemIpPoolsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *systemIpPoolsDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -55,7 +63,11 @@ func (d *systemIpPoolsDataSource) Configure(_ context.Context, req datasource.Co
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *systemIpPoolsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *systemIpPoolsDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve all configured IP pools for the Oxide system.
@@ -96,7 +108,11 @@ Retrieve all configured IP pools for the Oxide system.
 	}
 }
 
-func (d *systemIpPoolsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *systemIpPoolsDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state systemIpPoolsDataSourceModel
 
 	// Read Terraform configuration data into the model

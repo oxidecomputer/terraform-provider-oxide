@@ -54,12 +54,20 @@ type ipPoolResourceRangeModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *ipPoolResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *ipPoolResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_ip_pool"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *ipPoolResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *ipPoolResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -67,12 +75,20 @@ func (r *ipPoolResource) Configure(_ context.Context, req resource.ConfigureRequ
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *ipPoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ipPoolResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *ipPoolResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ipPoolResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages IP pools.
@@ -127,7 +143,11 @@ This resource manages IP pools.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *ipPoolResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan ipPoolResourceModel
 
 	// Read Terraform plan data into the model
@@ -158,7 +178,11 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("created IP Pool with ID: %v", ipPool.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created IP Pool with ID: %v", ipPool.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
@@ -178,7 +202,11 @@ func (r *ipPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *ipPoolResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state ipPoolResourceModel
 
 	// Read Terraform prior state data into the model
@@ -205,7 +233,11 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read IP Pool with ID: %v", ipPool.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read IP Pool with ID: %v", ipPool.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(ipPool.Description)
 	state.ID = types.StringValue(ipPool.Id)
@@ -226,7 +258,11 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", ipPool.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", ipPool.Id),
+		map[string]any{"success": true},
+	)
 
 	// Set the size of the slice to avoid a panic when importing
 	if len(state.Ranges) == 0 && len(ipPoolRanges.Items) != 0 {
@@ -237,7 +273,8 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 		ipPoolRange := ipPoolResourceRangeModel{}
 
 		// TODO: For the time being we are using interfaces for nested allOf within oneOf objects in
-		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect that.
+		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect
+		// that.
 		switch item.Range.(type) {
 		case map[string]interface{}:
 			rs := item.Range.(map[string]interface{})
@@ -267,7 +304,11 @@ func (r *ipPoolResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *ipPoolResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan ipPoolResourceModel
 	var state ipPoolResourceModel
 
@@ -325,7 +366,11 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("updated IP Pool with ID: %v", ipPool.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated IP Pool with ID: %v", ipPool.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
@@ -341,7 +386,11 @@ func (r *ipPoolResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *ipPoolResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state ipPoolResourceModel
 
 	// Read Terraform prior state data into the model
@@ -375,7 +424,11 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 
 	for _, item := range ranges.Items {
 		var ipRange oxide.IpRange
@@ -391,7 +444,8 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 				Last:  rs["last"].(string),
 			}
 		} else {
-			// This should never happen as we are retrieving information from Nexus. If we do encounter
+			// This should never happen as we are retrieving information from Nexus. If we do
+			// encounter
 			// this error we have a huge problem.
 			resp.Diagnostics.AddError(
 				"Unable to read IP Pool ranges:",
@@ -438,10 +492,19 @@ func (r *ipPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted IP pool with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted IP pool with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }
 
-func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourceRangeModel, poolID string) diag.Diagnostics {
+func addRanges(
+	ctx context.Context,
+	client *oxide.Client,
+	ranges []ipPoolResourceRangeModel,
+	poolID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, ipPoolRange := range ranges {
@@ -484,7 +547,12 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 		}
 		tflog.Trace(
 			ctx,
-			fmt.Sprintf("added IP Pool range with ID: %v, from: %v to: %v", ipR.Id, firstAddress, lastAddress),
+			fmt.Sprintf(
+				"added IP Pool range with ID: %v, from: %v to: %v",
+				ipR.Id,
+				firstAddress,
+				lastAddress,
+			),
 			map[string]any{"success": true},
 		)
 	}
@@ -492,7 +560,12 @@ func addRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourc
 	return nil
 }
 
-func removeRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolResourceRangeModel, poolID string) diag.Diagnostics {
+func removeRanges(
+	ctx context.Context,
+	client *oxide.Client,
+	ranges []ipPoolResourceRangeModel,
+	poolID string,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for _, ipPoolRange := range ranges {
@@ -533,7 +606,11 @@ func removeRanges(ctx context.Context, client *oxide.Client, ranges []ipPoolReso
 			)
 			return diags
 		}
-		tflog.Trace(ctx, fmt.Sprintf("removed IP Pool range from: %v to: %v", firstAddress, lastAddress), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("removed IP Pool range from: %v to: %v", firstAddress, lastAddress),
+			map[string]any{"success": true},
+		)
 	}
 
 	return nil

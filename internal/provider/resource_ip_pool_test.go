@@ -105,7 +105,11 @@ resource "oxide_ip_pool" "test" {
 func checkResourceIPPoolUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a new description for ip_pool"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"description",
+			"a new description for ip_pool",
+		),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool-new"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -132,7 +136,11 @@ resource "oxide_ip_pool" "test" {
 func checkResourceIPPoolRemoveUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a new description for ip_pool"),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"description",
+			"a new description for ip_pool",
+		),
 		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-myippool-new"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

@@ -51,12 +51,20 @@ type imageDataSourceDigestModel struct {
 	Value types.String `tfsdk:"value"`
 }
 
-func (d *imageDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *imageDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_image"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *imageDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *imageDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -64,7 +72,11 @@ func (d *imageDataSource) Configure(_ context.Context, req datasource.ConfigureR
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *imageDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *imageDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified image.
@@ -133,7 +145,11 @@ Retrieve information about a specified image.
 	}
 }
 
-func (d *imageDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *imageDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state imageDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -162,7 +178,11 @@ func (d *imageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read image with ID: %v", image.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read image with ID: %v", image.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to model
 	state.BlockSize = types.Int64Value(int64(image.BlockSize))

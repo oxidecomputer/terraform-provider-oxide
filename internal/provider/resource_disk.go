@@ -55,12 +55,20 @@ type diskResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *diskResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *diskResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_disk"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *diskResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *diskResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -69,12 +77,20 @@ func (r *diskResource) Configure(_ context.Context, req resource.ConfigureReques
 }
 
 // ImportState imports an existing disk resource into Terraform state.
-func (r *diskResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *diskResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *diskResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *diskResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: replaceBackticks(`
 This resource manages disks.
@@ -188,7 +204,11 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *diskResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan diskResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -244,7 +264,11 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created disk with ID: %v", disk.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created disk with ID: %v", disk.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(disk.Id)
@@ -261,7 +285,11 @@ func (r *diskResource) Create(ctx context.Context, req resource.CreateRequest, r
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *diskResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state diskResourceModel
 
 	// Read Terraform prior state data into the model
@@ -322,14 +350,22 @@ func (r *diskResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *diskResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *diskResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	resp.Diagnostics.AddError(
 		"Error updating disk",
 		"the oxide API currently does not support updating disks")
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *diskResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state diskResourceModel
 
 	// Read Terraform prior state data into the model
@@ -359,5 +395,9 @@ func (r *diskResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted disk with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted disk with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

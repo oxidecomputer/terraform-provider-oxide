@@ -102,12 +102,20 @@ type vpcFirewallRuleProtocolFilterModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *vpcFirewallRulesResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *vpcFirewallRulesResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_firewall_rules"
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *vpcFirewallRulesResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *vpcFirewallRulesResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -116,7 +124,11 @@ func (r *vpcFirewallRulesResource) Configure(_ context.Context, req resource.Con
 }
 
 // ImportState imports an existing VPC firewall rules resource into Terraform state.
-func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *vpcFirewallRulesResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("vpc_id"), req, resp)
 }
 
@@ -127,7 +139,9 @@ func (r *vpcFirewallRulesResource) ImportState(ctx context.Context, req resource
 // allowed to jump to whatever new version they choose. When adding a new
 // version, you must ensure that each of the existing StateUpgrader functions
 // are also updated to handle the new schema.
-func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+func (r *vpcFirewallRulesResource) UpgradeState(
+	ctx context.Context,
+) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {StateUpgrader: r.stateUpgraderV01},
 		1: {StateUpgrader: r.stateUpgraderV01},
@@ -135,7 +149,11 @@ func (r *vpcFirewallRulesResource) UpgradeState(ctx context.Context) map[int64]r
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcFirewallRulesResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *vpcFirewallRulesResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	// TODO: Make sure users can define a single block per VPC ID, not many, is this even possible?
 	resp.Schema = schema.Schema{
 		Version: 2,
@@ -263,16 +281,27 @@ to use the new schema as soon as possible.
 												Required:            true,
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.VpcFirewallRuleHostFilterTypeInstance),
-														string(oxide.VpcFirewallRuleHostFilterTypeIp),
-														string(oxide.VpcFirewallRuleHostFilterTypeIpNet),
-														string(oxide.VpcFirewallRuleHostFilterTypeSubnet),
-														string(oxide.VpcFirewallRuleHostFilterTypeVpc),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeInstance,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeIp,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeIpNet,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeSubnet,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeVpc,
+														),
 													),
 												},
 											},
 											"value": schema.StringAttribute{
-												// Important, if the name of the associated instance is changed Terraform will not be able to sync
+												// Important, if the name of the associated instance
+												// is changed Terraform will not be able to sync
 												MarkdownDescription: replaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
@@ -299,9 +328,15 @@ Depending on the type, it will be one of the following:
 												Description: "The protocol type. Must be one of `tcp`, `udp`, or `icmp`.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.VpcFirewallRuleProtocolTypeTcp),
-														string(oxide.VpcFirewallRuleProtocolTypeUdp),
-														string(oxide.VpcFirewallRuleProtocolTypeIcmp),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeTcp,
+														),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeUdp,
+														),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeIcmp,
+														),
 													),
 												},
 											},
@@ -317,7 +352,9 @@ Depending on the type, it will be one of the following:
 												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.",
 												Validators: []validator.String{
 													stringvalidator.AlsoRequires(path.Expressions{
-														path.MatchRelative().AtParent().AtName("icmp_type"),
+														path.MatchRelative().
+															AtParent().
+															AtName("icmp_type"),
 													}...),
 												},
 											},
@@ -374,7 +411,8 @@ Depending on the type, it will be one of the following:
 										},
 									},
 									"value": schema.StringAttribute{
-										// Important, if the name of the associated instance is changed Terraform will not be able to sync
+										// Important, if the name of the associated instance is
+										// changed Terraform will not be able to sync
 										MarkdownDescription: replaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
@@ -417,7 +455,11 @@ Depending on the type, it will be one of the following:
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *vpcFirewallRulesResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan vpcFirewallRulesResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -457,7 +499,11 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	if firewallRules != nil && len(firewallRules.Rules) > 0 {
-		tflog.Trace(ctx, fmt.Sprintf("created firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("created firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId),
+			map[string]any{"success": true},
+		)
 	}
 
 	// Response does not include single ID for the set of rules.
@@ -490,7 +536,11 @@ func (r *vpcFirewallRulesResource) Create(ctx context.Context, req resource.Crea
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *vpcFirewallRulesResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state vpcFirewallRulesResourceModel
 
 	// Read Terraform prior state data into the model
@@ -525,7 +575,11 @@ func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	if firewallRules != nil && len(firewallRules.Rules) > 0 {
-		tflog.Trace(ctx, fmt.Sprintf("read firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("read firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId),
+			map[string]any{"success": true},
+		)
 
 		// We do not set ID as this was created solely for Terraform
 		state.VPCID = types.StringValue(firewallRules.Rules[0].VpcId)
@@ -557,7 +611,11 @@ func (r *vpcFirewallRulesResource) Read(ctx context.Context, req resource.ReadRe
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *vpcFirewallRulesResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan vpcFirewallRulesResourceModel
 	var state vpcFirewallRulesResourceModel
 
@@ -605,7 +663,11 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	if firewallRules != nil && len(firewallRules.Rules) > 0 {
-		tflog.Trace(ctx, fmt.Sprintf("updated firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId), map[string]any{"success": true})
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("updated firewall rules for VPC with ID: %v", firewallRules.Rules[0].VpcId),
+			map[string]any{"success": true},
+		)
 	}
 
 	// Map response body to schema and populate Computed attribute values
@@ -639,7 +701,11 @@ func (r *vpcFirewallRulesResource) Update(ctx context.Context, req resource.Upda
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *vpcFirewallRulesResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state vpcFirewallRulesResourceModel
 
 	// Read Terraform prior state data into the model
@@ -672,12 +738,18 @@ func (r *vpcFirewallRulesResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted firewall rules for VPC with ID: %v", state.VPCID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted firewall rules for VPC with ID: %v", state.VPCID.ValueString()),
+		map[string]any{"success": true},
+	)
 }
 
 // newVPCFirewallRulesUpdateBody builds the parameters required by the Oxide
 // vpc_firewall_rules_update API using the specified rules.
-func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRuleModel) (*oxide.VpcFirewallRuleUpdateParams, error) {
+func newVPCFirewallRulesUpdateBody(
+	rules map[string]vpcFirewallRulesResourceRuleModel,
+) (*oxide.VpcFirewallRuleUpdateParams, error) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	//
@@ -718,7 +790,9 @@ func newVPCFirewallRulesUpdateBody(rules map[string]vpcFirewallRulesResourceRule
 
 // newVPCFirewallRulesModel translates a slice of [oxide.VpcFirewallRule] into a
 // slice of [vpcFirewallRulesResourceRuleModel].
-func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
+func newVPCFirewallRulesModel(
+	rules []oxide.VpcFirewallRule,
+) (map[string]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	// See the comment within [newVPCFirewallRulesUpdateBody] for more information.
@@ -750,7 +824,9 @@ func newVPCFirewallRulesModel(rules []oxide.VpcFirewallRule) (map[string]vpcFire
 	return model, nil
 }
 
-func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewallRulesResourceRuleFiltersModel, diag.Diagnostics) {
+func newFiltersModelFromResponse(
+	filter oxide.VpcFirewallRuleFilter,
+) (*vpcFirewallRulesResourceRuleFiltersModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	var hostsModel = []vpcFirewallRuleHostFilterModel{}
@@ -815,7 +891,9 @@ func newFiltersModelFromResponse(filter oxide.VpcFirewallRuleFilter) (*vpcFirewa
 	return &model, nil
 }
 
-func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFirewallRulesResourceRuleTargetModel {
+func newTargetsModelFromResponse(
+	target []oxide.VpcFirewallRuleTarget,
+) []vpcFirewallRulesResourceRuleTargetModel {
 	var model []vpcFirewallRulesResourceRuleTargetModel
 
 	for _, t := range target {
@@ -830,7 +908,9 @@ func newTargetsModelFromResponse(target []oxide.VpcFirewallRuleTarget) []vpcFire
 	return model
 }
 
-func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) (oxide.VpcFirewallRuleFilter, error) {
+func newFilterTypeFromModel(
+	model *vpcFirewallRulesResourceRuleFiltersModel,
+) (oxide.VpcFirewallRuleFilter, error) {
 	var hosts []oxide.VpcFirewallRuleHostFilter
 	for _, host := range model.Hosts {
 		h, err := oxide.NewVpcFirewallRuleHostFilter(
@@ -875,7 +955,9 @@ func newFilterTypeFromModel(model *vpcFirewallRulesResourceRuleFiltersModel) (ox
 	}, nil
 }
 
-func newTargetTypeFromModel(model []vpcFirewallRulesResourceRuleTargetModel) ([]oxide.VpcFirewallRuleTarget, error) {
+func newTargetTypeFromModel(
+	model []vpcFirewallRulesResourceRuleTargetModel,
+) ([]oxide.VpcFirewallRuleTarget, error) {
 	var target []oxide.VpcFirewallRuleTarget
 
 	for _, m := range model {

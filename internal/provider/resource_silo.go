@@ -86,12 +86,20 @@ type siloResourceTlsCertificateModel struct {
 }
 
 // Metadata configures the Terraform resource name for this resource.
-func (r *siloResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *siloResource) Metadata(
+	ctx context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_silo"
 }
 
 // Configure sets up necessary data or clients needed by this resource.
-func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *siloResource) Configure(
+	ctx context.Context,
+	req resource.ConfigureRequest,
+	resp *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -100,14 +108,22 @@ func (r *siloResource) Configure(ctx context.Context, req resource.ConfigureRequ
 }
 
 // ImportState imports this resource using its ID.
-func (r *siloResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *siloResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 const tlsCertificateRegEx = `^[a-zA-Z0-9-]+$`
 
 // Schema defines the attributes for this resource.
-func (r *siloResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *siloResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: replaceBackticks(`
 This resource manages the creation of an Oxide silo.
@@ -279,7 +295,11 @@ attributes will result in the silo being destroyed and created anew.
 }
 
 // Create creates this resource using the Oxide API.
-func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *siloResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan siloResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -299,7 +319,8 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// The tls_certificates attribute is a write-only attribute which must be retrieved
 	// from the configuration instead of the plan. We save it into the plan instead of
 	// creating a new variable so that code below can solely use the plan variable.
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("tls_certificates"), &plan.TlsCertificates)...)
+	resp.Diagnostics.Append(
+		req.Config.GetAttribute(ctx, path.Root("tls_certificates"), &plan.TlsCertificates)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -313,7 +334,8 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 			MappedFleetRoles: stringMapToFleetRoleMap(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
 			Quotas: oxide.SiloQuotasCreate{
-				// We can safely dereference all fields within plan.Quotas as they are required fields
+				// We can safely dereference all fields within plan.Quotas as they are required
+				// fields
 				Cpus:    oxide.NewPointer(int(*plan.Quotas.Cpus.ValueInt64Pointer())),
 				Memory:  oxide.ByteCount(*plan.Quotas.Memory.ValueInt64Pointer()),
 				Storage: oxide.ByteCount(*plan.Quotas.Storage.ValueInt64Pointer()),
@@ -333,7 +355,11 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created silo with ID: %v", silo.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created silo with ID: %v", silo.Id),
+		map[string]any{"success": true},
+	)
 
 	plan.ID = types.StringValue(silo.Id)
 	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
@@ -346,7 +372,11 @@ func (r *siloResource) Create(ctx context.Context, req resource.CreateRequest, r
 }
 
 // Read fetches this resource using the Oxide API.
-func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *siloResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state siloResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -416,7 +446,11 @@ func (r *siloResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 // Update updates this resource using the Oxide API. Not all attributes can
 // be updated. Refer to [Schema] and the Oxide API documentation for more
 // information.
-func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *siloResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan siloResourceModel
 	var state siloResourceModel
 
@@ -458,7 +492,11 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("updated silo with ID: %v", siloQuotas.SiloId), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated silo with ID: %v", siloQuotas.SiloId),
+		map[string]any{"success": true},
+	)
 
 	silo, err := r.client.SiloView(ctx, oxide.SiloViewParams{
 		Silo: oxide.NameOrId(state.ID.ValueString()),
@@ -487,7 +525,11 @@ func (r *siloResource) Update(ctx context.Context, req resource.UpdateRequest, r
 }
 
 // Delete deletes this resource using the Oxide API.
-func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *siloResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state siloResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -518,7 +560,11 @@ func (r *siloResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted silo with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }
 
 func stringMapToFleetRoleMap(mappedFleetRoles map[string][]string) map[string][]oxide.FleetRole {
@@ -534,7 +580,9 @@ func stringMapToFleetRoleMap(mappedFleetRoles map[string][]string) map[string][]
 	return model
 }
 
-func tlsCertsModelToCertificateCreateSlice(tlsCertificates []siloResourceTlsCertificateModel) []oxide.CertificateCreate {
+func tlsCertsModelToCertificateCreateSlice(
+	tlsCertificates []siloResourceTlsCertificateModel,
+) []oxide.CertificateCreate {
 	var model []oxide.CertificateCreate
 
 	for _, tlsCert := range tlsCertificates {

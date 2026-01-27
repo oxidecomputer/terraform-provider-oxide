@@ -70,11 +70,19 @@ func NewToVPCFirewallRulesMapFunction() function.Function {
 
 type toVPCFirewallRulesMap struct{}
 
-func (f *toVPCFirewallRulesMap) Metadata(_ context.Context, _ function.MetadataRequest, resp *function.MetadataResponse) {
+func (f *toVPCFirewallRulesMap) Metadata(
+	_ context.Context,
+	_ function.MetadataRequest,
+	resp *function.MetadataResponse,
+) {
 	resp.Name = "to_vpc_firewall_rules_map"
 }
 
-func (f *toVPCFirewallRulesMap) Definition(ctx context.Context, _ function.DefinitionRequest, resp *function.DefinitionResponse) {
+func (f *toVPCFirewallRulesMap) Definition(
+	ctx context.Context,
+	_ function.DefinitionRequest,
+	resp *function.DefinitionResponse,
+) {
 	resp.Definition = function.Definition{
 		Summary: "Converts a VPC firewall rule set to the updated map schema.",
 		MarkdownDescription: replaceBackticks(`
@@ -109,7 +117,11 @@ function to convert the existing ''rules'' set to a JSON string.
 	}
 }
 
-func (f *toVPCFirewallRulesMap) Run(ctx context.Context, req function.RunRequest, resp *function.RunResponse) {
+func (f *toVPCFirewallRulesMap) Run(
+	ctx context.Context,
+	req function.RunRequest,
+	resp *function.RunResponse,
+) {
 	var rulesJSON string
 	resp.Error = req.Arguments.Get(ctx, &rulesJSON)
 	if resp.Error != nil {
@@ -202,7 +214,7 @@ func (j vpcFirewallRuleFiltersV1Json) toModel() (vpcFirewallRulesResourceRuleFil
 		}
 	}
 
-	var ports types.Set = types.SetNull(types.StringType)
+	ports := types.SetNull(types.StringType)
 	if j.Ports != nil {
 		portsValues := make([]attr.Value, len(j.Ports))
 		for i, p := range j.Ports {

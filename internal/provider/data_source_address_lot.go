@@ -45,12 +45,20 @@ func NewAddressLotDataSource() datasource.DataSource {
 	return &addressLotDataSource{}
 }
 
-func (d *addressLotDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *addressLotDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_address_lot"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *addressLotDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *addressLotDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -58,7 +66,11 @@ func (d *addressLotDataSource) Configure(_ context.Context, req datasource.Confi
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *addressLotDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *addressLotDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
@@ -109,7 +121,11 @@ func (d *addressLotDataSource) Schema(ctx context.Context, req datasource.Schema
 	}
 }
 
-func (d *addressLotDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *addressLotDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state addressLotDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -137,7 +153,11 @@ func (d *addressLotDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 	lot := addressLot.Lot
-	tflog.Trace(ctx, fmt.Sprintf("read address lot with ID: %v", lot.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read address lot with ID: %v", lot.Id),
+		map[string]any{"success": true},
+	)
 
 	state.ID = types.StringValue(lot.Id)
 	state.Name = types.StringValue(string(lot.Name))

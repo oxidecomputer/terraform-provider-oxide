@@ -56,12 +56,20 @@ type imageDigestModel struct {
 	Value types.String `tfsdk:"value"`
 }
 
-func (d *imagesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *imagesDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_images"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *imagesDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *imagesDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -69,7 +77,11 @@ func (d *imagesDataSource) Configure(_ context.Context, req datasource.Configure
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *imagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *imagesDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve a list of all images belonging to a silo or project.
@@ -144,7 +156,11 @@ Retrieve a list of all images belonging to a silo or project.
 	}
 }
 
-func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *imagesDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state imagesDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -163,7 +179,8 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	// TODO: It would be preferable to us the client.Images.ListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
-	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000 results.
+	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000
+	// results.
 	// Seems unlikely anyone will have more than one billion images.
 	params := oxide.ImageListParams{
 		Project: oxide.NameOrId(state.ProjectID.ValueString()),
@@ -179,7 +196,11 @@ func (d *imagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read all images from project: %v", state.ProjectID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read all images from project: %v", state.ProjectID.ValueString()),
+		map[string]any{"success": true},
+	)
 
 	// Set a unique ID for the datasource payload
 	state.ID = types.StringValue(uuid.New().String())

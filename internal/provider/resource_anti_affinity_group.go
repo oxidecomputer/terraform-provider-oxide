@@ -50,12 +50,20 @@ type antiAffinityGroupResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *antiAffinityGroupResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *antiAffinityGroupResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_anti_affinity_group"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *antiAffinityGroupResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *antiAffinityGroupResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -64,12 +72,20 @@ func (r *antiAffinityGroupResource) Configure(_ context.Context, req resource.Co
 }
 
 // ImportState imports an existing anti-affinity group into Terraform state.
-func (r *antiAffinityGroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *antiAffinityGroupResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *antiAffinityGroupResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *antiAffinityGroupResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages anti-affinity groups.
@@ -135,7 +151,11 @@ This resource manages anti-affinity groups.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *antiAffinityGroupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *antiAffinityGroupResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan antiAffinityGroupResourceModel
 
 	// Read Terraform plan data into the model
@@ -171,7 +191,11 @@ func (r *antiAffinityGroupResource) Create(ctx context.Context, req resource.Cre
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("created AntiAffinityGroup with ID: %v", antiAffinityGroup.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created AntiAffinityGroup with ID: %v", antiAffinityGroup.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(antiAffinityGroup.Id)
@@ -187,7 +211,11 @@ func (r *antiAffinityGroupResource) Create(ctx context.Context, req resource.Cre
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *antiAffinityGroupResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *antiAffinityGroupResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state antiAffinityGroupResourceModel
 
 	// Read Terraform prior state data into the model
@@ -220,7 +248,11 @@ func (r *antiAffinityGroupResource) Read(ctx context.Context, req resource.ReadR
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read anti-affinity group with ID: %v", antiAffinityGroup.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read anti-affinity group with ID: %v", antiAffinityGroup.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(antiAffinityGroup.Description)
 	state.FailureDomain = types.StringValue(string(antiAffinityGroup.FailureDomain))
@@ -239,7 +271,11 @@ func (r *antiAffinityGroupResource) Read(ctx context.Context, req resource.ReadR
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *antiAffinityGroupResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *antiAffinityGroupResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan antiAffinityGroupResourceModel
 	var state antiAffinityGroupResourceModel
 
@@ -279,7 +315,11 @@ func (r *antiAffinityGroupResource) Update(ctx context.Context, req resource.Upd
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("updated anti-affinity group with ID: %v", antiAffinityGroup.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated anti-affinity group with ID: %v", antiAffinityGroup.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(antiAffinityGroup.Id)
@@ -295,7 +335,11 @@ func (r *antiAffinityGroupResource) Update(ctx context.Context, req resource.Upd
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *antiAffinityGroupResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *antiAffinityGroupResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state antiAffinityGroupResourceModel
 
 	// Read Terraform prior state data into the model
@@ -324,5 +368,9 @@ func (r *antiAffinityGroupResource) Delete(ctx context.Context, req resource.Del
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted AntiAffinityGroup with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted AntiAffinityGroup with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

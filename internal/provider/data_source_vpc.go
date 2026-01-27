@@ -44,12 +44,20 @@ type vpcDataSourceModel struct {
 	Timeouts       timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *vpcDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *vpcDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -57,7 +65,11 @@ func (d *vpcDataSource) Configure(_ context.Context, req datasource.ConfigureReq
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *vpcDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified VPC.
@@ -108,7 +120,11 @@ Retrieve information about a specified VPC.
 	}
 }
 
-func (d *vpcDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *vpcDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state vpcDataSourceModel
 
 	// Read Terraform configuration data into the model

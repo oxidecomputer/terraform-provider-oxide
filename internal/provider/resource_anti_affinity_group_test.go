@@ -94,7 +94,10 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceAntiAffinityGroupUpdate(resourceName, antiAffinityGroupNameUpdated),
+				Check: checkResourceAntiAffinityGroupUpdate(
+					resourceName,
+					antiAffinityGroupNameUpdated,
+				),
 			},
 			{
 				ResourceName:      resourceName,
@@ -105,7 +108,9 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	})
 }
 
-func checkResourceAntiAffinityGroup(resourceName, antiAffinityGroupName string) resource.TestCheckFunc {
+func checkResourceAntiAffinityGroup(
+	resourceName, antiAffinityGroupName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test anti-affinity group"),
@@ -122,7 +127,9 @@ func checkResourceAntiAffinityGroup(resourceName, antiAffinityGroupName string) 
 	}...)
 }
 
-func checkResourceAntiAffinityGroupUpdate(resourceName, antiAffinityGroupName string) resource.TestCheckFunc {
+func checkResourceAntiAffinityGroupUpdate(
+	resourceName, antiAffinityGroupName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test updated"),

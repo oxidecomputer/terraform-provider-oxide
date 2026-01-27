@@ -48,12 +48,20 @@ type vpcInternetGatewayResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *vpcInternetGatewayResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *vpcInternetGatewayResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_internet_gateway"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcInternetGatewayResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *vpcInternetGatewayResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -62,12 +70,20 @@ func (r *vpcInternetGatewayResource) Configure(_ context.Context, req resource.C
 }
 
 // ImportState imports the resource state from Terraform.
-func (r *vpcInternetGatewayResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *vpcInternetGatewayResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcInternetGatewayResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *vpcInternetGatewayResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages VPC internet gateways.
@@ -124,7 +140,11 @@ This resource manages VPC internet gateways.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcInternetGatewayResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *vpcInternetGatewayResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan vpcInternetGatewayResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -157,7 +177,11 @@ func (r *vpcInternetGatewayResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created VPC internet gateway with ID: %v", vpcInternetGateway.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created VPC internet gateway with ID: %v", vpcInternetGateway.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcInternetGateway.Id)
@@ -172,7 +196,11 @@ func (r *vpcInternetGatewayResource) Create(ctx context.Context, req resource.Cr
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcInternetGatewayResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *vpcInternetGatewayResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state vpcInternetGatewayResourceModel
 
 	// Read Terraform prior state data into the model
@@ -205,7 +233,11 @@ func (r *vpcInternetGatewayResource) Read(ctx context.Context, req resource.Read
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC internet gateway with ID: %v", vpcInternetGateway.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC internet gateway with ID: %v", vpcInternetGateway.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(vpcInternetGateway.Description)
 	state.ID = types.StringValue(vpcInternetGateway.Id)
@@ -222,7 +254,11 @@ func (r *vpcInternetGatewayResource) Read(ctx context.Context, req resource.Read
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcInternetGatewayResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *vpcInternetGatewayResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	// Internet gateways are currently not updateable.
 	// We only update whether the user performs a cascade delete or not,
 	// which is not part of the InternetGateway object, but rather a query
@@ -283,7 +319,11 @@ func (r *vpcInternetGatewayResource) Update(ctx context.Context, req resource.Up
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcInternetGatewayResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *vpcInternetGatewayResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state vpcInternetGatewayResourceModel
 
 	// Read Terraform prior state data into the model
@@ -318,5 +358,9 @@ func (r *vpcInternetGatewayResource) Delete(ctx context.Context, req resource.De
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted VPC internet gateway with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted VPC internet gateway with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

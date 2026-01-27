@@ -43,12 +43,20 @@ type externalIPDatasourceModel struct {
 	Kind types.String `tfsdk:"kind"`
 }
 
-func (d *instanceExternalIPsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *instanceExternalIPsDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_instance_external_ips"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *instanceExternalIPsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *instanceExternalIPsDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -56,7 +64,11 @@ func (d *instanceExternalIPsDataSource) Configure(_ context.Context, req datasou
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *instanceExternalIPsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *instanceExternalIPsDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information of all external IPs associated to an instance.
@@ -89,7 +101,11 @@ Retrieve information of all external IPs associated to an instance.
 	}
 }
 
-func (d *instanceExternalIPsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *instanceExternalIPsDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state instanceExternalIPsDatasourceModel
 
 	// Read Terraform configuration data into the model
@@ -118,7 +134,11 @@ func (d *instanceExternalIPsDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read all external IPs from instance: %v", state.InstanceID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read all external IPs from instance: %v", state.InstanceID.ValueString()),
+		map[string]any{"success": true},
+	)
 
 	// Set a unique ID for the datasource payload
 	state.ID = types.StringValue(uuid.New().String())

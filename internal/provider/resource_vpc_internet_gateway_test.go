@@ -128,7 +128,9 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	})
 }
 
-func checkResourceVPCInternetGateway(resourceName, internetGatewayName string) resource.TestCheckFunc {
+func checkResourceVPCInternetGateway(
+	resourceName, internetGatewayName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "cascade_delete", "false"),
@@ -144,7 +146,9 @@ func checkResourceVPCInternetGateway(resourceName, internetGatewayName string) r
 	}...)
 }
 
-func checkResourceVPCInternetGatewayUpdate(resourceName, internetGatewayName string) resource.TestCheckFunc {
+func checkResourceVPCInternetGatewayUpdate(
+	resourceName, internetGatewayName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),

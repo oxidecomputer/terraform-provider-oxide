@@ -43,12 +43,20 @@ type vpcRouterDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcRouterDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *vpcRouterDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_router"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcRouterDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *vpcRouterDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -56,7 +64,11 @@ func (d *vpcRouterDataSource) Configure(_ context.Context, req datasource.Config
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcRouterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *vpcRouterDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified VPC router.
@@ -103,7 +115,11 @@ Retrieve information about a specified VPC router.
 	}
 }
 
-func (d *vpcRouterDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *vpcRouterDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state vpcRouterDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -133,7 +149,11 @@ func (d *vpcRouterDataSource) Read(ctx context.Context, req datasource.ReadReque
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC router with ID: %v", router.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC router with ID: %v", router.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(router.Description)
 	state.ID = types.StringValue(router.Id)

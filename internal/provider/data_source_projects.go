@@ -43,12 +43,20 @@ func NewProjectsDataSource() datasource.DataSource {
 }
 
 // Metadata returns the data source type name.
-func (d *projectsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *projectsDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_projects"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *projectsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *projectsDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -57,7 +65,11 @@ func (d *projectsDataSource) Configure(_ context.Context, req datasource.Configu
 }
 
 // Schema defines the schema for the data source.
-func (d *projectsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *projectsDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve a list of projects.
@@ -99,7 +111,11 @@ Retrieve a list of projects.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *projectsDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state projectsDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -118,7 +134,8 @@ func (d *projectsDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	// TODO: It would be preferable to us the client.Projects.ListAllPages method instead.
 	// Unfortunately, currently that method has a bug where it returns twice as many results
-	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000 results.
+	// as there are in reality. For now I'll use the List method with a limit of 1,000,000,000
+	// results.
 	// Seems unlikely anyone will have more than one billion projects.
 	params := oxide.ProjectListParams{
 		Limit:  oxide.NewPointer(1000000000),

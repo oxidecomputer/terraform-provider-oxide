@@ -46,7 +46,11 @@ import (
 // are first upgraded to v0.1, and then the v0.1 state is upgraded to the
 // latest schema version. This way future upgrades only need to handle
 // upgrades from v0.1.
-func (r *vpcFirewallRulesResource) stateUpgraderV01(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+func (r *vpcFirewallRulesResource) stateUpgraderV01(
+	ctx context.Context,
+	req resource.UpgradeStateRequest,
+	resp *resource.UpgradeStateResponse,
+) {
 	var modelV01 vpcFirewallRulesResourceModelV01
 
 	// Check if we need to upgrade from v0.0 to v0.1 first.
@@ -72,7 +76,11 @@ func (r *vpcFirewallRulesResource) stateUpgraderV01(ctx context.Context, req res
 			return
 		}
 	} else {
-		tflog.Info(ctx, "failed to unmarshal state using schema v0.0, trying v0.1", map[string]any{"err": err})
+		tflog.Info(
+			ctx,
+			"failed to unmarshal state using schema v0.0, trying v0.1",
+			map[string]any{"err": err},
+		)
 
 		// Unmarshalling to schema v0.0 failed, try with schema v0.1.
 		schemaV01 := r.schemaV01(ctx)
@@ -157,16 +165,27 @@ func (r *vpcFirewallRulesResource) schemaV00(ctx context.Context) schema.Schema 
 												Required:    true,
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.VpcFirewallRuleHostFilterTypeInstance),
-														string(oxide.VpcFirewallRuleHostFilterTypeIp),
-														string(oxide.VpcFirewallRuleHostFilterTypeIpNet),
-														string(oxide.VpcFirewallRuleHostFilterTypeSubnet),
-														string(oxide.VpcFirewallRuleHostFilterTypeVpc),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeInstance,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeIp,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeIpNet,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeSubnet,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeVpc,
+														),
 													),
 												},
 											},
 											"value": schema.StringAttribute{
-												// Important, if the name of the associated instance is changed Terraform will not be able to sync
+												// Important, if the name of the associated instance
+												// is changed Terraform will not be able to sync
 												Description: "Depending on the type, it will be one of the following:" +
 													"- `vpc`: Name of the VPC " +
 													"- `subnet`: Name of the VPC subnet " +
@@ -243,7 +262,8 @@ func (r *vpcFirewallRulesResource) schemaV00(ctx context.Context) schema.Schema 
 										},
 									},
 									"value": schema.StringAttribute{
-										// Important, if the name of the associated instance is changed Terraform will not be able to sync
+										// Important, if the name of the associated instance is
+										// changed Terraform will not be able to sync
 										Description: "Depending on the type, it will be one of the following:" +
 											"- `vpc`: Name of the VPC " +
 											"- `subnet`: Name of the VPC subnet " +
@@ -292,7 +312,9 @@ type vpcFirewallRulesResourceModelV00 struct {
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-func (m vpcFirewallRulesResourceModelV00) upgrade(ctx context.Context) (vpcFirewallRulesResourceModelV01, diag.Diagnostics) {
+func (m vpcFirewallRulesResourceModelV00) upgrade(
+	ctx context.Context,
+) (vpcFirewallRulesResourceModelV01, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	rules := make([]vpcFirewallRulesResourceRuleModelV01, len(m.Rules))
@@ -336,7 +358,9 @@ type vpcFirewallRulesResourceRuleModelV00 struct {
 	TimeModified types.String `tfsdk:"-"`
 }
 
-func (r vpcFirewallRulesResourceRuleModelV00) upgrade(ctx context.Context) (vpcFirewallRulesResourceRuleModelV01, diag.Diagnostics) {
+func (r vpcFirewallRulesResourceRuleModelV00) upgrade(
+	ctx context.Context,
+) (vpcFirewallRulesResourceRuleModelV01, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	targets := make([]vpcFirewallRulesResourceRuleTargetModelV01, len(r.Targets))
@@ -371,7 +395,9 @@ type vpcFirewallRulesResourceRuleFiltersModelV00 struct {
 	Protocols types.Set                           `tfsdk:"protocols"`
 }
 
-func (f *vpcFirewallRulesResourceRuleFiltersModelV00) upgrade(ctx context.Context) (*vpcFirewallRulesResourceRuleFiltersModelV01, diag.Diagnostics) {
+func (f *vpcFirewallRulesResourceRuleFiltersModelV00) upgrade(
+	ctx context.Context,
+) (*vpcFirewallRulesResourceRuleFiltersModelV01, diag.Diagnostics) {
 	if f == nil {
 		return nil, nil
 	}
@@ -468,16 +494,27 @@ func (r *vpcFirewallRulesResource) schemaV01(ctx context.Context) schema.Schema 
 												Required:    true,
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.VpcFirewallRuleHostFilterTypeInstance),
-														string(oxide.VpcFirewallRuleHostFilterTypeIp),
-														string(oxide.VpcFirewallRuleHostFilterTypeIpNet),
-														string(oxide.VpcFirewallRuleHostFilterTypeSubnet),
-														string(oxide.VpcFirewallRuleHostFilterTypeVpc),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeInstance,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeIp,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeIpNet,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeSubnet,
+														),
+														string(
+															oxide.VpcFirewallRuleHostFilterTypeVpc,
+														),
 													),
 												},
 											},
 											"value": schema.StringAttribute{
-												// Important, if the name of the associated instance is changed Terraform will not be able to sync
+												// Important, if the name of the associated instance
+												// is changed Terraform will not be able to sync
 												Description: "Depending on the type, it will be one of the following:" +
 													"- `vpc`: Name of the VPC " +
 													"- `subnet`: Name of the VPC subnet " +
@@ -502,9 +539,15 @@ func (r *vpcFirewallRulesResource) schemaV01(ctx context.Context) schema.Schema 
 												Description: "The protocol type. Must be one of `tcp`, `udp`, or `icmp`.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
-														string(oxide.VpcFirewallRuleProtocolTypeTcp),
-														string(oxide.VpcFirewallRuleProtocolTypeUdp),
-														string(oxide.VpcFirewallRuleProtocolTypeIcmp),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeTcp,
+														),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeUdp,
+														),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeIcmp,
+														),
 													),
 												},
 											},
@@ -520,7 +563,9 @@ func (r *vpcFirewallRulesResource) schemaV01(ctx context.Context) schema.Schema 
 												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.",
 												Validators: []validator.String{
 													stringvalidator.AlsoRequires(path.Expressions{
-														path.MatchRelative().AtParent().AtName("icmp_type"),
+														path.MatchRelative().
+															AtParent().
+															AtName("icmp_type"),
 													}...),
 												},
 											},
@@ -577,7 +622,8 @@ func (r *vpcFirewallRulesResource) schemaV01(ctx context.Context) schema.Schema 
 										},
 									},
 									"value": schema.StringAttribute{
-										// Important, if the name of the associated instance is changed Terraform will not be able to sync
+										// Important, if the name of the associated instance is
+										// changed Terraform will not be able to sync
 										Description: "Depending on the type, it will be one of the following:" +
 											"- `vpc`: Name of the VPC " +
 											"- `subnet`: Name of the VPC subnet " +

@@ -45,12 +45,20 @@ type ipPoolSiloLinkResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *ipPoolSiloLinkResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *ipPoolSiloLinkResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_ip_pool_silo_link"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *ipPoolSiloLinkResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *ipPoolSiloLinkResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -59,12 +67,20 @@ func (r *ipPoolSiloLinkResource) Configure(_ context.Context, req resource.Confi
 }
 
 // ImportState imports an existing resource into Terraform state.
-func (r *ipPoolSiloLinkResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ipPoolSiloLinkResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("ip_pool_id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *ipPoolSiloLinkResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ipPoolSiloLinkResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages IP pool to silo links.
@@ -106,7 +122,11 @@ This resource manages IP pool to silo links.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *ipPoolSiloLinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *ipPoolSiloLinkResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan ipPoolSiloLinkResourceModel
 
 	// Read Terraform plan data into the model
@@ -155,7 +175,11 @@ func (r *ipPoolSiloLinkResource) Create(ctx context.Context, req resource.Create
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *ipPoolSiloLinkResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *ipPoolSiloLinkResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state ipPoolSiloLinkResourceModel
 
 	// Read Terraform prior state data into the model
@@ -191,7 +215,11 @@ func (r *ipPoolSiloLinkResource) Read(ctx context.Context, req resource.ReadRequ
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read IP pool links with ID: %v", state.IPPoolID), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read IP pool links with ID: %v", state.IPPoolID),
+		map[string]any{"success": true},
+	)
 
 	link := findLinkinIPPoolLinks(state.SiloID.ValueString(), links.Items)
 	if link == nil {
@@ -215,7 +243,11 @@ func (r *ipPoolSiloLinkResource) Read(ctx context.Context, req resource.ReadRequ
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *ipPoolSiloLinkResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *ipPoolSiloLinkResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan ipPoolSiloLinkResourceModel
 	var state ipPoolSiloLinkResourceModel
 
@@ -272,7 +304,11 @@ func (r *ipPoolSiloLinkResource) Update(ctx context.Context, req resource.Update
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *ipPoolSiloLinkResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *ipPoolSiloLinkResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state ipPoolSiloLinkResourceModel
 
 	// Read Terraform prior state data into the model
@@ -302,7 +338,11 @@ func (r *ipPoolSiloLinkResource) Delete(ctx context.Context, req resource.Delete
 			return
 		}
 	}
-	tflog.Trace(ctx, fmt.Sprintf("deleted link with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted link with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }
 
 func findLinkinIPPoolLinks(siloID string, links []oxide.IpPoolSiloLink) *oxide.IpPoolSiloLink {

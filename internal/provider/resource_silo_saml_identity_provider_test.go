@@ -105,7 +105,10 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 	siloSamlIdentityProviderBlockName := newBlockName("silo-idp")
 	siloSamlIdentityProviderName := newResourceName()
 
-	siloSamlIdentityProviderResourceID := fmt.Sprintf("oxide_silo_saml_identity_provider.%s", siloSamlIdentityProviderBlockName)
+	siloSamlIdentityProviderResourceID := fmt.Sprintf(
+		"oxide_silo_saml_identity_provider.%s",
+		siloSamlIdentityProviderBlockName,
+	)
 
 	siloDNSName := os.Getenv("OXIDE_SILO_DNS_NAME")
 	if siloDNSName == "" {
@@ -138,13 +141,19 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceSiloSamlIdentityProvider(siloSamlIdentityProviderResourceID, siloSamlIdentityProviderName),
+				Check: checkResourceSiloSamlIdentityProvider(
+					siloSamlIdentityProviderResourceID,
+					siloSamlIdentityProviderName,
+				),
 			},
 		},
 	})
 }
 
-func checkResourceSiloSamlIdentityProvider(resourceID string, nameAttr string) resource.TestCheckFunc {
+func checkResourceSiloSamlIdentityProvider(
+	resourceID string,
+	nameAttr string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceID, "id"),
 		resource.TestCheckResourceAttr(resourceID, "name", nameAttr),
@@ -155,8 +164,16 @@ func checkResourceSiloSamlIdentityProvider(resourceID string, nameAttr string) r
 		resource.TestCheckResourceAttr(resourceID, "acs_url", "https://example.com"),
 		resource.TestCheckResourceAttr(resourceID, "slo_url", "https://example.com"),
 		resource.TestCheckResourceAttr(resourceID, "sp_client_id", "example"),
-		resource.TestCheckResourceAttr(resourceID, "technical_contact_email", "example@example.com"),
-		resource.TestCheckResourceAttr(resourceID, "idp_metadata_source.type", "base64_encoded_xml"),
+		resource.TestCheckResourceAttr(
+			resourceID,
+			"technical_contact_email",
+			"example@example.com",
+		),
+		resource.TestCheckResourceAttr(
+			resourceID,
+			"idp_metadata_source.type",
+			"base64_encoded_xml",
+		),
 		resource.TestCheckResourceAttrSet(resourceID, "idp_metadata_source.data"),
 	}...)
 }

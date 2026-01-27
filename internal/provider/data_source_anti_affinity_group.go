@@ -43,12 +43,20 @@ type antiAffinityGroupDataSourceModel struct {
 	ProjectName   types.String   `tfsdk:"project_name"`
 }
 
-func (d *antiAffinityGroupDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *antiAffinityGroupDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_anti_affinity_group"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *antiAffinityGroupDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *antiAffinityGroupDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -56,7 +64,11 @@ func (d *antiAffinityGroupDataSource) Configure(_ context.Context, req datasourc
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *antiAffinityGroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *antiAffinityGroupDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified anti-affinity group.
@@ -103,7 +115,11 @@ Retrieve information about a specified anti-affinity group.
 	}
 }
 
-func (d *antiAffinityGroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *antiAffinityGroupDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state antiAffinityGroupDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -132,7 +148,11 @@ func (d *antiAffinityGroupDataSource) Read(ctx context.Context, req datasource.R
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read anti-affinity group with ID: %v", antiAffinityGroup.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read anti-affinity group with ID: %v", antiAffinityGroup.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(antiAffinityGroup.Description)
 	state.FailureDomain = types.StringValue(string(antiAffinityGroup.FailureDomain))

@@ -206,7 +206,11 @@ func testAccIPPoolSiloLinkDestroy(s *terraform.State) error {
 
 		link := findLinkinIPPoolLinks(siloID, links.Items)
 		if link != nil {
-			return fmt.Errorf("link between IP pool: '%v' and silo '%v' still exists", ipPoolID, siloID)
+			return fmt.Errorf(
+				"link between IP pool: '%v' and silo '%v' still exists",
+				ipPoolID,
+				siloID,
+			)
 		}
 	}
 

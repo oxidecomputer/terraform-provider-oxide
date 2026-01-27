@@ -57,12 +57,20 @@ type vpcRouterRouteTargetDataSourceModel struct {
 	Value types.String `tfsdk:"value"`
 }
 
-func (d *vpcRouterRouteDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *vpcRouterRouteDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_router_route"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcRouterRouteDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *vpcRouterRouteDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -70,7 +78,11 @@ func (d *vpcRouterRouteDataSource) Configure(_ context.Context, req datasource.C
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcRouterRouteDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *vpcRouterRouteDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified VPC router route.
@@ -162,7 +174,11 @@ Depending on the type, it will be one of the following:
 	}
 }
 
-func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *vpcRouterRouteDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state vpcRouterRouteDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -193,7 +209,11 @@ func (d *vpcRouterRouteDataSource) Read(ctx context.Context, req datasource.Read
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC router route with ID: %v", route.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC router route with ID: %v", route.Id),
+		map[string]any{"success": true},
+	)
 
 	// Parse vpcRouterRouteDestinationDataSourceModel into types.Object
 	dm := vpcRouterRouteDestinationDataSourceModel{

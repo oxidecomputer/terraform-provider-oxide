@@ -47,12 +47,20 @@ type vpcRouterResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *vpcRouterResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *vpcRouterResource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_router"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcRouterResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *vpcRouterResource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -60,12 +68,20 @@ func (r *vpcRouterResource) Configure(_ context.Context, req resource.ConfigureR
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *vpcRouterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *vpcRouterResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcRouterResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *vpcRouterResource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 This resource manages VPC routers.
@@ -116,7 +132,11 @@ This resource manages VPC routers.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcRouterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *vpcRouterResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
 	var plan vpcRouterResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -149,7 +169,11 @@ func (r *vpcRouterResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("created VPC router with ID: %v", vpcRouter.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created VPC router with ID: %v", vpcRouter.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouter.Id)
@@ -165,7 +189,11 @@ func (r *vpcRouterResource) Create(ctx context.Context, req resource.CreateReque
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcRouterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *vpcRouterResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
 	var state vpcRouterResourceModel
 
 	// Read Terraform prior state data into the model
@@ -198,7 +226,11 @@ func (r *vpcRouterResource) Read(ctx context.Context, req resource.ReadRequest, 
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC Router with ID: %v", vpcRouter.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC Router with ID: %v", vpcRouter.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(vpcRouter.Description)
 	state.ID = types.StringValue(vpcRouter.Id)
@@ -216,7 +248,11 @@ func (r *vpcRouterResource) Read(ctx context.Context, req resource.ReadRequest, 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcRouterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *vpcRouterResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
 	var plan vpcRouterResourceModel
 	var state vpcRouterResourceModel
 
@@ -256,7 +292,11 @@ func (r *vpcRouterResource) Update(ctx context.Context, req resource.UpdateReque
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("updated VPC router with ID: %v", vpcRouter.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated VPC router with ID: %v", vpcRouter.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouter.Id)
@@ -272,7 +312,11 @@ func (r *vpcRouterResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcRouterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *vpcRouterResource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
 	var state vpcRouterResourceModel
 
 	// Read Terraform prior state data into the model
@@ -302,5 +346,9 @@ func (r *vpcRouterResource) Delete(ctx context.Context, req resource.DeleteReque
 		}
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("deleted VPC router with ID: %v", state.ID.ValueString()), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted VPC router with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
 }

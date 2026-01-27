@@ -39,12 +39,20 @@ func NewIpPoolDataSource() datasource.DataSource {
 }
 
 // Metadata returns the data source type name.
-func (d *ipPoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *ipPoolDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_ip_pool"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *ipPoolDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *ipPoolDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -53,7 +61,11 @@ func (d *ipPoolDataSource) Configure(_ context.Context, req datasource.Configure
 }
 
 // Schema defines the schema for the data source.
-func (d *ipPoolDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ipPoolDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified IP pool.
@@ -89,7 +101,11 @@ Retrieve information about a specified IP pool.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *ipPoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *ipPoolDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state ipPoolDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -118,7 +134,11 @@ func (d *ipPoolDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read IP pool with ID: %v", ipPool.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read IP pool with ID: %v", ipPool.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to model
 	state.Description = types.StringValue(ipPool.Description)

@@ -44,12 +44,20 @@ type vpcSubnetDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcSubnetDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *vpcSubnetDataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = "oxide_vpc_subnet"
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcSubnetDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *vpcSubnetDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -57,7 +65,11 @@ func (d *vpcSubnetDataSource) Configure(_ context.Context, req datasource.Config
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcSubnetDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *vpcSubnetDataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
 Retrieve information about a specified VPC subnet.
@@ -112,7 +124,11 @@ Retrieve information about a specified VPC subnet.
 	}
 }
 
-func (d *vpcSubnetDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *vpcSubnetDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
 	var state vpcSubnetDataSourceModel
 
 	// Read Terraform configuration data into the model
@@ -142,7 +158,11 @@ func (d *vpcSubnetDataSource) Read(ctx context.Context, req datasource.ReadReque
 		)
 		return
 	}
-	tflog.Trace(ctx, fmt.Sprintf("read VPC subnet with ID: %v", subnet.Id), map[string]any{"success": true})
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("read VPC subnet with ID: %v", subnet.Id),
+		map[string]any{"success": true},
+	)
 
 	state.Description = types.StringValue(subnet.Description)
 	state.ID = types.StringValue(subnet.Id)
