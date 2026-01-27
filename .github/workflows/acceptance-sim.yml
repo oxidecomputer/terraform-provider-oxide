@@ -11,6 +11,11 @@ on:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tf-binary:
+          - terraform
+          - opentofu
     steps:
       # Simulated omicron takes up a meaningful amount of disk space, and the
       # hosted Github Actions runners don't offer much space. Clean up unused
@@ -23,6 +28,13 @@ jobs:
           sudo docker builder prune -a
       - uses: actions/checkout@v6
       - uses: hashicorp/setup-terraform@v3
+        if: matrix.tf-binary == 'terraform'
+        with:
+          terraform_wrapper: false
+      - uses: opentofu/setup-opentofu@v1
+        if: matrix.tf-binary == 'opentofu'
+        with:
+          tofu_wrapper: false
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
@@ -68,11 +80,21 @@ jobs:
         env:
           OXIDE_HOST: http://localhost:12220
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-      - name: test
-        shell: bash
+      - name: test (terraform)
+        if: matrix.tf-binary == 'terraform'
+        run: make testacc
+        env:
+          OXIDE_HOST: http://localhost:12220
+          OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
+          OXIDE_TEST_IP_POOL_NAME: default
+          OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"
+      - name: test (opentofu)
+        if: matrix.tf-binary == 'opentofu'
         run: |
+          export TF_ACC_TERRAFORM_PATH=$(which tofu)
           make testacc
         env:
+          TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
           OXIDE_HOST: http://localhost:12220
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
           OXIDE_TEST_IP_POOL_NAME: default
