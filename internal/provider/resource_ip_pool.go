@@ -7,7 +7,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -272,22 +271,20 @@ func (r *ipPoolResource) Read(
 	for index, item := range ipPoolRanges.Items {
 		ipPoolRange := ipPoolResourceRangeModel{}
 
-		// TODO: For the time being we are using interfaces for nested allOf within oneOf objects in
-		// the OpenAPI spec. When we come up with a better approach this should be edited to reflect
-		// that.
-		switch item.Range.(type) {
-		case map[string]interface{}:
-			rs := item.Range.(map[string]interface{})
-			ipPoolRange.FirstAddress = types.StringValue(rs["first"].(string))
-			ipPoolRange.LastAddress = types.StringValue(rs["last"].(string))
+		// Extract first/last addresses from the IpRange variant
+		switch v := item.Range.Value.(type) {
+		case *oxide.Ipv4Range:
+			ipPoolRange.FirstAddress = types.StringValue(v.First)
+			ipPoolRange.LastAddress = types.StringValue(v.Last)
+		case *oxide.Ipv6Range:
+			ipPoolRange.FirstAddress = types.StringValue(v.First)
+			ipPoolRange.LastAddress = types.StringValue(v.Last)
 		default:
-			// Theoretically this should never happen. Just in case though!
 			resp.Diagnostics.AddError(
 				"Unable to read IP Pool ranges:",
 				fmt.Sprintf(
-					"internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support",
-					reflect.TypeOf(item.Range),
-					item.Range,
+					"internal error: unexpected IpRange variant type %T. If you hit this bug, please contact support",
+					item.Range.Value,
 				),
 			)
 			return
@@ -431,36 +428,10 @@ func (r *ipPoolResource) Delete(
 	)
 
 	for _, item := range ranges.Items {
-		var ipRange oxide.IpRange
-		rs := item.Range.(map[string]interface{})
-		if isIPv4(rs["first"].(string)) {
-			ipRange = oxide.Ipv4Range{
-				First: rs["first"].(string),
-				Last:  rs["last"].(string),
-			}
-		} else if isIPv6(rs["first"].(string)) {
-			ipRange = oxide.Ipv6Range{
-				First: rs["first"].(string),
-				Last:  rs["last"].(string),
-			}
-		} else {
-			// This should never happen as we are retrieving information from Nexus. If we do
-			// encounter
-			// this error we have a huge problem.
-			resp.Diagnostics.AddError(
-				"Unable to read IP Pool ranges:",
-				fmt.Sprintf(
-					"internal error: %v is not map[string]interface{}. Debugging content: %+v. If you hit this bug, please contact support",
-					reflect.TypeOf(item.Range),
-					item.Range,
-				),
-			)
-			return
-		}
-
+		// item.Range is now a struct with a Value field containing the variant
 		params := oxide.IpPoolRangeRemoveParams{
 			Pool: oxide.NameOrId(state.ID.ValueString()),
-			Body: &ipRange,
+			Body: &item.Range,
 		}
 		if err := r.client.IpPoolRangeRemove(ctx, params); err != nil {
 			if !is404(err) {
@@ -472,9 +443,8 @@ func (r *ipPoolResource) Delete(
 			}
 		}
 		tflog.Trace(ctx, fmt.Sprintf(
-			"removed IP pool range %v - %v from IP pool with ID: %v",
-			rs["first"].(string),
-			rs["last"].(string),
+			"removed IP pool range %v from IP pool with ID: %v",
+			item.Range.String(),
 			state.ID.ValueString(),
 		), map[string]any{"success": true})
 	}
@@ -508,26 +478,14 @@ func addRanges(
 	var diags diag.Diagnostics
 
 	for _, ipPoolRange := range ranges {
-		var body oxide.IpRange
-
 		firstAddress := ipPoolRange.FirstAddress.ValueString()
 		lastAddress := ipPoolRange.LastAddress.ValueString()
 
-		if isIPv4(firstAddress) {
-			body = oxide.Ipv4Range{
-				First: firstAddress,
-				Last:  lastAddress,
-			}
-		} else if isIPv6(firstAddress) {
-			body = oxide.Ipv6Range{
-				First: firstAddress,
-				Last:  lastAddress,
-			}
-		} else {
+		body, err := oxide.NewIpRange(firstAddress, lastAddress)
+		if err != nil {
 			diags.AddError(
 				"Error creating range within IP Pool",
-				fmt.Errorf("%s is neither a valid IPv4 or IPv6",
-					firstAddress).Error(),
+				err.Error(),
 			)
 			return diags
 		}
@@ -569,26 +527,14 @@ func removeRanges(
 	var diags diag.Diagnostics
 
 	for _, ipPoolRange := range ranges {
-		var body oxide.IpRange
-
 		firstAddress := ipPoolRange.FirstAddress.ValueString()
 		lastAddress := ipPoolRange.LastAddress.ValueString()
 
-		if isIPv4(firstAddress) {
-			body = oxide.Ipv4Range{
-				First: firstAddress,
-				Last:  lastAddress,
-			}
-		} else if isIPv6(firstAddress) {
-			body = oxide.Ipv6Range{
-				First: firstAddress,
-				Last:  lastAddress,
-			}
-		} else {
+		body, err := oxide.NewIpRange(firstAddress, lastAddress)
+		if err != nil {
 			diags.AddError(
 				"Error removing range within IP Pool",
-				fmt.Errorf("%s is neither a valid IPv4 or IPv6",
-					firstAddress).Error(),
+				err.Error(),
 			)
 			return diags
 		}
@@ -598,7 +544,7 @@ func removeRanges(
 			Body: &body,
 		}
 
-		err := client.IpPoolRangeRemove(ctx, params)
+		err = client.IpPoolRangeRemove(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error removing range within IP Pool",
