@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.1
 	github.com/hashicorp/terraform-plugin-testing v1.14.0
-	github.com/oxidecomputer/oxide.go v0.7.1-0.20260127143929-a6e47816d4f4
+	github.com/oxidecomputer/oxide.go v0.7.1-0.20260127220329-e1ba7effd833
 	github.com/stretchr/testify v1.11.1
 )
 

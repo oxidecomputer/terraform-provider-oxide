@@ -192,15 +192,15 @@ func (f *floatingIPResource) Create(
 	if ip != "" {
 		// Explicit IP, and explicit pool if set, otherwise uses silo's default
 		// pool for the IP version being used.
-		params.Body.AddressSelector = oxide.AddressSelector{
-			Type: oxide.AddressSelectorTypeExplicit,
-			Ip:   ip,
-			Pool: oxide.NameOrId(pool),
+		params.Body.AddressAllocator = oxide.AddressAllocator{
+			Type:         oxide.AddressAllocatorTypeExplicit,
+			Ip:           ip,
+			PoolSelector: oxide.PoolSelector{Pool: oxide.NameOrId(pool)},
 		}
 	} else if pool != "" {
 		// Auto IP with explicit pool.
-		params.Body.AddressSelector = oxide.AddressSelector{
-			Type: oxide.AddressSelectorTypeAuto,
+		params.Body.AddressAllocator = oxide.AddressAllocator{
+			Type: oxide.AddressAllocatorTypeAuto,
 			PoolSelector: oxide.PoolSelector{
 				Type: oxide.PoolSelectorTypeExplicit,
 				Pool: oxide.NameOrId(pool),
@@ -208,8 +208,8 @@ func (f *floatingIPResource) Create(
 		}
 	} else {
 		// Auto IP with auto IPv4 pool.
-		params.Body.AddressSelector = oxide.AddressSelector{
-			Type: oxide.AddressSelectorTypeAuto,
+		params.Body.AddressAllocator = oxide.AddressAllocator{
+			Type: oxide.AddressAllocatorTypeAuto,
 			PoolSelector: oxide.PoolSelector{
 				Type:      oxide.PoolSelectorTypeAuto,
 				IpVersion: oxide.IpVersionV4,
