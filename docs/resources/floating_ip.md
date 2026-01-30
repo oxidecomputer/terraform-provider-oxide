@@ -51,6 +51,7 @@ resource "oxide_floating_ip" "example_with_address" {
 
 - `ip` (String) IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.
 - `ip_pool_id` (String) IP pool ID to allocate this floating IP from. If unset the silo's default IP pool is used.
+- `ip_version` (String) IP version to use when multiple default pools exist. Required if both IPv4 and IPv6 default pools are configured. Possible values: `v4`, `v6`.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

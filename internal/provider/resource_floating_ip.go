@@ -9,11 +9,13 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
@@ -28,6 +30,7 @@ type floatingIPResourceModel struct {
 	IP           types.String   `tfsdk:"ip"`
 	InstanceID   types.String   `tfsdk:"instance_id"`
 	IPPoolID     types.String   `tfsdk:"ip_pool_id"`
+	IPVersion    types.String   `tfsdk:"ip_version"`
 	ProjectID    types.String   `tfsdk:"project_id"`
 	TimeCreated  types.String   `tfsdk:"time_created"`
 	TimeModified types.String   `tfsdk:"time_modified"`
@@ -121,7 +124,11 @@ This resource manages Oxide floating IPs.
 				Computed:            true,
 				MarkdownDescription: "IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("ip_pool_id")),
+					stringvalidator.ConflictsWith(path.MatchRoot("ip_version")),
 				},
 			},
 			"ip_pool_id": schema.StringAttribute{
@@ -129,7 +136,27 @@ This resource manages Oxide floating IPs.
 				Computed:    true,
 				Description: "IP pool ID to allocate this floating IP from. If unset the silo's default IP pool is used.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("ip")),
+					stringvalidator.ConflictsWith(path.MatchRoot("ip_version")),
+				},
+			},
+			"ip_version": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "IP version to use when multiple default pools exist. Required if both IPv4 and IPv6 default pools are configured. Possible values: `v4`, `v6`.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("ip_pool_id")),
+					stringvalidator.ConflictsWith(path.MatchRoot("ip")),
+					stringvalidator.OneOf(
+						string(oxide.IpVersionV4),
+						string(oxide.IpVersionV6),
+					),
 				},
 			},
 			"project_id": schema.StringAttribute{
@@ -186,19 +213,14 @@ func (f *floatingIPResource) Create(
 		},
 	}
 
-	ip := plan.IP.ValueString()
-	pool := plan.IPPoolID.ValueString()
-
-	if ip != "" {
-		// Explicit IP, and explicit pool if set, otherwise uses silo's default
-		// pool for the IP version being used.
+	if ip := plan.IP.ValueString(); ip != "" {
+		// Explicit IP with the pool inferred from IP address.
 		params.Body.AddressAllocator = oxide.AddressAllocator{
-			Type:         oxide.AddressAllocatorTypeExplicit,
-			Ip:           ip,
-			PoolSelector: oxide.PoolSelector{Pool: oxide.NameOrId(pool)},
+			Type: oxide.AddressAllocatorTypeExplicit,
+			Ip:   ip,
 		}
-	} else if pool != "" {
-		// Auto IP with explicit pool.
+	} else if pool := plan.IPPoolID.ValueString(); pool != "" {
+		// Auto IP from explicit pool.
 		params.Body.AddressAllocator = oxide.AddressAllocator{
 			Type: oxide.AddressAllocatorTypeAuto,
 			PoolSelector: oxide.PoolSelector{
@@ -207,12 +229,13 @@ func (f *floatingIPResource) Create(
 			},
 		}
 	} else {
-		// Auto IP with auto IPv4 pool.
+		// Auto IP from default pool. If there are multiple default pools IP
+		// version is required.
 		params.Body.AddressAllocator = oxide.AddressAllocator{
 			Type: oxide.AddressAllocatorTypeAuto,
 			PoolSelector: oxide.PoolSelector{
 				Type:      oxide.PoolSelectorTypeAuto,
-				IpVersion: oxide.IpVersionV4,
+				IpVersion: oxide.IpVersion(plan.IPVersion.ValueString()),
 			},
 		}
 	}
@@ -241,6 +264,10 @@ func (f *floatingIPResource) Create(
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
 	plan.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
 	plan.TimeModified = types.StringValue(floatingIP.TimeModified.String())
+
+	if plan.IPVersion.IsUnknown() {
+		plan.IPVersion = types.StringNull()
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -371,6 +398,10 @@ func (f *floatingIPResource) Update(
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
 	plan.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
 	plan.TimeModified = types.StringValue(floatingIP.TimeModified.String())
+
+	if plan.IPVersion.IsUnknown() {
+		plan.IPVersion = types.StringNull()
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
