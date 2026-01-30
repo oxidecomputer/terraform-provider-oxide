@@ -40,15 +40,31 @@ jobs:
           go-version-file: 'go.mod'
       - uses: docker/setup-compose-action@v1
       - uses: astral-sh/setup-uv@v7
+      # Look up the version of oxide.rs corresponding to the requested omicron version. We'll cache
+      # the resulting binary, so that we only build the CLI for a given oxide.rs commit once, and
+      # always use the latest oxide.rs version corresponding to the relevant omicron version.
+      - name: resolve oxide cli version
+        id: oxide-cli
+        run: |
+          commit=$(./acctest/oxide-cli-version.sh '${{ inputs.omicron-branch }}')
+          echo "commit=${commit}" >> $GITHUB_OUTPUT
+      - name: cache oxide cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/oxide
+          key: oxide-cli-${{ steps.oxide-cli.outputs.commit }}
       - name: install oxide cli
         run: |
-          cargo install \
-            --git https://github.com/oxidecomputer/oxide.rs \
-            --branch '${{ inputs.omicron-branch }}' \
-            --root . \
-            oxide-cli
-          ./bin/oxide version
-          echo "$(pwd)/bin" >> $GITHUB_PATH
+          if [[ -x ~/.cargo/bin/oxide ]]; then
+            echo "using cached oxide cli"
+          else
+            cargo install \
+              --git https://github.com/oxidecomputer/oxide.rs \
+              --rev '${{ steps.oxide-cli.outputs.commit }}' \
+              oxide-cli
+          fi
+          ~/.cargo/bin/oxide version
+          echo ~/.cargo/bin >> $GITHUB_PATH
       # Run simulated omicron in the background with docker compose.
       # TODO(jmcarp): publish this image for faster builds.
       - name: omicron-dev
