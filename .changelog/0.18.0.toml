@@ -26,6 +26,10 @@ description = "Added support for the `disk_type` attribute for the `oxide_disk` 
 title = "`oxide_instance` attribute deprecation"
 description = "The `host_name` attribute on the `oxide_instance` resource has been deprecated in favor of `hostname`. The `host_name` attribute will be removed in the next minor version of the provider. [#577](https://github.com/oxidecomputer/terraform-provider-oxide/pulls/577)."
 
+[[enhancements]]
+title = "IPv6 support for `oxide_floating_ip`"
+description = "Add IPv6 support for the `oxide_floating_ip` resource. [#608](https://github.com/oxidecomputer/terraform-provider-oxide/pull/608)"
+
 [[bugs]]
 title = ""
 description = ""
