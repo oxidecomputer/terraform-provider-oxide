@@ -41,7 +41,7 @@ jobs:
           commit=$(./acctest/oxide-cli-version.sh '${{ inputs.omicron-sha }}')
           echo "commit=${commit}" >> $GITHUB_OUTPUT
       - name: cache oxide cli
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cargo/bin/oxide
           key: oxide-cli-${{ steps.oxide-cli.outputs.commit }}
