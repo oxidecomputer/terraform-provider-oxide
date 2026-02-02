@@ -26,8 +26,7 @@ if [[ -z "${API_VERSION}" || "${API_VERSION}" == "null" ]]; then
 fi
 echo "Nexus API version: ${API_VERSION}" >&2
 
-# Search oxide.rs commits for matching version.
-COMMITS=$(curl -sL "https://api.github.com/repos/oxidecomputer/oxide.rs/commits?path=oxide.json&per_page=50" | jq -r '.[].sha')
+COMMITS=$(gh api "repos/oxidecomputer/oxide.rs/commits?path=oxide.json&per_page=50" --jq '.[].sha')
 for sha in ${COMMITS}; do
     version=$(curl -sL "https://raw.githubusercontent.com/oxidecomputer/oxide.rs/${sha}/oxide.json" | jq -r '.info.version' 2>/dev/null || echo "")
     if [[ "${version}" == "${API_VERSION}" ]]; then
