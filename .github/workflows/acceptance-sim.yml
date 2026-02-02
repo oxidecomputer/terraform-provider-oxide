@@ -72,11 +72,7 @@ jobs:
         working-directory: acctest
         env:
           TEST_ACC_DOCKER_TAG: ${{ inputs.omicron-sha }}
-        run: |
-          if ! docker compose up --wait --wait-timeout 1500; then
-            docker compose logs
-            exit 1
-          fi
+        run: docker compose up --wait --wait-timeout 1500
       # We can't use `oxide auth login` here, since it requires a browser to
       # complete the oauth device flow. Instead, fetch an auth token using a
       # script that simulates the browser flow.
@@ -90,15 +86,12 @@ jobs:
         run: |
           # Install qemu, which we'll use to build a sample image.
           sudo apt-get update && sudo apt-get install -y qemu-utils
-
-          if ! ./scripts/acc-test-setup.sh; then
-            docker compose logs
-            exit 1
-          fi
+          ./scripts/acc-test-setup.sh
         env:
           OXIDE_HOST: http://localhost:12220
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-      - name: test (terraform)
+      - name: test terraform
+        id: test-terraform
         if: matrix.tf-binary == 'terraform'
         run: make testacc
         env:
@@ -106,7 +99,8 @@ jobs:
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
           OXIDE_TEST_IP_POOL_NAME: default
           OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"
-      - name: test (opentofu)
+      - name: test opentofu
+        id: test-tofu
         if: matrix.tf-binary == 'opentofu'
         run: |
           export TF_ACC_TERRAFORM_PATH=$(which tofu)
@@ -117,3 +111,25 @@ jobs:
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
           OXIDE_TEST_IP_POOL_NAME: default
           OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"
+      - name: print omicron logs
+        if: always()
+        continue-on-error: true
+        working-directory: acctest
+        run: docker compose logs
+      - name: extract omicron log files
+        if: always()
+        continue-on-error: true
+        working-directory: acctest
+        run: |
+          docker compose exec -T omicron-dev sh -c 'tar -cf - /tmp/omicron-dev*.log' | tar -xf -
+          for f in tmp/*.log; do
+            echo "=== Last 100 lines of $f ==="
+            tail -100 "$f"
+          done
+      - name: upload omicron logs
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: omicron-logs-${{ matrix.tf-binary }}
+          path: acctest/tmp/
