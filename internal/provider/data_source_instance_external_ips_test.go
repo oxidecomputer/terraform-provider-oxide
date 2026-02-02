@@ -48,6 +48,11 @@ resource "oxide_instance" "{{.InstanceBlockName}}" {
       description = "net0"
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+      }
     }
   ]
 }

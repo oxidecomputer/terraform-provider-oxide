@@ -68,6 +68,23 @@ func sliceDiff[S []E, E any](a, b S) S {
 	return diff
 }
 
+// sliceDiffByID is similar to [sliceDiff] but takes idFn, which should return
+// a value used to identity slice elements.
+func sliceDiffByID[S []E, E any](a, b S, idFn func(E) any) S {
+	mb := make(map[any]struct{}, len(b))
+	for _, x := range b {
+		mb[idFn(x)] = struct{}{}
+	}
+
+	var diff S
+	for _, x := range a {
+		if _, found := mb[idFn(x)]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
 // newNameOrIdList takes a terraform set and converts is into a slice NameOrIds.
 func newNameOrIdList(nameOrIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
 	var diags diag.Diagnostics

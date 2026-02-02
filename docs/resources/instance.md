@@ -60,14 +60,26 @@ resource "oxide_instance" "example" {
   memory           = 10737418240
   ncpus            = 1
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+
   network_interfaces = [
     {
       subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
       vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
       description = "Example network interface."
       name        = "mynic"
+
+      ip_config = {
+        v4 = {
+          ip = "172.30.0.6"
+        }
+
+        v6 = {
+          ip = "auto"
+        }
+      }
     },
   ]
+
   timeouts = {
     read   = "1m"
     create = "3m"
@@ -88,6 +100,7 @@ resource "oxide_instance" "example" {
   ncpus            = 1
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
   start_on_create  = false
+
   external_ips = [
     {
       type = "ephemeral"
@@ -96,6 +109,21 @@ resource "oxide_instance" "example" {
       id   = "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"
       type = "floating"
     }
+  ]
+
+  network_interfaces = [
+    {
+      subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
+      vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
+      description = "Example network interface."
+      name        = "mynic"
+
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+      }
+    },
   ]
 }
 ```
@@ -130,6 +158,7 @@ Maximum 32 KiB unencoded data.
 
 ### Read-Only
 
+- `attached_network_interfaces` (Attributes Map) Network interfaces attached to the instance. (see [below for nested schema](#nestedatt--attached_network_interfaces))
 - `id` (String) Unique, immutable, system-controlled identifier of the instance.
 - `time_created` (String) Timestamp of when this instance was created.
 - `time_modified` (String) Timestamp of when this instance was last modified.
@@ -158,15 +187,41 @@ Required:
 
 Optional:
 
-- `ip_address` (String) IP address for the instance network interface. One will be auto-assigned if not provided.
+- `ip_address` (String, Deprecated) IP address for the instance network interface. One will be auto-assigned if not provided.
+- `ip_config` (Attributes) IP stack to create for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config))
 
 Read-Only:
 
-- `id` (String) Unique, immutable, system-controlled identifier of the instance network interface.
-- `mac_address` (String) MAC address assigned to the instance network interface.
-- `primary` (Boolean) True if this is the primary network interface for the instance to which it's attached to.
-- `time_created` (String) Timestamp of when this instance network interface was created.
-- `time_modified` (String) Timestamp of when this instance network interface was last modified.
+- `id` (String, Deprecated) Unique, immutable, system-controlled identifier of the instance network interface.
+- `mac_address` (String, Deprecated) MAC address assigned to the instance network interface.
+- `primary` (Boolean, Deprecated) True if this is the primary network interface for the instance to which it's attached to.
+- `time_created` (String, Deprecated) Timestamp of when this instance network interface was created.
+- `time_modified` (String, Deprecated) Timestamp of when this instance network interface was last modified.
+
+<a id="nestedatt--network_interfaces--ip_config"></a>
+### Nested Schema for `network_interfaces.ip_config`
+
+Optional:
+
+- `v4` (Attributes) Creates an IPv4 stack for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config--v4))
+- `v6` (Attributes) (see [below for nested schema](#nestedatt--network_interfaces--ip_config--v6))
+
+<a id="nestedatt--network_interfaces--ip_config--v4"></a>
+### Nested Schema for `network_interfaces.ip_config.v4`
+
+Required:
+
+- `ip` (String) The IPv4 address for the instance network interface or "auto" to auto-assign one.
+
+
+<a id="nestedatt--network_interfaces--ip_config--v6"></a>
+### Nested Schema for `network_interfaces.ip_config.v6`
+
+Required:
+
+- `ip` (String) The IPv6 address for the instance network interface or "auto" to auto-assign one.
+
+
 
 
 <a id="nestedatt--timeouts"></a>
@@ -178,6 +233,47 @@ Optional:
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+
+<a id="nestedatt--attached_network_interfaces"></a>
+### Nested Schema for `attached_network_interfaces`
+
+Read-Only:
+
+- `description` (String) Description of the instance network interface.
+- `id` (String) Unique, immutable, system-controlled identifier of the instance network interface.
+- `instance_id` (String) Instance ID of the network interface.
+- `ip_stack` (Attributes) IP stack of the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack))
+- `mac_address` (String) MAC address of the instance network interface.
+- `name` (String) Name of the instance network interface.
+- `primary` (Boolean) True if this is the primary network interface for the instance to which it's attached to.
+- `subnet_id` (String) VPC subnet ID of the instance network interface.
+- `time_created` (String) Timestamp of when this instance network interface was created.
+- `time_modified` (String) Timestamp of when this instance network interface was last modified.
+- `vpc_id` (String) VPC ID of the instance network interface.
+
+<a id="nestedatt--attached_network_interfaces--ip_stack"></a>
+### Nested Schema for `attached_network_interfaces.ip_stack`
+
+Read-Only:
+
+- `v4` (Attributes) IPv4 stack of the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack--v4))
+- `v6` (Attributes) IPv6 stack of the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack--v6))
+
+<a id="nestedatt--attached_network_interfaces--ip_stack--v4"></a>
+### Nested Schema for `attached_network_interfaces.ip_stack.v4`
+
+Read-Only:
+
+- `ip` (String) IPv4 address of the instance network interface.
+
+
+<a id="nestedatt--attached_network_interfaces--ip_stack--v6"></a>
+### Nested Schema for `attached_network_interfaces.ip_stack.v6`
+
+Read-Only:
+
+- `ip` (String) IPv6 address of the instance network interface.
 
 ## Import
 

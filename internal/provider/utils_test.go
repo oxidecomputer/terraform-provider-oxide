@@ -131,6 +131,16 @@ func Test_sliceDiff(t *testing.T) {
 			got := sliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
+
+		t.Run(tt.name+" by ID", func(t *testing.T) {
+			got := sliceDiffByID(
+				tt.args.a, tt.args.b,
+				func(el attr.Value) any {
+					return el.String()
+				},
+			)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }
 
@@ -156,6 +166,16 @@ func Test_sliceDiff_int(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sliceDiff(tt.args.a, tt.args.b)
+			assert.Equal(t, tt.want, got)
+		})
+
+		t.Run(tt.name+"by ID", func(t *testing.T) {
+			got := sliceDiffByID(
+				tt.args.a, tt.args.b,
+				func(el int) any {
+					return el
+				},
+			)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -192,6 +212,16 @@ func Test_sliceDiff_model(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sliceDiff(tt.args.a, tt.args.b)
+			assert.Equal(t, tt.want, got)
+		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			got := sliceDiffByID(
+				tt.args.a, tt.args.b,
+				func(el instanceResourceNICModel) any {
+					return el.Name
+				},
+			)
 			assert.Equal(t, tt.want, got)
 		})
 	}
