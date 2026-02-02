@@ -113,6 +113,13 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SupportBlockName2}}.ipv4_block, 42)
+        }
+
+        v6 = {}
+      }
     }
   ]
   timeouts = {
@@ -197,7 +204,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"external_ips",
+					"network_interfaces.0.ip_config",
+				},
 			},
 		},
 	})
@@ -255,6 +266,9 @@ resource "oxide_instance" "{{.BlockName}}" {
       description = "net0"
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = {}
+      }
     }
   ]
 }
@@ -290,6 +304,9 @@ resource "oxide_instance" "{{.BlockName}}" {
       description = "net0"
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = {}
+      }
     }
   ]
 }
@@ -503,6 +520,9 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {}
+      }
     },
   ]
 }
@@ -583,7 +603,10 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportStateVerify: true,
 				// This option is only relevant for create, this means that it will
 				// never be imported
-				ImportStateVerifyIgnore: []string{"start_on_create"},
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"network_interfaces.0.ip_config",
+				},
 			},
 		},
 	})

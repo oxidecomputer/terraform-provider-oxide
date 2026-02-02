@@ -71,21 +71,64 @@ type instanceResourceModel struct {
 }
 
 type instanceResourceNICModel struct {
-	Description  types.String `tfsdk:"description"`
-	ID           types.String `tfsdk:"id"`
-	IPAddr       types.String `tfsdk:"ip_address"`
-	MAC          types.String `tfsdk:"mac_address"`
-	Name         types.String `tfsdk:"name"`
-	Primary      types.Bool   `tfsdk:"primary"`
-	SubnetID     types.String `tfsdk:"subnet_id"`
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
-	VPCID        types.String `tfsdk:"vpc_id"`
+	Description  types.String                   `tfsdk:"description"`
+	ID           types.String                   `tfsdk:"id"`
+	IPAddr       types.String                   `tfsdk:"ip_address"`
+	IPConfig     *instanceResourceIPConfigModel `tfsdk:"ip_config"`
+	IPStack      types.Object                   `tfsdk:"ip_stack"`
+	MAC          types.String                   `tfsdk:"mac_address"`
+	Name         types.String                   `tfsdk:"name"`
+	Primary      types.Bool                     `tfsdk:"primary"`
+	SubnetID     types.String                   `tfsdk:"subnet_id"`
+	TimeCreated  types.String                   `tfsdk:"time_created"`
+	TimeModified types.String                   `tfsdk:"time_modified"`
+	VPCID        types.String                   `tfsdk:"vpc_id"`
+}
+
+type instanceResourceIPConfigModel struct {
+	V4 *instanceResourceIPConfigV4Model `tfsdk:"v4"`
+	V6 *instanceResourceIPConfigV6Model `tfsdk:"v6"`
+}
+
+type instanceResourceIPConfigV4Model struct {
+	IP types.String `tfsdk:"ip"`
+}
+
+type instanceResourceIPConfigV6Model struct {
+	IP types.String `tfsdk:"ip"`
+}
+
+type instanceResourceIPStackModel struct {
+	V4 *instanceResourceIPStackV4Model `tfsdk:"v4"`
+	V6 *instanceResourceIPStackV6Model `tfsdk:"v6"`
+}
+
+type instanceResourceIPStackV4Model struct {
+	IP types.String `tfsdk:"ip"`
+}
+
+type instanceResourceIPStackV6Model struct {
+	IP types.String `tfsdk:"ip"`
 }
 
 type instanceResourceExternalIPModel struct {
 	ID   types.String `tfsdk:"id"`
 	Type types.String `tfsdk:"type"`
+}
+
+func instanceResourceNetworkInterfaceIPStackAttr() map[string]attr.Type {
+	return map[string]attr.Type{
+		"v4": types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"ip": types.StringType,
+			},
+		},
+		"v6": types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"ip": types.StringType,
+			},
+		},
+	}
 }
 
 // Metadata returns the resource type name.
@@ -284,9 +327,64 @@ This resource manages instances.
 								),
 							},
 						},
+						"ip_config": schema.SingleNestedAttribute{
+							Required:    true,
+							Description: "IP stack to create for the instance network interface.",
+							Attributes: map[string]schema.Attribute{
+								"v4": schema.SingleNestedAttribute{
+									Optional:    true,
+									Description: "Creates an IPv4 stack for the instance network interface.",
+									Attributes: map[string]schema.Attribute{
+										"ip": schema.StringAttribute{
+											Optional:    true,
+											Description: "The IPv4 address for the instance network interface. One will be auto-assigned if not provided.",
+										},
+									},
+								},
+								"v6": schema.SingleNestedAttribute{
+									Optional: true,
+									Attributes: map[string]schema.Attribute{
+										"ip": schema.StringAttribute{
+											Optional:    true,
+											Description: "The IPv6 address for the instance network interface. One will be auto-assigned if not provided.",
+										},
+									},
+								},
+							},
+						},
+						"ip_stack": schema.SingleNestedAttribute{
+							Computed:    true,
+							Description: "IP stack of the network interface.",
+							//PlanModifiers: []planmodifier.Object{
+							//	objectplanmodifier.UseStateForUnknown(),
+							//},
+							Attributes: map[string]schema.Attribute{
+								"v4": schema.SingleNestedAttribute{
+									Computed:    true,
+									Description: "IPv4 stack for the instance network interface.",
+									Attributes: map[string]schema.Attribute{
+										"ip": schema.StringAttribute{
+											Computed:    true,
+											Description: "The IPv4 address for the instance network interface.",
+										},
+									},
+								},
+								"v6": schema.SingleNestedAttribute{
+									Computed:    true,
+									Description: "IPv6 stack for the instance network interface.",
+									Attributes: map[string]schema.Attribute{
+										"ip": schema.StringAttribute{
+											Computed:    true,
+											Description: "The IPv6 address for the instance network interface.",
+										},
+									},
+								},
+							},
+						},
 						"ip_address": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
+							Optional:           true,
+							Computed:           true,
+							DeprecationMessage: "Use ip_config to set the network interface IP address and ip_stack to retrieve it. This attribute will be removed in the next minor version of the provider.",
 							Description: "IP address for the instance network interface. " +
 								"One will be auto-assigned if not provided.",
 							PlanModifiers: []planmodifier.String{
@@ -562,19 +660,30 @@ func (r *instanceResource) Create(
 		plan.NetworkInterfaces[i].MAC = types.StringValue(string(nic.Mac))
 		plan.NetworkInterfaces[i].Primary = types.BoolPointerValue(nic.Primary)
 
-		// Setting IPAddress as it is both computed and optional
-		// TODO: Add IPv6 support.
-		v4, ok := nic.IpStack.AsV4()
-		if !ok {
+		ipStack, err := newAttachedNetworkInterfacesIPStackModel(nic.IpStack)
+		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error creating instance network interface",
-				"Expected IPv4 stack, got: "+string(
-					nic.IpStack.Type(),
-				)+". IPv6 support is in progress.",
+				"Unable to read instance network interface:",
+				"API error: "+err.Error(),
 			)
-			return
+			// Don't return here as the instance has already been created.
+			// Otherwise the state won't be saved.
+			continue
 		}
-		plan.NetworkInterfaces[i].IPAddr = types.StringValue(v4.Value.Ip)
+
+		plan.NetworkInterfaces[i].IPStack, diags = types.ObjectValueFrom(ctx, instanceResourceNetworkInterfaceIPStackAttr(), ipStack)
+		if diags.HasError() {
+			// Don't return here as the instance has already been created.
+			// Otherwise the state won't be saved.
+			continue
+		}
+
+		// Setting IPAddress as it is both computed and optional
+		var ipAddr string
+		if ipStack.V4 != nil {
+			ipAddr = ipStack.V4.IP.ValueString()
+		}
+		plan.NetworkInterfaces[i].IPAddr = types.StringValue(ipAddr)
 
 	}
 
@@ -695,7 +804,7 @@ func (r *instanceResource) Read(
 		state.DiskAttachments = diskSet
 	}
 
-	nicSet, diags := newAttachedNetworkInterfacesModel(ctx, r.client, state.ID.ValueString())
+	nicSet, diags := newAttachedNetworkInterfacesModel(ctx, r.client, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -858,14 +967,24 @@ func (r *instanceResource) Update(
 	stateNICs := state.NetworkInterfaces
 
 	// Check plan and if it has an ID that the state doesn't then attach it
-	nicsToCreate := sliceDiff(planNICs, stateNICs)
+	nicsToCreate := sliceDiffByID(
+		planNICs, stateNICs,
+		func(e instanceResourceNICModel) any {
+			return e.ID.ValueString()
+		},
+	)
 	resp.Diagnostics.Append(createNICs(ctx, r.client, nicsToCreate, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Check state and if it has an ID that the plan doesn't then delete it
-	nicsToDelete := sliceDiff(stateNICs, planNICs)
+	nicsToDelete := sliceDiffByID(
+		stateNICs, planNICs,
+		func(e instanceResourceNICModel) any {
+			return e.ID.ValueString()
+		},
+	)
 	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -958,11 +1077,12 @@ func (r *instanceResource) Update(
 	}
 
 	// TODO: should I do this or read from the newly created ones?
-	nicModel, diags := newAttachedNetworkInterfacesModel(ctx, r.client, state.ID.ValueString())
+	nicModel, diags := newAttachedNetworkInterfacesModel(ctx, r.client, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	// Only populate NICs if there are associated NICs to avoid drift
 	if len(nicModel) > 0 {
 		plan.NetworkInterfaces = nicModel
@@ -1245,13 +1365,22 @@ func newNetworkInterfaceAttachment(
 func newAttachedNetworkInterfacesModel(
 	ctx context.Context,
 	client *oxide.Client,
-	instanceID string,
+	state instanceResourceModel,
 ) (
 	[]instanceResourceNICModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	// Store network interfaces from state or plan in a map to match them by
+	// name with the remote network interfaces.
+	stateIPConfigs := make(map[string]*instanceResourceIPConfigModel)
+	for _, nic := range state.NetworkInterfaces {
+		if nic.IPConfig != nil {
+			stateIPConfigs[nic.Name.ValueString()] = nic.IPConfig
+		}
+	}
+
 	params := oxide.InstanceNetworkInterfaceListParams{
-		Instance: oxide.NameOrId(instanceID),
+		Instance: oxide.NameOrId(state.ID.ValueString()),
 		Limit:    oxide.NewPointer(1000000000),
 	}
 	nics, err := client.InstanceNetworkInterfaceList(ctx, params)
@@ -1265,22 +1394,25 @@ func newAttachedNetworkInterfacesModel(
 
 	nicSet := []instanceResourceNICModel{}
 	for _, nic := range nics.Items {
-		// TODO: Add IPv6 support.
-		v4, ok := nic.IpStack.AsV4()
-		if !ok {
+		ipStack, err := newAttachedNetworkInterfacesIPStackModel(nic.IpStack)
+		if err != nil {
 			diags.AddError(
-				"Error reading instance network interface",
-				"Expected IPv4 stack, got: "+string(
-					nic.IpStack.Type(),
-				)+". IPv6 support is in progress.",
+				"Unable to read instance network interfaces:",
+				"API error: "+err.Error(),
 			)
 			return []instanceResourceNICModel{}, diags
+		}
+
+		var ipAddr string
+		if ipStack.V4 != nil {
+			ipAddr = ipStack.V4.IP.ValueString()
 		}
 
 		n := instanceResourceNICModel{
 			Description:  types.StringValue(nic.Description),
 			ID:           types.StringValue(nic.Id),
-			IPAddr:       types.StringValue(v4.Value.Ip),
+			IPConfig:     stateIPConfigs[string(nic.Name)],
+			IPAddr:       types.StringValue(ipAddr),
 			MAC:          types.StringValue(string(nic.Mac)),
 			Name:         types.StringValue(string(nic.Name)),
 			Primary:      types.BoolPointerValue(nic.Primary),
@@ -1290,6 +1422,12 @@ func newAttachedNetworkInterfacesModel(
 			VPCID:        types.StringValue(nic.VpcId),
 		}
 
+		ipStackObj, diags := types.ObjectValueFrom(ctx, instanceResourceNetworkInterfaceIPStackAttr(), ipStack)
+		if diags.HasError() {
+			return nil, diags
+		}
+		n.IPStack = ipStackObj
+
 		nicSet = append(nicSet, n)
 	}
 	if diags.HasError() {
@@ -1297,6 +1435,37 @@ func newAttachedNetworkInterfacesModel(
 	}
 
 	return nicSet, nil
+}
+
+func newAttachedNetworkInterfacesIPStackModel(stack oxide.PrivateIpStack) (*instanceResourceIPStackModel, error) {
+	switch s := stack.Value.(type) {
+	case *oxide.PrivateIpStackV4:
+		return &instanceResourceIPStackModel{
+			V4: &instanceResourceIPStackV4Model{
+				IP: types.StringValue(s.Value.Ip),
+			},
+		}, nil
+
+	case *oxide.PrivateIpStackV6:
+		return &instanceResourceIPStackModel{
+			V6: &instanceResourceIPStackV6Model{
+				IP: types.StringValue(s.Value.Ip),
+			},
+		}, nil
+
+	case *oxide.PrivateIpStackDualStack:
+		return &instanceResourceIPStackModel{
+			V4: &instanceResourceIPStackV4Model{
+				IP: types.StringValue(s.Value.V4.Ip),
+			},
+			V6: &instanceResourceIPStackV6Model{
+				IP: types.StringValue(s.Value.V6.Ip),
+			},
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unexpected IP stack type %T", stack.Value)
+	}
 }
 
 // newAttachedExternalIPModel fetches the external IP addresses for the instance
@@ -1504,27 +1673,95 @@ func newExternalIPsOnCreate(
 }
 
 func newIPStackCreate(model instanceResourceNICModel) oxide.PrivateIpStackCreate {
-	if ip := model.IPAddr.ValueString(); ip != "" {
-		return oxide.PrivateIpStackCreate{
-			Value: &oxide.PrivateIpStackCreateV4{
-				Value: oxide.PrivateIpv4StackCreate{
-					Ip: oxide.Ipv4Assignment{
-						Type:  oxide.Ipv4AssignmentTypeExplicit,
-						Value: ip,
+	if model.IPConfig == nil {
+		if ip := model.IPAddr.ValueString(); ip != "" {
+			return oxide.PrivateIpStackCreate{
+				Value: &oxide.PrivateIpStackCreateV4{
+					Value: oxide.PrivateIpv4StackCreate{
+						Ip: oxide.Ipv4Assignment{
+							Type:  oxide.Ipv4AssignmentTypeExplicit,
+							Value: ip,
+						},
 					},
 				},
+			}
+		} else {
+			return oxide.PrivateIpStackCreate{
+				Value: &oxide.PrivateIpStackCreateV4{
+					Value: oxide.PrivateIpv4StackCreate{
+						Ip: oxide.Ipv4Assignment{
+							Type: oxide.Ipv4AssignmentTypeAuto,
+						},
+					},
+				},
+			}
+		}
+	}
+
+	if model.IPConfig.V4 != nil && model.IPConfig.V6 != nil {
+		return oxide.PrivateIpStackCreate{
+			Value: &oxide.PrivateIpStackCreateDualStack{
+				Value: newIPStackCreateDualStack(model.IPConfig.V4, model.IPConfig.V6),
+			},
+		}
+	}
+
+	if model.IPConfig.V6 != nil {
+		return oxide.PrivateIpStackCreate{
+			Value: &oxide.PrivateIpStackCreateV6{
+				Value: newIPStackCreateV6(model.IPConfig.V6),
 			},
 		}
 	}
 
 	return oxide.PrivateIpStackCreate{
 		Value: &oxide.PrivateIpStackCreateV4{
-			Value: oxide.PrivateIpv4StackCreate{
-				Ip: oxide.Ipv4Assignment{
-					Type: oxide.Ipv4AssignmentTypeAuto,
-				},
-			},
+			Value: newIPStackCreateV4(model.IPConfig.V4),
 		},
+	}
+}
+
+func newIPStackCreateV4(stack *instanceResourceIPConfigV4Model) oxide.PrivateIpv4StackCreate {
+	if ip := stack.IP.ValueString(); ip != "" {
+		return oxide.PrivateIpv4StackCreate{
+			Ip: oxide.Ipv4Assignment{
+				Type:  oxide.Ipv4AssignmentTypeExplicit,
+				Value: ip,
+			},
+		}
+	}
+
+	return oxide.PrivateIpv4StackCreate{
+		Ip: oxide.Ipv4Assignment{
+			Type: oxide.Ipv4AssignmentTypeAuto,
+		},
+	}
+}
+
+func newIPStackCreateV6(stack *instanceResourceIPConfigV6Model) oxide.PrivateIpv6StackCreate {
+	if ip := stack.IP.ValueString(); ip != "" {
+		return oxide.PrivateIpv6StackCreate{
+			Ip: oxide.Ipv6Assignment{
+				Type:  oxide.Ipv6AssignmentTypeExplicit,
+				Value: ip,
+			},
+		}
+	}
+
+	return oxide.PrivateIpv6StackCreate{
+		Ip: oxide.Ipv6Assignment{
+			Type: oxide.Ipv6AssignmentTypeAuto,
+		},
+	}
+}
+
+func newIPStackCreateDualStack(
+	stackV4 *instanceResourceIPConfigV4Model,
+	stackV6 *instanceResourceIPConfigV6Model,
+) oxide.PrivateIpStackCreateValue {
+	return oxide.PrivateIpStackCreateValue{
+		V4: newIPStackCreateV4(stackV4),
+		V6: newIPStackCreateV6(stackV6),
 	}
 }
 
