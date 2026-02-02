@@ -36,8 +36,29 @@ for sha in ${COMMITS}; do
     fi
 done
 
-# If no exact match, default to `main`. We're probably using omicron main in
-# this case, so the latest oxide.rs is a reasonable default.
+# If no exact match, find the newest oxide.rs version that's older than the
+# requested API version. Commits are sorted newest-first, so the first match
+# is the newest compatible version.
+echo "No exact match for API version ${API_VERSION}. Looking for newest compatible version." >&2
+
+# Check if version $1 is less than or equal to version $2 using sort -V
+version_le() {
+    [[ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -1)" == "$1" ]]
+}
+
+for sha in ${COMMITS}; do
+    version=$(curl -sL "https://raw.githubusercontent.com/oxidecomputer/oxide.rs/${sha}/oxide.json" | jq -r '.info.version' 2>/dev/null || echo "")
+    if [[ -z "${version}" || "${version}" == "null" ]]; then
+        continue
+    fi
+    if version_le "${version}" "${API_VERSION}"; then
+        echo "Found compatible oxide.rs commit ${sha} with API version ${version}" >&2
+        echo "${sha}"
+        exit 0
+    fi
+done
+
+# Last resort: fall back to main
 MAIN_SHA=$(git ls-remote https://github.com/oxidecomputer/oxide.rs refs/heads/main | cut -f1)
-echo "No exact match for API version ${API_VERSION}. Defaulting to oxide.rs main (${MAIN_SHA})." >&2
+echo "No compatible version found. Defaulting to oxide.rs main (${MAIN_SHA})." >&2
 echo "${MAIN_SHA}"
