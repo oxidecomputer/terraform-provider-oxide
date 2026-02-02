@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -146,6 +147,7 @@ This resource manages Oxide floating IPs.
 			"ip_version": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
+				Default:             stringdefault.StaticString(""),
 				MarkdownDescription: "IP version to use when multiple default pools exist. Required if both IPv4 and IPv6 default pools are configured. Possible values: `v4`, `v6`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
@@ -264,10 +266,6 @@ func (f *floatingIPResource) Create(
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
 	plan.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
 	plan.TimeModified = types.StringValue(floatingIP.TimeModified.String())
-
-	if plan.IPVersion.IsUnknown() {
-		plan.IPVersion = types.StringNull()
-	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -398,10 +396,6 @@ func (f *floatingIPResource) Update(
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
 	plan.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
 	plan.TimeModified = types.StringValue(floatingIP.TimeModified.String())
-
-	if plan.IPVersion.IsUnknown() {
-		plan.IPVersion = types.StringNull()
-	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
