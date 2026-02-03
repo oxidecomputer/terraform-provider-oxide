@@ -22,6 +22,10 @@ description = "Added support for the `config_dir` and `insecure_skip_verify` pro
 title = "Support `disk_type` in disk resource."
 description = "Added support for the `disk_type` attribute for the `oxide_disk` resource. [#587](https://github.com/oxidecomputer/terraform-provider-oxide/pull/587)."
 
+[[features]]
+title = "Support IPv6 and dual-stack network interfaces in `oxide_instance`."
+description = "Added support for IPv6 and dual-stack network interfaces in the `oxide_instance` resource. [#591](https://github.com/oxidecomputer/terraform-provider-oxide/pull/591)."
+
 [[enhancements]]
 title = "`oxide_instance` attribute deprecation"
 description = "The `host_name` attribute on the `oxide_instance` resource has been deprecated in favor of `hostname`. The `host_name` attribute will be removed in the next minor version of the provider. [#577](https://github.com/oxidecomputer/terraform-provider-oxide/pulls/577)."

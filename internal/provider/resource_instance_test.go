@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"reflect"
 	"regexp"
@@ -113,6 +114,11 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SupportBlockName2}}.ipv4_block, 42)
+        }
+      }
     }
   ]
   timeouts = {
@@ -197,7 +203,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"external_ips",
+					"network_interfaces.0.ip_config",
+				},
 			},
 		},
 	})
@@ -255,6 +265,11 @@ resource "oxide_instance" "{{.BlockName}}" {
       description = "net0"
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+      }
     }
   ]
 }
@@ -290,6 +305,11 @@ resource "oxide_instance" "{{.BlockName}}" {
       description = "net0"
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+      }
     }
   ]
 }
@@ -471,11 +491,14 @@ resource "oxide_instance" "{{.BlockName}}" {
 
 func TestAccCloudResourceInstance_nic(t *testing.T) {
 	type resourceInstanceNicConfig struct {
-		BlockName        string
-		SubnetBlockName  string
-		NicName          string
-		InstanceName     string
-		SupportBlockName string
+		BlockName                  string
+		SubnetBlockName            string
+		NonDefaultSubnetName       string
+		NonDefaultSubnetIPv4Block  string
+		NonDefaultSubnetIPv6NetNum int
+		NicName                    string
+		InstanceName               string
+		SupportBlockName           string
 	}
 
 	resourceInstanceNicConfigTpl := `
@@ -483,10 +506,23 @@ data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
 
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
 data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
   project_name = data.oxide_project.{{.SupportBlockName}}.name
   vpc_name     = "default"
   name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
@@ -503,14 +539,99 @@ resource "oxide_instance" "{{.BlockName}}" {
       vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
       description = "a sample nic"
       name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+        v6 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SubnetBlockName}}.ipv6_block, 128)
+        }
+      }
     },
   ]
 }
 `
-
-	resourceInstanceNicConfigUpdateTpl := `
+	resourceInstanceNicConfigTwoNICsTpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
+}
+
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  hostname         = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+        v6 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SubnetBlockName}}.ipv6_block, 128)
+        }
+      }
+    },
+    {
+      subnet_id   = oxide_vpc_subnet.other.id
+      vpc_id      = oxide_vpc_subnet.other.vpc_id
+      description = "a second nic"
+      name        = "{{.NicName}}-2"
+      ip_config = {
+        v4 = {
+          ip = cidrhost(oxide_vpc_subnet.other.ipv4_block, 42)
+        }
+        v6 = {
+          ip = "auto"
+        }
+      }
+    }
+  ]
+}
+`
+
+	resourceInstanceNicConfigDeleteNicsTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
@@ -531,28 +652,53 @@ resource "oxide_instance" "{{.BlockName}}" {
 	supportBlockName := newBlockName("support")
 	supportBlockName2 := newBlockName("support")
 	resourceNameInstanceNic := fmt.Sprintf("oxide_instance.%s", blockNameInstanceNic)
+	nonDefaultSubnetName := newResourceName()
+	nonDefaultSubnetIPv4Block := fmt.Sprintf("10.%d.%d.0/24", rand.IntN(255), rand.IntN(255))
+	nonDefaultSubnetIPv6NetNum := rand.IntN(200)
 	configNic, err := parsedAccConfig(
 		resourceInstanceNicConfig{
-			BlockName:        blockNameInstanceNic,
-			SubnetBlockName:  blockNameSubnet,
-			InstanceName:     instanceNicName,
-			NicName:          nicName,
-			SupportBlockName: supportBlockName,
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName,
 		},
 		resourceInstanceNicConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicUpdate, err := parsedAccConfig(
+	configNicAdd, err := parsedAccConfig(
 		resourceInstanceNicConfig{
-			BlockName:        blockNameInstanceNic,
-			SubnetBlockName:  blockNameSubnet,
-			InstanceName:     instanceNicName,
-			NicName:          nicName,
-			SupportBlockName: supportBlockName2,
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName,
 		},
-		resourceInstanceNicConfigUpdateTpl,
+		resourceInstanceNicConfigTwoNICsTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configNicDelete, err := parsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName2,
+		},
+		resourceInstanceNicConfigDeleteNicsTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -568,8 +714,22 @@ resource "oxide_instance" "{{.BlockName}}" {
 				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
 			},
 			{
+				// Add a nic
+				Config: configNicAdd,
+				Check: checkResourceInstanceTwoNics(
+					resourceNameInstanceNic,
+					instanceNicName,
+					nicName,
+				),
+			},
+			{
 				// Delete a nic
-				Config: configNicUpdate,
+				Config: configNic,
+				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+			},
+			{
+				// Delete all nics
+				Config: configNicDelete,
 				Check:  checkResourceInstanceNicUpdate(resourceNameInstanceNic, instanceNicName),
 			},
 			{
@@ -583,7 +743,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 				ImportStateVerify: true,
 				// This option is only relevant for create, this means that it will
 				// never be imported
-				ImportStateVerifyIgnore: []string{"start_on_create"},
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"network_interfaces.0.ip_config",
+					"network_interfaces.1.ip_config",
+				},
 			},
 		},
 	})
@@ -1580,6 +1744,53 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.id", nicName),
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.name", nicName),
+			nicName,
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.description", nicName),
+			"a sample nic",
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.subnet_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.vpc_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.instance_id", nicName),
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.primary", nicName),
+			"true",
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.mac_address", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.ip_stack.v4.ip", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.time_created", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.time_modified", nicName),
+		),
 		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "auto_restart_policy"),
@@ -1683,20 +1894,26 @@ func checkResourceInstanceNic(resourceName, instanceName, nicName string) resour
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		resource.TestCheckResourceAttr(
-			resourceName,
-			"network_interfaces.0.description",
-			"a sample nic",
-		),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.id"),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.ip_address"),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.mac_address"),
-		resource.TestCheckResourceAttr(resourceName, "network_interfaces.0.name", nicName),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.primary"),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.subnet_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.vpc_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "network_interfaces.0.time_modified"),
+		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceTwoNics(
+	resourceName, instanceName, nicName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0),
+		testResourceInstanceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
@@ -1831,6 +2048,105 @@ func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func testResourceInstanceNetworkInterface(
+	resourceName string,
+	nicName string,
+	nicDescription string,
+	nicIndex int,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.id", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.ip_address", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.mac_address", nicIndex),
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.name", nicIndex),
+			nicName,
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.description", nicIndex),
+			nicDescription,
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.primary", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.subnet_id", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.vpc_id", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.time_created", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.time_modified", nicIndex),
+		),
+
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.id", nicName),
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.name", nicName),
+			nicName,
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.description", nicName),
+			nicDescription,
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.subnet_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.vpc_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.instance_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.primary", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.mac_address", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.ip_stack.v4.ip", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.time_created", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.time_modified", nicName),
+		),
 	}...)
 }
 
