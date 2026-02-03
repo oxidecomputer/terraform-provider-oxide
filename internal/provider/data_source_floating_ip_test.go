@@ -27,6 +27,7 @@ resource "oxide_floating_ip" "{{.SupportBlockName2}}" {
   project_id  = data.oxide_project.{{.SupportBlockName}}.id
   name        = "{{.Name}}"
   description = "Floating IP."
+  ip_version  = "v4"
 }
 
 data "oxide_floating_ip" "{{.BlockName}}" {
