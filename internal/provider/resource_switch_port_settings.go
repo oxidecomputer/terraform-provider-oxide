@@ -827,7 +827,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			addressModel := switchPortSettingsAddressAddressModel{
-				Address:      types.StringValue(address.Address.(string)),
+				Address:      types.StringValue(address.Address.String()),
 				AddressLotID: types.StringValue(string(address.AddressLotId)),
 				VlanID: func() types.Int32 {
 					if address.VlanId == nil {
@@ -922,7 +922,7 @@ func toSwitchPortSettingsModel(
 					}
 					res := make([]types.String, 0)
 					for _, elem := range bgpPeer.AllowedExport.Value {
-						res = append(res, types.StringValue(elem.(string)))
+						res = append(res, types.StringValue(elem.String()))
 					}
 					return res
 				}(),
@@ -936,7 +936,7 @@ func toSwitchPortSettingsModel(
 					}
 					res := make([]types.String, 0)
 					for _, elem := range bgpPeer.AllowedImport.Value {
-						res = append(res, types.StringValue(elem.(string)))
+						res = append(res, types.StringValue(elem.String()))
 					}
 					return res
 				}(),
@@ -1098,7 +1098,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			routeModel := switchPortSettingsRouteRouteModel{
-				Dst: types.StringValue(route.Dst.(string)),
+				Dst: types.StringValue(route.Dst.String()),
 				GW:  types.StringValue(route.Gw),
 				RIBPriority: func() types.Int32 {
 					if route.RibPriority != nil {
@@ -1154,12 +1154,22 @@ func toNetworkingSwitchPortSettingsCreateParams(
 	//
 	// Addresses
 	//
+	var diags diag.Diagnostics
 	addressConfigs := make([]oxide.AddressConfig, 0)
 	for _, addressModel := range model.Addresses {
 		addresses := make([]oxide.Address, 0)
 		for _, addressModelNested := range addressModel.Addresses {
+			ipNet, err := oxide.NewIpNet(addressModelNested.Address.ValueString())
+			if err != nil {
+				diags.AddError(
+					"Invalid IP network address",
+					fmt.Sprintf("Failed to parse address %q: %s",
+						addressModelNested.Address.ValueString(), err.Error()),
+				)
+				return params, diags
+			}
 			address := oxide.Address{
-				Address:    oxide.IpNet(addressModelNested.Address.ValueString()),
+				Address:    ipNet,
 				AddressLot: oxide.NameOrId(addressModelNested.AddressLotID.ValueString()),
 				VlanId: func() *int {
 					if addressModelNested.VlanID.IsNull() {
@@ -1231,36 +1241,58 @@ func toNetworkingSwitchPortSettingsCreateParams(
 				}(),
 			}
 
+			// Parse AllowedExport values
+			var allowedExportValues []oxide.IpNet
+			if len(bgpModelNested.AllowedExport.Value) > 0 {
+				allowedExportValues = make(
+					[]oxide.IpNet,
+					0,
+					len(bgpModelNested.AllowedExport.Value),
+				)
+				for _, value := range bgpModelNested.AllowedExport.Value {
+					ipNet, err := oxide.NewIpNet(value.ValueString())
+					if err != nil {
+						diags.AddError(
+							"Invalid IP network in allowed_export",
+							fmt.Sprintf("Failed to parse %q: %s", value.ValueString(), err.Error()),
+						)
+						return params, diags
+					}
+					allowedExportValues = append(allowedExportValues, ipNet)
+				}
+			}
 			bgpPeer.AllowedExport = oxide.ImportExportPolicy{
-				Type: oxide.ImportExportPolicyType(bgpModelNested.AllowedExport.Type.ValueString()),
-				Value: func() []oxide.IpNet {
-					if len(bgpModelNested.AllowedExport.Value) == 0 {
-						return nil
-					}
-
-					values := make([]oxide.IpNet, 0)
-					for _, value := range bgpModelNested.AllowedExport.Value {
-						values = append(values, oxide.IpNet(value.ValueString()))
-					}
-
-					return values
-				}(),
+				Type: oxide.ImportExportPolicyType(
+					bgpModelNested.AllowedExport.Type.ValueString(),
+				),
+				Value: allowedExportValues,
 			}
 
+			// Parse AllowedImport values
+			var allowedImportValues []oxide.IpNet
+			if len(bgpModelNested.AllowedImport.Value) > 0 {
+				allowedImportValues = make(
+					[]oxide.IpNet,
+					0,
+					len(bgpModelNested.AllowedImport.Value),
+				)
+				for _, value := range bgpModelNested.AllowedImport.Value {
+					ipNet, err := oxide.NewIpNet(value.ValueString())
+					if err != nil {
+						diags.AddError(
+							"Invalid IP network in allowed_import",
+							fmt.Sprintf("Failed to parse %q: %s", value.ValueString(), err.Error()),
+						)
+						return params, diags
+					}
+					allowedImportValues = append(allowedImportValues, ipNet)
+				}
+			}
 			bgpPeer.AllowedImport = oxide.ImportExportPolicy{
-				Type: oxide.ImportExportPolicyType(bgpModelNested.AllowedImport.Type.ValueString()),
-				Value: func() []oxide.IpNet {
-					if len(bgpModelNested.AllowedImport.Value) == 0 {
-						return nil
-					}
-
-					values := make([]oxide.IpNet, 0)
-					for _, value := range bgpModelNested.AllowedImport.Value {
-						values = append(values, oxide.IpNet(value.ValueString()))
-					}
-
-					return values
-				}(),
+				Type: oxide.ImportExportPolicyType(
+					bgpModelNested.AllowedImport.Type.ValueString(),
+				),
+				Value: allowedImportValues,
 			}
 
 			bgpPeer.Communities = func() []int {
@@ -1351,8 +1383,17 @@ func toNetworkingSwitchPortSettingsCreateParams(
 	for _, routeModel := range model.Routes {
 		routes := make([]oxide.Route, 0)
 		for _, routeModel := range routeModel.Routes {
+			dst, err := oxide.NewIpNet(routeModel.Dst.ValueString())
+			if err != nil {
+				diags.AddError(
+					"Invalid route destination",
+					fmt.Sprintf("Failed to parse destination %q: %s",
+						routeModel.Dst.ValueString(), err.Error()),
+				)
+				return params, diags
+			}
 			route := oxide.Route{
-				Dst: oxide.IpNet(routeModel.Dst.ValueString()),
+				Dst: dst,
 				Gw:  routeModel.GW.ValueString(),
 				RibPriority: func() *int {
 					if routeModel.RIBPriority.IsNull() {
