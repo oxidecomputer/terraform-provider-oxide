@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "Changed schema of `external_ips` in the `oxide_instance` resource"
+description = "The `external_ips` attribute of the `oxide_instance` resource is now an object instead of a list. [#597](https://github.com/oxidecomputer/terraform-provider-oxide/pull/597)."
 
 [[features]]
 title = "New resource"
@@ -45,6 +45,10 @@ description = "`oxide_subnet_pool_silo_link` [#615](https://github.com/oxidecomp
 [[features]]
 title = "New resource"
 description = "`oxide_switch_port_settings` [#475](https://github.com/oxidecomputer/terraform-provider-oxide/pull/475)."
+
+[[features]]
+title = "Support IPv6 external IPs in `oxide_instance`."
+description = "Added support for IPv6 external IPs in the `oxide_instance` resource. [#597](https://github.com/oxidecomputer/terraform-provider-oxide/pull/597)."
 
 [[enhancements]]
 title = "`oxide_instance` attribute deprecation"
