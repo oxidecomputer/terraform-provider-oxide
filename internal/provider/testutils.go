@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
@@ -57,4 +59,36 @@ func newResourceName() string {
 
 func newBlockName(resource string) string {
 	return fmt.Sprintf("acc-%s-%s", resource, uuid.New())
+}
+
+// testAccCaptureResourceID captures the resource ID for later comparison.
+// Use with resource.TestCheckResourceAttrPtr to verify updates don't recreate resources.
+func testAccCaptureResourceID(resourceName string, id *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+		*id = rs.Primary.ID
+		return nil
+	}
+}
+
+// testAccVerifyResourceIDChanged verifies the resource ID is different from the previously captured
+// ID.
+// Use to confirm a resource was replaced (destroyed and recreated).
+func testAccVerifyResourceIDChanged(
+	resourceName string,
+	previousID *string,
+) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+		if rs.Primary.ID == *previousID {
+			return fmt.Errorf("resource was not replaced: ID unchanged (%s)", *previousID)
+		}
+		return nil
+	}
 }

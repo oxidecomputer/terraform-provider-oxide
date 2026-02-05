@@ -621,8 +621,6 @@ github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJ
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=
 github.com/otiai10/mint v1.3.0/go.mod h1:F5AjcsTsWUqX+Na9fpHb52P8pcRX2CI6A3ctIT91xUo=
 github.com/otiai10/mint v1.3.1/go.mod h1:/yxELlJQ0ufhjUwhshSj+wFjZ78CnZ48/1wtmBH1OTc=
-github.com/oxidecomputer/oxide.go v0.7.1-0.20260202220228-b20dca0181dc h1:arAuGB6tgdQeB4SrQ6nbOFgQSoppoDZhz+y0vvbK2BM=
-github.com/oxidecomputer/oxide.go v0.7.1-0.20260202220228-b20dca0181dc/go.mod h1:ZlG5ri4a6ClA/yhDCbQN6m/F3d/m41XHx5s9WbfFLWc=
 github.com/oxidecomputer/oxide.go v0.7.1-0.20260203205921-06dacbeebae7 h1:taKDndmbieTpMvuE/ojkVtfAjXQ8dlLmjx44Z8s6KJs=
 github.com/oxidecomputer/oxide.go v0.7.1-0.20260203205921-06dacbeebae7/go.mod h1:ZlG5ri4a6ClA/yhDCbQN6m/F3d/m41XHx5s9WbfFLWc=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
