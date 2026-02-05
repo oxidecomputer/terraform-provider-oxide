@@ -6,7 +6,9 @@ package provider
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
+	"io"
 	"slices"
 	"strconv"
 	"time"
@@ -88,17 +90,62 @@ type instanceResourceNICModel struct {
 	VPCID        types.String                   `tfsdk:"vpc_id"`
 }
 
+func (nic instanceResourceNICModel) Hash() string {
+	h := md5.New()
+
+	// Hash computed attributes to detect user changes to the configuration.
+	io.WriteString(h, nic.Name.ValueString())
+	io.WriteString(h, nic.Description.ValueString())
+	io.WriteString(h, nic.SubnetID.ValueString())
+	io.WriteString(h, nic.VPCID.ValueString())
+	if nic.IPConfig != nil {
+		if nic.IPConfig.V4 != nil {
+			io.WriteString(h, nic.IPConfig.V4.IP.ValueString())
+		}
+		if nic.IPConfig.V6 != nil {
+			io.WriteString(h, nic.IPConfig.V6.IP.ValueString())
+		}
+	}
+	io.WriteString(h, nic.IPAddr.ValueString())
+
+	return string(h.Sum(nil))
+}
+
 type instanceResourceIPConfigModel struct {
 	V4 *instanceResourceIPConfigV4Model `tfsdk:"v4"`
 	V6 *instanceResourceIPConfigV6Model `tfsdk:"v6"`
+}
+
+func (ip *instanceResourceIPConfigModel) Equal(other *instanceResourceIPConfigModel) bool {
+	if ip == nil || other == nil {
+		return ip == other
+	}
+
+	return ip.V4.Equal(other.V4) && ip.V6.Equal(other.V6)
 }
 
 type instanceResourceIPConfigV4Model struct {
 	IP types.String `tfsdk:"ip"`
 }
 
+func (ip *instanceResourceIPConfigV4Model) Equal(other *instanceResourceIPConfigV4Model) bool {
+	if ip == nil || other == nil {
+		return ip == other
+	}
+
+	return ip.IP.Equal(other.IP)
+}
+
 type instanceResourceIPConfigV6Model struct {
 	IP types.String `tfsdk:"ip"`
+}
+
+func (ip *instanceResourceIPConfigV6Model) Equal(other *instanceResourceIPConfigV6Model) bool {
+	if ip == nil || other == nil {
+		return ip == other
+	}
+
+	return ip.IP.Equal(other.IP)
 }
 
 type instanceResourceAttachedNICModel struct {
@@ -145,6 +192,34 @@ type instanceResourceEphemeralIPModel struct {
 type instanceResourceFloatingIPModel struct {
 	ID types.String `tfsdk:"id"`
 }
+
+var instanceResourceNICType = types.ObjectType{}.WithAttributeTypes(map[string]attr.Type{
+	"name":        types.StringType,
+	"description": types.StringType,
+	"subnet_id":   types.StringType,
+	"vpc_id":      types.StringType,
+	"ip_config": types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"v4": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"ip": types.StringType,
+				},
+			},
+			"v6": types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"ip": types.StringType,
+				},
+			},
+		},
+	},
+	"ip_address":    types.StringType,
+	"mac_address":   types.StringType,
+	"id":            types.StringType,
+	"primary":       types.BoolType,
+	"time_created":  types.StringType,
+	"time_modified": types.StringType,
+},
+)
 
 var instanceResourceAttachedNICType = types.ObjectType{}.WithAttributeTypes(
 	map[string]attr.Type{
@@ -332,6 +407,9 @@ This resource manages instances.
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,
 				Description: "Network interface devices attached to the instance.",
+				PlanModifiers: []planmodifier.Set{
+					instanceNetworkInterfacesPlanModifier{},
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
@@ -1209,7 +1287,7 @@ func (r *instanceResource) Update(
 		state.NetworkInterfaces,
 		plan.NetworkInterfaces,
 		func(e instanceResourceNICModel) any {
-			return e.ID.ValueString()
+			return e.Hash()
 		},
 	)
 	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
@@ -1222,7 +1300,7 @@ func (r *instanceResource) Update(
 		plan.NetworkInterfaces,
 		state.NetworkInterfaces,
 		func(e instanceResourceNICModel) any {
-			return e.ID.ValueString()
+			return e.Hash()
 		},
 	)
 	resp.Diagnostics.Append(createNICs(ctx, r.client, nicsToCreate, state.ID.ValueString())...)
@@ -2718,4 +2796,63 @@ func ModifyPlanForHostnameDeprecation(
 	// `host_name` or `hostname` was modified, which must result in the resource
 	// being replaced.
 	resp.RequiresReplace = true
+}
+
+// instanceNetworkInterfacesPlanModifier is a plan modifier that detects
+// changes to the network interfaces that Terraform can't know how to handle
+// and modifies the plan to take them into  account.
+type instanceNetworkInterfacesPlanModifier struct{}
+
+var _ planmodifier.Set = instanceNetworkInterfacesPlanModifier{}
+
+func (v instanceNetworkInterfacesPlanModifier) Description(ctx context.Context) string {
+	return v.MarkdownDescription(ctx)
+}
+
+func (v instanceNetworkInterfacesPlanModifier) MarkdownDescription(_ context.Context) string {
+	return "instance network interface modified"
+}
+
+func (v instanceNetworkInterfacesPlanModifier) PlanModifySet(
+	ctx context.Context,
+	req planmodifier.SetRequest,
+	resp *planmodifier.SetResponse,
+) {
+	var diags diag.Diagnostics
+
+	var state []instanceResourceNICModel
+	var plan []instanceResourceNICModel
+
+	resp.Diagnostics.Append(req.StateValue.ElementsAs(ctx, &state, true)...)
+	resp.Diagnostics.Append(req.PlanValue.ElementsAs(ctx, &plan, true)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	stateMap := make(map[string]instanceResourceNICModel)
+	for _, nic := range state {
+		stateMap[nic.ID.ValueString()] = nic
+	}
+
+	// Invalidate Computed attributes if the network interface IP stack is
+	// modified since it will need to be recreated.
+	for i, nic := range plan {
+		stateNIC, ok := stateMap[nic.ID.ValueString()]
+		if !ok {
+			// Ignore network interface since it's not in state and is likely a
+			// new one.
+			continue
+		}
+
+		if !nic.IPConfig.Equal(stateNIC.IPConfig) {
+			plan[i].ID = types.StringUnknown()
+			plan[i].IPAddr = types.StringUnknown()
+			plan[i].Primary = types.BoolUnknown()
+			plan[i].TimeCreated = types.StringUnknown()
+			plan[i].TimeModified = types.StringUnknown()
+		}
+	}
+
+	resp.PlanValue, diags = types.SetValueFrom(ctx, instanceResourceNICType, plan)
+	resp.Diagnostics.Append(diags...)
 }
