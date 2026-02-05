@@ -39,6 +39,7 @@ func TestAccCloudResourceInstance_full(t *testing.T) {
 		SSHBlockName               string
 		AntiAffinityGroupBlockName string
 		AutoRestartPolicy          string
+		FloatingIPName             string
 		NicName                    string
 	}
 
@@ -90,6 +91,20 @@ resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
   policy      = "allow"
 }
 
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
   anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
   project_id       	   = data.oxide_project.{{.SupportBlockName}}.id
@@ -103,11 +118,17 @@ resource "oxide_instance" "{{.BlockName}}" {
   start_on_create  	   = true
   ssh_public_keys  	   = [oxide_ssh_key.{{.SSHBlockName}}.id]
   disk_attachments 	   = [oxide_disk.{{.DiskBlockName}}.id]
-  external_ips = [
-	{
-	  type = "ephemeral"
-	}
-  ]
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v4" },
+      { ip_version = "v6" },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v4.id },
+      { id = oxide_floating_ip.tfacctest_v6.id },
+    ]
+  }
   network_interfaces = [
     {
       subnet_id   = data.oxide_vpc_subnet.{{.SupportBlockName2}}.id
@@ -118,6 +139,7 @@ resource "oxide_instance" "{{.BlockName}}" {
         v4 = {
           ip = cidrhost(data.oxide_vpc_subnet.{{.SupportBlockName2}}.ipv4_block, 42)
         }
+        v6 = { ip = "auto" }
       }
     }
   ]
@@ -148,6 +170,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	instanceName2 := newResourceName()
 	instanceDiskName := newResourceName()
 	instanceNicName := newResourceName()
+	instanceFloatingIPName := newResourceName()
 	instanceSshKeyName := newResourceName()
 	instanceAaGroupName := newResourceName()
 	blockName2 := newBlockName("instance")
@@ -167,6 +190,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			SSHKeyName:                 instanceSshKeyName,
 			SupportBlockName:           supportBlockName3,
 			SupportBlockName2:          supportBlockName2,
+			FloatingIPName:             instanceFloatingIPName,
 			NicName:                    instanceNicName,
 			SSHBlockName:               supportBlockNameSSHKeys,
 			AntiAffinityGroupBlockName: supportBlockNameAaGroup,
@@ -228,6 +252,7 @@ func TestAccCloudResourceInstance_extIPs(t *testing.T) {
 		SupportBlockName string
 		IPPoolBlockName  string
 		IPPoolName       string
+		FloatingIPName   string
 	}
 
 	resourceInstanceExternalIPConfigTpl := `
@@ -245,6 +270,20 @@ data "oxide_ip_pool" "{{.IPPoolBlockName}}" {
 	name = "{{.IPPoolName}}"
 }
 
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
@@ -253,22 +292,26 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips = [
-	{
-	  type = "ephemeral"
-	  id   = data.oxide_ip_pool.{{.IPPoolBlockName}}.id
-	}
-  ]
+
+  external_ips = {
+    ephemeral = [
+      { pool_id = data.oxide_ip_pool.{{.IPPoolBlockName}}.id },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v4.id },
+    ]
+  }
+
   network_interfaces = [
     {
       name        = "net0"
       description = "net0"
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
-      ip_config = {
-        v4 = {
-          ip = "auto"
-        }
+      ip_config   = {
+        v4 = { ip = "auto" }
+        v6 = { ip = "auto" }
       }
     }
   ]
@@ -286,6 +329,20 @@ data "oxide_vpc_subnet" "default" {
   name         = "default"
 }
 
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
 resource "oxide_instance" "{{.BlockName}}" {
   project_id      = data.oxide_project.{{.SupportBlockName}}.id
   description     = "a test instance"
@@ -294,11 +351,17 @@ resource "oxide_instance" "{{.BlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips = [
-	{
-	  type = "ephemeral"
-	}
-  ]
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v4" },
+      { ip_version = "v6" },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v4.id },
+      { id = oxide_floating_ip.tfacctest_v6.id },
+    ]
+  }
   network_interfaces = [
     {
       name        = "net0"
@@ -306,9 +369,64 @@ resource "oxide_instance" "{{.BlockName}}" {
       subnet_id   = data.oxide_vpc_subnet.default.id
       vpc_id      = data.oxide_vpc_subnet.default.vpc_id
       ip_config = {
-        v4 = {
-          ip = "auto"
-        }
+        v4 = { ip = "auto" }
+        v6 = { ip = "auto" }
+      }
+    }
+  ]
+}
+`
+	resourceInstanceExternalIPConfigUpdate1SingleStackTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v6" },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v6.id },
+    ]
+  }
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = { ip = "auto" }
+        v6 = { ip = "auto" }
       }
     }
   ]
@@ -318,6 +436,20 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resourceInstanceExternalIPConfigUpdate2Tpl := `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
@@ -339,6 +471,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	instanceName := newResourceName()
+	floatingIPName := newResourceName()
 	blockName := newBlockName("instance")
 	supportBlockName := newBlockName("support")
 	ipPoolBlockName := newBlockName("ip-pool")
@@ -350,6 +483,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			SupportBlockName: supportBlockName,
 			IPPoolBlockName:  ipPoolBlockName,
 			IPPoolName:       ipPoolName,
+			FloatingIPName:   floatingIPName,
 		},
 		resourceInstanceExternalIPConfigTpl,
 	)
@@ -362,6 +496,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			BlockName:        blockName,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
+			FloatingIPName:   floatingIPName,
 		},
 		resourceInstanceExternalIPConfigUpdate1Tpl,
 	)
@@ -369,11 +504,25 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing first update config template data: %e", err)
 	}
 
+	updateConfig1SingleStack, err := parsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			FloatingIPName:   floatingIPName,
+		},
+		resourceInstanceExternalIPConfigUpdate1SingleStackTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing first update single stack config template data: %e", err)
+	}
+
 	updateConfig2, err := parsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
 			SupportBlockName: supportBlockName,
+			FloatingIPName:   floatingIPName,
 		},
 		resourceInstanceExternalIPConfigUpdate2Tpl,
 	)
@@ -396,6 +545,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 				Config: updateConfig1,
 				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
 			},
+			// Detach ephemeral IPv4.
+			{
+				Config: updateConfig1SingleStack,
+				Check:  checkResourceInstanceIPUpdate1SingleStack(resourceName, instanceName),
+			},
 			// Ephemeral external IP with specified IP pool ID.
 			{
 				Config: initialConfig,
@@ -406,12 +560,20 @@ resource "oxide_instance" "{{.BlockName}}" {
 				Config: updateConfig2,
 				Check:  checkResourceInstanceIPUpdate2(resourceName, instanceName),
 			},
+			// Attach all external IPs.
+			{
+				Config: updateConfig1,
+				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
+			},
 			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
-				// External IPs cannot be imported as they are only present at create time
-				ImportStateVerifyIgnore: []string{"start_on_create", "external_ips"},
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"external_ips",
+					"network_interfaces.0.ip_config",
+				},
 			},
 		},
 	})
@@ -1729,7 +1891,13 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.ephemeral.0.ip_version", "v4"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.1.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.1.ip"),
 		resource.TestCheckResourceAttr(
 			resourceName,
 			"network_interfaces.0.description",
@@ -1810,8 +1978,13 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttrSet(resourceName, "external_ips.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.ip"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v4"},
+		),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -1831,8 +2004,44 @@ func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.type", "ephemeral"),
-		resource.TestCheckResourceAttr(resourceName, "external_ips.0.id", ""),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.1.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.1.pool_id"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v4"},
+		),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v6"},
+		),
+	}...)
+}
+
+func checkResourceInstanceIPUpdate1SingleStack(
+	resourceName, instanceName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v6"},
+		),
 	}...)
 }
 
