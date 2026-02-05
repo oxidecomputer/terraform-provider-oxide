@@ -6,7 +6,9 @@ package provider
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
+	"io"
 	"slices"
 	"strconv"
 	"time"
@@ -84,6 +86,26 @@ type instanceResourceNICModel struct {
 	TimeCreated  types.String                   `tfsdk:"time_created"`
 	TimeModified types.String                   `tfsdk:"time_modified"`
 	VPCID        types.String                   `tfsdk:"vpc_id"`
+}
+
+func (nic instanceResourceNICModel) Hash() string {
+	h := md5.New()
+
+	io.WriteString(h, nic.Name.ValueString())
+	io.WriteString(h, nic.Description.ValueString())
+	io.WriteString(h, nic.SubnetID.ValueString())
+	io.WriteString(h, nic.VPCID.ValueString())
+	if nic.IPConfig != nil {
+		if nic.IPConfig.V4 != nil {
+			io.WriteString(h, nic.IPConfig.V4.IP.ValueString())
+		}
+		if nic.IPConfig.V6 != nil {
+			io.WriteString(h, nic.IPConfig.V6.IP.ValueString())
+		}
+	}
+	io.WriteString(h, nic.IPAddr.ValueString())
+
+	return string(h.Sum(nil))
 }
 
 type instanceResourceIPConfigModel struct {
@@ -377,7 +399,8 @@ This resource manages instances.
 									},
 								},
 								"v6": schema.SingleNestedAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Creates an IPv6 stack for the instance network interface.",
 									Attributes: map[string]schema.Attribute{
 										"ip": schema.StringAttribute{
 											Required: true,
@@ -1049,26 +1072,29 @@ func (r *instanceResource) Update(
 	planNICs := plan.NetworkInterfaces
 	stateNICs := state.NetworkInterfaces
 
-	// Check plan and if it has an ID that the state doesn't then attach it
-	nicsToCreate := sliceDiffByID(
-		planNICs, stateNICs,
+	// Check state and if it has an ID that the plan doesn't then delete it.
+	//
+	// Delete before create to handle cases where an network interface is being
+	// replaced by another in the same subnet.
+	nicsToDelete := sliceDiffByID(
+		stateNICs, planNICs,
 		func(e instanceResourceNICModel) any {
-			return e.ID.ValueString()
+			return e.Hash()
 		},
 	)
-	resp.Diagnostics.Append(createNICs(ctx, r.client, nicsToCreate, state.ID.ValueString())...)
+	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Check state and if it has an ID that the plan doesn't then delete it
-	nicsToDelete := sliceDiffByID(
-		stateNICs, planNICs,
+	// Check plan and if it has an ID that the state doesn't then attach it
+	nicsToCreate := sliceDiffByID(
+		planNICs, stateNICs,
 		func(e instanceResourceNICModel) any {
-			return e.ID.ValueString()
+			return e.Hash()
 		},
 	)
-	resp.Diagnostics.Append(deleteNICs(ctx, r.client, nicsToDelete)...)
+	resp.Diagnostics.Append(createNICs(ctx, r.client, nicsToCreate, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
