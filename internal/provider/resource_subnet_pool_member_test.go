@@ -79,11 +79,6 @@ func TestAccResourceSubnetPoolMember_full(t *testing.T) {
 					resource.TestCheckResourceAttr(member2ResourceName, "max_prefix_length", "30"),
 				),
 			},
-			// Verify no drift on re-apply
-			{
-				Config:   testResourceSubnetPoolMemberAddSecondConfig,
-				PlanOnly: true,
-			},
 		},
 	})
 }

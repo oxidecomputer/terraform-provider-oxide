@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -204,8 +205,11 @@ func testAccIPPoolSiloLinkDestroy(s *terraform.State) error {
 			continue
 		}
 
-		link := findLinkinIPPoolLinks(siloID, links.Items)
-		if link != nil {
+		idx := slices.IndexFunc(
+			links.Items,
+			func(l oxide.IpPoolSiloLink) bool { return l.SiloId == siloID },
+		)
+		if idx >= 0 {
 			return fmt.Errorf(
 				"link between IP pool: '%v' and silo '%v' still exists",
 				ipPoolID,
