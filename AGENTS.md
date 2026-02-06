@@ -31,6 +31,12 @@ committing changes.
 Each resource and data source should include acceptance test suites. Minimally, the test suite
 should create, update, and delete a resource, and import it if supported.
 
+We run most acceptance tests in parallel, but we have to take care to avoid non-deterministic
+failures when tests content over a shared resource. For example, subnet pool CIDRs must not overlap,
+so tests that use subnet pools must use non-overlapping CIDRs. A given silo can only have one subnet
+pool that enables `is_default`, so tests that use a default subnet pool for a silo should not be
+allowed to run in parallel.
+
 #### Setup
 
 Start the simulated environment. This resolves the omicron version from go.mod, pulls the docker

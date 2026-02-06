@@ -106,7 +106,7 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 		PoolIPVersion:    "v4",
 		PoolMemberSubnet: poolMemberSubnet,
 		MaxPrefixLength:  30,
-		IsDefault:        true,
+		IsDefault:        false,
 		SubnetIPVersion:  "v4",
 	}
 
@@ -115,18 +115,21 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 	createConfig.SubnetName = "terraform-acc-external-subnet"
 	createConfig.SubnetDescription = "a test external subnet"
 	createConfig.SubnetPrefixLen = 28
+	createConfig.SubnetPool = "oxide_subnet_pool.test.id"
 
 	// In-place update config.
 	updateConfig := baseConfig
 	updateConfig.SubnetName = "terraform-acc-external-subnet-updated"
 	updateConfig.SubnetDescription = "an updated external subnet"
 	updateConfig.SubnetPrefixLen = 28
+	updateConfig.SubnetPool = "oxide_subnet_pool.test.id"
 
 	// Replace config.
 	replaceConfig := baseConfig
 	replaceConfig.SubnetName = "terraform-acc-external-subnet-updated"
 	replaceConfig.SubnetDescription = "an updated external subnet"
 	replaceConfig.SubnetPrefixLen = 29
+	replaceConfig.SubnetPool = "oxide_subnet_pool.test.id"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -341,11 +344,12 @@ func TestAccResourceExternalSubnet_v6(t *testing.T) {
 		PoolIPVersion:     "v6",
 		PoolMemberSubnet:  "2001:db8::/32",
 		MaxPrefixLength:   96,
-		IsDefault:         true,
+		IsDefault:         false,
 		SubnetName:        "terraform-acc-external-subnet-v6",
 		SubnetDescription: "an IPv6 external subnet",
 		SubnetPrefixLen:   64,
 		SubnetIPVersion:   "v6",
+		SubnetPool:        "oxide_subnet_pool.test.id",
 	})
 
 	resource.ParallelTest(t, resource.TestCase{
