@@ -16,10 +16,12 @@ import (
 )
 
 func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
+	// Only one subnet pool can set `is_default` for a given silo. To ensure that this tests doesn't
+	// conflict with other tests that set a default subnet pool, don't run it in parallel.
 	poolResourceName := "oxide_subnet_pool.test"
 	linkResourceName := "oxide_subnet_pool_silo_link.test"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{

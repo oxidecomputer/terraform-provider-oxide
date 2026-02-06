@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/uuid"
@@ -91,4 +92,17 @@ func testAccVerifyResourceIDChanged(
 		}
 		return nil
 	}
+}
+
+var subnetCounter uint32
+
+// nextSubnetCIDR returns sequential /24 subnet CIDRs from the 10.128.0.0/16 range.
+// TODO: extend if we ever need more than 256 subnets in tests.
+func nextSubnetCIDR(t *testing.T) string {
+	t.Helper()
+	n := atomic.AddUint32(&subnetCounter, 1) - 1
+	if n > 255 {
+		t.Fatal("nextSubnetCIDR: exhausted all 256 /24 subnets in 10.128.0.0/16")
+	}
+	return fmt.Sprintf("10.128.%d.0/24", n)
 }
