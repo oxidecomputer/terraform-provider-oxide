@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -102,7 +103,7 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 		PoolName:         "terraform-acc-ext-subnet-pool",
 		PoolDescription:  "a subnet pool for external subnet tests",
 		PoolIPVersion:    "v4",
-		PoolMemberSubnet: "192.0.2.0/24",
+		PoolMemberSubnet: fmt.Sprintf("192.%d.%d.0/24", rand.IntN(255), rand.IntN(255)),
 		MaxPrefixLength:  30,
 		IsDefault:        true,
 		SubnetIPVersion:  "v4",

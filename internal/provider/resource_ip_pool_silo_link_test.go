@@ -129,7 +129,7 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		CheckDestroy:             testAccIPPoolSiloLinkDestroy,

@@ -19,7 +19,7 @@ func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
 	poolResourceName := "oxide_subnet_pool.test"
 	linkResourceName := "oxide_subnet_pool_silo_link.test"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
