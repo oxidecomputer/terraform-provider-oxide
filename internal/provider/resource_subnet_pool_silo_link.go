@@ -205,14 +205,9 @@ func (r *subnetPoolSiloLinkResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	// Nexus doesn't expose an endpoint to list links by id. Instead, list links by pool, and search
-	// for the expected silo.
-	links, err := r.client.SubnetPoolSiloListAllPages(
-		ctx,
-		oxide.SubnetPoolSiloListParams{
-			Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
-		},
-	)
+	pools, err := r.client.SiloSubnetPoolListAllPages(ctx, oxide.SiloSubnetPoolListParams{
+		Silo: oxide.NameOrId(state.SiloID.ValueString()),
+	})
 	if err != nil {
 		if is404(err) {
 			resp.State.RemoveResource(ctx)
@@ -230,19 +225,17 @@ func (r *subnetPoolSiloLinkResource) Read(
 		map[string]any{"success": true},
 	)
 
-	siloID := state.SiloID.ValueString()
 	idx := slices.IndexFunc(
-		links,
-		func(l oxide.SubnetPoolSiloLink) bool { return l.SiloId == siloID },
+		pools,
+		func(p oxide.SiloSubnetPool) bool { return p.Id == state.SubnetPoolID.ValueString() },
 	)
 	if idx < 0 {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	state.SubnetPoolID = types.StringValue(links[idx].SubnetPoolId)
-	state.IsDefault = types.BoolPointerValue(links[idx].IsDefault)
-	state.SiloID = types.StringValue(links[idx].SiloId)
+	state.SubnetPoolID = types.StringValue(pools[idx].Id)
+	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
