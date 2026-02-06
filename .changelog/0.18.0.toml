@@ -44,6 +44,10 @@ description = "`oxide_subnet_pool_silo_link` [#615](https://github.com/oxidecomp
 
 [[features]]
 title = "New resource"
+description = "`oxide_subnet_pool_attachment` [#617](https://github.com/oxidecomputer/terraform-provider-oxide/pull/617)."
+
+[[features]]
+title = "New resource"
 description = "`oxide_switch_port_settings` [#475](https://github.com/oxidecomputer/terraform-provider-oxide/pull/475)."
 
 [[enhancements]]
