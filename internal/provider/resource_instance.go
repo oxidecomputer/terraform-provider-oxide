@@ -140,13 +140,10 @@ func (ip *instanceResourceExternalIPModel) Empty() bool {
 type instanceResourceEphemeralIPModel struct {
 	PoolID    types.String `tfsdk:"pool_id"`
 	IPVersion types.String `tfsdk:"ip_version"`
-	IP        types.String `tfsdk:"ip"`
 }
 
 type instanceResourceFloatingIPModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
-	IP   types.String `tfsdk:"ip"`
+	ID types.String `tfsdk:"id"`
 }
 
 var instanceResourceAttachedNICType = types.ObjectType{}.WithAttributeTypes(
@@ -561,10 +558,6 @@ This resource manages instances.
 										),
 									},
 								},
-								"ip": schema.StringAttribute{
-									Computed:    true,
-									Description: "The external ephemeral IP attached to the instance.",
-								},
 							},
 						},
 					},
@@ -576,14 +569,6 @@ This resource manages instances.
 								"id": schema.StringAttribute{
 									Required:    true,
 									Description: "The external floating IP ID.",
-								},
-								"ip": schema.StringAttribute{
-									Computed:    true,
-									Description: "The external floating IP attached to the instance.",
-								},
-								"name": schema.StringAttribute{
-									Computed:    true,
-									Description: "The name of the external floating IP attached to the instance.",
 								},
 							},
 						},
@@ -889,12 +874,6 @@ func (r *instanceResource) Create(
 	for i, ip := range instExternalIPs.Ephemeral {
 		plan.ExternalIPs.Ephemeral[i].PoolID = ip.PoolID
 		plan.ExternalIPs.Ephemeral[i].IPVersion = ip.IPVersion
-		plan.ExternalIPs.Ephemeral[i].IP = ip.IP
-	}
-
-	for i, ip := range instExternalIPs.Floating {
-		plan.ExternalIPs.Floating[i].IP = ip.IP
-		plan.ExternalIPs.Floating[i].Name = ip.Name
 	}
 
 	// Populate Computed attribute values about network interfaces.
@@ -1806,16 +1785,13 @@ func newAttachedExternalIPModel(
 			}
 
 			externalIPs.Ephemeral = append(externalIPs.Ephemeral, instanceResourceEphemeralIPModel{
-				IP:        types.StringValue(ip.Ip),
 				PoolID:    types.StringValue(ip.IpPoolId),
 				IPVersion: types.StringValue(ipVersion),
 			})
 
 		case oxide.ExternalIpKindFloating:
 			externalIPs.Floating = append(externalIPs.Floating, instanceResourceFloatingIPModel{
-				ID:   types.StringValue(ip.Id),
-				IP:   types.StringValue(ip.Ip),
-				Name: types.StringValue(string(ip.Name)),
+				ID: types.StringValue(ip.Id),
 			})
 		// Skipped until the schema is updated to support SNAT external IPs.
 		case oxide.ExternalIpKindSnat:
