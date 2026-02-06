@@ -189,6 +189,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewAddressLotResource,
 		NewAntiAffinityGroupResource,
 		NewDiskResource,
+		NewExternalSubnetResource,
 		NewFloatingIPResource,
 		NewImageResource,
 		NewInstanceResource,
