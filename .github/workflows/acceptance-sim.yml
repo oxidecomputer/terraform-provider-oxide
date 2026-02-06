@@ -59,15 +59,8 @@ jobs:
           echo ~/.cargo/bin >> $GITHUB_PATH
       # Run simulated omicron in the background with docker compose.
       # The image is pre-built and pushed by the publish-image job in build-test.yml.
-      - name: pull omicron-dev image
-        env:
-          IMAGE_REPO: ${{ github.repository }}
-          OMICRON_SHA: ${{ inputs.omicron-sha }}
-        run: |
-          REMOTE_IMAGE="ghcr.io/${IMAGE_REPO}/acctest-omicron-dev:${OMICRON_SHA}"
-          LOCAL_IMAGE="acctest-omicron-dev:${OMICRON_SHA}"
-          docker pull "${REMOTE_IMAGE}"
-          docker tag "${REMOTE_IMAGE}" "${LOCAL_IMAGE}"
+      - name: ensure omicron-dev image
+        run: ./acctest/ensure-image.sh '${{ inputs.omicron-sha }}'
       - name: start omicron-dev
         working-directory: acctest
         env:
