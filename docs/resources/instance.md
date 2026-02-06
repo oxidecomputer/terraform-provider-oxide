@@ -101,15 +101,22 @@ resource "oxide_instance" "example" {
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
   start_on_create  = false
 
-  external_ips = [
-    {
-      type = "ephemeral"
-    },
-    {
-      id   = "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"
-      type = "floating"
-    }
-  ]
+  external_ips = {
+    ephemeral = [
+      {
+        ip_version = "v4"
+      },
+      {
+        pool_id = "f6f65759-2510-45f5-a3b8-e5090ac56993"
+      },
+    ]
+
+    floating = [
+      {
+        id = "43b30584-1580-446d-a213-cad9e298df44",
+      }
+    ]
+  }
 
   network_interfaces = [
     {
@@ -145,7 +152,7 @@ resource "oxide_instance" "example" {
 - `auto_restart_policy` (String) The auto-restart policy for this instance.
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
-- `external_ips` (Attributes Set) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
+- `external_ips` (Attributes) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
 - `host_name` (String, Deprecated) Hostname of the instance.
 - `hostname` (String) Hostname of the instance.
 - `network_interfaces` (Attributes Set) Network interface devices attached to the instance. (see [below for nested schema](#nestedatt--network_interfaces))
@@ -166,13 +173,36 @@ Maximum 32 KiB unencoded data.
 <a id="nestedatt--external_ips"></a>
 ### Nested Schema for `external_ips`
 
-Required:
+Optional:
 
-- `type` (String) Type of external IP. Must be one of `ephemeral` or `floating`.
+- `ephemeral` (Attributes Set) External ephemeral IPs to attach to the instance. Each instance can have at most one IPv4 and one IPv6 ephemeral IP. (see [below for nested schema](#nestedatt--external_ips--ephemeral))
+- `floating` (Attributes Set) External floating IPs to attach to the instance. (see [below for nested schema](#nestedatt--external_ips--floating))
+
+<a id="nestedatt--external_ips--ephemeral"></a>
+### Nested Schema for `external_ips.ephemeral`
 
 Optional:
 
-- `id` (String) If `type` is `ephemeral`, ID of the IP pool to retrieve addresses from, or all available pools if not specified. If `type` is `floating`, ID of the floating IP.
+- `ip_version` (String) IP version to use when multiple default pools exist. Conflicts with `pool_id`.
+- `pool_id` (String) ID of the IP pool to allocate from. Conflicts with `ip_version`.
+
+Read-Only:
+
+- `ip` (String) The external ephemeral IP attached to the instance.
+
+
+<a id="nestedatt--external_ips--floating"></a>
+### Nested Schema for `external_ips.floating`
+
+Required:
+
+- `id` (String) The external floating IP ID.
+
+Read-Only:
+
+- `ip` (String) The external floating IP attached to the instance.
+- `name` (String) The name of the external floating IP attached to the instance.
+
 
 
 <a id="nestedatt--network_interfaces"></a>

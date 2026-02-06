@@ -8,15 +8,22 @@ resource "oxide_instance" "example" {
   disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
   start_on_create  = false
 
-  external_ips = [
-    {
-      type = "ephemeral"
-    },
-    {
-      id   = "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"
-      type = "floating"
-    }
-  ]
+  external_ips = {
+    ephemeral = [
+      {
+        ip_version = "v4"
+      },
+      {
+        pool_id = "f6f65759-2510-45f5-a3b8-e5090ac56993"
+      },
+    ]
+
+    floating = [
+      {
+        id = "43b30584-1580-446d-a213-cad9e298df44",
+      }
+    ]
+  }
 
   network_interfaces = [
     {
