@@ -24,7 +24,7 @@ TEST_ACC_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/provider
 TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
-TEST_ACC_OMICRON_BRANCH ?= main
+TEST_ACC_OMICRON_BRANCH ?=
 TEST_ACC_DOCKER_COMPOSE_FLAGS = --project-directory ./acctest --file ./acctest/docker-compose.yaml
 
 # Unit test variables
@@ -80,6 +80,9 @@ golangci-lint:
 	@ echo "-> Running Go linters"
 	@ go tool golangci-lint run
 
+.PHONY: fmt
+fmt: golangci-fmt terrafmt-fmt docs
+
 .PHONY: golangci-fmt
 golangci-fmt:
 	@ echo "-> Formatting Go code"
@@ -99,6 +102,11 @@ configfmt:
 	@ echo "-> Running terraform linters on .tf files"
 	@ terraform fmt -write=false -recursive -check
 
+.PHONY: fmt-md
+fmt-md: ## Formats markdown files with prettier.
+	@ echo "-> Formatting markdown files"
+	@ npx prettier --write "**/*.md"
+
 .PHONY: testacc-sim
 ## Starts a simulated omicron environment suitable to run the acceptance test suite.
 testacc-sim: testacc-sim-docker testacc-sim-setup
@@ -110,10 +118,9 @@ testacc-sim-down:
 
 .PHONY: testacc-sim-docker
 ## Starts the containers for the simulated acceptance test suite environment.
-testacc-sim-docker: export TEST_ACC_DOCKER_TAG = $(shell echo '$(TEST_ACC_OMICRON_BRANCH)' | sed 's/[^[:alnum:]]/_/g')
+testacc-sim-docker: export TEST_ACC_DOCKER_TAG = $(shell ./acctest/omicron-version.sh $(TEST_ACC_OMICRON_BRANCH))
 testacc-sim-docker:
-	@ docker compose $(TEST_ACC_DOCKER_COMPOSE_FLAGS) build \
-		--build-arg 'OMICRON_BRANCH=$(TEST_ACC_OMICRON_BRANCH)'
+	@ ./acctest/ensure-image.sh $(TEST_ACC_DOCKER_TAG)
 	@ docker compose $(TEST_ACC_DOCKER_COMPOSE_FLAGS) up --wait --wait-timeout 1500
 
 .PHONY: testacc-sim-token
@@ -121,10 +128,15 @@ testacc-sim-docker:
 testacc-sim-token:
 	@ uv run ./acctest/auth.py > ./acctest/oxide-token
 
+.PHONY: testacc-sim-oxide-cli
+## Installs the version of the oxide CLI matching the current omicron version.
+testacc-sim-oxide-cli:
+	@ ./acctest/ensure-oxide-cli.sh
+
 .PHONY: testacc-sim-setup
 ## Configures the simulated acceptance test suite environment.
-testacc-sim-setup: testacc-sim-token
-	@ OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
+testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
+	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
 
 .PHONY: testacc
 ## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
