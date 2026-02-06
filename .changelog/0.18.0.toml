@@ -26,6 +26,18 @@ description = "Added support for the `disk_type` attribute for the `oxide_disk` 
 title = "Support IPv6 and dual-stack network interfaces in `oxide_instance`."
 description = "Added support for IPv6 and dual-stack network interfaces in the `oxide_instance` resource. [#591](https://github.com/oxidecomputer/terraform-provider-oxide/pull/591)."
 
+[[features]]
+title = "New resource"
+description = "`oxide_subnet_pool` [#614](https://github.com/oxidecomputer/terraform-provider-oxide/pull/614)."
+
+[[features]]
+title = "New resource"
+description = "`oxide_subnet_pool_member` [#614](https://github.com/oxidecomputer/terraform-provider-oxide/pull/614)."
+
+[[features]]
+title = "New data source"
+description = "`oxide_subnet_pool` [#614](https://github.com/oxidecomputer/terraform-provider-oxide/pull/614)."
+
 [[enhancements]]
 title = "`oxide_instance` attribute deprecation"
 description = "The `host_name` attribute on the `oxide_instance` resource has been deprecated in favor of `hostname`. The `host_name` attribute will be removed in the next minor version of the provider. [#577](https://github.com/oxidecomputer/terraform-provider-oxide/pulls/577)."
