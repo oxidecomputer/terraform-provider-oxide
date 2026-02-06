@@ -98,11 +98,13 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 	resourceName := "oxide_external_subnet.test"
 	var originalID string
 
+	poolMemberSubnet := nextSubnetCIDR(t)
+
 	baseConfig := externalSubnetTestConfig{
 		PoolName:         "terraform-acc-ext-subnet-pool",
 		PoolDescription:  "a subnet pool for external subnet tests",
 		PoolIPVersion:    "v4",
-		PoolMemberSubnet: "192.0.2.0/24",
+		PoolMemberSubnet: poolMemberSubnet,
 		MaxPrefixLength:  30,
 		IsDefault:        true,
 		SubnetIPVersion:  "v4",
@@ -198,16 +200,18 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 func TestAccResourceExternalSubnet_explicit(t *testing.T) {
 	resourceName := "oxide_external_subnet.test"
 
+	subnet := nextSubnetCIDR(t)
+
 	config := buildExternalSubnetConfig(t, externalSubnetTestConfig{
 		PoolName:          "terraform-acc-ext-subnet-pool-explicit",
 		PoolDescription:   "a subnet pool for explicit external subnet tests",
 		PoolIPVersion:     "v4",
-		PoolMemberSubnet:  "198.51.100.0/24",
+		PoolMemberSubnet:  subnet,
 		MaxPrefixLength:   30,
 		IsDefault:         false,
 		SubnetName:        "terraform-acc-external-subnet-explicit",
 		SubnetDescription: "an explicit external subnet",
-		SubnetCIDR:        "198.51.100.0/28",
+		SubnetCIDR:        subnet,
 	})
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -224,7 +228,7 @@ func TestAccResourceExternalSubnet_explicit(t *testing.T) {
 						"name",
 						"terraform-acc-external-subnet-explicit",
 					),
-					resource.TestCheckResourceAttr(resourceName, "subnet", "198.51.100.0/28"),
+					resource.TestCheckResourceAttr(resourceName, "subnet", subnet),
 					resource.TestCheckResourceAttrSet(resourceName, "subnet_pool_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "subnet_pool_member_id"),
 				),
@@ -240,7 +244,7 @@ func TestAccResourceExternalSubnet_withPool(t *testing.T) {
 		PoolName:          "terraform-acc-ext-subnet-pool-with-pool",
 		PoolDescription:   "a subnet pool for pool selection tests",
 		PoolIPVersion:     "v4",
-		PoolMemberSubnet:  "203.0.113.0/24",
+		PoolMemberSubnet:  nextSubnetCIDR(t),
 		MaxPrefixLength:   30,
 		IsDefault:         false,
 		SubnetName:        "terraform-acc-external-subnet-with-pool",
@@ -283,7 +287,7 @@ func TestAccResourceExternalSubnet_disappears(t *testing.T) {
 		PoolName:          "terraform-acc-ext-subnet-pool-disappears",
 		PoolDescription:   "a subnet pool for disappears test",
 		PoolIPVersion:     "v4",
-		PoolMemberSubnet:  "100.64.0.0/24",
+		PoolMemberSubnet:  nextSubnetCIDR(t),
 		MaxPrefixLength:   30,
 		IsDefault:         false,
 		SubnetName:        "terraform-acc-external-subnet-disappears",
