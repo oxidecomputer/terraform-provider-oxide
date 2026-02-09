@@ -37,11 +37,13 @@ resource "oxide_instance" "{{.InstanceBlockName}}" {
   memory          = 1073741824
   ncpus           = 1
   start_on_create = false
-  external_ips = [
-	{
-	  type = "ephemeral"
-	}
-  ]
+
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v4" }
+    ]
+  }
+
   network_interfaces = [
     {
       name        = "net0"
