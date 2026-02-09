@@ -186,10 +186,6 @@ Optional:
 - `ip_version` (String) IP version to use when multiple default pools exist. Conflicts with `pool_id`.
 - `pool_id` (String) ID of the IP pool to allocate from. Conflicts with `ip_version`.
 
-Read-Only:
-
-- `ip` (String) The external ephemeral IP attached to the instance.
-
 
 <a id="nestedatt--external_ips--floating"></a>
 ### Nested Schema for `external_ips.floating`
@@ -197,11 +193,6 @@ Read-Only:
 Required:
 
 - `id` (String) The external floating IP ID.
-
-Read-Only:
-
-- `ip` (String) The external floating IP attached to the instance.
-- `name` (String) The name of the external floating IP attached to the instance.
 
 
 

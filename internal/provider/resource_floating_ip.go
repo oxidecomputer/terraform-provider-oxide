@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -25,17 +26,17 @@ import (
 // floatingIPResourceModel represents the Terraform configuration and state for
 // the Oxide floating IP resource.
 type floatingIPResourceModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Description  types.String   `tfsdk:"description"`
-	IP           types.String   `tfsdk:"ip"`
-	InstanceID   types.String   `tfsdk:"instance_id"`
-	IPPoolID     types.String   `tfsdk:"ip_pool_id"`
-	IPVersion    types.String   `tfsdk:"ip_version"`
-	ProjectID    types.String   `tfsdk:"project_id"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	Description  types.String      `tfsdk:"description"`
+	IP           iptypes.IPAddress `tfsdk:"ip"`
+	InstanceID   types.String      `tfsdk:"instance_id"`
+	IPPoolID     types.String      `tfsdk:"ip_pool_id"`
+	IPVersion    types.String      `tfsdk:"ip_version"`
+	ProjectID    types.String      `tfsdk:"project_id"`
+	TimeCreated  types.String      `tfsdk:"time_created"`
+	TimeModified types.String      `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Compile-time assertions to check that the floatingIPResource implements the
@@ -123,6 +124,7 @@ This resource manages Oxide floating IPs.
 			"ip": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
+				CustomType:          iptypes.IPAddressType{},
 				MarkdownDescription: "IP address for this floating IP. If unset an IP address will be chosen from the given `ip_pool_id`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
@@ -260,7 +262,7 @@ func (f *floatingIPResource) Create(
 	plan.ID = types.StringValue(floatingIP.Id)
 	plan.Name = types.StringValue(string(floatingIP.Name))
 	plan.Description = types.StringValue(floatingIP.Description)
-	plan.IP = types.StringValue(floatingIP.Ip)
+	plan.IP = iptypes.NewIPAddressValue(floatingIP.Ip)
 	plan.InstanceID = types.StringValue(floatingIP.InstanceId)
 	plan.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
@@ -321,7 +323,7 @@ func (f *floatingIPResource) Read(
 	state.ID = types.StringValue(floatingIP.Id)
 	state.Name = types.StringValue(string(floatingIP.Name))
 	state.Description = types.StringValue(floatingIP.Description)
-	state.IP = types.StringValue(floatingIP.Ip)
+	state.IP = iptypes.NewIPAddressValue(floatingIP.Ip)
 	state.InstanceID = types.StringValue(floatingIP.InstanceId)
 	state.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	state.ProjectID = types.StringValue(floatingIP.ProjectId)
@@ -390,7 +392,7 @@ func (f *floatingIPResource) Update(
 	plan.ID = types.StringValue(floatingIP.Id)
 	plan.Name = types.StringValue(string(floatingIP.Name))
 	plan.Description = types.StringValue(floatingIP.Description)
-	plan.IP = types.StringValue(floatingIP.Ip)
+	plan.IP = iptypes.NewIPAddressValue(floatingIP.Ip)
 	plan.InstanceID = types.StringValue(floatingIP.InstanceId)
 	plan.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
