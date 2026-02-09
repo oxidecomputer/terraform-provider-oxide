@@ -122,7 +122,7 @@ jobs:
       - name: upload omicron logs
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: omicron-logs-${{ matrix.tf-binary }}
           path: acctest/tmp/
