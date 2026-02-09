@@ -90,8 +90,7 @@ jobs:
         env:
           OXIDE_HOST: http://localhost:12220
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-          OXIDE_TEST_IP_POOL_NAME: default
-          OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"
+          TF_ACC_SIM: "1"
       - name: test opentofu
         id: test-tofu
         if: matrix.tf-binary == 'opentofu'
@@ -102,8 +101,7 @@ jobs:
           TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
           OXIDE_HOST: http://localhost:12220
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-          OXIDE_TEST_IP_POOL_NAME: default
-          OXIDE_SILO_DNS_NAME: "*.sys.oxide-dev.test"
+          TF_ACC_SIM: "1"
       - name: print omicron logs
         if: always()
         continue-on-error: true

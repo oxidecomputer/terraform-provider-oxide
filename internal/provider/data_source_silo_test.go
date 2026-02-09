@@ -6,7 +6,6 @@ package provider
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -87,10 +86,7 @@ data "oxide_silo" "{{.BlockName}}" {
 func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	blockName := newBlockName("datasource-silo")
 
-	dnsName := os.Getenv("OXIDE_SILO_DNS_NAME")
-	if dnsName == "" {
-		t.Skip("Skipping test. Export OXIDE_SILO_DNS_NAME to run.")
-	}
+	dnsName := testAccSiloDNSName()
 
 	config, err := parsedAccConfig(
 		dataSourceSiloConfig{

@@ -11,7 +11,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -110,10 +109,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		siloSamlIdentityProviderBlockName,
 	)
 
-	siloDNSName := os.Getenv("OXIDE_SILO_DNS_NAME")
-	if siloDNSName == "" {
-		t.Skip("Skipping test. Export OXIDE_SILO_DNS_NAME to run.")
-	}
+	siloDNSName := testAccSiloDNSName()
 
 	config, err := parsedAccConfig(
 		resourceSiloIdentifyProviderConfig{

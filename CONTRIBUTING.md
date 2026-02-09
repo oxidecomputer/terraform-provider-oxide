@@ -74,7 +74,7 @@ to use for it. We default to the \*.sys.oxide-dev.test wildcard used by
 the [simulated omicron
 environment](https://github.com/oxidecomputer/omicron/blob/main/docs/how-to-run-simulated.adoc).
 To override when testing against a different environment, set the
-`$OXIDE_SILO_DNS_NAME` environment variable to the relevant DNS name.
+`$OXIDE_TEST_SILO_DNS_NAME` environment variable to the relevant DNS name.
 
 Run `make testacc`.
 

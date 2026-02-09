@@ -7,7 +7,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -174,10 +173,7 @@ resource "oxide_subnet_pool_silo_link" "test" {
 `
 
 func TestAccResourceSubnetPoolSiloLink_multiSiloImport(t *testing.T) {
-	siloDNSName := os.Getenv("OXIDE_SILO_DNS_NAME")
-	if siloDNSName == "" {
-		t.Skip("Skipping test. Export OXIDE_SILO_DNS_NAME to run.")
-	}
+	siloDNSName := testAccSiloDNSName()
 
 	link1ResourceName := "oxide_subnet_pool_silo_link.link1"
 	link2ResourceName := "oxide_subnet_pool_silo_link.link2"

@@ -25,30 +25,25 @@ import (
 // This test assumes it's running against a simulated Omicron deployment
 // started by `cargo xtask omicron-dev run-all`. A simulated deployment
 // contains an address lot named `initial-infra` with an address of `0.0.0.0`.
-// The ID of this address lot is needed to run this test and is expected to
-// be passed to this test via the `OXIDE_TEST_ADDRESS_LOT_ID` environment
-// variable. You can query the address lots in your simulated deployment at
-// `/v1/system/networking/address-lot` to retrieve the address lot ID.
 //
-// With all that in mind, you can run this test like so.
-//
-// TEST_ACC_NAME=TestAccSiloResourceSwitchPortSettings_full OXIDE_TEST_ADDRESS_LOT_ID=<CHANGE_ME>
-// make testacc
-//
-// A future iteration of this test can make use of the currently
-// non-existent `oxide_address_lot` data source to remove the need for
-// `OXIDE_TEST_ADDRESS_LOT_ID`. However, since the `oxide_switch_port_settings`
-// resource completely overwrites all switch port settings it is still
-// considered unsafe to run this test against anything but a simulated Omicron
-// deployment.
+// Since the `oxide_switch_port_settings` resource completely overwrites all
+// switch port settings it is still considered unsafe to run this test against
+// anything but a simulated Omicron deployment. Set TF_ACC_SIM=1 to run.
 func TestAccSiloResourceSwitchPortSettings_full(t *testing.T) {
+	if os.Getenv("TF_ACC_SIM") == "" {
+		t.Skip("Skipping destructive test; set TF_ACC_SIM=1 to run.")
+	}
+
 	type resourceSwitchPortSettingsConfig struct {
 		BlockName              string
 		SwitchPortSettingsName string
-		AddressLotID           string
 	}
 
 	initialConfigTmpl := `
+data "oxide_address_lot" "initial_infra" {
+  name = "initial-infra"
+}
+
 resource "oxide_switch_port_settings" "{{.BlockName}}" {
   name        = "{{.SwitchPortSettingsName}}"
   description = "Terraform acceptance testing."
@@ -63,7 +58,7 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
       addresses = [
         {
           address        = "0.0.0.0/0"
-          address_lot_id = "{{.AddressLotID}}"
+          address_lot_id = data.oxide_address_lot.initial_infra.id
         },
       ]
     },
@@ -104,6 +99,10 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 }
 `
 	updateConfigTmpl := `
+data "oxide_address_lot" "initial_infra" {
+  name = "initial-infra"
+}
+
 resource "oxide_switch_port_settings" "{{.BlockName}}" {
   name        = "{{.SwitchPortSettingsName}}"
   description = "Terraform acceptance testing (updated)."
@@ -118,7 +117,7 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
       addresses = [
         {
           address        = "0.0.0.0/0"
-          address_lot_id = "{{.AddressLotID}}"
+          address_lot_id = data.oxide_address_lot.initial_infra.id
         },
       ]
     },
@@ -158,9 +157,6 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
   ]
 }
 `
-	// See the doc comment at [TestAccCloudResourceSwitchPortSettings_full].
-	addressLotID := os.Getenv("OXIDE_TEST_ADDRESS_LOT_ID")
-
 	switchPortSettingsName := newResourceName()
 	blockName := newBlockName("switch-port-settings")
 	resourceName := fmt.Sprintf("oxide_switch_port_settings.%s", blockName)
@@ -169,7 +165,6 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
-			AddressLotID:           addressLotID,
 		},
 		initialConfigTmpl,
 	)
@@ -181,7 +176,6 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
-			AddressLotID:           addressLotID,
 		},
 		updateConfigTmpl,
 	)
@@ -192,10 +186,6 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			// See the doc comment at [TestAccCloudResourceSwitchPortSettings_full].
-			if addressLotID == "" {
-				t.Skip("Skipping test. Export OXIDE_TEST_ADDRESS_LOT_ID to run.")
-			}
 		},
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		CheckDestroy:             testAccSwitchPortSettingsDestroy,
