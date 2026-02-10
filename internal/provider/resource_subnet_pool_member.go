@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -39,13 +40,13 @@ type subnetPoolMemberResource struct {
 }
 
 type subnetPoolMemberResourceModel struct {
-	ID              types.String   `tfsdk:"id"`
-	SubnetPoolID    types.String   `tfsdk:"subnet_pool_id"`
-	Subnet          types.String   `tfsdk:"subnet"`
-	MinPrefixLength types.Int64    `tfsdk:"min_prefix_length"`
-	MaxPrefixLength types.Int64    `tfsdk:"max_prefix_length"`
-	TimeCreated     types.String   `tfsdk:"time_created"`
-	Timeouts        timeouts.Value `tfsdk:"timeouts"`
+	ID              types.String       `tfsdk:"id"`
+	SubnetPoolID    types.String       `tfsdk:"subnet_pool_id"`
+	Subnet          cidrtypes.IPPrefix `tfsdk:"subnet"`
+	MinPrefixLength types.Int64        `tfsdk:"min_prefix_length"`
+	MaxPrefixLength types.Int64        `tfsdk:"max_prefix_length"`
+	TimeCreated     types.String       `tfsdk:"time_created"`
+	Timeouts        timeouts.Value     `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -107,6 +108,7 @@ func (r *subnetPoolMemberResource) Schema(
 			},
 			"subnet": schema.StringAttribute{
 				Required:    true,
+				CustomType:  cidrtypes.IPPrefixType{},
 				Description: "The subnet CIDR to add to the pool (e.g., '10.0.0.0/16').",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -292,7 +294,7 @@ func (r *subnetPoolMemberResource) Read(
 	)
 
 	state.ID = types.StringValue(foundMember.Id)
-	state.Subnet = types.StringValue(foundMember.Subnet.String())
+	state.Subnet = cidrtypes.NewIPPrefixValue(foundMember.Subnet.String())
 	state.MinPrefixLength = types.Int64Value(int64(*foundMember.MinPrefixLength))
 	state.MaxPrefixLength = types.Int64Value(int64(*foundMember.MaxPrefixLength))
 	state.TimeCreated = types.StringValue(foundMember.TimeCreated.String())

@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -43,19 +44,19 @@ type externalSubnetResource struct {
 }
 
 type externalSubnetResourceModel struct {
-	ID                 types.String   `tfsdk:"id"`
-	Name               types.String   `tfsdk:"name"`
-	Description        types.String   `tfsdk:"description"`
-	ProjectID          types.String   `tfsdk:"project_id"`
-	Subnet             types.String   `tfsdk:"subnet"`
-	PrefixLen          types.Int64    `tfsdk:"prefix_len"`
-	SubnetPoolID       types.String   `tfsdk:"subnet_pool_id"`
-	IPVersion          types.String   `tfsdk:"ip_version"`
-	SubnetPoolMemberID types.String   `tfsdk:"subnet_pool_member_id"`
-	InstanceID         types.String   `tfsdk:"instance_id"`
-	TimeCreated        types.String   `tfsdk:"time_created"`
-	TimeModified       types.String   `tfsdk:"time_modified"`
-	Timeouts           timeouts.Value `tfsdk:"timeouts"`
+	ID                 types.String       `tfsdk:"id"`
+	Name               types.String       `tfsdk:"name"`
+	Description        types.String       `tfsdk:"description"`
+	ProjectID          types.String       `tfsdk:"project_id"`
+	Subnet             cidrtypes.IPPrefix `tfsdk:"subnet"`
+	PrefixLen          types.Int64        `tfsdk:"prefix_len"`
+	SubnetPoolID       types.String       `tfsdk:"subnet_pool_id"`
+	IPVersion          types.String       `tfsdk:"ip_version"`
+	SubnetPoolMemberID types.String       `tfsdk:"subnet_pool_member_id"`
+	InstanceID         types.String       `tfsdk:"instance_id"`
+	TimeCreated        types.String       `tfsdk:"time_created"`
+	TimeModified       types.String       `tfsdk:"time_modified"`
+	Timeouts           timeouts.Value     `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -133,6 +134,7 @@ func (r *externalSubnetResource) Schema(
 			"subnet": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
+				CustomType:          cidrtypes.IPPrefixType{},
 				MarkdownDescription: "The subnet CIDR to reserve. Must be available in the pool. Conflicts with `prefix_len`. If unset, a subnet will be automatically allocated with the specified `prefix_len`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
@@ -297,7 +299,7 @@ func (r *externalSubnetResource) Create(
 	plan.Name = types.StringValue(string(externalSubnet.Name))
 	plan.Description = types.StringValue(externalSubnet.Description)
 	plan.ProjectID = types.StringValue(externalSubnet.ProjectId)
-	plan.Subnet = types.StringValue(externalSubnet.Subnet.String())
+	plan.Subnet = cidrtypes.NewIPPrefixValue(externalSubnet.Subnet.String())
 	plan.SubnetPoolID = types.StringValue(externalSubnet.SubnetPoolId)
 	plan.SubnetPoolMemberID = types.StringValue(externalSubnet.SubnetPoolMemberId)
 	plan.InstanceID = types.StringValue(externalSubnet.InstanceId)
@@ -360,7 +362,7 @@ func (r *externalSubnetResource) Read(
 	state.Name = types.StringValue(string(externalSubnet.Name))
 	state.Description = types.StringValue(externalSubnet.Description)
 	state.ProjectID = types.StringValue(externalSubnet.ProjectId)
-	state.Subnet = types.StringValue(externalSubnet.Subnet.String())
+	state.Subnet = cidrtypes.NewIPPrefixValue(externalSubnet.Subnet.String())
 	state.SubnetPoolID = types.StringValue(externalSubnet.SubnetPoolId)
 	state.SubnetPoolMemberID = types.StringValue(externalSubnet.SubnetPoolMemberId)
 	state.InstanceID = types.StringValue(externalSubnet.InstanceId)
@@ -428,7 +430,7 @@ func (r *externalSubnetResource) Update(
 	plan.Name = types.StringValue(string(externalSubnet.Name))
 	plan.Description = types.StringValue(externalSubnet.Description)
 	plan.ProjectID = types.StringValue(externalSubnet.ProjectId)
-	plan.Subnet = types.StringValue(externalSubnet.Subnet.String())
+	plan.Subnet = cidrtypes.NewIPPrefixValue(externalSubnet.Subnet.String())
 	plan.SubnetPoolID = types.StringValue(externalSubnet.SubnetPoolId)
 	plan.SubnetPoolMemberID = types.StringValue(externalSubnet.SubnetPoolMemberId)
 	plan.InstanceID = types.StringValue(externalSubnet.InstanceId)

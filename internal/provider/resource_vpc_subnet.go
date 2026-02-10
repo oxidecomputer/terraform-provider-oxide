@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,15 +37,15 @@ type vpcSubnetResource struct {
 }
 
 type vpcSubnetResourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	IPV4Block    types.String   `tfsdk:"ipv4_block"`
-	IPV6Block    types.String   `tfsdk:"ipv6_block"`
-	Name         types.String   `tfsdk:"name"`
-	VPCID        types.String   `tfsdk:"vpc_id"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String         `tfsdk:"description"`
+	ID           types.String         `tfsdk:"id"`
+	IPV4Block    cidrtypes.IPv4Prefix `tfsdk:"ipv4_block"`
+	IPV6Block    cidrtypes.IPv6Prefix `tfsdk:"ipv6_block"`
+	Name         types.String         `tfsdk:"name"`
+	VPCID        types.String         `tfsdk:"vpc_id"`
+	TimeCreated  types.String         `tfsdk:"time_created"`
+	TimeModified types.String         `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -105,7 +106,8 @@ This resource manages VPC subnets.
 				Description: "Description for the VPC subnet.",
 			},
 			"ipv4_block": schema.StringAttribute{
-				Required: true,
+				Required:   true,
+				CustomType: cidrtypes.IPv4PrefixType{},
 				Description: "IPv4 address range for this VPC subnet. " +
 					"It must be allocated from an RFC 1918 private address range, " +
 					"and must not overlap with any other existing subnet in the VPC.",
@@ -114,8 +116,9 @@ This resource manages VPC subnets.
 				},
 			},
 			"ipv6_block": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:   true,
+				Computed:   true,
+				CustomType: cidrtypes.IPv6PrefixType{},
 				Description: "IPv6 address range for this VPC subnet. " +
 					"It must be allocated from the RFC 4193 Unique Local Address range, " +
 					"with the prefix equal to the parent VPC's prefix. " +
@@ -200,7 +203,7 @@ func (r *vpcSubnetResource) Create(
 	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
 	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
 	// IPV6Block is added as well as it is Optional/Computed
-	plan.IPV6Block = types.StringValue(string(subnet.Ipv6Block))
+	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -255,8 +258,8 @@ func (r *vpcSubnetResource) Read(
 
 	state.Description = types.StringValue(subnet.Description)
 	state.ID = types.StringValue(subnet.Id)
-	state.IPV4Block = types.StringValue(string(subnet.Ipv4Block))
-	state.IPV6Block = types.StringValue(string(subnet.Ipv6Block))
+	state.IPV4Block = cidrtypes.NewIPv4PrefixValue(string(subnet.Ipv4Block))
+	state.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 	state.Name = types.StringValue(string(subnet.Name))
 	state.VPCID = types.StringValue(subnet.VpcId)
 	state.TimeCreated = types.StringValue(subnet.TimeCreated.String())
@@ -324,7 +327,7 @@ func (r *vpcSubnetResource) Update(
 	plan.ID = types.StringValue(subnet.Id)
 	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
 	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
-	plan.IPV6Block = types.StringValue(string(subnet.Ipv6Block))
+	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

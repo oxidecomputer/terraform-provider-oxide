@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -49,9 +51,9 @@ type switchPortSettingsAddressModel struct {
 }
 
 type switchPortSettingsAddressAddressModel struct {
-	Address      types.String `tfsdk:"address"`
-	AddressLotID types.String `tfsdk:"address_lot_id"`
-	VlanID       types.Int32  `tfsdk:"vlan_id"`
+	Address      cidrtypes.IPPrefix `tfsdk:"address"`
+	AddressLotID types.String       `tfsdk:"address_lot_id"`
+	VlanID       types.Int32        `tfsdk:"vlan_id"`
 }
 
 type switchPortSettingsBGPPeerModel struct {
@@ -60,7 +62,7 @@ type switchPortSettingsBGPPeerModel struct {
 }
 
 type switchPortSettingsBGPPeerPeerModel struct {
-	Address                types.String                                     `tfsdk:"address"`
+	Address                iptypes.IPAddress                                `tfsdk:"address"`
 	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allowed_export"`
 	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allowed_import"`
 	BGPConfig              types.String                                     `tfsdk:"bgp_config"`
@@ -101,13 +103,13 @@ type switchPortSettingsLinkModel struct {
 }
 
 type switchPortSettingsLinkLLDPModel struct {
-	ChassisID         types.String `tfsdk:"chassis_id"`
-	Enabled           types.Bool   `tfsdk:"enabled"`
-	LinkDescription   types.String `tfsdk:"link_description"`
-	LinkName          types.String `tfsdk:"link_name"`
-	ManagementIP      types.String `tfsdk:"management_ip"`
-	SystemDescription types.String `tfsdk:"system_description"`
-	SystemName        types.String `tfsdk:"system_name"`
+	ChassisID         types.String      `tfsdk:"chassis_id"`
+	Enabled           types.Bool        `tfsdk:"enabled"`
+	LinkDescription   types.String      `tfsdk:"link_description"`
+	LinkName          types.String      `tfsdk:"link_name"`
+	ManagementIP      iptypes.IPAddress `tfsdk:"management_ip"`
+	SystemDescription types.String      `tfsdk:"system_description"`
+	SystemName        types.String      `tfsdk:"system_name"`
 }
 
 type switchPortSettingsLinkTxEqModel struct {
@@ -128,10 +130,10 @@ type switchPortSettingsRouteModel struct {
 }
 
 type switchPortSettingsRouteRouteModel struct {
-	Dst         types.String `tfsdk:"dst"`
-	GW          types.String `tfsdk:"gw"`
-	RIBPriority types.Int32  `tfsdk:"rib_priority"`
-	VID         types.Int32  `tfsdk:"vid"`
+	Dst         types.String      `tfsdk:"dst"`
+	GW          iptypes.IPAddress `tfsdk:"gw"`
+	RIBPriority types.Int32       `tfsdk:"rib_priority"`
+	VID         types.Int32       `tfsdk:"vid"`
 }
 
 // NewSwitchPortSettingsResource contructs a Terraform resource.
@@ -198,6 +200,7 @@ func (r *switchPortSettingsResource) Schema(
 								Attributes: map[string]schema.Attribute{
 									"address": schema.StringAttribute{
 										Required:    true,
+										CustomType:  cidrtypes.IPPrefixType{},
 										Description: "IPv4 or IPv6 address, including the subnet mask.",
 									},
 									"address_lot_id": schema.StringAttribute{
@@ -230,6 +233,7 @@ func (r *switchPortSettingsResource) Schema(
 								Attributes: map[string]schema.Attribute{
 									"address": schema.StringAttribute{
 										Required:    true,
+										CustomType:  iptypes.IPAddressType{},
 										Description: "Address of the host to peer with.",
 									},
 									"allowed_export": schema.SingleNestedAttribute{
@@ -395,6 +399,7 @@ func (r *switchPortSettingsResource) Schema(
 								},
 								"management_ip": schema.StringAttribute{
 									Optional:    true,
+									CustomType:  iptypes.IPAddressType{},
 									Description: "LLDP management IP address.",
 								},
 								"system_description": schema.StringAttribute{
@@ -498,6 +503,7 @@ func (r *switchPortSettingsResource) Schema(
 									},
 									"gw": schema.StringAttribute{
 										Required:    true,
+										CustomType:  iptypes.IPAddressType{},
 										Description: "Gateway IP address for this route.",
 									},
 									"rib_priority": schema.Int32Attribute{
@@ -827,7 +833,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			addressModel := switchPortSettingsAddressAddressModel{
-				Address:      types.StringValue(address.Address.String()),
+				Address:      cidrtypes.NewIPPrefixValue(address.Address.String()),
 				AddressLotID: types.StringValue(string(address.AddressLotId)),
 				VlanID: func() types.Int32 {
 					if address.VlanId == nil {
@@ -865,7 +871,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			bgpPeerModel := switchPortSettingsBGPPeerPeerModel{
-				Address:        types.StringValue(bgpPeer.Addr),
+				Address:        iptypes.NewIPAddressValue(bgpPeer.Addr),
 				BGPConfig:      types.StringValue(string(bgpPeer.BgpConfig)),
 				ConnectRetry:   types.Int64Value(int64(*bgpPeer.ConnectRetry)),
 				DelayOpen:      types.Int64Value(int64(*bgpPeer.DelayOpen)),
@@ -1023,11 +1029,11 @@ func toSwitchPortSettingsModel(
 						}
 						return types.StringValue(link.LldpLinkConfig.LinkName)
 					}()
-					linkModel.LLDP.ManagementIP = func() types.String {
+					linkModel.LLDP.ManagementIP = func() iptypes.IPAddress {
 						if link.LldpLinkConfig.ManagementIp == "" {
-							return types.StringNull()
+							return iptypes.NewIPAddressNull()
 						}
-						return types.StringValue(link.LldpLinkConfig.ManagementIp)
+						return iptypes.NewIPAddressValue(link.LldpLinkConfig.ManagementIp)
 					}()
 					linkModel.LLDP.SystemDescription = func() types.String {
 						if link.LldpLinkConfig.SystemDescription == "" {
@@ -1099,7 +1105,7 @@ func toSwitchPortSettingsModel(
 
 			routeModel := switchPortSettingsRouteRouteModel{
 				Dst: types.StringValue(route.Dst.String()),
-				GW:  types.StringValue(route.Gw),
+				GW:  iptypes.NewIPAddressValue(route.Gw),
 				RIBPriority: func() types.Int32 {
 					if route.RibPriority != nil {
 						return types.Int32Value(int32(*route.RibPriority))
