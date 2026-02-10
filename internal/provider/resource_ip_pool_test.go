@@ -187,17 +187,17 @@ func testAccIPPoolDestroy(s *terraform.State) error {
 
 		ctx := context.Background()
 
-		res, err := client.IpPoolView(
+		res, err := client.SystemIpPoolView(
 			ctx,
-			oxide.IpPoolViewParams{Pool: "terraform-acc-myippool"},
+			oxide.SystemIpPoolViewParams{Pool: "terraform-acc-myippool"},
 		)
 		if err == nil || !is404(err) {
 			return fmt.Errorf("ip_pool (%v) still exists", &res.Name)
 		}
 
-		res2, err := client.IpPoolView(
+		res2, err := client.SystemIpPoolView(
 			ctx,
-			oxide.IpPoolViewParams{Pool: "terraform-acc-myippool2"},
+			oxide.SystemIpPoolViewParams{Pool: "terraform-acc-myippool2"},
 		)
 		if err != nil && is404(err) {
 			continue

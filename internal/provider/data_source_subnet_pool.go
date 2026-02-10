@@ -147,10 +147,10 @@ func (d *subnetPoolDataSource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.SubnetPoolViewParams{
+	params := oxide.SystemSubnetPoolViewParams{
 		Pool: oxide.NameOrId(state.Name.ValueString()),
 	}
-	pool, err := d.client.SubnetPoolView(ctx, params)
+	pool, err := d.client.SystemSubnetPoolView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read subnet pool:",
@@ -174,9 +174,12 @@ func (d *subnetPoolDataSource) Read(
 	state.TimeModified = types.StringValue(pool.TimeModified.String())
 
 	// Read members
-	members, err := d.client.SubnetPoolMemberListAllPages(ctx, oxide.SubnetPoolMemberListParams{
-		Pool: oxide.NameOrId(pool.Id),
-	})
+	members, err := d.client.SystemSubnetPoolMemberListAllPages(
+		ctx,
+		oxide.SystemSubnetPoolMemberListParams{
+			Pool: oxide.NameOrId(pool.Id),
+		},
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read subnet pool members:",

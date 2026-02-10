@@ -163,13 +163,13 @@ func (r *ipPoolResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.IpPoolCreateParams{
+	params := oxide.SystemIpPoolCreateParams{
 		Body: &oxide.IpPoolCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 		},
 	}
-	ipPool, err := r.client.IpPoolCreate(ctx, params)
+	ipPool, err := r.client.SystemIpPoolCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating IP Pool",
@@ -222,7 +222,7 @@ func (r *ipPoolResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	ipPool, err := r.client.IpPoolView(ctx, oxide.IpPoolViewParams{
+	ipPool, err := r.client.SystemIpPoolView(ctx, oxide.SystemIpPoolViewParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -245,11 +245,11 @@ func (r *ipPoolResource) Read(
 	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
 
 	// Append information about IP Pool ranges
-	listParams := oxide.IpPoolRangeListParams{
+	listParams := oxide.SystemIpPoolRangeListParams{
 		Pool:  oxide.NameOrId(ipPool.Id),
 		Limit: oxide.NewPointer(1000000000),
 	}
-	ipPoolRanges, err := r.client.IpPoolRangeList(ctx, listParams)
+	ipPoolRanges, err := r.client.SystemIpPoolRangeList(ctx, listParams)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read IP Pool ranges:",
@@ -347,7 +347,7 @@ func (r *ipPoolResource) Update(
 		return
 	}
 
-	params := oxide.IpPoolUpdateParams{
+	params := oxide.SystemIpPoolUpdateParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.IpPoolUpdate{
 			Description: plan.Description.ValueString(),
@@ -355,7 +355,7 @@ func (r *ipPoolResource) Update(
 		},
 	}
 
-	ipPool, err := r.client.IpPoolUpdate(ctx, params)
+	ipPool, err := r.client.SystemIpPoolUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating IP Pool",
@@ -405,9 +405,9 @@ func (r *ipPoolResource) Delete(
 	defer cancel()
 
 	// Remove all IP pool ranges first
-	ranges, err := r.client.IpPoolRangeList(
+	ranges, err := r.client.SystemIpPoolRangeList(
 		ctx,
-		oxide.IpPoolRangeListParams{
+		oxide.SystemIpPoolRangeListParams{
 			Pool:  oxide.NameOrId(state.ID.ValueString()),
 			Limit: oxide.NewPointer(1000000000),
 		},
@@ -429,11 +429,11 @@ func (r *ipPoolResource) Delete(
 
 	for _, item := range ranges.Items {
 		// item.Range is now a struct with a Value field containing the variant
-		params := oxide.IpPoolRangeRemoveParams{
+		params := oxide.SystemIpPoolRangeRemoveParams{
 			Pool: oxide.NameOrId(state.ID.ValueString()),
 			Body: &item.Range,
 		}
-		if err := r.client.IpPoolRangeRemove(ctx, params); err != nil {
+		if err := r.client.SystemIpPoolRangeRemove(ctx, params); err != nil {
 			if !is404(err) {
 				resp.Diagnostics.AddError(
 					"Error deleting IP Pool range:",
@@ -449,9 +449,9 @@ func (r *ipPoolResource) Delete(
 		), map[string]any{"success": true})
 	}
 
-	if err := r.client.IpPoolDelete(
+	if err := r.client.SystemIpPoolDelete(
 		ctx,
-		oxide.IpPoolDeleteParams{
+		oxide.SystemIpPoolDeleteParams{
 			Pool: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
 		if !is404(err) {
@@ -490,12 +490,12 @@ func addRanges(
 			return diags
 		}
 
-		params := oxide.IpPoolRangeAddParams{
+		params := oxide.SystemIpPoolRangeAddParams{
 			Pool: oxide.NameOrId(poolID),
 			Body: &body,
 		}
 
-		ipR, err := client.IpPoolRangeAdd(ctx, params)
+		ipR, err := client.SystemIpPoolRangeAdd(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error creating range within IP Pool",
@@ -539,12 +539,12 @@ func removeRanges(
 			return diags
 		}
 
-		params := oxide.IpPoolRangeRemoveParams{
+		params := oxide.SystemIpPoolRangeRemoveParams{
 			Pool: oxide.NameOrId(poolID),
 			Body: &body,
 		}
 
-		err = client.IpPoolRangeRemove(ctx, params)
+		err = client.SystemIpPoolRangeRemove(ctx, params)
 		if err != nil {
 			diags.AddError(
 				"Error removing range within IP Pool",

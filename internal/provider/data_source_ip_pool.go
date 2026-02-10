@@ -122,10 +122,10 @@ func (d *ipPoolDataSource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.ProjectIpPoolViewParams{
+	params := oxide.IpPoolViewParams{
 		Pool: oxide.NameOrId(state.Name.ValueString()),
 	}
-	ipPool, err := d.client.ProjectIpPoolView(ctx, params)
+	ipPool, err := d.client.IpPoolView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read IP pool:",

@@ -234,14 +234,14 @@ func testAccSubnetPoolMemberDisappears(resourceName string) resource.TestCheckFu
 			return fmt.Errorf("error parsing subnet: %w", err)
 		}
 
-		params := oxide.SubnetPoolMemberRemoveParams{
+		params := oxide.SystemSubnetPoolMemberRemoveParams{
 			Pool: oxide.NameOrId(rs.Primary.Attributes["subnet_pool_id"]),
 			Body: &oxide.SubnetPoolMemberRemove{
 				Subnet: subnet,
 			},
 		}
 
-		return client.SubnetPoolMemberRemove(context.Background(), params)
+		return client.SystemSubnetPoolMemberRemove(context.Background(), params)
 	}
 }
 
@@ -276,9 +276,9 @@ func testAccSubnetPoolMemberDestroy(s *terraform.State) error {
 		poolID := rs.Primary.Attributes["subnet_pool_id"]
 
 		// List members and check if ours still exists
-		members, err := client.SubnetPoolMemberListAllPages(
+		members, err := client.SystemSubnetPoolMemberListAllPages(
 			ctx,
-			oxide.SubnetPoolMemberListParams{Pool: oxide.NameOrId(poolID)},
+			oxide.SystemSubnetPoolMemberListParams{Pool: oxide.NameOrId(poolID)},
 		)
 		if err != nil && is404(err) {
 			// Pool doesn't exist, so member is definitely gone
