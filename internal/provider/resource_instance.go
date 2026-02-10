@@ -93,7 +93,7 @@ type instanceResourceNICModel struct {
 func (nic instanceResourceNICModel) Hash() string {
 	h := md5.New()
 
-	// Hash computed attributes to detect user changes to the configuration.
+	// Hash user-provided values to detect changes to the configuration.
 	io.WriteString(h, nic.Name.ValueString())
 	io.WriteString(h, nic.Description.ValueString())
 	io.WriteString(h, nic.SubnetID.ValueString())
