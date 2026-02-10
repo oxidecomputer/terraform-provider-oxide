@@ -152,14 +152,14 @@ func (r *subnetPoolResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.SubnetPoolCreateParams{
+	params := oxide.SystemSubnetPoolCreateParams{
 		Body: &oxide.SubnetPoolCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 			IpVersion:   oxide.IpVersion(plan.IpVersion.ValueString()),
 		},
 	}
-	pool, err := r.client.SubnetPoolCreate(ctx, params)
+	pool, err := r.client.SystemSubnetPoolCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating subnet pool",
@@ -207,7 +207,7 @@ func (r *subnetPoolResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	pool, err := r.client.SubnetPoolView(ctx, oxide.SubnetPoolViewParams{
+	pool, err := r.client.SystemSubnetPoolView(ctx, oxide.SystemSubnetPoolViewParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
@@ -272,7 +272,7 @@ func (r *subnetPoolResource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := oxide.SubnetPoolUpdateParams{
+	params := oxide.SystemSubnetPoolUpdateParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.SubnetPoolUpdate{
 			Description: plan.Description.ValueString(),
@@ -280,7 +280,7 @@ func (r *subnetPoolResource) Update(
 		},
 	}
 
-	pool, err := r.client.SubnetPoolUpdate(ctx, params)
+	pool, err := r.client.SystemSubnetPoolUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating subnet pool",
@@ -328,9 +328,9 @@ func (r *subnetPoolResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	if err := r.client.SubnetPoolDelete(
+	if err := r.client.SystemSubnetPoolDelete(
 		ctx,
-		oxide.SubnetPoolDeleteParams{
+		oxide.SystemSubnetPoolDeleteParams{
 			Pool: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
 		if !is404(err) {

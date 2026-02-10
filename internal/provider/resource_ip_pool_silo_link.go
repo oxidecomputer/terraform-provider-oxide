@@ -144,14 +144,14 @@ func (r *ipPoolSiloLinkResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.IpPoolSiloLinkParams{
+	params := oxide.SystemIpPoolSiloLinkParams{
 		Pool: oxide.NameOrId(plan.IPPoolID.ValueString()),
 		Body: &oxide.IpPoolLinkSilo{
 			IsDefault: plan.IsDefault.ValueBoolPointer(),
 			Silo:      oxide.NameOrId(plan.SiloID.ValueString()),
 		},
 	}
-	link, err := r.client.IpPoolSiloLink(ctx, params)
+	link, err := r.client.SystemIpPoolSiloLink(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating IP pool silo link",
@@ -197,13 +197,13 @@ func (r *ipPoolSiloLinkResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.IpPoolSiloListParams{
+	params := oxide.SystemIpPoolSiloListParams{
 		Pool:   oxide.NameOrId(state.IPPoolID.ValueString()),
 		Limit:  oxide.NewPointer(1000000000),
 		SortBy: oxide.IdSortModeIdAscending,
 	}
 
-	links, err := r.client.IpPoolSiloList(ctx, params)
+	links, err := r.client.SystemIpPoolSiloList(ctx, params)
 	if err != nil {
 		if is404(err) {
 			// Remove resource from state during a refresh
@@ -277,14 +277,14 @@ func (r *ipPoolSiloLinkResource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := oxide.IpPoolSiloUpdateParams{
+	params := oxide.SystemIpPoolSiloUpdateParams{
 		Pool: oxide.NameOrId(state.IPPoolID.ValueString()),
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 		Body: &oxide.IpPoolSiloUpdate{
 			IsDefault: plan.IsDefault.ValueBoolPointer(),
 		},
 	}
-	link, err := r.client.IpPoolSiloUpdate(ctx, params)
+	link, err := r.client.SystemIpPoolSiloUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating link",
@@ -330,11 +330,11 @@ func (r *ipPoolSiloLinkResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	params := oxide.IpPoolSiloUnlinkParams{
+	params := oxide.SystemIpPoolSiloUnlinkParams{
 		Pool: oxide.NameOrId(state.IPPoolID.ValueString()),
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 	}
-	if err := r.client.IpPoolSiloUnlink(ctx, params); err != nil {
+	if err := r.client.SystemIpPoolSiloUnlink(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting link:",

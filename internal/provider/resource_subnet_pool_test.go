@@ -127,9 +127,9 @@ func testAccSubnetPoolDisappears(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		return client.SubnetPoolDelete(
+		return client.SystemSubnetPoolDelete(
 			context.Background(),
-			oxide.SubnetPoolDeleteParams{Pool: oxide.NameOrId(rs.Primary.ID)},
+			oxide.SystemSubnetPoolDeleteParams{Pool: oxide.NameOrId(rs.Primary.ID)},
 		)
 	}
 }

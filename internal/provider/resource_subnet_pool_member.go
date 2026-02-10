@@ -197,12 +197,12 @@ func (r *subnetPoolMemberResource) Create(
 		body.MaxPrefixLength = &maxPrefixLen
 	}
 
-	params := oxide.SubnetPoolMemberAddParams{
+	params := oxide.SystemSubnetPoolMemberAddParams{
 		Pool: oxide.NameOrId(plan.SubnetPoolID.ValueString()),
 		Body: body,
 	}
 
-	member, err := r.client.SubnetPoolMemberAdd(ctx, params)
+	member, err := r.client.SystemSubnetPoolMemberAdd(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating subnet pool member",
@@ -253,9 +253,9 @@ func (r *subnetPoolMemberResource) Read(
 
 	// The API doesn't have a direct "view" endpoint for a single member by ID.
 	// We need to list all members and find the one matching our ID.
-	members, err := r.client.SubnetPoolMemberListAllPages(
+	members, err := r.client.SystemSubnetPoolMemberListAllPages(
 		ctx,
-		oxide.SubnetPoolMemberListParams{
+		oxide.SystemSubnetPoolMemberListParams{
 			Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		},
 	)
@@ -352,14 +352,14 @@ func (r *subnetPoolMemberResource) Delete(
 		return
 	}
 
-	params := oxide.SubnetPoolMemberRemoveParams{
+	params := oxide.SystemSubnetPoolMemberRemoveParams{
 		Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		Body: &oxide.SubnetPoolMemberRemove{
 			Subnet: subnet,
 		},
 	}
 
-	if err := r.client.SubnetPoolMemberRemove(ctx, params); err != nil {
+	if err := r.client.SystemSubnetPoolMemberRemove(ctx, params); err != nil {
 		// The API returns 400 with "does not exist" if the member is already gone,
 		// rather than 404. Handle both cases for idempotent deletes.
 		//

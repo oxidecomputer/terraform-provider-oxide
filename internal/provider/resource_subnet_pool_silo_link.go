@@ -152,14 +152,14 @@ func (r *subnetPoolSiloLinkResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.SubnetPoolSiloLinkParams{
+	params := oxide.SystemSubnetPoolSiloLinkParams{
 		Pool: oxide.NameOrId(plan.SubnetPoolID.ValueString()),
 		Body: &oxide.SubnetPoolLinkSilo{
 			IsDefault: plan.IsDefault.ValueBoolPointer(),
 			Silo:      oxide.NameOrId(plan.SiloID.ValueString()),
 		},
 	}
-	link, err := r.client.SubnetPoolSiloLink(ctx, params)
+	link, err := r.client.SystemSubnetPoolSiloLink(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating subnet pool silo link",
@@ -272,14 +272,14 @@ func (r *subnetPoolSiloLinkResource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := oxide.SubnetPoolSiloUpdateParams{
+	params := oxide.SystemSubnetPoolSiloUpdateParams{
 		Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 		Body: &oxide.SubnetPoolSiloUpdate{
 			IsDefault: plan.IsDefault.ValueBoolPointer(),
 		},
 	}
-	link, err := r.client.SubnetPoolSiloUpdate(ctx, params)
+	link, err := r.client.SystemSubnetPoolSiloUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating subnet pool silo link",
@@ -325,11 +325,11 @@ func (r *subnetPoolSiloLinkResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	params := oxide.SubnetPoolSiloUnlinkParams{
+	params := oxide.SystemSubnetPoolSiloUnlinkParams{
 		Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 	}
-	if err := r.client.SubnetPoolSiloUnlink(ctx, params); err != nil {
+	if err := r.client.SystemSubnetPoolSiloUnlink(ctx, params); err != nil {
 		if !is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting subnet pool silo link:",

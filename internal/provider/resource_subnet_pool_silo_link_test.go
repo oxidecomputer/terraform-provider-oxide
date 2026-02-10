@@ -145,12 +145,12 @@ func testAccSubnetPoolSiloLinkDisappears(resourceName string) resource.TestCheck
 			return err
 		}
 
-		params := oxide.SubnetPoolSiloUnlinkParams{
+		params := oxide.SystemSubnetPoolSiloUnlinkParams{
 			Pool: oxide.NameOrId(rs.Primary.Attributes["subnet_pool_id"]),
 			Silo: oxide.NameOrId(rs.Primary.Attributes["silo_id"]),
 		}
 
-		return client.SubnetPoolSiloUnlink(context.Background(), params)
+		return client.SystemSubnetPoolSiloUnlink(context.Background(), params)
 	}
 }
 
@@ -319,9 +319,9 @@ func testAccLinksDestroyed(poolResourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		links, err := client.SubnetPoolSiloListAllPages(
+		links, err := client.SystemSubnetPoolSiloListAllPages(
 			context.Background(),
-			oxide.SubnetPoolSiloListParams{Pool: oxide.NameOrId(rs.Primary.ID)},
+			oxide.SystemSubnetPoolSiloListParams{Pool: oxide.NameOrId(rs.Primary.ID)},
 		)
 		if err != nil {
 			return err
