@@ -11,6 +11,7 @@ jobs:
   acceptance:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         tf-binary:
           - terraform
