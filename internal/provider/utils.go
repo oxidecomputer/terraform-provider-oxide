@@ -49,7 +49,7 @@ func defaultTimeout() time.Duration {
 	return 10 * time.Minute
 }
 
-// sliceDiff returns a string slice of the elements in `a` that aren't in `b`.
+// sliceDiff returns a slice of the elements in `a` that aren't in `b`.
 // This function is a bit expensive, but given the fact that
 // the expected number of elements is relatively slow
 // it's not a big deal.
