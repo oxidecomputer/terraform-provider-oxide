@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,14 +34,14 @@ type sshKeyDataSource struct {
 
 // sshKeyDataSourceModel are the attributes that are supported on this data source.
 type sshKeyDataSourceModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Description  types.String   `tfsdk:"description"`
-	PublicKey    types.String   `tfsdk:"public_key"`
-	SiloUserID   types.String   `tfsdk:"silo_user_id"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	Description  types.String      `tfsdk:"description"`
+	PublicKey    types.String      `tfsdk:"public_key"`
+	SiloUserID   types.String      `tfsdk:"silo_user_id"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata sets the resource type name.
@@ -97,10 +98,12 @@ Retrieve information about a specified SSH key.
 				Description: "User ID that owns this SSH key.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this SSH key was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this SSH key was last modified.",
 			},
@@ -153,8 +156,8 @@ func (d *sshKeyDataSource) Read(
 	state.Description = types.StringValue(sshKey.Description)
 	state.PublicKey = types.StringValue(string(sshKey.PublicKey))
 	state.SiloUserID = types.StringValue(string(sshKey.SiloUserId))
-	state.TimeCreated = types.StringValue(sshKey.TimeCreated.String())
-	state.TimeModified = types.StringValue(sshKey.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(sshKey.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(sshKey.TimeModified.UTC())
 
 	// Save retrieved state into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -36,12 +37,12 @@ type projectResource struct {
 }
 
 type projectResourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -108,10 +109,12 @@ This resource manages projects.
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this project was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this project was last modified.",
 			},
@@ -163,8 +166,8 @@ func (r *projectResource) Create(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(project.Id)
-	plan.TimeCreated = types.StringValue(project.TimeCreated.String())
-	plan.TimeModified = types.StringValue(project.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(project.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(project.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -220,8 +223,8 @@ func (r *projectResource) Read(
 	state.Description = types.StringValue(project.Description)
 	state.ID = types.StringValue(project.Id)
 	state.Name = types.StringValue(string(project.Name))
-	state.TimeCreated = types.StringValue(project.TimeCreated.String())
-	state.TimeModified = types.StringValue(project.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(project.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(project.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -283,8 +286,8 @@ func (r *projectResource) Update(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(project.Id)
-	plan.TimeCreated = types.StringValue(project.TimeCreated.String())
-	plan.TimeModified = types.StringValue(project.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(project.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(project.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

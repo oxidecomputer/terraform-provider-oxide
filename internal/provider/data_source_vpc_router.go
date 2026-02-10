@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,16 +32,16 @@ type vpcRouterDataSource struct {
 }
 
 type vpcRouterDataSourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	Kind         types.String   `tfsdk:"kind"`
-	Name         types.String   `tfsdk:"name"`
-	ProjectName  types.String   `tfsdk:"project_name"`
-	VPCID        types.String   `tfsdk:"vpc_id"`
-	VPCName      types.String   `tfsdk:"vpc_name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	Kind         types.String      `tfsdk:"kind"`
+	Name         types.String      `tfsdk:"name"`
+	ProjectName  types.String      `tfsdk:"project_name"`
+	VPCID        types.String      `tfsdk:"vpc_id"`
+	VPCName      types.String      `tfsdk:"vpc_name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (d *vpcRouterDataSource) Metadata(
@@ -104,10 +105,12 @@ Retrieve information about a specified VPC router.
 				Description: "Whether the VPC router is custom or system created.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC router was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC router was last modified.",
 			},
@@ -160,8 +163,8 @@ func (d *vpcRouterDataSource) Read(
 	state.Kind = types.StringValue(string(router.Kind))
 	state.Name = types.StringValue(string(router.Name))
 	state.VPCID = types.StringValue(router.VpcId)
-	state.TimeCreated = types.StringValue(router.TimeCreated.String())
-	state.TimeModified = types.StringValue(router.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(router.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(router.TimeModified.UTC())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

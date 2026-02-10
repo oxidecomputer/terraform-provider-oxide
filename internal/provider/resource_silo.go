@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
@@ -63,8 +64,8 @@ type siloResourceModel struct {
 	IdentityMode     types.String                      `tfsdk:"identity_mode"`
 	AdminGroupName   types.String                      `tfsdk:"admin_group_name"`
 	MappedFleetRoles map[string][]string               `tfsdk:"mapped_fleet_roles"`
-	TimeCreated      types.String                      `tfsdk:"time_created"`
-	TimeModified     types.String                      `tfsdk:"time_modified"`
+	TimeCreated      timetypes.RFC3339                 `tfsdk:"time_created"`
+	TimeModified     timetypes.RFC3339                 `tfsdk:"time_modified"`
 	Timeouts         timeouts.Value                    `tfsdk:"timeouts"`
 }
 
@@ -277,10 +278,12 @@ attributes will result in the silo being destroyed and created anew.
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this silo was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this silo was last modified.",
 			},
@@ -362,8 +365,8 @@ func (r *siloResource) Create(
 	)
 
 	plan.ID = types.StringValue(silo.Id)
-	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
-	plan.TimeModified = types.StringValue(silo.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(silo.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(silo.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -434,8 +437,8 @@ func (r *siloResource) Read(
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
 	state.MappedFleetRoles = fleetRoleMapToStringMap(silo.MappedFleetRoles)
-	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
-	state.TimeModified = types.StringValue(silo.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(silo.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(silo.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -515,8 +518,8 @@ func (r *siloResource) Update(
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
 	}
-	plan.TimeCreated = types.StringValue(silo.TimeCreated.String())
-	plan.TimeModified = types.StringValue(silo.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(silo.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(silo.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {

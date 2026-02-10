@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -37,19 +38,19 @@ type imageResource struct {
 }
 
 type imageResourceModel struct {
-	BlockSize        types.Int64    `tfsdk:"block_size"`
-	Description      types.String   `tfsdk:"description"`
-	Digest           types.Object   `tfsdk:"digest"`
-	ID               types.String   `tfsdk:"id"`
-	Name             types.String   `tfsdk:"name"`
-	OS               types.String   `tfsdk:"os"`
-	ProjectID        types.String   `tfsdk:"project_id"`
-	Size             types.Int64    `tfsdk:"size"`
-	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
-	TimeCreated      types.String   `tfsdk:"time_created"`
-	TimeModified     types.String   `tfsdk:"time_modified"`
-	Version          types.String   `tfsdk:"version"`
-	Timeouts         timeouts.Value `tfsdk:"timeouts"`
+	BlockSize        types.Int64       `tfsdk:"block_size"`
+	Description      types.String      `tfsdk:"description"`
+	Digest           types.Object      `tfsdk:"digest"`
+	ID               types.String      `tfsdk:"id"`
+	Name             types.String      `tfsdk:"name"`
+	OS               types.String      `tfsdk:"os"`
+	ProjectID        types.String      `tfsdk:"project_id"`
+	Size             types.Int64       `tfsdk:"size"`
+	SourceSnapshotID types.String      `tfsdk:"source_snapshot_id"`
+	TimeCreated      timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified     timetypes.RFC3339 `tfsdk:"time_modified"`
+	Version          types.String      `tfsdk:"version"`
+	Timeouts         timeouts.Value    `tfsdk:"timeouts"`
 }
 
 type imageResourceDigestModel struct {
@@ -176,10 +177,12 @@ This resource manages images.
 				Description: "Total size in bytes.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this image was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this image was last modified.",
 			},
@@ -241,8 +244,8 @@ func (r *imageResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(image.Id)
 	plan.Size = types.Int64Value(int64(image.Size))
-	plan.TimeCreated = types.StringValue(image.TimeCreated.String())
-	plan.TimeModified = types.StringValue(image.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(image.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(image.TimeModified.UTC())
 	plan.Version = types.StringValue(image.Version)
 	plan.BlockSize = types.Int64Null()
 	if image.BlockSize > 0 {
@@ -326,8 +329,8 @@ func (r *imageResource) Read(
 	state.Name = types.StringValue(string(image.Name))
 	state.OS = types.StringValue(image.Os)
 	state.Size = types.Int64Value(int64(image.Size))
-	state.TimeCreated = types.StringValue(image.TimeCreated.String())
-	state.TimeModified = types.StringValue(image.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(image.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(image.TimeModified.UTC())
 	state.Version = types.StringValue(image.Version)
 
 	// Only set ProjectID if it exists to avoid unintentional drift.

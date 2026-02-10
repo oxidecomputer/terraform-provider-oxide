@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,8 +42,8 @@ type imageDataSourceModel struct {
 	Name         types.String                `tfsdk:"name"`
 	OS           types.String                `tfsdk:"os"`
 	Size         types.Int64                 `tfsdk:"size"`
-	TimeCreated  types.String                `tfsdk:"time_created"`
-	TimeModified types.String                `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339           `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339           `tfsdk:"time_modified"`
 	Version      types.String                `tfsdk:"version"`
 }
 
@@ -130,10 +131,12 @@ Retrieve information about a specified image.
 				Description: "Size of the image in bytes.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this image was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this image was last modified.",
 			},
@@ -192,8 +195,8 @@ func (d *imageDataSource) Read(
 	state.Name = types.StringValue(string(image.Name))
 	state.OS = types.StringValue(image.Os)
 	state.Size = types.Int64Value(int64(image.Size))
-	state.TimeCreated = types.StringValue(image.TimeCreated.String())
-	state.TimeModified = types.StringValue(image.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(image.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(image.TimeModified.UTC())
 	state.Version = types.StringValue(image.Version)
 
 	digestState := imageDataSourceDigestModel{

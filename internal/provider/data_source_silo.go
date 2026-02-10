@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,14 +25,14 @@ type siloDataSource struct {
 }
 
 type siloDataSourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	Discoverable types.Bool     `tfsdk:"discoverable"`
-	ID           types.String   `tfsdk:"id"`
-	IdentityMode types.String   `tfsdk:"identity_mode"`
-	Name         types.String   `tfsdk:"name"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
+	Description  types.String      `tfsdk:"description"`
+	Discoverable types.Bool        `tfsdk:"discoverable"`
+	ID           types.String      `tfsdk:"id"`
+	IdentityMode types.String      `tfsdk:"identity_mode"`
+	Name         types.String      `tfsdk:"name"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
 }
 
 // NewSiloDataSource initialises a silo datasource
@@ -93,10 +94,12 @@ Retrieve information about a specified silo.
 				Description: "A silo where discoverable is false can be retrieved only by its ID - it will not be part of the 'list all silos' output.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this silo was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this silo was last modified.",
 			},
@@ -147,8 +150,8 @@ func (d *siloDataSource) Read(
 	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
 	state.Name = types.StringValue(string(silo.Name))
-	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
-	state.TimeModified = types.StringValue(silo.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(silo.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(silo.TimeModified.UTC())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

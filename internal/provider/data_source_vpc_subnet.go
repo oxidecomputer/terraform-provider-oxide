@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,17 +32,17 @@ type vpcSubnetDataSource struct {
 }
 
 type vpcSubnetDataSourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	IPV4Block    types.String   `tfsdk:"ipv4_block"`
-	IPV6Block    types.String   `tfsdk:"ipv6_block"`
-	Name         types.String   `tfsdk:"name"`
-	ProjectName  types.String   `tfsdk:"project_name"`
-	VPCID        types.String   `tfsdk:"vpc_id"`
-	VPCName      types.String   `tfsdk:"vpc_name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	IPV4Block    types.String      `tfsdk:"ipv4_block"`
+	IPV6Block    types.String      `tfsdk:"ipv6_block"`
+	Name         types.String      `tfsdk:"name"`
+	ProjectName  types.String      `tfsdk:"project_name"`
+	VPCID        types.String      `tfsdk:"vpc_id"`
+	VPCName      types.String      `tfsdk:"vpc_name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (d *vpcSubnetDataSource) Metadata(
@@ -113,10 +114,12 @@ Retrieve information about a specified VPC subnet.
 				Description: "Unique, immutable, system-controlled identifier of the VPC subnet.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC subnet was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC subnet was last modified.",
 			},
@@ -170,8 +173,8 @@ func (d *vpcSubnetDataSource) Read(
 	state.IPV6Block = types.StringValue(string(subnet.Ipv6Block))
 	state.Name = types.StringValue(string(subnet.Name))
 	state.VPCID = types.StringValue(subnet.VpcId)
-	state.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	state.TimeModified = types.StringValue(subnet.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(subnet.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(subnet.TimeModified.UTC())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

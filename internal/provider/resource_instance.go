@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -68,8 +69,8 @@ type instanceResourceModel struct {
 	ProjectID                 types.String                     `tfsdk:"project_id"`
 	SSHPublicKeys             types.Set                        `tfsdk:"ssh_public_keys"`
 	StartOnCreate             types.Bool                       `tfsdk:"start_on_create"`
-	TimeCreated               types.String                     `tfsdk:"time_created"`
-	TimeModified              types.String                     `tfsdk:"time_modified"`
+	TimeCreated               timetypes.RFC3339                `tfsdk:"time_created"`
+	TimeModified              timetypes.RFC3339                `tfsdk:"time_modified"`
 	Timeouts                  timeouts.Value                   `tfsdk:"timeouts"`
 	UserData                  types.String                     `tfsdk:"user_data"`
 }
@@ -83,8 +84,8 @@ type instanceResourceNICModel struct {
 	Name         types.String                   `tfsdk:"name"`
 	Primary      types.Bool                     `tfsdk:"primary"`
 	SubnetID     types.String                   `tfsdk:"subnet_id"`
-	TimeCreated  types.String                   `tfsdk:"time_created"`
-	TimeModified types.String                   `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339              `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339              `tfsdk:"time_modified"`
 	VPCID        types.String                   `tfsdk:"vpc_id"`
 }
 
@@ -111,8 +112,8 @@ type instanceResourceAttachedNICModel struct {
 	Primary      types.Bool                   `tfsdk:"primary"`
 	MAC          types.String                 `tfsdk:"mac_address"`
 	IPStack      instanceResourceIPStackModel `tfsdk:"ip_stack"`
-	TimeCreated  types.String                 `tfsdk:"time_created"`
-	TimeModified types.String                 `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339            `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339            `tfsdk:"time_modified"`
 }
 
 type instanceResourceIPStackModel struct {
@@ -170,8 +171,8 @@ var instanceResourceAttachedNICType = types.ObjectType{}.WithAttributeTypes(
 				},
 			},
 		},
-		"time_created":  types.StringType,
-		"time_modified": types.StringType,
+		"time_created":  timetypes.RFC3339Type{},
+		"time_modified": timetypes.RFC3339Type{},
 	},
 )
 
@@ -432,11 +433,13 @@ This resource manages instances.
 							Description:        "True if this is the primary network interface for the instance to which it's attached to.",
 						},
 						"time_created": schema.StringAttribute{
+							CustomType:         timetypes.RFC3339Type{},
 							DeprecationMessage: "Use attached_network_interfaces[<name>].time_created instead.",
 							Computed:           true,
 							Description:        "Timestamp of when this instance network interface was created.",
 						},
 						"time_modified": schema.StringAttribute{
+							CustomType:         timetypes.RFC3339Type{},
 							DeprecationMessage: "Use attached_network_interfaces[<name>].time_modified instead.",
 							Computed:           true,
 							Description:        "Timestamp of when this instance network interface was last modified.",
@@ -508,10 +511,12 @@ This resource manages instances.
 							},
 						},
 						"time_created": schema.StringAttribute{
+							CustomType:  timetypes.RFC3339Type{},
 							Computed:    true,
 							Description: "Timestamp of when this instance network interface was created.",
 						},
 						"time_modified": schema.StringAttribute{
+							CustomType:  timetypes.RFC3339Type{},
 							Computed:    true,
 							Description: "Timestamp of when this instance network interface was last modified.",
 						},
@@ -602,10 +607,12 @@ Maximum 32 KiB unencoded data.`,
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this instance was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this instance was last modified.",
 			},
@@ -636,8 +643,8 @@ func (r *instanceResource) UpgradeState(ctx context.Context) map[int64]resource.
 						Name:         oldNIC.Name,
 						Primary:      oldNIC.Primary,
 						SubnetID:     oldNIC.SubnetID,
-						TimeCreated:  oldNIC.TimeCreated,
-						TimeModified: oldNIC.TimeModified,
+						TimeCreated:  stringToRFC3339(oldNIC.TimeCreated),
+						TimeModified: stringToRFC3339(oldNIC.TimeModified),
 						VPCID:        oldNIC.VPCID,
 					}
 
@@ -703,8 +710,8 @@ func (r *instanceResource) UpgradeState(ctx context.Context) map[int64]resource.
 					ProjectID:                 oldState.ProjectID,
 					SSHPublicKeys:             oldState.SSHPublicKeys,
 					StartOnCreate:             oldState.StartOnCreate,
-					TimeCreated:               oldState.TimeCreated,
-					TimeModified:              oldState.TimeModified,
+					TimeCreated:               stringToRFC3339(oldState.TimeCreated),
+					TimeModified:              stringToRFC3339(oldState.TimeModified),
 					Timeouts:                  oldState.Timeouts,
 					UserData:                  oldState.UserData,
 				}
@@ -861,8 +868,8 @@ func (r *instanceResource) Create(
 	plan.ID = types.StringValue(instance.Id)
 	plan.Hostname = types.StringValue(instance.Hostname)
 	plan.HostnameDeprecated = types.StringValue(instance.Hostname)
-	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
-	plan.TimeModified = types.StringValue(instance.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(instance.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(instance.TimeModified.UTC())
 
 	// Populate Computed attribute values about external IPs.
 	instExternalIPs, diags := newAttachedExternalIPModel(ctx, r.client, plan)
@@ -988,8 +995,8 @@ func (r *instanceResource) Read(
 	state.Name = types.StringValue(string(instance.Name))
 	state.NCPUs = types.Int64Value(int64(instance.Ncpus))
 	state.ProjectID = types.StringValue(instance.ProjectId)
-	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
-	state.TimeModified = types.StringValue(instance.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(instance.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(instance.TimeModified.UTC())
 
 	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state)
 	resp.Diagnostics.Append(diags...)
@@ -1304,8 +1311,8 @@ func (r *instanceResource) Update(
 	plan.Hostname = types.StringValue(instance.Hostname)
 	plan.HostnameDeprecated = types.StringValue(instance.Hostname)
 	plan.ProjectID = types.StringValue(instance.ProjectId)
-	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
-	plan.TimeModified = types.StringValue(instance.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(instance.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(instance.TimeModified.UTC())
 
 	// We use the plan here instead of the state to capture the desired IP pool ID
 	// value for the ephemeral external IP rather than the previous value.
@@ -1680,8 +1687,8 @@ func newAttachedNetworkInterfacesModel(
 			Name:         types.StringValue(string(nic.Name)),
 			Primary:      types.BoolPointerValue(nic.Primary),
 			SubnetID:     types.StringValue(nic.SubnetId),
-			TimeCreated:  types.StringValue(nic.TimeCreated.String()),
-			TimeModified: types.StringValue(nic.TimeModified.String()),
+			TimeCreated:  timetypes.NewRFC3339TimeValue(nic.TimeCreated.UTC()),
+			TimeModified: timetypes.NewRFC3339TimeValue(nic.TimeModified.UTC()),
 			VPCID:        types.StringValue(nic.VpcId),
 		})
 
@@ -1695,8 +1702,8 @@ func newAttachedNetworkInterfacesModel(
 			Primary:      types.BoolPointerValue(nic.Primary),
 			MAC:          types.StringValue(string(nic.Mac)),
 			IPStack:      ipStack,
-			TimeCreated:  types.StringValue(nic.TimeCreated.String()),
-			TimeModified: types.StringValue(nic.TimeModified.String()),
+			TimeCreated:  timetypes.NewRFC3339TimeValue(nic.TimeCreated.UTC()),
+			TimeModified: timetypes.NewRFC3339TimeValue(nic.TimeModified.UTC()),
 		}
 	}
 	if diags.HasError() {

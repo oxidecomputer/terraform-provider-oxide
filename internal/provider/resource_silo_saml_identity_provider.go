@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -46,8 +47,8 @@ type siloSamlIdentityProviderResourceModel struct {
 	IdpMetadataSource     *siloSamlIdentityProviderMetadataSourceModel `tfsdk:"idp_metadata_source"`
 	GroupAttributeName    types.String                                 `tfsdk:"group_attribute_name"`
 	SigningKeypair        *siloSamlIdentityProviderSigningKeypairModel `tfsdk:"signing_keypair"`
-	TimeCreated           types.String                                 `tfsdk:"time_created"`
-	TimeModified          types.String                                 `tfsdk:"time_modified"`
+	TimeCreated           timetypes.RFC3339                            `tfsdk:"time_created"`
+	TimeModified          timetypes.RFC3339                            `tfsdk:"time_modified"`
 	Timeouts              timeouts.Value                               `tfsdk:"timeouts"`
 }
 
@@ -191,10 +192,12 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 				Description: "Technical contact email for SAML configuration.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this SAML identity provider was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this SAML identity provider was last modified.",
 			},
@@ -276,8 +279,8 @@ func (r *siloSamlIdentityProvider) Create(
 	)
 
 	plan.ID = types.StringValue(idpConfig.Id)
-	plan.TimeCreated = types.StringValue(idpConfig.TimeCreated.String())
-	plan.TimeModified = types.StringValue(idpConfig.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(idpConfig.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(idpConfig.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -330,8 +333,8 @@ func (r *siloSamlIdentityProvider) Read(
 	)
 
 	state.ID = types.StringValue(idpConfig.Id)
-	state.TimeCreated = types.StringValue(idpConfig.TimeCreated.String())
-	state.TimeModified = types.StringValue(idpConfig.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(idpConfig.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(idpConfig.TimeModified.UTC())
 	state.AcsUrl = types.StringValue(idpConfig.AcsUrl)
 	state.Description = types.StringValue(idpConfig.Description)
 	state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)

@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -19,17 +20,17 @@ import (
 // floatingIPDataSourceModel represents the Terraform configuration and state
 // for the Oxide floating IP resource.
 type floatingIPDataSourceModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Description  types.String   `tfsdk:"description"`
-	IP           types.String   `tfsdk:"ip"`
-	InstanceID   types.String   `tfsdk:"instance_id"`
-	IPPoolID     types.String   `tfsdk:"ip_pool_id"`
-	ProjectID    types.String   `tfsdk:"project_id"`
-	ProjectName  types.String   `tfsdk:"project_name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	Description  types.String      `tfsdk:"description"`
+	IP           types.String      `tfsdk:"ip"`
+	InstanceID   types.String      `tfsdk:"instance_id"`
+	IPPoolID     types.String      `tfsdk:"ip_pool_id"`
+	ProjectID    types.String      `tfsdk:"project_id"`
+	ProjectName  types.String      `tfsdk:"project_name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Compile-time assertions to check that the floatingIPDataSource implements the
@@ -119,10 +120,12 @@ Retrieve information about a specified floating IP.
 				Description: "Project name where this floating IP is located.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp when this floating IP was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp when this floating IP was last modified.",
 			},
@@ -186,8 +189,8 @@ func (f *floatingIPDataSource) Read(
 	state.InstanceID = types.StringValue(floatingIP.InstanceId)
 	state.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	state.ProjectID = types.StringValue(floatingIP.ProjectId)
-	state.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
-	state.TimeModified = types.StringValue(floatingIP.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(floatingIP.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(floatingIP.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

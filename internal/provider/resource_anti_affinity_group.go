@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,15 +39,15 @@ type antiAffinityGroupResource struct {
 }
 
 type antiAffinityGroupResourceModel struct {
-	Description   types.String   `tfsdk:"description"`
-	FailureDomain types.String   `tfsdk:"failure_domain"`
-	ID            types.String   `tfsdk:"id"`
-	Name          types.String   `tfsdk:"name"`
-	Policy        types.String   `tfsdk:"policy"`
-	ProjectID     types.String   `tfsdk:"project_id"`
-	TimeCreated   types.String   `tfsdk:"time_created"`
-	TimeModified  types.String   `tfsdk:"time_modified"`
-	Timeouts      timeouts.Value `tfsdk:"timeouts"`
+	Description   types.String      `tfsdk:"description"`
+	FailureDomain types.String      `tfsdk:"failure_domain"`
+	ID            types.String      `tfsdk:"id"`
+	Name          types.String      `tfsdk:"name"`
+	Policy        types.String      `tfsdk:"policy"`
+	ProjectID     types.String      `tfsdk:"project_id"`
+	TimeCreated   timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified  timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts      timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -139,10 +140,12 @@ This resource manages anti-affinity groups.
 				Description: "Describes the scope of affinity for the purposes of co-location.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this anti-affinity group was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this anti-affinity group was last modified.",
 			},
@@ -200,8 +203,8 @@ func (r *antiAffinityGroupResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(antiAffinityGroup.Id)
 	plan.FailureDomain = types.StringValue(string(antiAffinityGroup.FailureDomain))
-	plan.TimeCreated = types.StringValue(antiAffinityGroup.TimeCreated.String())
-	plan.TimeModified = types.StringValue(antiAffinityGroup.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -260,8 +263,8 @@ func (r *antiAffinityGroupResource) Read(
 	state.Policy = types.StringValue(string(antiAffinityGroup.Policy))
 	state.Name = types.StringValue(string(antiAffinityGroup.Name))
 	state.ProjectID = types.StringValue(antiAffinityGroup.ProjectId)
-	state.TimeCreated = types.StringValue(antiAffinityGroup.TimeCreated.String())
-	state.TimeModified = types.StringValue(antiAffinityGroup.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -324,8 +327,8 @@ func (r *antiAffinityGroupResource) Update(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(antiAffinityGroup.Id)
 	plan.FailureDomain = types.StringValue(string(antiAffinityGroup.FailureDomain))
-	plan.TimeCreated = types.StringValue(antiAffinityGroup.TimeCreated.String())
-	plan.TimeModified = types.StringValue(antiAffinityGroup.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

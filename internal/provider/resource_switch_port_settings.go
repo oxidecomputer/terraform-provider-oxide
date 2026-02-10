@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -40,8 +41,8 @@ type switchPortSettingsModel struct {
 	Links        []switchPortSettingsLinkModel      `tfsdk:"links"`
 	PortConfig   *switchPortSettingsPortConfigModel `tfsdk:"port_config"`
 	Routes       []switchPortSettingsRouteModel     `tfsdk:"routes"`
-	TimeCreated  types.String                       `tfsdk:"time_created"`
-	TimeModified types.String                       `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339                  `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339                  `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value                     `tfsdk:"timeouts"`
 }
 
@@ -527,10 +528,12 @@ func (r *switchPortSettingsResource) Schema(
 				Delete: true,
 			}),
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when the switch port settings were created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when the switch port settings were last modified.",
 			},
@@ -583,8 +586,8 @@ func (r *switchPortSettingsResource) Create(
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(settings.Id)
-	plan.TimeCreated = types.StringValue(settings.TimeCreated.String())
-	plan.TimeModified = types.StringValue(settings.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(settings.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(settings.TimeModified.UTC())
 
 	// Save plan into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -640,8 +643,8 @@ func (r *switchPortSettingsResource) Read(
 	state.ID = types.StringValue(settings.Id)
 	state.Name = types.StringValue(string(settings.Name))
 	state.Description = types.StringValue(settings.Description)
-	state.TimeCreated = types.StringValue(settings.TimeCreated.String())
-	state.TimeModified = types.StringValue(settings.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(settings.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(settings.TimeModified.UTC())
 
 	model, diags := toSwitchPortSettingsModel(settings)
 	resp.Diagnostics.Append(diags...)
@@ -719,8 +722,8 @@ func (r *switchPortSettingsResource) Update(
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(settings.Id)
-	plan.TimeCreated = types.StringValue(settings.TimeCreated.String())
-	plan.TimeModified = types.StringValue(settings.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(settings.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(settings.TimeModified.UTC())
 
 	// Save plan into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -811,8 +814,8 @@ func toSwitchPortSettingsModel(
 		PortConfig: &switchPortSettingsPortConfigModel{
 			Geometry: types.StringValue(string(settings.Port.Geometry)),
 		},
-		TimeCreated:  types.StringValue(settings.TimeCreated.String()),
-		TimeModified: types.StringValue(settings.TimeModified.String()),
+		TimeCreated:  timetypes.NewRFC3339TimeValue(settings.TimeCreated.UTC()),
+		TimeModified: timetypes.NewRFC3339TimeValue(settings.TimeModified.UTC()),
 	}
 
 	//

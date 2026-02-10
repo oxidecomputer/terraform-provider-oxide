@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -36,15 +37,15 @@ type snapshotResource struct {
 }
 
 type snapshotResourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	DiskID       types.String   `tfsdk:"disk_id"`
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	ProjectID    types.String   `tfsdk:"project_id"`
-	Size         types.Int64    `tfsdk:"size"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String      `tfsdk:"description"`
+	DiskID       types.String      `tfsdk:"disk_id"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	ProjectID    types.String      `tfsdk:"project_id"`
+	Size         types.Int64       `tfsdk:"size"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -133,10 +134,12 @@ This resource manages snapshots.
 				Description: "Size of the snapshot in bytes.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this snapshot was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this snapshot was last modified.",
 			},
@@ -208,8 +211,8 @@ func (r *snapshotResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(snapshot.Id)
 	plan.Size = types.Int64Value(int64(snapshot.Size))
-	plan.TimeCreated = types.StringValue(snapshot.TimeCreated.String())
-	plan.TimeModified = types.StringValue(snapshot.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(snapshot.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(snapshot.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -268,8 +271,8 @@ func (r *snapshotResource) Read(
 	state.Name = types.StringValue(string(snapshot.Name))
 	state.ProjectID = types.StringValue(snapshot.ProjectId)
 	state.Size = types.Int64Value(int64(snapshot.Size))
-	state.TimeCreated = types.StringValue(snapshot.TimeCreated.String())
-	state.TimeModified = types.StringValue(snapshot.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(snapshot.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(snapshot.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

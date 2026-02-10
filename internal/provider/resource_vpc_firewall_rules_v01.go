@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -683,8 +684,8 @@ func (m vpcFirewallRulesResourceModelV01) upgrade() vpcFirewallRulesResourceMode
 		Rules:        rules,
 		Timeouts:     m.Timeouts,
 		VPCID:        m.VPCID,
-		TimeCreated:  m.TimeCreated,
-		TimeModified: m.TimeModified,
+		TimeCreated:  stringToRFC3339(m.TimeCreated),
+		TimeModified: stringToRFC3339(m.TimeModified),
 	}
 }
 
@@ -720,8 +721,8 @@ func (r vpcFirewallRulesResourceRuleModelV01) upgrade() vpcFirewallRulesResource
 		Priority:     r.Priority,
 		Status:       r.Status,
 		Targets:      targets,
-		TimeCreated:  r.TimeCreated,
-		TimeModified: r.TimeModified,
+		TimeCreated:  timetypes.NewRFC3339Null(),
+		TimeModified: timetypes.NewRFC3339Null(),
 	}
 }
 

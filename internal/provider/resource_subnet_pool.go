@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -39,13 +40,13 @@ type subnetPoolResource struct {
 }
 
 type subnetPoolResourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	IpVersion    types.String   `tfsdk:"ip_version"`
-	Name         types.String   `tfsdk:"name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	IpVersion    types.String      `tfsdk:"ip_version"`
+	Name         types.String      `tfsdk:"name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -119,10 +120,12 @@ func (r *subnetPoolResource) Schema(
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this subnet pool was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this subnet pool was last modified.",
 			},
@@ -175,8 +178,8 @@ func (r *subnetPoolResource) Create(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(pool.Id)
-	plan.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(pool.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(pool.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(pool.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -232,8 +235,8 @@ func (r *subnetPoolResource) Read(
 	state.ID = types.StringValue(pool.Id)
 	state.IpVersion = types.StringValue(string(pool.IpVersion))
 	state.Name = types.StringValue(string(pool.Name))
-	state.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	state.TimeModified = types.StringValue(pool.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(pool.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(pool.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -296,8 +299,8 @@ func (r *subnetPoolResource) Update(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(pool.Id)
-	plan.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(pool.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(pool.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(pool.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -41,19 +42,19 @@ type diskResource struct {
 }
 
 type diskResourceModel struct {
-	BlockSize        types.Int64    `tfsdk:"block_size"`
-	Description      types.String   `tfsdk:"description"`
-	DevicePath       types.String   `tfsdk:"device_path"`
-	DiskType         types.String   `tfsdk:"disk_type"`
-	ID               types.String   `tfsdk:"id"`
-	SourceImageID    types.String   `tfsdk:"source_image_id"`
-	Name             types.String   `tfsdk:"name"`
-	ProjectID        types.String   `tfsdk:"project_id"`
-	Size             types.Int64    `tfsdk:"size"`
-	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
-	TimeCreated      types.String   `tfsdk:"time_created"`
-	TimeModified     types.String   `tfsdk:"time_modified"`
-	Timeouts         timeouts.Value `tfsdk:"timeouts"`
+	BlockSize        types.Int64       `tfsdk:"block_size"`
+	Description      types.String      `tfsdk:"description"`
+	DevicePath       types.String      `tfsdk:"device_path"`
+	DiskType         types.String      `tfsdk:"disk_type"`
+	ID               types.String      `tfsdk:"id"`
+	SourceImageID    types.String      `tfsdk:"source_image_id"`
+	Name             types.String      `tfsdk:"name"`
+	ProjectID        types.String      `tfsdk:"project_id"`
+	Size             types.Int64       `tfsdk:"size"`
+	SourceSnapshotID types.String      `tfsdk:"source_snapshot_id"`
+	TimeCreated      timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified     timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts         timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -209,10 +210,12 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 				Description: "Unique, immutable, system-controlled identifier of the disk.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this disk was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this disk was last modified.",
 			},
@@ -286,8 +289,8 @@ func (r *diskResource) Create(
 	plan.DevicePath = types.StringValue(disk.DevicePath)
 	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
 	plan.DiskType = types.StringValue(string(disk.DiskType))
-	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
-	plan.TimeModified = types.StringValue(disk.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(disk.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(disk.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -344,8 +347,8 @@ func (r *diskResource) Read(
 	state.Name = types.StringValue(string(disk.Name))
 	state.ProjectID = types.StringValue(disk.ProjectId)
 	state.Size = types.Int64Value(int64(disk.Size))
-	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
-	state.TimeModified = types.StringValue(disk.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(disk.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(disk.TimeModified.UTC())
 
 	// Only set SourceImageID and SourceSnapshotID if they've been set to avoid unintentional drift
 	if disk.ImageId != "" {

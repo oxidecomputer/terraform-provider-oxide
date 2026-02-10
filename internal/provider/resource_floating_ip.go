@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,8 +35,8 @@ type floatingIPResourceModel struct {
 	IPPoolID     types.String      `tfsdk:"ip_pool_id"`
 	IPVersion    types.String      `tfsdk:"ip_version"`
 	ProjectID    types.String      `tfsdk:"project_id"`
-	TimeCreated  types.String      `tfsdk:"time_created"`
-	TimeModified types.String      `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
@@ -171,10 +172,12 @@ This resource manages Oxide floating IPs.
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp when this floating IP was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp when this floating IP was last modified.",
 			},
@@ -266,8 +269,8 @@ func (f *floatingIPResource) Create(
 	plan.InstanceID = types.StringValue(floatingIP.InstanceId)
 	plan.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
-	plan.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
-	plan.TimeModified = types.StringValue(floatingIP.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(floatingIP.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(floatingIP.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -327,8 +330,8 @@ func (f *floatingIPResource) Read(
 	state.InstanceID = types.StringValue(floatingIP.InstanceId)
 	state.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	state.ProjectID = types.StringValue(floatingIP.ProjectId)
-	state.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
-	state.TimeModified = types.StringValue(floatingIP.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(floatingIP.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(floatingIP.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -396,8 +399,8 @@ func (f *floatingIPResource) Update(
 	plan.InstanceID = types.StringValue(floatingIP.InstanceId)
 	plan.IPPoolID = types.StringValue(floatingIP.IpPoolId)
 	plan.ProjectID = types.StringValue(floatingIP.ProjectId)
-	plan.TimeCreated = types.StringValue(floatingIP.TimeCreated.String())
-	plan.TimeModified = types.StringValue(floatingIP.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(floatingIP.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(floatingIP.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {

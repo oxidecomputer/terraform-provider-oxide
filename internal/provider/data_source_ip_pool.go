@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,13 +25,13 @@ type ipPoolDataSource struct {
 }
 
 type ipPoolDataSourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	IsDefault    types.Bool     `tfsdk:"is_default"`
-	Name         types.String   `tfsdk:"name"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	IsDefault    types.Bool        `tfsdk:"is_default"`
+	Name         types.String      `tfsdk:"name"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
 }
 
 // NewIpPoolDataSource initialises an ip_pool datasource
@@ -88,10 +89,12 @@ Retrieve information about a specified IP pool.
 				Description: "If a pool is the default for a silo, floating IPs and instance ephemeral IPs will come from that pool when no other pool is specified. There can be at most one default for a given silo.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this IP pool was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this IP pool was last modified.",
 			},
@@ -145,8 +148,8 @@ func (d *ipPoolDataSource) Read(
 	state.ID = types.StringValue(ipPool.Id)
 	state.IsDefault = types.BoolPointerValue(ipPool.IsDefault)
 	state.Name = types.StringValue(string(ipPool.Name))
-	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(ipPool.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(ipPool.TimeModified.UTC())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

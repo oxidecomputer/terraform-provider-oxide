@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,8 +31,8 @@ type subnetPoolDataSourceModel struct {
 	Name         types.String                      `tfsdk:"name"`
 	Members      []subnetPoolDataSourceMemberModel `tfsdk:"members"`
 	Timeouts     timeouts.Value                    `tfsdk:"timeouts"`
-	TimeCreated  types.String                      `tfsdk:"time_created"`
-	TimeModified types.String                      `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339                 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339                 `tfsdk:"time_modified"`
 }
 
 type subnetPoolDataSourceMemberModel struct {
@@ -113,10 +114,12 @@ func (d *subnetPoolDataSource) Schema(
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this subnet pool was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this subnet pool was last modified.",
 			},
@@ -170,8 +173,8 @@ func (d *subnetPoolDataSource) Read(
 	state.ID = types.StringValue(pool.Id)
 	state.IpVersion = types.StringValue(string(pool.IpVersion))
 	state.Name = types.StringValue(string(pool.Name))
-	state.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	state.TimeModified = types.StringValue(pool.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(pool.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(pool.TimeModified.UTC())
 
 	// Read members
 	members, err := d.client.SystemSubnetPoolMemberListAllPages(

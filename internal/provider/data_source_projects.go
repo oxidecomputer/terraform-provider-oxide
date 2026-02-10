@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,11 +31,11 @@ type projectsDataSourceModel struct {
 }
 
 type projectModel struct {
-	Description  types.String `tfsdk:"description"`
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
 }
 
 // NewProjectsDataSource initialises a projects datasource
@@ -96,10 +97,12 @@ Retrieve a list of projects.
 							Description: "Name of the project.",
 						},
 						"time_created": schema.StringAttribute{
+							CustomType:  timetypes.RFC3339Type{},
 							Computed:    true,
 							Description: "Timestamp of when this project was created.",
 						},
 						"time_modified": schema.StringAttribute{
+							CustomType:  timetypes.RFC3339Type{},
 							Computed:    true,
 							Description: "Timestamp of when this project was last modified.",
 						},
@@ -161,8 +164,8 @@ func (d *projectsDataSource) Read(
 			Description:  types.StringValue(project.Description),
 			ID:           types.StringValue(project.Id),
 			Name:         types.StringValue(string(project.Name)),
-			TimeCreated:  types.StringValue(project.TimeCreated.String()),
-			TimeModified: types.StringValue(project.TimeCreated.String()),
+			TimeCreated:  timetypes.NewRFC3339TimeValue(project.TimeCreated.UTC()),
+			TimeModified: timetypes.NewRFC3339TimeValue(project.TimeModified.UTC()),
 		}
 
 		state.Projects = append(state.Projects, projectState)

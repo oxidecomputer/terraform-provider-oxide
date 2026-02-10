@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,8 +30,8 @@ type addressLotDataSourceModel struct {
 	Kind         types.String                     `tfsdk:"kind"`
 	Name         types.String                     `tfsdk:"name"`
 	ID           types.String                     `tfsdk:"id"`
-	TimeCreated  types.String                     `tfsdk:"time_created"`
-	TimeModified types.String                     `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339                `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339                `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value                   `tfsdk:"timeouts"`
 }
 
@@ -109,10 +110,12 @@ func (d *addressLotDataSource) Schema(
 				Description: "Unique, immutable, system-controlled identifier of the address lot.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this address lot was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this address lot was last modified.",
 			},
@@ -163,8 +166,8 @@ func (d *addressLotDataSource) Read(
 	state.Name = types.StringValue(string(lot.Name))
 	state.Kind = types.StringValue(string(lot.Kind))
 	state.Description = types.StringValue(lot.Description)
-	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
-	state.TimeModified = types.StringValue(lot.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(lot.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(lot.TimeModified.UTC())
 
 	blockModels := make([]addressLotDataSourceBlockModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {

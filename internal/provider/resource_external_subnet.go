@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -54,8 +55,8 @@ type externalSubnetResourceModel struct {
 	IPVersion          types.String       `tfsdk:"ip_version"`
 	SubnetPoolMemberID types.String       `tfsdk:"subnet_pool_member_id"`
 	InstanceID         types.String       `tfsdk:"instance_id"`
-	TimeCreated        types.String       `tfsdk:"time_created"`
-	TimeModified       types.String       `tfsdk:"time_modified"`
+	TimeCreated        timetypes.RFC3339  `tfsdk:"time_created"`
+	TimeModified       timetypes.RFC3339  `tfsdk:"time_modified"`
 	Timeouts           timeouts.Value     `tfsdk:"timeouts"`
 }
 
@@ -192,10 +193,12 @@ func (r *externalSubnetResource) Schema(
 				Description: "Instance ID this external subnet is attached to, if any.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp when this external subnet was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp when this external subnet was last modified.",
 			},
@@ -303,8 +306,8 @@ func (r *externalSubnetResource) Create(
 	plan.SubnetPoolID = types.StringValue(externalSubnet.SubnetPoolId)
 	plan.SubnetPoolMemberID = types.StringValue(externalSubnet.SubnetPoolMemberId)
 	plan.InstanceID = types.StringValue(externalSubnet.InstanceId)
-	plan.TimeCreated = types.StringValue(externalSubnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(externalSubnet.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(externalSubnet.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(externalSubnet.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -366,8 +369,8 @@ func (r *externalSubnetResource) Read(
 	state.SubnetPoolID = types.StringValue(externalSubnet.SubnetPoolId)
 	state.SubnetPoolMemberID = types.StringValue(externalSubnet.SubnetPoolMemberId)
 	state.InstanceID = types.StringValue(externalSubnet.InstanceId)
-	state.TimeCreated = types.StringValue(externalSubnet.TimeCreated.String())
-	state.TimeModified = types.StringValue(externalSubnet.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(externalSubnet.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(externalSubnet.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -434,8 +437,8 @@ func (r *externalSubnetResource) Update(
 	plan.SubnetPoolID = types.StringValue(externalSubnet.SubnetPoolId)
 	plan.SubnetPoolMemberID = types.StringValue(externalSubnet.SubnetPoolMemberId)
 	plan.InstanceID = types.StringValue(externalSubnet.InstanceId)
-	plan.TimeCreated = types.StringValue(externalSubnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(externalSubnet.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(externalSubnet.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(externalSubnet.TimeModified.UTC())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {

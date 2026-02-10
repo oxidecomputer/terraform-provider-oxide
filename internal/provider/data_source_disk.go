@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -44,8 +45,8 @@ type diskDataSourceModel struct {
 	State        *diskDataSourceModelState `tfsdk:"state"`
 	ImageID      types.String              `tfsdk:"image_id"`
 	SnapshotID   types.String              `tfsdk:"snapshot_id"`
-	TimeCreated  types.String              `tfsdk:"time_created"`
-	TimeModified types.String              `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339         `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339         `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value            `tfsdk:"timeouts"`
 }
 
@@ -143,10 +144,12 @@ Retrieve information about a specified disk.
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this disk was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this disk was last modified.",
 			},
@@ -198,8 +201,8 @@ func (d *diskDataSource) Read(
 	state.DevicePath = types.StringValue(disk.DevicePath)
 	state.ProjectID = types.StringValue(disk.ProjectId)
 	state.Size = types.Int64Value(int64(disk.Size))
-	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
-	state.TimeModified = types.StringValue(disk.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(disk.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(disk.TimeModified.UTC())
 
 	// Only set ImageID and SnapshotID if they are not empty
 	if disk.ImageId != "" {

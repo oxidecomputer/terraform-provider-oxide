@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,8 +45,8 @@ type vpcRouterRouteResourceModel struct {
 	Kind         types.String                    `tfsdk:"kind"`
 	Name         types.String                    `tfsdk:"name"`
 	Target       *vpcRouterRouteTargetModel      `tfsdk:"target"`
-	TimeCreated  types.String                    `tfsdk:"time_created"`
-	TimeModified types.String                    `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339               `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339               `tfsdk:"time_modified"`
 	VPCRouterID  types.String                    `tfsdk:"vpc_router_id"`
 	Timeouts     timeouts.Value                  `tfsdk:"timeouts"`
 }
@@ -188,10 +189,12 @@ Depending on the type, it will be one of the following:
 				Description: "Whether the VPC router route is custom or system created.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC router route was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC router route was last modified.",
 			},
@@ -278,8 +281,8 @@ func (r *vpcRouterRouteResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouterRoute.Id)
 	plan.Kind = types.StringValue(string(vpcRouterRoute.Kind))
-	plan.TimeCreated = types.StringValue(vpcRouterRoute.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpcRouterRoute.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(vpcRouterRoute.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(vpcRouterRoute.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -353,8 +356,8 @@ func (r *vpcRouterRouteResource) Read(
 	state.Name = types.StringValue(string(vpcRouterRoute.Name))
 	state.Target = &tm
 	state.VPCRouterID = types.StringValue(vpcRouterRoute.VpcRouterId)
-	state.TimeCreated = types.StringValue(vpcRouterRoute.TimeCreated.String())
-	state.TimeModified = types.StringValue(vpcRouterRoute.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(vpcRouterRoute.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(vpcRouterRoute.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -444,8 +447,8 @@ func (r *vpcRouterRouteResource) Update(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpcRouterRoute.Id)
 	plan.Kind = types.StringValue(string(vpcRouterRoute.Kind))
-	plan.TimeCreated = types.StringValue(vpcRouterRoute.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpcRouterRoute.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(vpcRouterRoute.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(vpcRouterRoute.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

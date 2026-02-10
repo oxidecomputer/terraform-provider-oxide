@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/oxidecomputer/oxide.go/oxide"
@@ -83,6 +84,34 @@ func sliceDiffByID[S []E, E any](a, b S, idFn func(E) any) S {
 		}
 	}
 	return diff
+}
+
+// stringToRFC3339 converts a types.String to timetypes.RFC3339, handling null,
+// unknown, and empty values. Used in state upgraders where old state stores
+// timestamps as plain strings. The old state may contain timestamps in Go's
+// default time.Time.String() format rather than RFC3339, so both formats are
+// handled.
+func stringToRFC3339(s types.String) timetypes.RFC3339 {
+	if s.IsNull() {
+		return timetypes.NewRFC3339Null()
+	}
+	if s.IsUnknown() {
+		return timetypes.NewRFC3339Unknown()
+	}
+	v := s.ValueString()
+	if v == "" {
+		return timetypes.NewRFC3339Null()
+	}
+	// Try RFC3339 first.
+	t, err := time.Parse(time.RFC3339Nano, v)
+	if err != nil {
+		// Fall back to Go's default time.Time.String() format.
+		t, err = time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", v)
+		if err != nil {
+			return timetypes.NewRFC3339Null()
+		}
+	}
+	return timetypes.NewRFC3339TimeValue(t.UTC())
 }
 
 // newNameOrIdList takes a terraform set and converts is into a slice NameOrIds.

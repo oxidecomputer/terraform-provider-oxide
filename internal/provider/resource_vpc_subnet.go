@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -43,8 +44,8 @@ type vpcSubnetResourceModel struct {
 	IPV6Block    cidrtypes.IPv6Prefix `tfsdk:"ipv6_block"`
 	Name         types.String         `tfsdk:"name"`
 	VPCID        types.String         `tfsdk:"vpc_id"`
-	TimeCreated  types.String         `tfsdk:"time_created"`
-	TimeModified types.String         `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339    `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339    `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
 }
 
@@ -142,10 +143,12 @@ This resource manages VPC subnets.
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC subnet was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC subnet was last modified.",
 			},
@@ -200,8 +203,8 @@ func (r *vpcSubnetResource) Create(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(subnet.Id)
-	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(subnet.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(subnet.TimeModified.UTC())
 	// IPV6Block is added as well as it is Optional/Computed
 	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 
@@ -262,8 +265,8 @@ func (r *vpcSubnetResource) Read(
 	state.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 	state.Name = types.StringValue(string(subnet.Name))
 	state.VPCID = types.StringValue(subnet.VpcId)
-	state.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	state.TimeModified = types.StringValue(subnet.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(subnet.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(subnet.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -325,8 +328,8 @@ func (r *vpcSubnetResource) Update(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(subnet.Id)
-	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(subnet.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(subnet.TimeModified.UTC())
 	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 
 	// Save plan into Terraform state

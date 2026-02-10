@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -37,14 +38,14 @@ type sshKeyResource struct {
 
 // sshKeyResourceModel are the attributes that are supported on this resource.
 type sshKeyResourceModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Description  types.String   `tfsdk:"description"`
-	PublicKey    types.String   `tfsdk:"public_key"`
-	SiloUserID   types.String   `tfsdk:"silo_user_id"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	Description  types.String      `tfsdk:"description"`
+	PublicKey    types.String      `tfsdk:"public_key"`
+	SiloUserID   types.String      `tfsdk:"silo_user_id"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata sets the resource type name.
@@ -123,10 +124,12 @@ UUID.`),
 				Description: "User ID that owns this SSH key.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this SSH key was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this SSH key was last modified.",
 			},
@@ -187,8 +190,8 @@ func (r *sshKeyResource) Create(
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(sshKey.Id)
 	plan.SiloUserID = types.StringValue(sshKey.SiloUserId)
-	plan.TimeCreated = types.StringValue(sshKey.TimeCreated.String())
-	plan.TimeModified = types.StringValue(sshKey.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(sshKey.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(sshKey.TimeModified.UTC())
 
 	// Save plan into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -246,8 +249,8 @@ func (r *sshKeyResource) Read(
 	state.Name = types.StringValue(string(sshKey.Name))
 	state.PublicKey = types.StringValue(string(sshKey.PublicKey))
 	state.SiloUserID = types.StringValue(string(sshKey.SiloUserId))
-	state.TimeCreated = types.StringValue(sshKey.TimeCreated.String())
-	state.TimeModified = types.StringValue(sshKey.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(sshKey.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(sshKey.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

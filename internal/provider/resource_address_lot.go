@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,8 +45,8 @@ type addressLotResourceModel struct {
 	Kind         types.String                   `tfsdk:"kind"`
 	Name         types.String                   `tfsdk:"name"`
 	ID           types.String                   `tfsdk:"id"`
-	TimeCreated  types.String                   `tfsdk:"time_created"`
-	TimeModified types.String                   `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339              `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339              `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value                 `tfsdk:"timeouts"`
 }
 
@@ -157,10 +158,12 @@ func (r *addressLotResource) Schema(
 				Delete: true,
 			}),
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this address lot was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this address lot was last modified.",
 			},
@@ -221,8 +224,8 @@ func (r *addressLotResource) Create(
 
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(lot.Lot.Id)
-	plan.TimeCreated = types.StringValue(lot.Lot.TimeCreated.String())
-	plan.TimeModified = types.StringValue(lot.Lot.TimeCreated.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(lot.Lot.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(lot.Lot.TimeModified.UTC())
 
 	// Populate blocks with computed values.
 	blockModels := make([]addressLotResourceBlockModel, len(lot.Blocks))
@@ -285,8 +288,8 @@ func (r *addressLotResource) Read(
 	state.Name = types.StringValue(string(lot.Name))
 	state.Kind = types.StringValue(string(lot.Kind))
 	state.Description = types.StringValue(lot.Description)
-	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
-	state.TimeModified = types.StringValue(lot.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(lot.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(lot.TimeModified.UTC())
 
 	blockModels := make([]addressLotResourceBlockModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {

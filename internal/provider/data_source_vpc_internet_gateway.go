@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,15 +32,15 @@ type vpcInternetGatewayDataSource struct {
 }
 
 type vpcInternetGatewayDataSourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	ProjectName  types.String   `tfsdk:"project_name"`
-	VPCID        types.String   `tfsdk:"vpc_id"`
-	VPCName      types.String   `tfsdk:"vpc_name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	ProjectName  types.String      `tfsdk:"project_name"`
+	VPCID        types.String      `tfsdk:"vpc_id"`
+	VPCName      types.String      `tfsdk:"vpc_name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (d *vpcInternetGatewayDataSource) Metadata(
@@ -99,10 +100,12 @@ Retrieve information about a specified VPC internet gateway.
 				Description: "Unique, immutable, system-controlled identifier of the VPC.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC internet gateway was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC internet gateway was last modified.",
 			},
@@ -154,8 +157,8 @@ func (d *vpcInternetGatewayDataSource) Read(
 	state.ID = types.StringValue(vpcInternetGateway.Id)
 	state.Name = types.StringValue(string(vpcInternetGateway.Name))
 	state.VPCID = types.StringValue(vpcInternetGateway.VpcId)
-	state.TimeCreated = types.StringValue(vpcInternetGateway.TimeCreated.String())
-	state.TimeModified = types.StringValue(vpcInternetGateway.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(vpcInternetGateway.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(vpcInternetGateway.TimeModified.UTC())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

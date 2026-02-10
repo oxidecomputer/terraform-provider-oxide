@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -45,7 +46,7 @@ type subnetPoolMemberResourceModel struct {
 	Subnet          cidrtypes.IPPrefix `tfsdk:"subnet"`
 	MinPrefixLength types.Int64        `tfsdk:"min_prefix_length"`
 	MaxPrefixLength types.Int64        `tfsdk:"max_prefix_length"`
-	TimeCreated     types.String       `tfsdk:"time_created"`
+	TimeCreated     timetypes.RFC3339  `tfsdk:"time_created"`
 	Timeouts        timeouts.Value     `tfsdk:"timeouts"`
 }
 
@@ -145,6 +146,7 @@ func (r *subnetPoolMemberResource) Schema(
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this subnet pool member was created.",
 			},
@@ -220,7 +222,7 @@ func (r *subnetPoolMemberResource) Create(
 	plan.ID = types.StringValue(member.Id)
 	plan.MinPrefixLength = types.Int64Value(int64(*member.MinPrefixLength))
 	plan.MaxPrefixLength = types.Int64Value(int64(*member.MaxPrefixLength))
-	plan.TimeCreated = types.StringValue(member.TimeCreated.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(member.TimeCreated.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -297,7 +299,7 @@ func (r *subnetPoolMemberResource) Read(
 	state.Subnet = cidrtypes.NewIPPrefixValue(foundMember.Subnet.String())
 	state.MinPrefixLength = types.Int64Value(int64(*foundMember.MinPrefixLength))
 	state.MaxPrefixLength = types.Int64Value(int64(*foundMember.MaxPrefixLength))
-	state.TimeCreated = types.StringValue(foundMember.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(foundMember.TimeCreated.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

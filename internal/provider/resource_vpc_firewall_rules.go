@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -58,8 +59,8 @@ type vpcFirewallRulesResourceModel struct {
 	VPCID    types.String                                 `tfsdk:"vpc_id"`
 
 	// Populated from the same fields within [vpcFirewallRulesResourceRuleModel].
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
 }
 
 type vpcFirewallRulesResourceRuleModel struct {
@@ -75,8 +76,8 @@ type vpcFirewallRulesResourceRuleModel struct {
 	// Used to retrieve the timestamps from the API and populate the same fields
 	// within [vpcFirewallRulesResourceModel]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
-	TimeCreated  types.String `tfsdk:"-"`
-	TimeModified types.String `tfsdk:"-"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"-"`
+	TimeModified timetypes.RFC3339 `tfsdk:"-"`
 }
 
 type vpcFirewallRulesResourceRuleTargetModel struct {
@@ -443,10 +444,12 @@ Depending on the type, it will be one of the following:
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when the VPC firewall rules were last created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when the VPC firewall rules were last modified.",
 			},
@@ -518,8 +521,8 @@ func (r *vpcFirewallRulesResource) Create(
 		return
 	}
 
-	plan.TimeCreated = types.StringNull()
-	plan.TimeModified = types.StringNull()
+	plan.TimeCreated = timetypes.NewRFC3339Null()
+	plan.TimeModified = timetypes.NewRFC3339Null()
 	if len(plan.Rules) > 0 {
 		for _, rule := range plan.Rules {
 			plan.TimeCreated = rule.TimeCreated
@@ -593,8 +596,8 @@ func (r *vpcFirewallRulesResource) Read(
 
 	state.Rules = rules
 
-	state.TimeCreated = types.StringNull()
-	state.TimeModified = types.StringNull()
+	state.TimeCreated = timetypes.NewRFC3339Null()
+	state.TimeModified = timetypes.NewRFC3339Null()
 	if len(state.Rules) > 0 {
 		for _, rule := range state.Rules {
 			state.TimeCreated = rule.TimeCreated
@@ -683,8 +686,8 @@ func (r *vpcFirewallRulesResource) Update(
 		return
 	}
 
-	plan.TimeCreated = types.StringNull()
-	plan.TimeModified = types.StringNull()
+	plan.TimeCreated = timetypes.NewRFC3339Null()
+	plan.TimeModified = timetypes.NewRFC3339Null()
 	if len(plan.Rules) > 0 {
 		for _, rule := range plan.Rules {
 			plan.TimeCreated = rule.TimeCreated
@@ -808,8 +811,8 @@ func newVPCFirewallRulesModel(
 			Priority:     types.Int64Value(int64(*rule.Priority)),
 			Status:       types.StringValue(string(rule.Status)),
 			Targets:      newTargetsModelFromResponse(rule.Targets),
-			TimeCreated:  types.StringValue(rule.TimeCreated.String()),
-			TimeModified: types.StringValue(rule.TimeModified.String()),
+			TimeCreated:  timetypes.NewRFC3339TimeValue(rule.TimeCreated.UTC()),
+			TimeModified: timetypes.NewRFC3339TimeValue(rule.TimeModified.UTC()),
 		}
 
 		filters, diags := newFiltersModelFromResponse(rule.Filters)

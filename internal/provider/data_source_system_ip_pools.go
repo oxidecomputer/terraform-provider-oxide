@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,11 +31,11 @@ type systemIpPoolsDataSourceModel struct {
 }
 
 type systemIpPoolModel struct {
-	Description  types.String `tfsdk:"description"`
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	TimeCreated  types.String `tfsdk:"time_created"`
-	TimeModified types.String `tfsdk:"time_modified"`
+	Description  types.String      `tfsdk:"description"`
+	ID           types.String      `tfsdk:"id"`
+	Name         types.String      `tfsdk:"name"`
+	TimeCreated  timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339 `tfsdk:"time_modified"`
 }
 
 // NewSystemIpPoolsDataSource initialises a system_ip_pools data source.
@@ -94,10 +95,12 @@ Retrieve all configured IP pools for the Oxide system.
 							Description: "Unique, immutable, system-controlled identifier of the IP pool.",
 						},
 						"time_created": schema.StringAttribute{
+							CustomType:  timetypes.RFC3339Type{},
 							Computed:    true,
 							Description: "Timestamp of when this IP pool was created.",
 						},
 						"time_modified": schema.StringAttribute{
+							CustomType:  timetypes.RFC3339Type{},
 							Computed:    true,
 							Description: "Timestamp of when this IP pool was last modified.",
 						},
@@ -151,8 +154,8 @@ func (d *systemIpPoolsDataSource) Read(
 			Description:  types.StringValue(ipPool.Description),
 			ID:           types.StringValue(ipPool.Id),
 			Name:         types.StringValue(string(ipPool.Name)),
-			TimeCreated:  types.StringValue(ipPool.TimeCreated.String()),
-			TimeModified: types.StringValue(ipPool.TimeCreated.String()),
+			TimeCreated:  timetypes.NewRFC3339TimeValue(ipPool.TimeCreated.UTC()),
+			TimeModified: timetypes.NewRFC3339TimeValue(ipPool.TimeModified.UTC()),
 		}
 
 		state.IpPools = append(state.IpPools, poolState)

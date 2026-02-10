@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,16 +32,16 @@ type antiAffinityGroupDataSource struct {
 }
 
 type antiAffinityGroupDataSourceModel struct {
-	Description   types.String   `tfsdk:"description"`
-	FailureDomain types.String   `tfsdk:"failure_domain"`
-	ID            types.String   `tfsdk:"id"`
-	Name          types.String   `tfsdk:"name"`
-	Policy        types.String   `tfsdk:"policy"`
-	ProjectID     types.String   `tfsdk:"project_id"`
-	TimeCreated   types.String   `tfsdk:"time_created"`
-	TimeModified  types.String   `tfsdk:"time_modified"`
-	Timeouts      timeouts.Value `tfsdk:"timeouts"`
-	ProjectName   types.String   `tfsdk:"project_name"`
+	Description   types.String      `tfsdk:"description"`
+	FailureDomain types.String      `tfsdk:"failure_domain"`
+	ID            types.String      `tfsdk:"id"`
+	Name          types.String      `tfsdk:"name"`
+	Policy        types.String      `tfsdk:"policy"`
+	ProjectID     types.String      `tfsdk:"project_id"`
+	TimeCreated   timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified  timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts      timeouts.Value    `tfsdk:"timeouts"`
+	ProjectName   types.String      `tfsdk:"project_name"`
 }
 
 func (d *antiAffinityGroupDataSource) Metadata(
@@ -104,10 +105,12 @@ Retrieve information about a specified anti-affinity group.
 				Description: "Unique, immutable, system-controlled identifier of the anti-affinity group.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this anti-affinity group was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this anti-affinity group was last modified.",
 			},
@@ -160,8 +163,8 @@ func (d *antiAffinityGroupDataSource) Read(
 	state.Name = types.StringValue(string(antiAffinityGroup.Name))
 	state.Policy = types.StringValue(string(antiAffinityGroup.Policy))
 	state.ProjectID = types.StringValue(antiAffinityGroup.ProjectId)
-	state.TimeCreated = types.StringValue(antiAffinityGroup.TimeCreated.String())
-	state.TimeModified = types.StringValue(antiAffinityGroup.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(antiAffinityGroup.TimeModified.UTC())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

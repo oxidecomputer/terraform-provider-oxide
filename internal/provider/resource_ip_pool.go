@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,8 +43,8 @@ type ipPoolResourceModel struct {
 	ID           types.String               `tfsdk:"id"`
 	Name         types.String               `tfsdk:"name"`
 	Ranges       []ipPoolResourceRangeModel `tfsdk:"ranges"`
-	TimeCreated  types.String               `tfsdk:"time_created"`
-	TimeModified types.String               `tfsdk:"time_modified"`
+	TimeCreated  timetypes.RFC3339          `tfsdk:"time_created"`
+	TimeModified timetypes.RFC3339          `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value             `tfsdk:"timeouts"`
 }
 
@@ -130,10 +131,12 @@ This resource manages IP pools.
 				},
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this IP pool was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this IP pool was last modified.",
 			},
@@ -185,8 +188,8 @@ func (r *ipPoolResource) Create(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
-	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(ipPool.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(ipPool.TimeModified.UTC())
 
 	resp.Diagnostics.Append(addRanges(ctx, r.client, plan.Ranges, plan.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
@@ -241,8 +244,8 @@ func (r *ipPoolResource) Read(
 	state.Description = types.StringValue(ipPool.Description)
 	state.ID = types.StringValue(ipPool.Id)
 	state.Name = types.StringValue(string(ipPool.Name))
-	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(ipPool.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(ipPool.TimeModified.UTC())
 
 	// Append information about IP Pool ranges
 	listParams := oxide.SystemIpPoolRangeListParams{
@@ -371,8 +374,8 @@ func (r *ipPoolResource) Update(
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
-	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(ipPool.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(ipPool.TimeModified.UTC())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

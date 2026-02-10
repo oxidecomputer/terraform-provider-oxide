@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -36,16 +37,16 @@ type vpcResource struct {
 }
 
 type vpcResourceModel struct {
-	Description    types.String   `tfsdk:"description"`
-	DNSName        types.String   `tfsdk:"dns_name"`
-	ID             types.String   `tfsdk:"id"`
-	IPV6Prefix     types.String   `tfsdk:"ipv6_prefix"`
-	Name           types.String   `tfsdk:"name"`
-	ProjectID      types.String   `tfsdk:"project_id"`
-	SystemRouterID types.String   `tfsdk:"system_router_id"`
-	TimeCreated    types.String   `tfsdk:"time_created"`
-	TimeModified   types.String   `tfsdk:"time_modified"`
-	Timeouts       timeouts.Value `tfsdk:"timeouts"`
+	Description    types.String      `tfsdk:"description"`
+	DNSName        types.String      `tfsdk:"dns_name"`
+	ID             types.String      `tfsdk:"id"`
+	IPV6Prefix     types.String      `tfsdk:"ipv6_prefix"`
+	Name           types.String      `tfsdk:"name"`
+	ProjectID      types.String      `tfsdk:"project_id"`
+	SystemRouterID types.String      `tfsdk:"system_router_id"`
+	TimeCreated    timetypes.RFC3339 `tfsdk:"time_created"`
+	TimeModified   timetypes.RFC3339 `tfsdk:"time_modified"`
+	Timeouts       timeouts.Value    `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -135,10 +136,12 @@ This resource manages VPCs.
 				Description: "Unique, immutable, system-controlled identifier of the system router.",
 			},
 			"time_created": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC was created.",
 			},
 			"time_modified": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
 				Computed:    true,
 				Description: "Timestamp of when this VPC was last modified.",
 			},
@@ -194,8 +197,8 @@ func (r *vpcResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpc.Id)
 	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
-	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpc.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(vpc.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(vpc.TimeModified.UTC())
 	// IPV6Prefix is added as well as it is Optional/Computed
 	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
@@ -253,8 +256,8 @@ func (r *vpcResource) Read(
 	state.Name = types.StringValue(string(vpc.Name))
 	state.ProjectID = types.StringValue(vpc.ProjectId)
 	state.SystemRouterID = types.StringValue(vpc.SystemRouterId)
-	state.TimeCreated = types.StringValue(vpc.TimeCreated.String())
-	state.TimeModified = types.StringValue(vpc.TimeModified.String())
+	state.TimeCreated = timetypes.NewRFC3339TimeValue(vpc.TimeCreated.UTC())
+	state.TimeModified = timetypes.NewRFC3339TimeValue(vpc.TimeModified.UTC())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -318,8 +321,8 @@ func (r *vpcResource) Update(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(vpc.Id)
 	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
-	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpc.TimeModified.String())
+	plan.TimeCreated = timetypes.NewRFC3339TimeValue(vpc.TimeCreated.UTC())
+	plan.TimeModified = timetypes.NewRFC3339TimeValue(vpc.TimeModified.UTC())
 	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
 	// Save plan into Terraform state
