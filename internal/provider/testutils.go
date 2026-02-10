@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"os"
 	"sync/atomic"
 	"testing"
 
@@ -92,6 +93,13 @@ func testAccVerifyResourceIDChanged(
 		}
 		return nil
 	}
+}
+
+func testAccSiloDNSName() string {
+	if v := os.Getenv("OXIDE_TEST_SILO_DNS_NAME"); v != "" {
+		return v
+	}
+	return "*.sys.oxide-dev.test"
 }
 
 var subnetCounter uint32

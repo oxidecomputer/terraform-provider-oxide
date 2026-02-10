@@ -7,7 +7,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -140,10 +139,7 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 	blockName := newBlockName("silo")
 	resourceName := fmt.Sprintf("oxide_silo.%s", blockName)
 
-	dnsName := os.Getenv("OXIDE_SILO_DNS_NAME")
-	if dnsName == "" {
-		t.Skip("Skipping test. Export OXIDE_SILO_DNS_NAME to run.")
-	}
+	dnsName := testAccSiloDNSName()
 
 	config, err := parsedAccConfig(
 		resourceSiloConfig{
