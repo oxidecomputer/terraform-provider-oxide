@@ -116,36 +116,12 @@ type instanceResourceIPConfigModel struct {
 	V6 *instanceResourceIPConfigV6Model `tfsdk:"v6"`
 }
 
-func (ip *instanceResourceIPConfigModel) Equal(other *instanceResourceIPConfigModel) bool {
-	if ip == nil || other == nil {
-		return ip == other
-	}
-
-	return ip.V4.Equal(other.V4) && ip.V6.Equal(other.V6)
-}
-
 type instanceResourceIPConfigV4Model struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-func (ip *instanceResourceIPConfigV4Model) Equal(other *instanceResourceIPConfigV4Model) bool {
-	if ip == nil || other == nil {
-		return ip == other
-	}
-
-	return ip.IP.Equal(other.IP)
-}
-
 type instanceResourceIPConfigV6Model struct {
 	IP types.String `tfsdk:"ip"`
-}
-
-func (ip *instanceResourceIPConfigV6Model) Equal(other *instanceResourceIPConfigV6Model) bool {
-	if ip == nil || other == nil {
-		return ip == other
-	}
-
-	return ip.IP.Equal(other.IP)
 }
 
 type instanceResourceAttachedNICModel struct {
