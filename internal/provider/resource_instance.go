@@ -2873,6 +2873,7 @@ func (v instanceNetworkInterfacesPlanModifier) PlanModifySet(
 		if nic.Hash() != stateNIC.Hash() {
 			plan[i].ID = types.StringUnknown()
 			plan[i].IPAddr = types.StringUnknown()
+			plan[i].MAC = types.StringUnknown()
 			plan[i].Primary = types.BoolUnknown()
 			plan[i].TimeCreated = types.StringUnknown()
 			plan[i].TimeModified = types.StringUnknown()
