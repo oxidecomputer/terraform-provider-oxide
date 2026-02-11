@@ -25,20 +25,20 @@ fi
 oxide silo quotas update --silo $SILO_NAME --cpus 100 --memory $((2 ** 40)) --storage $((2 ** 40))
 
 # Set up IP pools.
-if ! oxide ip-pool view --pool default > /dev/null; then
-    oxide ip-pool create --name default --description default
-    oxide ip-pool silo link --pool default --silo $SILO_NAME --is-default true
-    oxide ip-pool range add --first 10.0.1.0 --last 10.0.1.255 --pool default
+if ! oxide system networking ip-pool view --pool default > /dev/null; then
+    oxide system networking ip-pool create --name default --description default
+    oxide system networking ip-pool silo link --pool default --silo $SILO_NAME --is-default true
+    oxide system networking ip-pool range add --first 10.0.1.0 --last 10.0.1.255 --pool default
 fi
-if ! oxide ip-pool view --pool default-ipv6 > /dev/null; then
-    oxide ip-pool create --name default-ipv6 --description 'default IPv6' --ip-version v6
-    oxide ip-pool silo link --pool default-ipv6 --silo $SILO_NAME --is-default true
-    oxide ip-pool range add --first fc00:: --last fc00:ffff:: --pool default-ipv6
+if ! oxide system networking ip-pool view --pool default-ipv6 > /dev/null; then
+    oxide system networking ip-pool create --name default-ipv6 --description 'default IPv6' --ip-version v6
+    oxide system networking ip-pool silo link --pool default-ipv6 --silo $SILO_NAME --is-default true
+    oxide system networking ip-pool range add --first fc00:: --last fc00:ffff:: --pool default-ipv6
 fi
-if ! oxide ip-pool view --pool non-default > /dev/null; then
-    oxide ip-pool create --name non-default --description 'non default'
-    oxide ip-pool silo link --pool non-default --silo $SILO_NAME --is-default false
-    oxide ip-pool range add --first 10.0.2.0 --last 10.0.2.255 --pool non-default
+if ! oxide system networking ip-pool view --pool non-default > /dev/null; then
+    oxide system networking ip-pool create --name non-default --description 'non default'
+    oxide system networking ip-pool silo link --pool non-default --silo $SILO_NAME --is-default false
+    oxide system networking ip-pool range add --first 10.0.2.0 --last 10.0.2.255 --pool non-default
 fi
 
 # The acceptance tests expect both at least a single project-scoped image and a
