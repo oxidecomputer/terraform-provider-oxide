@@ -460,6 +460,9 @@ This resource manages instances.
 							// deprecated attributes are removed.
 							Optional:    true,
 							Description: "IP stack to create for the instance network interface.",
+							Validators: []validator.Object{
+								instanceIPConfigValidator{},
+							},
 							Attributes: map[string]schema.Attribute{
 								"v4": schema.SingleNestedAttribute{
 									Optional:    true,
@@ -2699,6 +2702,49 @@ func (v ipConfigValidator) ValidateString(
 	}
 }
 
+// instanceIPConfigValidator is a custom validator that validates the ip_config
+// attribute of network_interfaces.
+type instanceIPConfigValidator struct{}
+
+var _ validator.Object = instanceIPConfigValidator{}
+
+func (v instanceIPConfigValidator) Description(ctx context.Context) string {
+	return v.MarkdownDescription(ctx)
+}
+
+func (v instanceIPConfigValidator) MarkdownDescription(_ context.Context) string {
+	return ""
+}
+
+func (f instanceIPConfigValidator) ValidateObject(
+	ctx context.Context,
+	req validator.ObjectRequest,
+	resp *validator.ObjectResponse,
+) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	var ipConfig *instanceResourceIPConfigModel
+	diags := req.ConfigValue.As(ctx, &ipConfig, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if ipConfig.V4 == nil && ipConfig.V6 == nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid network interface IP configuration",
+			"At least one of v4 or v6 must be defined.",
+		)
+		return
+	}
+}
+
 // Ensure the concrete validator satisfies the [validator.Set] interface.
 var _ validator.Object = instanceExternalIPValidator{}
 
@@ -2838,17 +2884,17 @@ func (v instanceNetworkInterfacesPlanModifier) PlanModifySet(
 		stateMap[nic.ID.ValueString()] = nic
 	}
 
-	// Invalidate Computed attributes if the network interface IP stack is
-	// modified since it will need to be recreated.
+	// Invalidate Computed attributes if the network interface hash changes
+	// because it will be recreated on Update().
 	for i, nic := range plan {
 		stateNIC, ok := stateMap[nic.ID.ValueString()]
 		if !ok {
-			// Ignore network interface since it's not in state and is likely a
-			// new one.
+			// Ignore network interface that are not in state since they are
+			// new ones.
 			continue
 		}
 
-		if !nic.IPConfig.Equal(stateNIC.IPConfig) {
+		if nic.Hash() != stateNIC.Hash() {
 			plan[i].ID = types.StringUnknown()
 			plan[i].IPAddr = types.StringUnknown()
 			plan[i].Primary = types.BoolUnknown()
