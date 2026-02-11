@@ -114,7 +114,10 @@ func TestAccResourceSubnetPoolSiloLink_disappears(t *testing.T) {
 	poolResourceName := "oxide_subnet_pool.test"
 	linkResourceName := "oxide_subnet_pool_silo_link.test"
 
-	resource.ParallelTest(t, resource.TestCase{
+	// Silo creation and deletion can cause database contention in nexus,
+	// so run all related tests in series:
+	// https://github.com/oxidecomputer/omicron/issues/9851
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
@@ -178,7 +181,10 @@ func TestAccResourceSubnetPoolSiloLink_multiSiloImport(t *testing.T) {
 	link1ResourceName := "oxide_subnet_pool_silo_link.link1"
 	link2ResourceName := "oxide_subnet_pool_silo_link.link2"
 
-	resource.ParallelTest(t, resource.TestCase{
+	// Silo creation and deletion can cause database contention in nexus,
+	// so run all related tests in series:
+	// https://github.com/oxidecomputer/omicron/issues/9851
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
