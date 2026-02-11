@@ -125,7 +125,10 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	resource.ParallelTest(t, resource.TestCase{
+	// Silo creation and deletion can cause database contention in nexus,
+	// so run all related tests in series:
+	// https://github.com/oxidecomputer/omicron/issues/9851
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
