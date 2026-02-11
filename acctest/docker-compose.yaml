@@ -14,3 +14,11 @@ services:
       retries: 300
     ports:
       - "12220:12220"
+  mitmproxy:
+    image: "mitmproxy/mitmproxy:12.2.1"
+    command:
+      - "mitmdump"
+      - "--mode=upstream:http://omicron-dev:12220"
+      - "--save-stream-file=/tmp/mitmproxy.log"
+    ports:
+      - "8080:8080"

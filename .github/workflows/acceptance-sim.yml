@@ -75,7 +75,8 @@ jobs:
         run: |
           echo "OXIDE_TOKEN=$(uv run auth.py)" >> $GITHUB_OUTPUT
       # Create oxide resources necessary for acceptance tests, including an
-      # arbitrary small image.
+      # arbitrary small image. Skip proxy to avoid recording the fairly large
+      # image upload requests.
       - name: oxide-dependencies
         run: |
           # Install qemu, which we'll use to build a sample image.
@@ -89,9 +90,11 @@ jobs:
         if: matrix.tf-binary == 'terraform'
         run: make testacc
         env:
-          OXIDE_HOST: http://localhost:12220
+          OXIDE_HOST: http://localhost:8080
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
           TF_ACC_SIM: "1"
+          TF_LOG: "TRACE"
+          TF_LOG_PATH: "terraform.log"
       - name: test opentofu
         id: test-tofu
         if: matrix.tf-binary == 'opentofu'
@@ -100,28 +103,28 @@ jobs:
           make testacc
         env:
           TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
-          OXIDE_HOST: http://localhost:12220
+          OXIDE_HOST: http://localhost:8080
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
           TF_ACC_SIM: "1"
+          TF_LOG: "TRACE"
+          TF_LOG_PATH: "terraform.log"
       - name: print omicron logs
         if: always()
         continue-on-error: true
         working-directory: acctest
-        run: docker compose logs
-      - name: extract omicron log files
+        run: docker compose logs omicron-dev
+      - name: extract log files
         if: always()
         continue-on-error: true
         working-directory: acctest
         run: |
           docker compose exec -T omicron-dev sh -c 'tar -cf - /tmp/omicron-dev*.log' | tar -xf -
-          for f in tmp/*.log; do
-            echo "=== Last 100 lines of $f ==="
-            tail -100 "$f"
-          done
-      - name: upload omicron logs
+          docker compose exec -T mitmproxy sh -c 'tar -cf - /tmp/mitmproxy.log' | tar -xf -
+          mv ../internal/provider/terraform.log ./tmp
+      - name: upload logs
         if: always()
         continue-on-error: true
         uses: actions/upload-artifact@v6
         with:
-          name: omicron-logs-${{ matrix.tf-binary }}
+          name: logs-${{ matrix.tf-binary }}
           path: acctest/tmp/
