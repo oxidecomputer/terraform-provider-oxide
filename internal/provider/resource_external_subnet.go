@@ -250,32 +250,34 @@ func (r *externalSubnetResource) Create(
 			return
 		}
 		params.Body.Allocator = oxide.ExternalSubnetAllocator{
-			Type:   oxide.ExternalSubnetAllocatorTypeExplicit,
-			Subnet: ipNet,
+			Value: &oxide.ExternalSubnetAllocatorExplicit{Subnet: ipNet},
 		}
 	} else {
 		// Automatic allocation. The `prefix_len` attribute will always be defined if we reach this
 		// code due to validation in ConfigValidators.
 		prefixLen := int(plan.PrefixLen.ValueInt64())
-		params.Body.Allocator = oxide.ExternalSubnetAllocator{
-			Type:      oxide.ExternalSubnetAllocatorTypeAuto,
-			PrefixLen: &prefixLen,
-		}
 
-		// Set pool selector
+		var poolSelector oxide.PoolSelector
 		if pool := plan.SubnetPoolID.ValueString(); pool != "" {
 			// Auto subnet allocation from explicit pool.
-			params.Body.Allocator.PoolSelector = oxide.PoolSelector{
-				Type: oxide.PoolSelectorTypeExplicit,
-				Pool: oxide.NameOrId(pool),
+			poolSelector = oxide.PoolSelector{
+				Value: &oxide.PoolSelectorExplicit{Pool: oxide.NameOrId(pool)},
 			}
 		} else {
 			// Auto subnet allocation from default pool. If there are multiple default pools IP
 			// version is required.
-			params.Body.Allocator.PoolSelector = oxide.PoolSelector{
-				Type:      oxide.PoolSelectorTypeAuto,
-				IpVersion: oxide.IpVersion(plan.IPVersion.ValueString()),
+			poolSelector = oxide.PoolSelector{
+				Value: &oxide.PoolSelectorAuto{
+					IpVersion: oxide.IpVersion(plan.IPVersion.ValueString()),
+				},
 			}
+		}
+
+		params.Body.Allocator = oxide.ExternalSubnetAllocator{
+			Value: &oxide.ExternalSubnetAllocatorAuto{
+				PrefixLen:    &prefixLen,
+				PoolSelector: poolSelector,
+			},
 		}
 	}
 
