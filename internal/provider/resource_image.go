@@ -218,10 +218,9 @@ func (r *imageResource) Create(
 		},
 	}
 
-	is := oxide.ImageSource{}
-	is.Id = plan.SourceSnapshotID.ValueString()
-	is.Type = oxide.ImageSourceTypeSnapshot
-	params.Body.Source = is
+	params.Body.Source = oxide.ImageSource{Value: &oxide.ImageSourceSnapshot{
+		Id: plan.SourceSnapshotID.ValueString(),
+	}}
 
 	image, err := r.client.ImageCreate(ctx, params)
 	if err != nil {
@@ -250,20 +249,32 @@ func (r *imageResource) Create(
 	}
 
 	// Parse imageResourceDigestModel into types.Object
-	dm := imageResourceDigestModel{
-		Type:  types.StringValue(string(image.Digest.Type)),
-		Value: types.StringValue(image.Digest.Value),
-	}
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
 	}
-	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if image.Digest.Value == nil {
+		plan.Digest = types.ObjectNull(attributeTypes)
+	} else {
+		sha256, ok := image.Digest.AsSha256()
+		if !ok {
+			resp.Diagnostics.AddError(
+				"Unexpected digest type",
+				fmt.Sprintf("Expected sha256 digest, got: %s", image.Digest.Type()),
+			)
+			return
+		}
+		dm := imageResourceDigestModel{
+			Type:  types.StringValue(string(image.Digest.Type())),
+			Value: types.StringValue(sha256.Value),
+		}
+		digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		plan.Digest = digest
 	}
-	plan.Digest = digest
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -337,20 +348,32 @@ func (r *imageResource) Read(
 	}
 
 	// Parse imageResourceDigestModel into types.Object
-	dm := imageResourceDigestModel{
-		Type:  types.StringValue(string(image.Digest.Type)),
-		Value: types.StringValue(image.Digest.Value),
-	}
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
 	}
-	digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	if image.Digest.Value == nil {
+		state.Digest = types.ObjectNull(attributeTypes)
+	} else {
+		sha256, ok := image.Digest.AsSha256()
+		if !ok {
+			resp.Diagnostics.AddError(
+				"Unexpected digest type",
+				fmt.Sprintf("Expected sha256 digest, got: %s", image.Digest.Type()),
+			)
+			return
+		}
+		dm := imageResourceDigestModel{
+			Type:  types.StringValue(string(image.Digest.Type())),
+			Value: types.StringValue(sha256.Value),
+		}
+		digest, diags := types.ObjectValueFrom(ctx, attributeTypes, dm)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		state.Digest = digest
 	}
-	state.Digest = digest
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

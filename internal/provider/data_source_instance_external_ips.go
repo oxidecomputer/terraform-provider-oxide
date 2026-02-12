@@ -145,9 +145,24 @@ func (d *instanceExternalIPsDataSource) Read(
 
 	// Map response body to model
 	for _, ip := range ips.Items {
+		var ipAddr string
+		switch v := ip.Value.(type) {
+		case *oxide.ExternalIpEphemeral:
+			ipAddr = v.Ip
+		case *oxide.ExternalIpFloating:
+			ipAddr = v.Ip
+		case *oxide.ExternalIpSnat:
+			ipAddr = v.Ip
+		default:
+			resp.Diagnostics.AddError(
+				"Unexpected external IP type",
+				fmt.Sprintf("Encountered unexpected external IP type: %T", ip.Value),
+			)
+			return
+		}
 		externalIPState := externalIPDatasourceModel{
-			IP:   types.StringValue(ip.Ip),
-			Kind: types.StringValue(string(ip.Kind)),
+			IP:   types.StringValue(ipAddr),
+			Kind: types.StringValue(string(ip.Kind())),
 		}
 		state.ExternalIPs = append(state.ExternalIPs, externalIPState)
 	}

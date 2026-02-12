@@ -211,10 +211,15 @@ func (d *diskDataSource) Read(
 
 	// Set disk state
 	state.State = &diskDataSourceModelState{
-		State: types.StringValue(string(disk.State.State)),
+		State: types.StringValue(string(disk.State.State())),
 	}
-	if disk.State.Instance != "" {
-		state.State.Instance = types.StringValue(disk.State.Instance)
+	switch v := disk.State.Value.(type) {
+	case *oxide.DiskStateAttached:
+		state.State.Instance = types.StringValue(v.Instance)
+	case *oxide.DiskStateAttaching:
+		state.State.Instance = types.StringValue(v.Instance)
+	case *oxide.DiskStateDetaching:
+		state.State.Instance = types.StringValue(v.Instance)
 	}
 
 	// Save retrieved state into Terraform state.

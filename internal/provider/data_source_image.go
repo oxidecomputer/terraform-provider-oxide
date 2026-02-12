@@ -196,11 +196,21 @@ func (d *imageDataSource) Read(
 	state.TimeModified = types.StringValue(image.TimeModified.String())
 	state.Version = types.StringValue(image.Version)
 
-	digestState := imageDataSourceDigestModel{
-		Type:  types.StringValue(string(image.Digest.Type)),
-		Value: types.StringValue(image.Digest.Value),
+	if image.Digest.Value != nil {
+		sha256, ok := image.Digest.AsSha256()
+		if !ok {
+			resp.Diagnostics.AddError(
+				"Unexpected digest type",
+				fmt.Sprintf("Expected sha256 digest, got: %s", image.Digest.Type()),
+			)
+			return
+		}
+		digestState := imageDataSourceDigestModel{
+			Type:  types.StringValue(string(image.Digest.Type())),
+			Value: types.StringValue(sha256.Value),
+		}
+		state.Digest = &digestState
 	}
-	state.Digest = &digestState
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
