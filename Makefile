@@ -54,11 +54,11 @@ test:
 
 .PHONY: docs
 docs:
-	@ go tool tfplugindocs generate
+	@ go tool -modfile=tools/go.mod tfplugindocs generate
 
 .PHONY: check-docs
 check-docs:
-	@ go tool tfplugindocs generate
+	@ go tool -modfile=tools/go.mod tfplugindocs generate
 	@ if ! git diff --exit-code docs; then echo 'Generated docs have changed. Re-generate with `make docs`.'; fi
 
 ## Lints all of the source files
@@ -68,17 +68,17 @@ lint: golangci-lint tfproviderdocs terrafmt tfproviderlint check-docs # configfm
 .PHONY: tfproviderlint
 tfproviderlint:
 	@ echo "-> Running Terraform static analysis linter"
-	@ go tool tfproviderlint ./...
+	@ go tool -modfile=tools/go.mod tfproviderlint ./...
 
 .PHONY: tfproviderdocs
 tfproviderdocs:
 	@ echo "-> Running terraform provider documentation linter"
-	@ go tool tfproviderdocs check -provider-name $(BINARY) .
+	@ go tool -modfile=tools/go.mod tfproviderdocs check -provider-name $(BINARY) .
 
 .PHONY: golangci-lint
 golangci-lint:
 	@ echo "-> Running Go linters"
-	@ go tool golangci-lint run
+	@ go tool -modfile=tools/go.mod golangci-lint run
 
 .PHONY: fmt
 fmt: golangci-fmt terrafmt-fmt docs
@@ -86,17 +86,17 @@ fmt: golangci-fmt terrafmt-fmt docs
 .PHONY: golangci-fmt
 golangci-fmt:
 	@ echo "-> Formatting Go code"
-	@ go tool golangci-lint fmt
+	@ go tool -modfile=tools/go.mod golangci-lint fmt
 
 .PHONY: terrafmt
 terrafmt:
 	@ echo "-> Running terraform docs codeblocks linter"
-	@ find ./docs -type f -name "*.md" -exec go tool terrafmt diff -f {} \;
+	@ find ./docs -type f -name "*.md" -exec go tool -modfile=tools/go.mod terrafmt diff -f {} \;
 
 .PHONY: terrafmt-fmt
 terrafmt-fmt:
 	@ echo "-> Running terraform docs codeblocks linter"
-	@ find ./docs -type f -name "*.md" -exec go tool terrafmt fmt -f {} \;
+	@ find ./docs -type f -name "*.md" -exec go tool -modfile=tools/go.mod terrafmt fmt -f {} \;
 
 configfmt:
 	@ echo "-> Running terraform linters on .tf files"
