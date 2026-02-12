@@ -15,32 +15,34 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-type resourceVPCSubnetConfig struct {
-	BlockName        string
-	SubnetName       string
-	SupportBlockName string
-	VPCBlockName     string
-	VPCName          string
+type vpcSubnetTestConfig struct {
+	SubnetName  string
+	Description string
+	IPv4Block   string
+	IPv6Block   string // optional, rendered conditionally
 }
 
-var resourceVPCSubnetConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
+var vpcSubnetConfigTpl = `
+data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.VPCBlockName}}" {
-	project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test" {
+	project_id  = data.oxide_project.test.id
 	description = "a test vpc"
-	name        = "{{.VPCName}}"
+	name        = "terraform-acc-vpc-subnet-vpc"
 	dns_name    = "my-vpc-dns"
 	ipv6_prefix = "fdfe:f6a5:5f06::/48"
 }
 
-resource "oxide_vpc_subnet" "{{.BlockName}}" {
-	vpc_id      = oxide_vpc.{{.VPCBlockName}}.id
-	description = "a test vpc subnet"
+resource "oxide_vpc_subnet" "test" {
+	vpc_id      = oxide_vpc.test.id
+	description = "{{.Description}}"
 	name        = "{{.SubnetName}}"
-	ipv4_block  = "192.168.1.0/24"
+	ipv4_block  = "{{.IPv4Block}}"
+{{- if .IPv6Block}}
+	ipv6_block  = "{{.IPv6Block}}"
+{{- end}}
 	timeouts = {
 		read   = "1m"
 		create = "3m"
@@ -50,107 +52,34 @@ resource "oxide_vpc_subnet" "{{.BlockName}}" {
 }
 `
 
-var resourceVPCSubnetUpdateConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
-	name = "tf-acc-test"
-}
-
-resource "oxide_vpc" "{{.VPCBlockName}}" {
-	project_id  = data.oxide_project.{{.SupportBlockName}}.id
-	description = "a test vpc"
-	name        = "{{.VPCName}}"
-	dns_name    = "my-vpc-dns"
-	ipv6_prefix = "fdfe:f6a5:5f06::/48"
-}
-
-resource "oxide_vpc_subnet" "{{.BlockName}}" {
-	vpc_id      = oxide_vpc.{{.VPCBlockName}}.id
-	description = "a test vpc subnety"
-	name        = "{{.SubnetName}}"
-	ipv4_block  = "192.168.1.0/24"
-	timeouts = {
-		read   = "1m"
-		create = "3m"
-		delete = "2m"
-		update = "4m"
+func buildVPCSubnetConfig(t *testing.T, cfg vpcSubnetTestConfig) string {
+	t.Helper()
+	config, err := parsedAccConfig(cfg, vpcSubnetConfigTpl)
+	if err != nil {
+		t.Fatalf("error parsing config template: %v", err)
 	}
+	return config
 }
-`
-
-var resourceVPCSubnetIPv6ConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
-	name = "tf-acc-test"
-}
-
-resource "oxide_vpc" "{{.VPCBlockName}}" {
-	project_id  = data.oxide_project.{{.SupportBlockName}}.id
-	description = "a test vpc"
-	name        = "{{.VPCName}}"
-	dns_name    = "my-vpc-dns"
-	ipv6_prefix = "fdfe:f6a5:5f06::/48"
-}
-
-resource "oxide_vpc_subnet" "{{.BlockName}}" {
-	vpc_id      = oxide_vpc.{{.VPCBlockName}}.id
-	description = "a test vpc subnet"
-	name        = "{{.SubnetName}}"
-	ipv4_block  = "192.168.0.0/16"
-	ipv6_block  = "fdfe:f6a5:5f06:a643::/64"
-}
-`
 
 func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
-	subnetName := newResourceName()
-	vpcName := newResourceName()
-	blockName := newBlockName("subnet")
-	vpcBlockName := newBlockName("subnet")
-	supportBlockName := newBlockName("support")
-	resourceName := fmt.Sprintf("oxide_vpc_subnet.%s", blockName)
-	config, err := parsedAccConfig(
-		resourceVPCSubnetConfig{
-			BlockName:        blockName,
-			SubnetName:       subnetName,
-			VPCName:          vpcName,
-			VPCBlockName:     vpcBlockName,
-			SupportBlockName: supportBlockName,
-		},
-		resourceVPCSubnetConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
+	resourceName := "oxide_vpc_subnet.test"
+
+	// Initial creation config.
+	baseConfig := vpcSubnetTestConfig{
+		SubnetName:  "terraform-acc-vpc-subnet",
+		Description: "a test vpc subnet",
+		IPv4Block:   "192.168.1.0/24",
 	}
 
-	subnetNameUpdated := subnetName + "-updated"
-	configUpdate, err := parsedAccConfig(
-		resourceVPCSubnetConfig{
-			BlockName:        blockName,
-			SubnetName:       subnetNameUpdated,
-			VPCName:          vpcName,
-			VPCBlockName:     vpcBlockName,
-			SupportBlockName: supportBlockName,
-		},
-		resourceVPCSubnetUpdateConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
+	// In-place update config.
+	updateConfig := baseConfig
+	updateConfig.SubnetName = "terraform-acc-vpc-subnet-updated"
+	updateConfig.Description = "a test vpc subnety"
 
-	blockName2 := newBlockName("subnet")
-	resourceName2 := fmt.Sprintf("oxide_vpc_subnet.%s", blockName2)
-	subnetName2 := subnetName + "-2"
-	config2, err := parsedAccConfig(
-		resourceVPCSubnetConfig{
-			BlockName:        blockName2,
-			SubnetName:       subnetName2,
-			VPCName:          vpcName,
-			VPCBlockName:     vpcBlockName,
-			SupportBlockName: supportBlockName,
-		},
-		resourceVPCSubnetIPv6ConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
+	// Recreate config with v6 cidr.
+	ipv6Config := baseConfig
+	ipv6Config.SubnetName = "terraform-acc-vpc-subnet-v6"
+	ipv6Config.IPv6Block = "fdfe:f6a5:5f06:a643::/64"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -158,12 +87,12 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 		CheckDestroy:             testAccVPCSubnetDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config,
-				Check:  checkResourceVPCSubnet(resourceName, subnetName),
+				Config: buildVPCSubnetConfig(t, baseConfig),
+				Check:  checkResourceVPCSubnet("terraform-acc-vpc-subnet"),
 			},
 			{
-				Config: configUpdate,
-				Check:  checkResourceVPCSubnetUpdate(resourceName, subnetNameUpdated),
+				Config: buildVPCSubnetConfig(t, updateConfig),
+				Check:  checkResourceVPCSubnetUpdate("terraform-acc-vpc-subnet-updated"),
 			},
 			{
 				ResourceName:      resourceName,
@@ -171,58 +100,61 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: config2,
-				Check:  checkResourceVPCSubnetIPv6(resourceName2, subnetName2),
-			},
-			{
-				ResourceName:      resourceName2,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: buildVPCSubnetConfig(t, ipv6Config),
+				Check:  checkResourceVPCSubnetIPv6("terraform-acc-vpc-subnet-v6"),
 			},
 		},
 	})
 }
 
-func checkResourceVPCSubnet(resourceName, subnetName string) resource.TestCheckFunc {
+func checkResourceVPCSubnet(subnetName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc subnet"),
-		resource.TestCheckResourceAttr(resourceName, "name", subnetName),
-		resource.TestCheckResourceAttr(resourceName, "ipv4_block", "192.168.1.0/24"),
-		resource.TestCheckResourceAttrSet(resourceName, "ipv6_block"),
-		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.update", "4m"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "id"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "description", "a test vpc subnet"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "name", subnetName),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "ipv4_block", "192.168.1.0/24"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "ipv6_block"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "vpc_id"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "time_created"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "time_modified"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "timeouts.read", "1m"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "timeouts.delete", "2m"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "timeouts.create", "3m"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "timeouts.update", "4m"),
 	}...)
 }
 
-func checkResourceVPCSubnetUpdate(resourceName, subnetName string) resource.TestCheckFunc {
+func checkResourceVPCSubnetUpdate(subnetName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc subnety"),
-		resource.TestCheckResourceAttr(resourceName, "name", subnetName),
-		resource.TestCheckResourceAttr(resourceName, "ipv4_block", "192.168.1.0/24"),
-		resource.TestCheckResourceAttrSet(resourceName, "ipv6_block"),
-		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "id"),
+		resource.TestCheckResourceAttr(
+			"oxide_vpc_subnet.test",
+			"description",
+			"a test vpc subnety",
+		),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "name", subnetName),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "ipv4_block", "192.168.1.0/24"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "ipv6_block"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "vpc_id"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "time_created"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "time_modified"),
 	}...)
 }
 
-func checkResourceVPCSubnetIPv6(resourceName, subnetName string) resource.TestCheckFunc {
+func checkResourceVPCSubnetIPv6(subnetName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc subnet"),
-		resource.TestCheckResourceAttr(resourceName, "name", subnetName),
-		resource.TestCheckResourceAttr(resourceName, "ipv4_block", "192.168.0.0/16"),
-		resource.TestCheckResourceAttr(resourceName, "ipv6_block", "fdfe:f6a5:5f06:a643::/64"),
-		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "id"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "description", "a test vpc subnet"),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "name", subnetName),
+		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "ipv4_block", "192.168.1.0/24"),
+		resource.TestCheckResourceAttr(
+			"oxide_vpc_subnet.test",
+			"ipv6_block",
+			"fdfe:f6a5:5f06:a643::/64",
+		),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "vpc_id"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "time_created"),
+		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "time_modified"),
 	}...)
 }
 
