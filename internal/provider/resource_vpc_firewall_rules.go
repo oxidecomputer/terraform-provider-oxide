@@ -852,19 +852,29 @@ func newFiltersModelFromResponse(
 	var protocolModels = []vpcFirewallRuleProtocolFilterModel{}
 	for _, protocol := range filter.Protocols {
 		protocolModel := vpcFirewallRuleProtocolFilterModel{
-			Type: types.StringValue(string(protocol.Type)),
-			IcmpCode: func() types.String {
-				if protocol.Value.Code == "" {
-					return types.StringNull()
+			Type:     types.StringValue(string(protocol.Type())),
+			IcmpCode: types.StringNull(),
+			IcmpType: types.Int32Null(),
+		}
+		switch v := protocol.Value.(type) {
+		case *oxide.VpcFirewallRuleProtocolIcmp:
+			if v.Value != nil {
+				if v.Value.Code != "" {
+					protocolModel.IcmpCode = types.StringValue(string(v.Value.Code))
 				}
-				return types.StringValue(string(protocol.Value.Code))
-			}(),
-			IcmpType: func() types.Int32 {
-				if protocol.Value.IcmpType == nil {
-					return types.Int32Null()
+				if v.Value.IcmpType != nil {
+					protocolModel.IcmpType = types.Int32Value(int32(*v.Value.IcmpType))
 				}
-				return types.Int32Value(int32(*protocol.Value.IcmpType))
-			}(),
+			}
+		case *oxide.VpcFirewallRuleProtocolTcp:
+			// No additional fields
+		case *oxide.VpcFirewallRuleProtocolUdp:
+			// No additional fields
+		default:
+			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+				"Unexpected protocol type",
+				fmt.Sprintf("Encountered unexpected protocol type: %T", protocol.Value),
+			)}
 		}
 
 		protocolModels = append(protocolModels, protocolModel)
@@ -931,18 +941,35 @@ func newFilterTypeFromModel(
 
 	protocols := []oxide.VpcFirewallRuleProtocol{}
 	for _, protocolModel := range model.Protocols {
-		protocol := oxide.VpcFirewallRuleProtocol{
-			Type: oxide.VpcFirewallRuleProtocolType(protocolModel.Type.ValueString()),
-			Value: oxide.VpcFirewallIcmpFilter{
-				Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
-				IcmpType: func() *int {
-					if protocolModel.IcmpType.IsNull() {
-						return nil
-					}
-
-					return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
-				}(),
-			},
+		var protocol oxide.VpcFirewallRuleProtocol
+		switch oxide.VpcFirewallRuleProtocolType(protocolModel.Type.ValueString()) {
+		case oxide.VpcFirewallRuleProtocolTypeTcp:
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: &oxide.VpcFirewallRuleProtocolTcp{},
+			}
+		case oxide.VpcFirewallRuleProtocolTypeUdp:
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: &oxide.VpcFirewallRuleProtocolUdp{},
+			}
+		case oxide.VpcFirewallRuleProtocolTypeIcmp:
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: &oxide.VpcFirewallRuleProtocolIcmp{
+					Value: &oxide.VpcFirewallIcmpFilter{
+						Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
+						IcmpType: func() *int {
+							if protocolModel.IcmpType.IsNull() {
+								return nil
+							}
+							return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
+						}(),
+					},
+				},
+			}
+		default:
+			return oxide.VpcFirewallRuleFilter{}, fmt.Errorf(
+				"unexpected protocol type: %s",
+				protocolModel.Type.ValueString(),
+			)
 		}
 
 		protocols = append(protocols, protocol)
