@@ -164,7 +164,7 @@ func (d *addressLotDataSource) Read(
 	state.Kind = types.StringValue(string(lot.Kind))
 	state.Description = types.StringValue(lot.Description)
 	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
-	state.TimeModified = types.StringValue(lot.TimeCreated.String())
+	state.TimeModified = types.StringValue(lot.TimeModified.String())
 
 	blockModels := make([]addressLotDataSourceBlockModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {

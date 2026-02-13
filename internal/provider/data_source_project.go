@@ -137,7 +137,7 @@ func (d *projectDataSource) Read(
 	state.ID = types.StringValue(project.Id)
 	state.Name = types.StringValue(string(project.Name))
 	state.TimeCreated = types.StringValue(project.TimeCreated.String())
-	state.TimeModified = types.StringValue(project.TimeCreated.String())
+	state.TimeModified = types.StringValue(project.TimeModified.String())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

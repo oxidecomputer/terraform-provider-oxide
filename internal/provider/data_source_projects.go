@@ -162,7 +162,7 @@ func (d *projectsDataSource) Read(
 			ID:           types.StringValue(project.Id),
 			Name:         types.StringValue(string(project.Name)),
 			TimeCreated:  types.StringValue(project.TimeCreated.String()),
-			TimeModified: types.StringValue(project.TimeCreated.String()),
+			TimeModified: types.StringValue(project.TimeModified.String()),
 		}
 
 		state.Projects = append(state.Projects, projectState)
