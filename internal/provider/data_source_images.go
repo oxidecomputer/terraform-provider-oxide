@@ -215,7 +215,7 @@ func (d *imagesDataSource) Read(
 			OS:           types.StringValue(image.Os),
 			Size:         types.Int64Value(int64(image.Size)),
 			TimeCreated:  types.StringValue(image.TimeCreated.String()),
-			TimeModified: types.StringValue(image.TimeCreated.String()),
+			TimeModified: types.StringValue(image.TimeModified.String()),
 			Version:      types.StringValue(image.Version),
 		}
 

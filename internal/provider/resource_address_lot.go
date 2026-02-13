@@ -222,7 +222,7 @@ func (r *addressLotResource) Create(
 	// Map response body to schema and populate computed attribute values.
 	plan.ID = types.StringValue(lot.Lot.Id)
 	plan.TimeCreated = types.StringValue(lot.Lot.TimeCreated.String())
-	plan.TimeModified = types.StringValue(lot.Lot.TimeCreated.String())
+	plan.TimeModified = types.StringValue(lot.Lot.TimeModified.String())
 
 	// Populate blocks with computed values.
 	blockModels := make([]addressLotResourceBlockModel, len(lot.Blocks))
@@ -286,7 +286,7 @@ func (r *addressLotResource) Read(
 	state.Kind = types.StringValue(string(lot.Kind))
 	state.Description = types.StringValue(lot.Description)
 	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
-	state.TimeModified = types.StringValue(lot.TimeCreated.String())
+	state.TimeModified = types.StringValue(lot.TimeModified.String())
 
 	blockModels := make([]addressLotResourceBlockModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {

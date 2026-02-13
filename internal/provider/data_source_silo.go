@@ -148,7 +148,7 @@ func (d *siloDataSource) Read(
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
 	state.Name = types.StringValue(string(silo.Name))
 	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
-	state.TimeModified = types.StringValue(silo.TimeCreated.String())
+	state.TimeModified = types.StringValue(silo.TimeModified.String())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

@@ -186,7 +186,7 @@ func (r *ipPoolResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
 	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	plan.TimeModified = types.StringValue(ipPool.TimeModified.String())
 
 	resp.Diagnostics.Append(addRanges(ctx, r.client, plan.Ranges, plan.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
@@ -242,7 +242,7 @@ func (r *ipPoolResource) Read(
 	state.ID = types.StringValue(ipPool.Id)
 	state.Name = types.StringValue(string(ipPool.Name))
 	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	state.TimeModified = types.StringValue(ipPool.TimeModified.String())
 
 	// Append information about IP Pool ranges
 	listParams := oxide.SystemIpPoolRangeListParams{
@@ -372,7 +372,7 @@ func (r *ipPoolResource) Update(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(ipPool.Id)
 	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	plan.TimeModified = types.StringValue(ipPool.TimeModified.String())
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

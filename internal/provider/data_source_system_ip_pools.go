@@ -152,7 +152,7 @@ func (d *systemIpPoolsDataSource) Read(
 			ID:           types.StringValue(ipPool.Id),
 			Name:         types.StringValue(string(ipPool.Name)),
 			TimeCreated:  types.StringValue(ipPool.TimeCreated.String()),
-			TimeModified: types.StringValue(ipPool.TimeCreated.String()),
+			TimeModified: types.StringValue(ipPool.TimeModified.String()),
 		}
 
 		state.IpPools = append(state.IpPools, poolState)
