@@ -220,8 +220,10 @@ func (d *imagesDataSource) Read(
 		}
 
 		digestState := imageDigestModel{
-			Type:  types.StringValue(string(image.Digest.Type)),
-			Value: types.StringValue(image.Digest.Value),
+			Type: types.StringValue(string(image.Digest.Type())),
+		}
+		if v, ok := image.Digest.Value.(*oxide.DigestSha256); ok {
+			digestState.Value = types.StringValue(v.Value)
 		}
 
 		imageState.Digest = digestState

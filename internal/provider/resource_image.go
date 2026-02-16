@@ -218,10 +218,11 @@ func (r *imageResource) Create(
 		},
 	}
 
-	is := oxide.ImageSource{}
-	is.Id = plan.SourceSnapshotID.ValueString()
-	is.Type = oxide.ImageSourceTypeSnapshot
-	params.Body.Source = is
+	params.Body.Source = oxide.ImageSource{
+		Value: &oxide.ImageSourceSnapshot{
+			Id: plan.SourceSnapshotID.ValueString(),
+		},
+	}
 
 	image, err := r.client.ImageCreate(ctx, params)
 	if err != nil {
@@ -251,8 +252,10 @@ func (r *imageResource) Create(
 
 	// Parse imageResourceDigestModel into types.Object
 	dm := imageResourceDigestModel{
-		Type:  types.StringValue(string(image.Digest.Type)),
-		Value: types.StringValue(image.Digest.Value),
+		Type: types.StringValue(string(image.Digest.Type())),
+	}
+	if v, ok := image.Digest.Value.(*oxide.DigestSha256); ok {
+		dm.Value = types.StringValue(v.Value)
 	}
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
@@ -338,8 +341,10 @@ func (r *imageResource) Read(
 
 	// Parse imageResourceDigestModel into types.Object
 	dm := imageResourceDigestModel{
-		Type:  types.StringValue(string(image.Digest.Type)),
-		Value: types.StringValue(image.Digest.Value),
+		Type: types.StringValue(string(image.Digest.Type())),
+	}
+	if v, ok := image.Digest.Value.(*oxide.DigestSha256); ok {
+		dm.Value = types.StringValue(v.Value)
 	}
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,

@@ -220,26 +220,31 @@ func (f *floatingIPResource) Create(
 	if ip := plan.IP.ValueString(); ip != "" {
 		// Explicit IP with the pool inferred from IP address.
 		params.Body.AddressAllocator = oxide.AddressAllocator{
-			Type: oxide.AddressAllocatorTypeExplicit,
-			Ip:   ip,
+			Value: &oxide.AddressAllocatorExplicit{
+				Ip: ip,
+			},
 		}
 	} else if pool := plan.IPPoolID.ValueString(); pool != "" {
 		// Auto IP from explicit pool.
 		params.Body.AddressAllocator = oxide.AddressAllocator{
-			Type: oxide.AddressAllocatorTypeAuto,
-			PoolSelector: oxide.PoolSelector{
-				Type: oxide.PoolSelectorTypeExplicit,
-				Pool: oxide.NameOrId(pool),
+			Value: &oxide.AddressAllocatorAuto{
+				PoolSelector: oxide.PoolSelector{
+					Value: &oxide.PoolSelectorExplicit{
+						Pool: oxide.NameOrId(pool),
+					},
+				},
 			},
 		}
 	} else {
 		// Auto IP from default pool. If there are multiple default pools IP
 		// version is required.
 		params.Body.AddressAllocator = oxide.AddressAllocator{
-			Type: oxide.AddressAllocatorTypeAuto,
-			PoolSelector: oxide.PoolSelector{
-				Type:      oxide.PoolSelectorTypeAuto,
-				IpVersion: oxide.IpVersion(plan.IPVersion.ValueString()),
+			Value: &oxide.AddressAllocatorAuto{
+				PoolSelector: oxide.PoolSelector{
+					Value: &oxide.PoolSelectorAuto{
+						IpVersion: oxide.IpVersion(plan.IPVersion.ValueString()),
+					},
+				},
 			},
 		}
 	}

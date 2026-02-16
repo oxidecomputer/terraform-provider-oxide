@@ -862,9 +862,10 @@ func (r *instanceResource) Create(
 			)
 			return
 		}
-		params.Body.BootDisk = &oxide.InstanceDiskAttachment{
-			Name: diskView.Name,
-			Type: oxide.InstanceDiskAttachmentTypeAttach,
+		params.Body.BootDisk = oxide.InstanceDiskAttachment{
+			Value: &oxide.InstanceDiskAttachmentAttach{
+				Name: diskView.Name,
+			},
 		}
 	}
 
@@ -1654,7 +1655,7 @@ func newNetworkInterfaceAttachment(
 
 	if len(model) == 0 {
 		return oxide.InstanceNetworkInterfaceAttachment{
-			Type: oxide.InstanceNetworkInterfaceAttachmentTypeNone,
+			Value: &oxide.InstanceNetworkInterfaceAttachmentNone{},
 		}, diags
 	}
 
@@ -1678,8 +1679,9 @@ func newNetworkInterfaceAttachment(
 	}
 
 	nicAttachment := oxide.InstanceNetworkInterfaceAttachment{
-		Type:   oxide.InstanceNetworkInterfaceAttachmentTypeCreate,
-		Params: nicParams,
+		Value: &oxide.InstanceNetworkInterfaceAttachmentCreate{
+			Params: nicParams,
+		},
 	}
 	return nicAttachment, nil
 }
@@ -1832,35 +1834,35 @@ func newAttachedExternalIPModel(
 
 	externalIPs := &instanceResourceExternalIPModel{}
 	for _, ip := range externalIPResponse.Items {
-		switch ip.Kind {
-		case oxide.ExternalIpKindEphemeral:
+		switch v := ip.Value.(type) {
+		case *oxide.ExternalIpEphemeral:
 			// The API requires the IP version to delete ephemeral IPs, but it
 			// doesn't return the original value, so infer it from the shape of
 			// the IP address so it is always present in state, even if the
 			// user does not provide it.
 			var ipVersion string
-			if isIPv4(ip.Ip) {
+			if isIPv4(v.Ip) {
 				ipVersion = string(oxide.IpVersionV4)
-			} else if isIPv6(ip.Ip) {
+			} else if isIPv6(v.Ip) {
 				ipVersion = string(oxide.IpVersionV6)
 			}
 
 			externalIPs.Ephemeral = append(externalIPs.Ephemeral, instanceResourceEphemeralIPModel{
-				PoolID:    types.StringValue(ip.IpPoolId),
+				PoolID:    types.StringValue(v.IpPoolId),
 				IPVersion: types.StringValue(ipVersion),
 			})
 
-		case oxide.ExternalIpKindFloating:
+		case *oxide.ExternalIpFloating:
 			externalIPs.Floating = append(externalIPs.Floating, instanceResourceFloatingIPModel{
-				ID: types.StringValue(ip.Id),
+				ID: types.StringValue(v.Id),
 			})
 		// Skipped until the schema is updated to support SNAT external IPs.
-		case oxide.ExternalIpKindSnat:
+		case *oxide.ExternalIpSnat:
 			continue
 		default:
 			diags.AddError(
 				"Invalid external IP kind:",
-				fmt.Sprintf("Encountered unexpected external IP kind: %s", ip.Kind),
+				fmt.Sprintf("Encountered unexpected external IP kind: %s", ip.Kind()),
 			)
 		}
 	}
@@ -1942,9 +1944,9 @@ func newDiskAttachmentsOnCreate(
 		}
 
 		da := oxide.InstanceDiskAttachment{
-			Name: disk.Name,
-			// Only allow attach (no disk create on instance create)
-			Type: oxide.InstanceDiskAttachmentTypeAttach,
+			Value: &oxide.InstanceDiskAttachmentAttach{
+				Name: disk.Name,
+			},
 		}
 		disks = append(disks, da)
 	}
@@ -1954,20 +1956,27 @@ func newDiskAttachmentsOnCreate(
 
 func filterBootDiskFromDisks(
 	disks []oxide.InstanceDiskAttachment,
-	boot_disk *oxide.InstanceDiskAttachment,
+	bootDisk oxide.InstanceDiskAttachment,
 ) []oxide.InstanceDiskAttachment {
-	if boot_disk == nil {
+	if bootDisk.Value == nil {
 		return disks
 	}
 
-	var filtered_disks = []oxide.InstanceDiskAttachment{}
-	for _, disk := range disks {
-		if disk == *boot_disk {
-			continue
-		}
-		filtered_disks = append(filtered_disks, disk)
+	bootAttach, ok := bootDisk.Value.(*oxide.InstanceDiskAttachmentAttach)
+	if !ok {
+		return disks
 	}
-	return filtered_disks
+
+	var filteredDisks = []oxide.InstanceDiskAttachment{}
+	for _, disk := range disks {
+		if attach, ok := disk.Value.(*oxide.InstanceDiskAttachmentAttach); ok {
+			if attach.Name == bootAttach.Name {
+				continue
+			}
+		}
+		filteredDisks = append(filteredDisks, disk)
+	}
+	return filteredDisks
 }
 
 func newExternalIPsOnCreate(externalIPs *instanceResourceExternalIPModel) []oxide.ExternalIpCreate {
@@ -1980,18 +1989,22 @@ func newExternalIPsOnCreate(externalIPs *instanceResourceExternalIPModel) []oxid
 	for _, ip := range externalIPs.Ephemeral {
 		if pool := ip.PoolID.ValueString(); pool != "" {
 			ips = append(ips, oxide.ExternalIpCreate{
-				Type: oxide.ExternalIpCreateTypeEphemeral,
-				PoolSelector: oxide.PoolSelector{
-					Type: oxide.PoolSelectorTypeExplicit,
-					Pool: oxide.NameOrId(pool),
+				Value: &oxide.ExternalIpCreateEphemeral{
+					PoolSelector: oxide.PoolSelector{
+						Value: &oxide.PoolSelectorExplicit{
+							Pool: oxide.NameOrId(pool),
+						},
+					},
 				},
 			})
 		} else {
 			ips = append(ips, oxide.ExternalIpCreate{
-				Type: oxide.ExternalIpCreateTypeEphemeral,
-				PoolSelector: oxide.PoolSelector{
-					Type:      oxide.PoolSelectorTypeAuto,
-					IpVersion: oxide.IpVersion(ip.IPVersion.ValueString()),
+				Value: &oxide.ExternalIpCreateEphemeral{
+					PoolSelector: oxide.PoolSelector{
+						Value: &oxide.PoolSelectorAuto{
+							IpVersion: oxide.IpVersion(ip.IPVersion.ValueString()),
+						},
+					},
 				},
 			})
 		}
@@ -1999,8 +2012,9 @@ func newExternalIPsOnCreate(externalIPs *instanceResourceExternalIPModel) []oxid
 
 	for _, ip := range externalIPs.Floating {
 		ips = append(ips, oxide.ExternalIpCreate{
-			Type:       oxide.ExternalIpCreateTypeFloating,
-			FloatingIp: oxide.NameOrId(ip.ID.ValueString()),
+			Value: &oxide.ExternalIpCreateFloating{
+				FloatingIp: oxide.NameOrId(ip.ID.ValueString()),
+			},
 		})
 	}
 
@@ -2015,8 +2029,9 @@ func newIPStackCreate(model instanceResourceNICModel) oxide.PrivateIpStackCreate
 				Value: &oxide.PrivateIpStackCreateV4{
 					Value: oxide.PrivateIpv4StackCreate{
 						Ip: oxide.Ipv4Assignment{
-							Type:  oxide.Ipv4AssignmentTypeExplicit,
-							Value: ip,
+							Value: &oxide.Ipv4AssignmentExplicit{
+								Value: ip,
+							},
 						},
 					},
 				},
@@ -2026,7 +2041,7 @@ func newIPStackCreate(model instanceResourceNICModel) oxide.PrivateIpStackCreate
 				Value: &oxide.PrivateIpStackCreateV4{
 					Value: oxide.PrivateIpv4StackCreate{
 						Ip: oxide.Ipv4Assignment{
-							Type: oxide.Ipv4AssignmentTypeAuto,
+							Value: &oxide.Ipv4AssignmentAuto{},
 						},
 					},
 				},
@@ -2063,15 +2078,16 @@ func newIPStackCreateV4(stack *instanceResourceIPConfigV4Model) oxide.PrivateIpv
 	if ip == string(oxide.Ipv4AssignmentTypeAuto) {
 		return oxide.PrivateIpv4StackCreate{
 			Ip: oxide.Ipv4Assignment{
-				Type: oxide.Ipv4AssignmentTypeAuto,
+				Value: &oxide.Ipv4AssignmentAuto{},
 			},
 		}
 	}
 
 	return oxide.PrivateIpv4StackCreate{
 		Ip: oxide.Ipv4Assignment{
-			Type:  oxide.Ipv4AssignmentTypeExplicit,
-			Value: ip,
+			Value: &oxide.Ipv4AssignmentExplicit{
+				Value: ip,
+			},
 		},
 	}
 }
@@ -2082,15 +2098,16 @@ func newIPStackCreateV6(stack *instanceResourceIPConfigV6Model) oxide.PrivateIpv
 	if ip == string(oxide.Ipv6AssignmentTypeAuto) {
 		return oxide.PrivateIpv6StackCreate{
 			Ip: oxide.Ipv6Assignment{
-				Type: oxide.Ipv6AssignmentTypeAuto,
+				Value: &oxide.Ipv6AssignmentAuto{},
 			},
 		}
 	}
 
 	return oxide.PrivateIpv6StackCreate{
 		Ip: oxide.Ipv6Assignment{
-			Type:  oxide.Ipv6AssignmentTypeExplicit,
-			Value: ip,
+			Value: &oxide.Ipv6AssignmentExplicit{
+				Value: ip,
+			},
 		},
 	}
 }
@@ -2098,8 +2115,8 @@ func newIPStackCreateV6(stack *instanceResourceIPConfigV6Model) oxide.PrivateIpv
 func newIPStackCreateDualStack(
 	stackV4 *instanceResourceIPConfigV4Model,
 	stackV6 *instanceResourceIPConfigV6Model,
-) oxide.PrivateIpStackCreateValue {
-	return oxide.PrivateIpStackCreateValue{
+) oxide.PrivateIpStackCreateDualStackValue {
+	return oxide.PrivateIpStackCreateDualStackValue{
 		V4: newIPStackCreateV4(stackV4),
 		V6: newIPStackCreateV6(stackV6),
 	}
@@ -2234,8 +2251,9 @@ func attachEphemeralIPs(
 				Instance: oxide.NameOrId(instanceID),
 				Body: &oxide.EphemeralIpCreate{
 					PoolSelector: oxide.PoolSelector{
-						Type: oxide.PoolSelectorTypeExplicit,
-						Pool: oxide.NameOrId(ipPool),
+						Value: &oxide.PoolSelectorExplicit{
+							Pool: oxide.NameOrId(ipPool),
+						},
 					},
 				},
 			}
@@ -2244,8 +2262,9 @@ func attachEphemeralIPs(
 				Instance: oxide.NameOrId(instanceID),
 				Body: &oxide.EphemeralIpCreate{
 					PoolSelector: oxide.PoolSelector{
-						Type:      oxide.PoolSelectorTypeAuto,
-						IpVersion: oxide.IpVersion(ip.IPVersion.ValueString()),
+						Value: &oxide.PoolSelectorAuto{
+							IpVersion: oxide.IpVersion(ip.IPVersion.ValueString()),
+						},
 					},
 				},
 			}

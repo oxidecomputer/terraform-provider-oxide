@@ -146,8 +146,15 @@ func (d *instanceExternalIPsDataSource) Read(
 	// Map response body to model
 	for _, ip := range ips.Items {
 		externalIPState := externalIPDatasourceModel{
-			IP:   types.StringValue(ip.Ip),
-			Kind: types.StringValue(string(ip.Kind)),
+			Kind: types.StringValue(string(ip.Kind())),
+		}
+		switch v := ip.Value.(type) {
+		case *oxide.ExternalIpSnat:
+			externalIPState.IP = types.StringValue(v.Ip)
+		case *oxide.ExternalIpEphemeral:
+			externalIPState.IP = types.StringValue(v.Ip)
+		case *oxide.ExternalIpFloating:
+			externalIPState.IP = types.StringValue(v.Ip)
 		}
 		state.ExternalIPs = append(state.ExternalIPs, externalIPState)
 	}

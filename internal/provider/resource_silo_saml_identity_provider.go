@@ -227,15 +227,20 @@ func (r *siloSamlIdentityProvider) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	idpMetadataSource := oxide.IdpMetadataSource{
-		Type: oxide.IdpMetadataSourceType(plan.IdpMetadataSource.Type.ValueString()),
-	}
-
-	switch idpMetadataSource.Type {
+	var idpMetadataSource oxide.IdpMetadataSource
+	switch oxide.IdpMetadataSourceType(plan.IdpMetadataSource.Type.ValueString()) {
 	case oxide.IdpMetadataSourceTypeBase64EncodedXml:
-		idpMetadataSource.Data = plan.IdpMetadataSource.Data.ValueString()
+		idpMetadataSource = oxide.IdpMetadataSource{
+			Value: &oxide.IdpMetadataSourceBase64EncodedXml{
+				Data: plan.IdpMetadataSource.Data.ValueString(),
+			},
+		}
 	case oxide.IdpMetadataSourceTypeUrl:
-		idpMetadataSource.Url = plan.IdpMetadataSource.Url.ValueString()
+		idpMetadataSource = oxide.IdpMetadataSource{
+			Value: &oxide.IdpMetadataSourceUrl{
+				Url: plan.IdpMetadataSource.Url.ValueString(),
+			},
+		}
 	}
 
 	params := oxide.SamlIdentityProviderCreateParams{

@@ -921,30 +921,36 @@ func toSwitchPortSettingsModel(
 			}
 
 			bgpPeerModel.AllowedExport = &switchPortSettingsBGPPeerPeerAllowedExportModel{
-				Type: types.StringValue(string(bgpPeer.AllowedExport.Type)),
+				Type: types.StringValue(string(bgpPeer.AllowedExport.Type())),
 				Value: func() []types.String {
-					if len(bgpPeer.AllowedExport.Value) == 0 {
-						return nil
+					if v, ok := bgpPeer.AllowedExport.Value.(*oxide.ImportExportPolicyAllow); ok {
+						if len(v.Value) == 0 {
+							return nil
+						}
+						res := make([]types.String, 0)
+						for _, elem := range v.Value {
+							res = append(res, types.StringValue(elem.String()))
+						}
+						return res
 					}
-					res := make([]types.String, 0)
-					for _, elem := range bgpPeer.AllowedExport.Value {
-						res = append(res, types.StringValue(elem.String()))
-					}
-					return res
+					return nil
 				}(),
 			}
 
 			bgpPeerModel.AllowedImport = &switchPortSettingsBGPPeerPeerAllowedImportModel{
-				Type: types.StringValue(string(bgpPeer.AllowedImport.Type)),
+				Type: types.StringValue(string(bgpPeer.AllowedImport.Type())),
 				Value: func() []types.String {
-					if len(bgpPeer.AllowedImport.Value) == 0 {
-						return nil
+					if v, ok := bgpPeer.AllowedImport.Value.(*oxide.ImportExportPolicyAllow); ok {
+						if len(v.Value) == 0 {
+							return nil
+						}
+						res := make([]types.String, 0)
+						for _, elem := range v.Value {
+							res = append(res, types.StringValue(elem.String()))
+						}
+						return res
 					}
-					res := make([]types.String, 0)
-					for _, elem := range bgpPeer.AllowedImport.Value {
-						res = append(res, types.StringValue(elem.String()))
-					}
-					return res
+					return nil
 				}(),
 			}
 
@@ -1267,11 +1273,17 @@ func toNetworkingSwitchPortSettingsCreateParams(
 					allowedExportValues = append(allowedExportValues, ipNet)
 				}
 			}
-			bgpPeer.AllowedExport = oxide.ImportExportPolicy{
-				Type: oxide.ImportExportPolicyType(
-					bgpModelNested.AllowedExport.Type.ValueString(),
-				),
-				Value: allowedExportValues,
+			switch oxide.ImportExportPolicyType(bgpModelNested.AllowedExport.Type.ValueString()) {
+			case oxide.ImportExportPolicyTypeAllow:
+				bgpPeer.AllowedExport = oxide.ImportExportPolicy{
+					Value: &oxide.ImportExportPolicyAllow{
+						Value: allowedExportValues,
+					},
+				}
+			default:
+				bgpPeer.AllowedExport = oxide.ImportExportPolicy{
+					Value: &oxide.ImportExportPolicyNoFiltering{},
+				}
 			}
 
 			// Parse AllowedImport values
@@ -1294,11 +1306,17 @@ func toNetworkingSwitchPortSettingsCreateParams(
 					allowedImportValues = append(allowedImportValues, ipNet)
 				}
 			}
-			bgpPeer.AllowedImport = oxide.ImportExportPolicy{
-				Type: oxide.ImportExportPolicyType(
-					bgpModelNested.AllowedImport.Type.ValueString(),
-				),
-				Value: allowedImportValues,
+			switch oxide.ImportExportPolicyType(bgpModelNested.AllowedImport.Type.ValueString()) {
+			case oxide.ImportExportPolicyTypeAllow:
+				bgpPeer.AllowedImport = oxide.ImportExportPolicy{
+					Value: &oxide.ImportExportPolicyAllow{
+						Value: allowedImportValues,
+					},
+				}
+			default:
+				bgpPeer.AllowedImport = oxide.ImportExportPolicy{
+					Value: &oxide.ImportExportPolicyNoFiltering{},
+				}
 			}
 
 			bgpPeer.Communities = func() []int {

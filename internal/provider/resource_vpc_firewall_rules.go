@@ -852,19 +852,18 @@ func newFiltersModelFromResponse(
 	var protocolModels = []vpcFirewallRuleProtocolFilterModel{}
 	for _, protocol := range filter.Protocols {
 		protocolModel := vpcFirewallRuleProtocolFilterModel{
-			Type: types.StringValue(string(protocol.Type)),
-			IcmpCode: func() types.String {
-				if protocol.Value.Code == "" {
-					return types.StringNull()
-				}
-				return types.StringValue(string(protocol.Value.Code))
-			}(),
-			IcmpType: func() types.Int32 {
-				if protocol.Value.IcmpType == nil {
-					return types.Int32Null()
-				}
-				return types.Int32Value(int32(*protocol.Value.IcmpType))
-			}(),
+			Type:     types.StringValue(string(protocol.Type())),
+			IcmpCode: types.StringNull(),
+			IcmpType: types.Int32Null(),
+		}
+		if icmp, ok := protocol.Value.(*oxide.VpcFirewallRuleProtocolIcmp); ok &&
+			icmp.Value != nil {
+			if icmp.Value.Code != "" {
+				protocolModel.IcmpCode = types.StringValue(string(icmp.Value.Code))
+			}
+			if icmp.Value.IcmpType != nil {
+				protocolModel.IcmpType = types.Int32Value(int32(*icmp.Value.IcmpType))
+			}
 		}
 
 		protocolModels = append(protocolModels, protocolModel)
@@ -931,18 +930,30 @@ func newFilterTypeFromModel(
 
 	protocols := []oxide.VpcFirewallRuleProtocol{}
 	for _, protocolModel := range model.Protocols {
-		protocol := oxide.VpcFirewallRuleProtocol{
-			Type: oxide.VpcFirewallRuleProtocolType(protocolModel.Type.ValueString()),
-			Value: oxide.VpcFirewallIcmpFilter{
-				Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
-				IcmpType: func() *int {
-					if protocolModel.IcmpType.IsNull() {
-						return nil
-					}
-
-					return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
-				}(),
-			},
+		var protocol oxide.VpcFirewallRuleProtocol
+		switch oxide.VpcFirewallRuleProtocolType(protocolModel.Type.ValueString()) {
+		case oxide.VpcFirewallRuleProtocolTypeTcp:
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: &oxide.VpcFirewallRuleProtocolTcp{},
+			}
+		case oxide.VpcFirewallRuleProtocolTypeUdp:
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: &oxide.VpcFirewallRuleProtocolUdp{},
+			}
+		case oxide.VpcFirewallRuleProtocolTypeIcmp:
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: &oxide.VpcFirewallRuleProtocolIcmp{
+					Value: &oxide.VpcFirewallIcmpFilter{
+						Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
+						IcmpType: func() *int {
+							if protocolModel.IcmpType.IsNull() {
+								return nil
+							}
+							return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
+						}(),
+					},
+				},
+			}
 		}
 
 		protocols = append(protocols, protocol)

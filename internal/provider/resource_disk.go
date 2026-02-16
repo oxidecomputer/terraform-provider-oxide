@@ -241,6 +241,27 @@ func (r *diskResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	var diskSource oxide.DiskSource
+	if !plan.SourceImageID.IsNull() {
+		diskSource = oxide.DiskSource{
+			Value: &oxide.DiskSourceImage{
+				ImageId: plan.SourceImageID.ValueString(),
+			},
+		}
+	} else if !plan.SourceSnapshotID.IsNull() {
+		diskSource = oxide.DiskSource{
+			Value: &oxide.DiskSourceSnapshot{
+				SnapshotId: plan.SourceSnapshotID.ValueString(),
+			},
+		}
+	} else if !plan.BlockSize.IsNull() {
+		diskSource = oxide.DiskSource{
+			Value: &oxide.DiskSourceBlank{
+				BlockSize: oxide.BlockSize(plan.BlockSize.ValueInt64()),
+			},
+		}
+	}
+
 	params := oxide.DiskCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.DiskCreate{
@@ -248,23 +269,12 @@ func (r *diskResource) Create(
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Size:        oxide.ByteCount(plan.Size.ValueInt64()),
 			DiskBackend: oxide.DiskBackend{
-				Type: oxide.DiskBackendType(plan.DiskType.ValueString()),
+				Value: &oxide.DiskBackendDistributed{
+					DiskSource: diskSource,
+				},
 			},
 		},
 	}
-
-	ds := oxide.DiskSource{}
-	if !plan.SourceImageID.IsNull() {
-		ds.ImageId = plan.SourceImageID.ValueString()
-		ds.Type = oxide.DiskSourceTypeImage
-	} else if !plan.SourceSnapshotID.IsNull() {
-		ds.SnapshotId = plan.SourceSnapshotID.ValueString()
-		ds.Type = oxide.DiskSourceTypeSnapshot
-	} else if !plan.BlockSize.IsNull() {
-		ds.BlockSize = oxide.BlockSize(plan.BlockSize.ValueInt64())
-		ds.Type = oxide.DiskSourceTypeBlank
-	}
-	params.Body.DiskBackend.DiskSource = ds
 
 	disk, err := r.client.DiskCreate(ctx, params)
 	if err != nil {
