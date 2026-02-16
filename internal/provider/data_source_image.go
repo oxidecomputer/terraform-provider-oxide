@@ -193,7 +193,7 @@ func (d *imageDataSource) Read(
 	state.OS = types.StringValue(image.Os)
 	state.Size = types.Int64Value(int64(image.Size))
 	state.TimeCreated = types.StringValue(image.TimeCreated.String())
-	state.TimeModified = types.StringValue(image.TimeCreated.String())
+	state.TimeModified = types.StringValue(image.TimeModified.String())
 	state.Version = types.StringValue(image.Version)
 
 	digestState := imageDataSourceDigestModel{

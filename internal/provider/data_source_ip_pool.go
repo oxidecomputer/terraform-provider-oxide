@@ -146,7 +146,7 @@ func (d *ipPoolDataSource) Read(
 	state.IsDefault = types.BoolPointerValue(ipPool.IsDefault)
 	state.Name = types.StringValue(string(ipPool.Name))
 	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
-	state.TimeModified = types.StringValue(ipPool.TimeCreated.String())
+	state.TimeModified = types.StringValue(ipPool.TimeModified.String())
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
