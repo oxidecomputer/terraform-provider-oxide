@@ -1,3 +1,95 @@
+# 0.18.0
+
+### Breaking changes
+
+- **Changed schema of `external_ips` in the `oxide_instance` resource:** The `external_ips` attribute of the `oxide_instance` resource is now an object instead of a list. [#597](https://github.com/oxidecomputer/terraform-provider-oxide/pull/597).
+
+### New features
+
+- **New resource:** `oxide_address_lot` [#489](https://github.com/oxidecomputer/terraform-provider-oxide/pull/489).
+- **New data source:** `oxide_address_lot` [#489](https://github.com/oxidecomputer/terraform-provider-oxide/pull/489).
+- **Support `OXIDE_PROFILE`:** Added support for the `OXIDE_PROFILE` environment variable within the provider configuration. [#589](https://github.com/oxidecomputer/terraform-provider-oxide/pull/589).
+- **Support `config_dir` and `insecure_skip_verify`:** Added support for the `config_dir` and `insecure_skip_verify` provider configuration. [#595](https://github.com/oxidecomputer/terraform-provider-oxide/pull/595).
+- **Support `disk_type` in disk resource.:** Added support for the `disk_type` attribute for the `oxide_disk` resource. [#587](https://github.com/oxidecomputer/terraform-provider-oxide/pull/587).
+- **Support IPv6 and dual-stack network interfaces in `oxide_instance`.:** Added support for IPv6 and dual-stack network interfaces in the `oxide_instance` resource. [#591](https://github.com/oxidecomputer/terraform-provider-oxide/pull/591).
+- **New resource:** `oxide_subnet_pool` [#614](https://github.com/oxidecomputer/terraform-provider-oxide/pull/614).
+- **New resource:** `oxide_subnet_pool_member` [#614](https://github.com/oxidecomputer/terraform-provider-oxide/pull/614).
+- **New data source:** `oxide_subnet_pool` [#614](https://github.com/oxidecomputer/terraform-provider-oxide/pull/614).
+- **New resource:** `oxide_subnet_pool_silo_link` [#615](https://github.com/oxidecomputer/terraform-provider-oxide/pull/615).
+- **New resource:** `oxide_subnet_pool_attachment` [#617](https://github.com/oxidecomputer/terraform-provider-oxide/pull/617).
+- **New resource:** `oxide_switch_port_settings` [#475](https://github.com/oxidecomputer/terraform-provider-oxide/pull/475).
+- **Support IPv6 external IPs in `oxide_instance`.:** Added support for IPv6 external IPs in the `oxide_instance` resource. [#597](https://github.com/oxidecomputer/terraform-provider-oxide/pull/597).
+
+### Enhancements
+
+- **`oxide_instance` attribute deprecation:** The `host_name` attribute on the `oxide_instance` resource has been deprecated in favor of `hostname`. The `host_name` attribute will be removed in the next minor version of the provider. [#577](https://github.com/oxidecomputer/terraform-provider-oxide/pulls/577).
+- **IPv6 support for `oxide_floating_ip`:** Add IPv6 support for the `oxide_floating_ip` resource. [#608](https://github.com/oxidecomputer/terraform-provider-oxide/pull/608)
+
+### List of commits
+
+- [7450467](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7450467) Update complex tagged union types to match oxide.go. (#638)
+- [d907585](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d907585) Drop disk state refresh test workaround. (#629)
+- [fb1c329](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fb1c329) misc: use `go.work` for local development (#637)
+- [fc57530](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fc57530) Fix create/modify timestamp mappings. (#640)
+- [48307f3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/48307f3) Ignore vendor/. (#639)
+- [4e8fa41](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4e8fa41) Fix and refactor vpc subnet test. (#632)
+- [da5a9ec](https://github.com/oxidecomputer/terraform-provider-oxide/commit/da5a9ec) misc: use a separate `tools/go.mod` for `go tool` (#636)
+- [a68a9ea](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a68a9ea) instance: fix network interface plan modifier (#634)
+- [c7f5384](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c7f5384) ci: log HTTP requests and Terraform actions  (#631)
+- [2f21213](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2f21213) Run silo tests in series. (#633)
+- [d51f108](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d51f108) instance: fix diff handling on IP stacks (#628)
+- [a796c07](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a796c07) ci: update oxide CLI commands (#630)
+- [5828551](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5828551) chore: skip fail-fast on terraform/tofu test matrix. (#627)
+- [c1fe924](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c1fe924) chore: fix docstring nit. (#626)
+- [85cdac3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/85cdac3) fix: use updated api operations (#625)
+- [f84bc22](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f84bc22) Validate subnet cidrs. (#622)
+- [b50bcbf](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b50bcbf) Clean up test environment. (#624)
+- [816126b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/816126b) instance: update external IPs schema (#597)
+- [a7fc28f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a7fc28f) build(deps): bump actions/upload-artifact from 4 to 6 (#623)
+- [76da4a2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/76da4a2) misc(subnet_pool_silo_link): change read logic (#621)
+- [b3a0d7c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b3a0d7c) Add external subnet attachment resource. (#617)
+- [7efcac8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7efcac8) chore: fix parallel subnets tests. (#620)
+- [b9905e6](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b9905e6) Add AGENTS.md and simplify test workflows. (#618)
+- [bc1db38](https://github.com/oxidecomputer/terraform-provider-oxide/commit/bc1db38) Jmcarp/external subnet (#616)
+- [f092e72](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f092e72) Jmcarp/subnet pool silo link (#615)
+- [a83bcb4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a83bcb4) resource(switch_port_settings): register the resource (#475)
+- [40e8f2b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/40e8f2b) Add subnet pool resource and data source. (#614)
+- [b8f2acf](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b8f2acf) instance: add support for dual-stack network interace (#591)
+- [bf4cdf0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/bf4cdf0) floating_ip: add support for IPv6 (#608)
+- [3b2b30e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3b2b30e) chore: print omicron logs on acctest failure. (#609)
+- [a99e629](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a99e629) build(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.38.1 to 2.38.2 (#612)
+- [036df1c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/036df1c) Update oxide.go and handle typed untagged unions. (#607)
+- [0e1f4d2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0e1f4d2) chore: fix oxide.rs version logic. (#610)
+- [64048c5](https://github.com/oxidecomputer/terraform-provider-oxide/commit/64048c5) build(deps): bump actions/cache from 4 to 5 (#611)
+- [0fb7c2f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0fb7c2f) Refactor and cache docker image for faster builds. (#604)
+- [caef55f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/caef55f) Cache oxide.rs by version. (#605)
+- [9c18575](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9c18575) Bump oxide.go to latest. (#606)
+- [1958659](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1958659) Support local disks. (#587)
+- [b3fd554](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b3fd554) Bump oxide.go and handle interface types. (#598)
+- [5955cf3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5955cf3) Run acceptance tests against both terraform and opentofu. (#602)
+- [7df16cf](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7df16cf) Use `go tool` rather than building/installing binaries. (#601)
+- [937aa6c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/937aa6c) provider: update client with latest SDK (#595)
+- [068c077](https://github.com/oxidecomputer/terraform-provider-oxide/commit/068c077) deps: update Go SDK with latest changes for R18 (#593)
+- [434962f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/434962f) ci: install oxide CLI using the specified branch (#592)
+- [d684b2c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d684b2c) feat(provider): support `OXIDE_PROFILE` (#589)
+- [f7c50e0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f7c50e0) test: multi-arch docker setup (#588)
+- [b815e59](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b815e59) feat: rename attribute agent skill (#582)
+- [83859fc](https://github.com/oxidecomputer/terraform-provider-oxide/commit/83859fc) ci: update acceptance test workflow (#585)
+- [468d1e2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/468d1e2) ci: fix backport permissions (#575)
+- [43d26f4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/43d26f4) feat(oxide_instance): deprecate host_name attribute (#578)
+- [4c10a4e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4c10a4e) docs: update provider documentation (#577)
+- [c769eb6](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c769eb6) docs: add go doc comments for exported identifiers (#580)
+- [5b0e4f1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5b0e4f1) docs: import documentation (#576)
+- [68a4a21](https://github.com/oxidecomputer/terraform-provider-oxide/commit/68a4a21) Add address lot resource and data source. (#489)
+- [29c78bb](https://github.com/oxidecomputer/terraform-provider-oxide/commit/29c78bb) build(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.16.1 to 1.17.0 (#565)
+- [c1e3075](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c1e3075) build(deps): bump github.com/hashicorp/terraform-plugin-testing from 1.13.3 to 1.14.0 (#564)
+- [ea1af7c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ea1af7c) Add build status badges per branch. (#574)
+- [2ac28b2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2ac28b2) Configure disk type. (#571)
+- [fcff6e1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fcff6e1) chore: make acctest setup idempotent. (#572)
+- [73487ff](https://github.com/oxidecomputer/terraform-provider-oxide/commit/73487ff) ci: run sim acc tests on multiple omicron versions (#569)
+- [0a4c22f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0a4c22f) docs: add backporting instructions (#556)
+- [f6ba6dd](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f6ba6dd) misc: bump version (#568)
+
 # 0.17.0 (2025/Dec/8)
 
 ### New features
@@ -455,4 +547,3 @@
 - [0788136](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0788136) Bump github.com/hashicorp/terraform-plugin-testing from 1.3.0 to 1.4.0 (#188)
 - [d0d81c9](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d0d81c9) Post release version housekeeping (#186)
 - [c67786e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c67786e) Small doc fix (#185)
-

@@ -5,7 +5,7 @@
 | Branch      | Status |
 | ----------- | ------ |
 | `main`      | [![main](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=main)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Amain) |
-| `rel/v0.17` | [![0.17](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=rel%2Fv0.17)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Arel%2Fv0.17) |
+| `rel/v0.18` | [![0.18](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=rel%2Fv0.18)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Arel%2Fv0.18) |
 
 ## Requirements
 
