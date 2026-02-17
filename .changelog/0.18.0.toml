@@ -54,6 +54,10 @@ description = "`oxide_switch_port_settings` [#475](https://github.com/oxidecompu
 title = "Support IPv6 external IPs in `oxide_instance`."
 description = "Added support for IPv6 external IPs in the `oxide_instance` resource. [#597](https://github.com/oxidecomputer/terraform-provider-oxide/pull/597)."
 
+[[features]]
+title = "Support read-only disks."
+description = "Added support for read-only disks in the `oxide_disk` resource and data source. [#642](https://github.com/oxidecomputer/terraform-provider-oxide/pull/642)"
+
 [[enhancements]]
 title = "`oxide_instance` attribute deprecation"
 description = "The `host_name` attribute on the `oxide_instance` resource has been deprecated in favor of `hostname`. The `host_name` attribute will be removed in the next minor version of the provider. [#577](https://github.com/oxidecomputer/terraform-provider-oxide/pulls/577)."
