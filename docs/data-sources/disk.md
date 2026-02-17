@@ -29,9 +29,11 @@ Retrieve information about a specified disk.
 - `block_size` (Number) Size of blocks in bytes.
 - `description` (String) Description for the disk.
 - `device_path` (String) Path of the disk.
+- `disk_type` (String) Type of disk. Must be one of "distributed" or "local".
 - `id` (String) Unique, immutable, system-controlled identifier of the disk.
 - `image_id` (String) Image ID of the disk source if applicable.
 - `project_id` (String) ID of the project that contains the disk.
+- `read_only` (Boolean) Whether the disk is read-only
 - `size` (Number) Size of the disk in bytes.
 - `snapshot_id` (String) Snapshot ID of the disk source if applicable.
 - `state` (Attributes) State of the disk. (see [below for nested schema](#nestedatt--state))

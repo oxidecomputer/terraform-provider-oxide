@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -17,18 +18,16 @@ import (
 )
 
 type resourceDiskConfig struct {
-	BlockName        string
-	DiskName         string
-	SupportBlockName string
+	DiskName string
 }
 
 var resourceDiskConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
 
-resource "oxide_disk" "{{.BlockName}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_disk" "test" {
+  project_id  = data.oxide_project.test.id
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824
@@ -43,13 +42,9 @@ resource "oxide_disk" "{{.BlockName}}" {
 
 func TestAccCloudResourceDisk_full(t *testing.T) {
 	diskName := newResourceName()
-	blockName := newBlockName("disk")
-	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
 	config, err := parsedAccConfig(
 		resourceDiskConfig{
-			BlockName:        blockName,
-			DiskName:         diskName,
-			SupportBlockName: newBlockName("support"),
+			DiskName: diskName,
 		},
 		resourceDiskConfigTpl,
 	)
@@ -64,10 +59,10 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceDisk(resourceName, diskName),
+				Check:  checkResourceDisk("oxide_disk.test", diskName),
 			},
 			{
-				ResourceName:      resourceName,
+				ResourceName:      "oxide_disk.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -75,55 +70,28 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 	})
 }
 
-type resourceDiskTypeConfig struct {
-	BlockName        string
-	DiskName         string
-	DiskType         string
-	SupportBlockName string
-}
-
-var resourceDiskTypeConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
+var resourceDiskLocalConfigTpl = `
+data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
 
-resource "oxide_disk" "{{.BlockName}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_disk" "test" {
+  project_id  = data.oxide_project.test.id
   description = "a test disk"
   name        = "{{.DiskName}}"
   size        = 1073741824
-  block_size  = 4096
-  disk_type   = "{{.DiskType}}"
+  disk_type   = "local"
 }
 `
 
-func TestAccCloudResourceDisk_diskType(t *testing.T) {
+func TestAccCloudResourceDisk_local(t *testing.T) {
 	diskName := newResourceName()
-	blockName := newBlockName("disk")
-	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
-	supportBlockName := newBlockName("support")
 
-	configLocal, err := parsedAccConfig(
-		resourceDiskTypeConfig{
-			BlockName:        blockName,
-			DiskName:         diskName,
-			DiskType:         "local",
-			SupportBlockName: supportBlockName,
+	config, err := parsedAccConfig(
+		resourceDiskConfig{
+			DiskName: diskName,
 		},
-		resourceDiskTypeConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-
-	configDistributed, err := parsedAccConfig(
-		resourceDiskTypeConfig{
-			BlockName:        blockName,
-			DiskName:         diskName,
-			DiskType:         "distributed",
-			SupportBlockName: supportBlockName,
-		},
-		resourceDiskTypeConfigTpl,
+		resourceDiskLocalConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -135,25 +103,133 @@ func TestAccCloudResourceDisk_diskType(t *testing.T) {
 		CheckDestroy:             testAccDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configLocal,
+				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "disk_type", "local"),
+					resource.TestCheckResourceAttrSet("oxide_disk.test", "id"),
+					resource.TestCheckResourceAttr("oxide_disk.test", "disk_type", "local"),
+				),
+			},
+		},
+	})
+}
+
+var resourceDiskLocalInvalidConfigTpl = `
+data "oxide_project" "test" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "test" {
+  project_id      = data.oxide_project.test.id
+  description     = "a test disk"
+  name            = "{{.DiskName}}"
+  size            = 1073741824
+  source_image_id = "00000000-0000-0000-0000-000000000000"
+  disk_type       = "local"
+}
+`
+
+func TestAccCloudResourceDisk_localSourceValidation(t *testing.T) {
+	config, err := parsedAccConfig(
+		resourceDiskConfig{
+			DiskName: newResourceName(),
+		},
+		resourceDiskLocalInvalidConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				ExpectError: regexp.MustCompile(`cannot be set when disk_type is "local"`),
+			},
+		},
+	})
+}
+
+type resourceDiskReadOnlyConfig struct {
+	DiskName string
+	ReadOnly bool
+}
+
+var resourceDiskReadOnlyConfigTpl = `
+data "oxide_project" "test" {
+	name = "tf-acc-test"
+}
+
+data "oxide_images" "test" {
+  project_id = data.oxide_project.test.id
+}
+
+resource "oxide_disk" "test" {
+  project_id      = data.oxide_project.test.id
+  description     = "a test read-only disk"
+  name            = "{{.DiskName}}"
+  size            = 1073741824
+  source_image_id = element(tolist(data.oxide_images.test.images[*].id), 0)
+  read_only       = {{.ReadOnly}}
+}
+`
+
+func TestAccCloudResourceDisk_readOnly(t *testing.T) {
+	diskName := newResourceName()
+
+	configReadOnly, err := parsedAccConfig(
+		resourceDiskReadOnlyConfig{
+			DiskName: diskName,
+			ReadOnly: true,
+		},
+		resourceDiskReadOnlyConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configReadWrite, err := parsedAccConfig(
+		resourceDiskReadOnlyConfig{
+			DiskName: diskName,
+			ReadOnly: false,
+		},
+		resourceDiskReadOnlyConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccDiskDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configReadOnly,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("oxide_disk.test", "id"),
+					resource.TestCheckResourceAttr("oxide_disk.test", "read_only", "true"),
 				),
 			},
 			{
-				Config: configDistributed,
+				ResourceName:      "oxide_disk.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: configReadWrite,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(
-							resourceName,
+							"oxide_disk.test",
 							plancheck.ResourceActionReplace,
 						),
 					},
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "disk_type", "distributed"),
+					resource.TestCheckResourceAttrSet("oxide_disk.test", "id"),
+					resource.TestCheckResourceAttr("oxide_disk.test", "read_only", "false"),
 				),
 			},
 		},
@@ -169,6 +245,7 @@ func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "device_path", "/mnt/"+diskName),
 		resource.TestCheckResourceAttr(resourceName, "block_size", "512"),
 		resource.TestCheckResourceAttr(resourceName, "disk_type", "distributed"),
+		resource.TestCheckResourceAttr(resourceName, "read_only", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

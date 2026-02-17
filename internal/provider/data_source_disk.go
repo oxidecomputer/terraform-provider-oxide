@@ -44,6 +44,8 @@ type diskDataSourceModel struct {
 	State        *diskDataSourceModelState `tfsdk:"state"`
 	ImageID      types.String              `tfsdk:"image_id"`
 	SnapshotID   types.String              `tfsdk:"snapshot_id"`
+	DiskType     types.String              `tfsdk:"disk_type"`
+	ReadOnly     types.Bool                `tfsdk:"read_only"`
 	TimeCreated  types.String              `tfsdk:"time_created"`
 	TimeModified types.String              `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value            `tfsdk:"timeouts"`
@@ -128,6 +130,14 @@ Retrieve information about a specified disk.
 				Computed:    true,
 				Description: "Snapshot ID of the disk source if applicable.",
 			},
+			"disk_type": schema.StringAttribute{
+				Computed:    true,
+				Description: `Type of disk. Must be one of "distributed" or "local".`,
+			},
+			"read_only": schema.BoolAttribute{
+				Computed:    true,
+				Description: "Whether the disk is read-only",
+			},
 			"state": schema.SingleNestedAttribute{
 				Computed:    true,
 				Description: "State of the disk.",
@@ -198,6 +208,8 @@ func (d *diskDataSource) Read(
 	state.DevicePath = types.StringValue(disk.DevicePath)
 	state.ProjectID = types.StringValue(disk.ProjectId)
 	state.Size = types.Int64Value(int64(disk.Size))
+	state.DiskType = types.StringValue(string(disk.DiskType))
+	state.ReadOnly = types.BoolPointerValue(disk.ReadOnly)
 	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
 	state.TimeModified = types.StringValue(disk.TimeModified.String())
 
