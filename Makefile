@@ -152,14 +152,16 @@ testacc-local: export OXIDE_TOKEN=$(shell cat ./acctest/oxide-token)
 testacc-local: testacc
 
 .PHONY: local-api
-## Use local API language client
+## Use local Go SDK.
 local-api:
-	@ go mod edit -replace=github.com/oxidecomputer/oxide.go=../oxide.go
+	@ echo "Initializing go.work"
+	@ go work init 2> /dev/null || true
+	@ go work use . ../oxide.go
 
 .PHONY: unset-local-api
-## Removes local API language client
+## Stop using local Go SDK.
 unset-local-api:
-	@ go mod edit -dropreplace=github.com/oxidecomputer/oxide.go
+	rm -f go.work go.work.sum
 
 .PHONY: changelog
 ## Creates a changelog prior to a release

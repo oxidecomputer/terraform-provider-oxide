@@ -14,3 +14,7 @@ tf/
 acctest/oxide-token
 alpine.qcow2
 alpine.raw
+
+# Go.
+go.work
+go.work.sum
