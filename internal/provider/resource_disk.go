@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -26,8 +28,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*diskResource)(nil)
-	_ resource.ResourceWithConfigure = (*diskResource)(nil)
+	_ resource.Resource                     = (*diskResource)(nil)
+	_ resource.ResourceWithConfigure        = (*diskResource)(nil)
+	_ resource.ResourceWithConfigValidators = (*diskResource)(nil)
 )
 
 // NewDiskResource is a helper function to simplify the provider implementation.
@@ -51,6 +54,7 @@ type diskResourceModel struct {
 	ProjectID        types.String   `tfsdk:"project_id"`
 	Size             types.Int64    `tfsdk:"size"`
 	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
+	ReadOnly         types.Bool     `tfsdk:"read_only"`
 	TimeCreated      types.String   `tfsdk:"time_created"`
 	TimeModified     types.String   `tfsdk:"time_modified"`
 	Timeouts         timeouts.Value `tfsdk:"timeouts"`
@@ -85,6 +89,14 @@ func (r *diskResource) ImportState(
 	resp *resource.ImportStateResponse,
 ) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// ConfigValidators returns the config validators for the resource.
+func (r *diskResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		&diskLocalSourceValidator{},
+		&diskReadOnlySourceValidator{},
+	}
 }
 
 // Schema defines the schema for the resource.
@@ -193,6 +205,15 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"read_only": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Whether the disk is read-only. Defaults to `false`.",
+				Default:     booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
@@ -241,24 +262,25 @@ func (r *diskResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	var ds oxide.DiskSource
-	if !plan.SourceImageID.IsNull() {
-		ds = oxide.DiskSource{Value: &oxide.DiskSourceImage{
-			ImageId: plan.SourceImageID.ValueString(),
-		}}
-	} else if !plan.SourceSnapshotID.IsNull() {
-		ds = oxide.DiskSource{Value: &oxide.DiskSourceSnapshot{
-			SnapshotId: plan.SourceSnapshotID.ValueString(),
-		}}
-	} else if !plan.BlockSize.IsNull() {
-		ds = oxide.DiskSource{Value: &oxide.DiskSourceBlank{
-			BlockSize: oxide.BlockSize(plan.BlockSize.ValueInt64()),
-		}}
-	}
-
 	var diskBackend oxide.DiskBackend
 	switch oxide.DiskBackendType(plan.DiskType.ValueString()) {
 	case oxide.DiskBackendTypeDistributed:
+		var ds oxide.DiskSource
+		if !plan.SourceImageID.IsNull() {
+			ds = oxide.DiskSource{Value: &oxide.DiskSourceImage{
+				ImageId:  plan.SourceImageID.ValueString(),
+				ReadOnly: plan.ReadOnly.ValueBoolPointer(),
+			}}
+		} else if !plan.SourceSnapshotID.IsNull() {
+			ds = oxide.DiskSource{Value: &oxide.DiskSourceSnapshot{
+				SnapshotId: plan.SourceSnapshotID.ValueString(),
+				ReadOnly:   plan.ReadOnly.ValueBoolPointer(),
+			}}
+		} else if !plan.BlockSize.IsNull() {
+			ds = oxide.DiskSource{Value: &oxide.DiskSourceBlank{
+				BlockSize: oxide.BlockSize(plan.BlockSize.ValueInt64()),
+			}}
+		}
 		diskBackend = oxide.DiskBackend{Value: &oxide.DiskBackendDistributed{
 			DiskSource: ds,
 		}}
@@ -302,6 +324,7 @@ func (r *diskResource) Create(
 	plan.DevicePath = types.StringValue(disk.DevicePath)
 	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
 	plan.DiskType = types.StringValue(string(disk.DiskType))
+	plan.ReadOnly = types.BoolPointerValue(disk.ReadOnly)
 	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
 	plan.TimeModified = types.StringValue(disk.TimeModified.String())
 
@@ -356,6 +379,7 @@ func (r *diskResource) Read(
 	state.Description = types.StringValue(disk.Description)
 	state.DevicePath = types.StringValue(disk.DevicePath)
 	state.DiskType = types.StringValue(string(disk.DiskType))
+	state.ReadOnly = types.BoolPointerValue(disk.ReadOnly)
 	state.ID = types.StringValue(disk.Id)
 	state.Name = types.StringValue(string(disk.Name))
 	state.ProjectID = types.StringValue(disk.ProjectId)
@@ -429,4 +453,90 @@ func (r *diskResource) Delete(
 		fmt.Sprintf("deleted disk with ID: %v", state.ID.ValueString()),
 		map[string]any{"success": true},
 	)
+}
+
+// diskLocalSourceValidator validates that source-related fields are not set when disk_type is
+// "local".
+type diskLocalSourceValidator struct{}
+
+func (v *diskLocalSourceValidator) Description(_ context.Context) string {
+	return "Validates that source_image_id, source_snapshot_id, and read_only are not set when disk_type is \"local\"."
+}
+
+func (v *diskLocalSourceValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *diskLocalSourceValidator) ValidateResource(
+	ctx context.Context,
+	req resource.ValidateConfigRequest,
+	resp *resource.ValidateConfigResponse,
+) {
+	var config diskResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if config.DiskType.IsNull() || config.DiskType.IsUnknown() ||
+		config.DiskType.ValueString() != string(oxide.DiskBackendTypeLocal) {
+		return
+	}
+
+	if !config.SourceImageID.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("source_image_id"),
+			"Invalid configuration",
+			"\"source_image_id\" cannot be set when disk_type is \"local\".",
+		)
+	}
+	if !config.SourceSnapshotID.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("source_snapshot_id"),
+			"Invalid configuration",
+			"\"source_snapshot_id\" cannot be set when disk_type is \"local\".",
+		)
+	}
+	if !config.ReadOnly.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("read_only"),
+			"Invalid configuration",
+			"\"read_only\" cannot be set when disk_type is \"local\".",
+		)
+	}
+}
+
+// diskReadOnlySourceValidator validates that read_only requires a source image or snapshot.
+type diskReadOnlySourceValidator struct{}
+
+func (v *diskReadOnlySourceValidator) Description(_ context.Context) string {
+	return "Validates that read_only requires source_image_id or source_snapshot_id."
+}
+
+func (v *diskReadOnlySourceValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *diskReadOnlySourceValidator) ValidateResource(
+	ctx context.Context,
+	req resource.ValidateConfigRequest,
+	resp *resource.ValidateConfigResponse,
+) {
+	var config diskResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if config.ReadOnly.IsNull() || config.ReadOnly.IsUnknown() || !config.ReadOnly.ValueBool() {
+		return
+	}
+
+	if config.SourceImageID.IsNull() && config.SourceSnapshotID.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("read_only"),
+			"Invalid configuration",
+			"\"read_only\" requires \"source_image_id\" or \"source_snapshot_id\" to be set.",
+		)
+	}
 }
