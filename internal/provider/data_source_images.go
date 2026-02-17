@@ -219,12 +219,20 @@ func (d *imagesDataSource) Read(
 			Version:      types.StringValue(image.Version),
 		}
 
-		digestState := imageDigestModel{
-			Type:  types.StringValue(string(image.Digest.Type)),
-			Value: types.StringValue(image.Digest.Value),
+		if image.Digest.Value != nil {
+			sha256, ok := image.Digest.AsSha256()
+			if !ok {
+				resp.Diagnostics.AddError(
+					"Unexpected digest type",
+					fmt.Sprintf("Expected sha256 digest, got: %s", image.Digest.Type()),
+				)
+				return
+			}
+			imageState.Digest = imageDigestModel{
+				Type:  types.StringValue(string(image.Digest.Type())),
+				Value: types.StringValue(sha256.Value),
+			}
 		}
-
-		imageState.Digest = digestState
 
 		state.Images = append(state.Images, imageState)
 	}

@@ -241,30 +241,46 @@ func (r *diskResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	var ds oxide.DiskSource
+	if !plan.SourceImageID.IsNull() {
+		ds = oxide.DiskSource{Value: &oxide.DiskSourceImage{
+			ImageId: plan.SourceImageID.ValueString(),
+		}}
+	} else if !plan.SourceSnapshotID.IsNull() {
+		ds = oxide.DiskSource{Value: &oxide.DiskSourceSnapshot{
+			SnapshotId: plan.SourceSnapshotID.ValueString(),
+		}}
+	} else if !plan.BlockSize.IsNull() {
+		ds = oxide.DiskSource{Value: &oxide.DiskSourceBlank{
+			BlockSize: oxide.BlockSize(plan.BlockSize.ValueInt64()),
+		}}
+	}
+
+	var diskBackend oxide.DiskBackend
+	switch oxide.DiskBackendType(plan.DiskType.ValueString()) {
+	case oxide.DiskBackendTypeDistributed:
+		diskBackend = oxide.DiskBackend{Value: &oxide.DiskBackendDistributed{
+			DiskSource: ds,
+		}}
+	case oxide.DiskBackendTypeLocal:
+		diskBackend = oxide.DiskBackend{Value: &oxide.DiskBackendLocal{}}
+	default:
+		resp.Diagnostics.AddError(
+			"Invalid disk type",
+			fmt.Sprintf("Unexpected disk type: %s", plan.DiskType.ValueString()),
+		)
+		return
+	}
+
 	params := oxide.DiskCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.DiskCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 			Size:        oxide.ByteCount(plan.Size.ValueInt64()),
-			DiskBackend: oxide.DiskBackend{
-				Type: oxide.DiskBackendType(plan.DiskType.ValueString()),
-			},
+			DiskBackend: diskBackend,
 		},
 	}
-
-	ds := oxide.DiskSource{}
-	if !plan.SourceImageID.IsNull() {
-		ds.ImageId = plan.SourceImageID.ValueString()
-		ds.Type = oxide.DiskSourceTypeImage
-	} else if !plan.SourceSnapshotID.IsNull() {
-		ds.SnapshotId = plan.SourceSnapshotID.ValueString()
-		ds.Type = oxide.DiskSourceTypeSnapshot
-	} else if !plan.BlockSize.IsNull() {
-		ds.BlockSize = oxide.BlockSize(plan.BlockSize.ValueInt64())
-		ds.Type = oxide.DiskSourceTypeBlank
-	}
-	params.Body.DiskBackend.DiskSource = ds
 
 	disk, err := r.client.DiskCreate(ctx, params)
 	if err != nil {
