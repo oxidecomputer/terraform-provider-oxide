@@ -92,16 +92,41 @@ TEST_ACC_NAME=TestAccCloudDataSourceInstanceExternalIPs_full make testacc-local
 
 ## Releasing a new version
 
-Remember to update the changelog before releasing.
+Steps prefixed with `.0 ->` only need to be done for major and minor releases
+where the patch version is (`vX.Y.0`).
 
-There is a Github action that takes care of creating the artifacts and publishing to the terraform registry.
-
-To trigger the process create a tag from the local release branch (`rel/vX.Y`) and push to Github.
-
-```console
-$ git tag v0.1.0
-$ git push origin v0.1.0
-```
+- [ ] Create release branch `release-vX.Y.Z`.
+  ```
+  git checkout main
+  git pull origin main
+  git checkout -b release-vX.Y.Z
+  ```
+- [ ] Update `CHANGELOG.md`.
+  ```
+  make changelog
+  ```
+- [ ] `.0 ->` Update the `Build status` table in `README.md` to point to the new release line branch.
+- [ ] Commit changes and open a PR.
+  ```
+  git add CHANGELOG.md README.md
+  git commit -m 'release vX.Y.Z'
+  git push origin release-vX.Y.Z
+  ```
+- [ ] From the release branch, create and push release tag.
+  ```
+  git checkout release-vX.Y.Z
+  git tag vX.Y.Z
+  git push origin vX.Y.Z
+  ```
+- [ ] `.0 ->` From the release branch, create and push the new release line branch.
+  ```
+  git checkout release-vX.Y.Z
+  git checkout -b rel/vX.Y
+  git push origin rel/vX.Y
+  ```
+- [ ] Approve and monitor the [Release](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/release.yml) workflow.
+- [ ] Update the [Release](https://github.com/oxidecomputer/terraform-provider-oxide/releases) description with the changelog content for the version and publish the release.
+- [ ] `.0 ->` Create new backport [label](https://github.com/oxidecomputer/terraform-provider-oxide/labels) with color `#b1d0c7` and named `backport/vX.Y`.
 
 ## Backporting changes
 
