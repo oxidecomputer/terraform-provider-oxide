@@ -126,5 +126,5 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v6
         with:
-          name: logs-${{ matrix.tf-binary }}
+          name: logs-${{ matrix.tf-binary }}-${{ job.check_run_id }}
           path: acctest/tmp/
