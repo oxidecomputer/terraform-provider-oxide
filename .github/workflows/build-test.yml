@@ -6,6 +6,7 @@ on:
       - '[0-9].[0-9]+'
       - 'rel/v*'
   pull_request:
+  workflow_dispatch:
   schedule:
     # Cron jobs test against omicron main to catch breaking changes early.
     - cron: "25 7 * * *"
@@ -46,11 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           IS_SCHEDULE: ${{ github.event_name == 'schedule' }}
         run: |
-          if [[ "${IS_SCHEDULE}" == "true" ]]; then
-            OMICRON_SHA=$(./acctest/omicron-version.sh main)
-          else
-            OMICRON_SHA=$(./acctest/omicron-version.sh)
-          fi
+          OMICRON_SHA=$(./acctest/omicron-version.sh e673367)
           echo "sha=${OMICRON_SHA}" >> $GITHUB_OUTPUT
 
   # Build and push the acctest docker image before running acceptance tests.
