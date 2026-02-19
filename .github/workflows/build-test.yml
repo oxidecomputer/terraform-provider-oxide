@@ -26,6 +26,8 @@ jobs:
         run: make build
       - name: test
         run: make test
+        env:
+          CHECKPOINT_DISABLE: "1"
       - name: lint
         run: make lint
 

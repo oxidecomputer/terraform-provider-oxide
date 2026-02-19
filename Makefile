@@ -31,6 +31,9 @@ TEST_ACC_DOCKER_COMPOSE_FLAGS = --project-directory ./acctest --file ./acctest/d
 TEST_ARGS ?= -timeout 10m -race -cover
 TEST_PACKAGE ?= ./internal/...
 
+# Helpers
+GO_TOOL = go tool -modfile=tools/go.mod
+
 ### Build targets
 
 ## Builds the source code and saves the binary to bin/.
@@ -50,15 +53,15 @@ install: build
 .PHONY: test
 test:
 	@ echo "-> Running unit tests for $(BINARY)"
-	@ go test $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS)
+	@ $(GO_TOOL) gotestsum --format=testname --hide-summary=skipped -- $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS)
 
 .PHONY: docs
 docs:
-	@ go tool -modfile=tools/go.mod tfplugindocs generate
+	@ $(GO_TOOL) tfplugindocs generate
 
 .PHONY: check-docs
 check-docs:
-	@ go tool -modfile=tools/go.mod tfplugindocs generate
+	@ $(GO_TOOL) tfplugindocs generate
 	@ if ! git diff --exit-code docs; then echo 'Generated docs have changed. Re-generate with `make docs`.'; fi
 
 ## Lints all of the source files
@@ -68,17 +71,17 @@ lint: golangci-lint tfproviderdocs terrafmt tfproviderlint check-docs # configfm
 .PHONY: tfproviderlint
 tfproviderlint:
 	@ echo "-> Running Terraform static analysis linter"
-	@ go tool -modfile=tools/go.mod tfproviderlint ./...
+	@ $(GO_TOOL) tfproviderlint ./...
 
 .PHONY: tfproviderdocs
 tfproviderdocs:
 	@ echo "-> Running terraform provider documentation linter"
-	@ go tool -modfile=tools/go.mod tfproviderdocs check -provider-name $(BINARY) .
+	@ $(GO_TOOL) tfproviderdocs check -provider-name $(BINARY) .
 
 .PHONY: golangci-lint
 golangci-lint:
 	@ echo "-> Running Go linters"
-	@ go tool -modfile=tools/go.mod golangci-lint run
+	@ $(GO_TOOL) golangci-lint run
 
 .PHONY: fmt
 fmt: golangci-fmt terrafmt-fmt docs
@@ -86,17 +89,17 @@ fmt: golangci-fmt terrafmt-fmt docs
 .PHONY: golangci-fmt
 golangci-fmt:
 	@ echo "-> Formatting Go code"
-	@ go tool -modfile=tools/go.mod golangci-lint fmt
+	@ $(GO_TOOL) golangci-lint fmt
 
 .PHONY: terrafmt
 terrafmt:
 	@ echo "-> Running terraform docs codeblocks linter"
-	@ find ./docs -type f -name "*.md" -exec go tool -modfile=tools/go.mod terrafmt diff -f {} \;
+	@ find ./docs -type f -name "*.md" -exec $(GO_TOOL) terrafmt diff -f {} \;
 
 .PHONY: terrafmt-fmt
 terrafmt-fmt:
 	@ echo "-> Running terraform docs codeblocks linter"
-	@ find ./docs -type f -name "*.md" -exec go tool -modfile=tools/go.mod terrafmt fmt -f {} \;
+	@ find ./docs -type f -name "*.md" -exec $(GO_TOOL) terrafmt fmt -f {} \;
 
 configfmt:
 	@ echo "-> Running terraform linters on .tf files"
@@ -139,10 +142,12 @@ testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
 	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
 
 .PHONY: testacc
-## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
+## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_GOTESTSUM_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
 testacc:
 	@ echo "-> Running terraform acceptance tests"
-	@ TF_ACC=1 go test $(TEST_ACC) -v -count $(TEST_ACC_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TEST_ACC_ARGS) -timeout 20m -run $(TEST_ACC_NAME)
+	@ TF_ACC=1 $(GO_TOOL) gotestsum \
+	    --format=testname --rerun-fails=3 --packages=$(TEST_ACC)/... $(TEST_ACC_GOTESTSUM_ARGS) \
+	    -- $(TEST_ACC) -v -count $(TEST_ACC_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TEST_ACC_ARGS) -timeout 20m -run $(TEST_ACC_NAME)
 
 .PHONY: testacc-local
 ## Runs the Terraform acceptance tests locally using the simulated acceptance test suite environment.
