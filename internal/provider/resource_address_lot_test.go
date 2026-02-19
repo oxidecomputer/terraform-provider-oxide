@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -8,17 +9,18 @@ import (
 
 func TestAccAddressLot_full(t *testing.T) {
 	resourceName := "oxide_address_lot.test"
+	addressLotName := newResourceName()
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceAddressLotConfig,
-				Check:  checkResourceAddressLot(resourceName),
+				Config: testResourceAddressLotConfig(addressLotName),
+				Check:  checkResourceAddressLot(resourceName, addressLotName),
 			},
 			{
-				Config: testResourceAddressLotUpdateConfig,
-				Check:  checkResourceAddressLotUpdate(resourceName),
+				Config: testResourceAddressLotUpdateConfig(addressLotName),
+				Check:  checkResourceAddressLotUpdate(resourceName, addressLotName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -29,10 +31,11 @@ func TestAccAddressLot_full(t *testing.T) {
 	})
 }
 
-var testResourceAddressLotConfig = `
+func testResourceAddressLotConfig(name string) string {
+	return fmt.Sprintf(`
 resource "oxide_address_lot" "test" {
 	description       = "a test address lot"
-	name              = "terraform-acc-my-address-lot"
+	name              = "%[1]s"
 	kind              = "infra"
 	blocks = [
 		{
@@ -47,12 +50,14 @@ resource "oxide_address_lot" "test" {
 		update = "4m"
 	}
 }
-`
+`, name)
+}
 
-var testResourceAddressLotUpdateConfig = `
+func testResourceAddressLotUpdateConfig(name string) string {
+	return fmt.Sprintf(`
 resource "oxide_address_lot" "test" {
 	description       = "a test address lot"
-	name              = "terraform-acc-my-address-lot"
+	name              = "%[1]s"
 	kind              = "infra"
 	blocks = [
 		{
@@ -71,13 +76,14 @@ resource "oxide_address_lot" "test" {
 		update = "4m"
 	}
 }
-`
+`, name)
+}
 
-func checkResourceAddressLot(resourceName string) resource.TestCheckFunc {
+func checkResourceAddressLot(resourceName string, addressLotName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test address lot"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-my-address-lot"),
+		resource.TestCheckResourceAttr(resourceName, "name", addressLotName),
 		resource.TestCheckResourceAttrSet(resourceName, "blocks.0.first_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "blocks.0.last_address"),
 		resource.TestCheckResourceAttr(resourceName, "blocks.0.first_address", "172.0.1.1"),
@@ -91,11 +97,14 @@ func checkResourceAddressLot(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceAddressLotUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceAddressLotUpdate(
+	resourceName string,
+	addressLotName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test address lot"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-my-address-lot"),
+		resource.TestCheckResourceAttr(resourceName, "name", addressLotName),
 		resource.TestCheckResourceAttrSet(resourceName, "blocks.0.first_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "blocks.0.last_address"),
 		resource.TestCheckResourceAttrSet(resourceName, "blocks.1.first_address"),
