@@ -15,7 +15,7 @@ jobs:
       matrix:
         tf-binary:
           - terraform
-          - opentofu
+          - tofu
     steps:
       - uses: actions/checkout@v6
       - uses: hashicorp/setup-terraform@v3
@@ -23,7 +23,7 @@ jobs:
         with:
           terraform_wrapper: false
       - uses: opentofu/setup-opentofu@v1
-        if: matrix.tf-binary == 'opentofu'
+        if: matrix.tf-binary == 'tofu'
         with:
           tofu_wrapper: false
       - uses: actions/setup-go@v6
@@ -85,26 +85,16 @@ jobs:
         env:
           OXIDE_HOST: http://localhost:12220
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-      - name: test terraform
-        id: test-terraform
-        if: matrix.tf-binary == 'terraform'
-        run: make testacc
-        env:
-          OXIDE_HOST: http://localhost:8080
-          OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
-          TF_ACC_SIM: "1"
-          TF_LOG: "TRACE"
-          TF_LOG_PATH: "terraform.log"
-      - name: test opentofu
-        id: test-tofu
-        if: matrix.tf-binary == 'opentofu'
+      - name: run acceptance test
         run: |
-          export TF_ACC_TERRAFORM_PATH=$(which tofu)
+          export TF_ACC_TERRAFORM_PATH=$(which ${{ matrix.tf-binary }})
           make testacc
         env:
-          TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
+          CHECKPOINT_DISABLE: "1"
           OXIDE_HOST: http://localhost:8080
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
+          TEST_ACC_GOTESTSUM_ARGS: "--rerun-fails-report=./acctest/acc-test-rerun.txt --junitfile=./acctest/acc-tests.xml"
+          TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
           TF_ACC_SIM: "1"
           TF_LOG: "TRACE"
           TF_LOG_PATH: "terraform.log"
@@ -121,6 +111,15 @@ jobs:
           docker compose exec -T omicron-dev sh -c 'tar -cf - /tmp/omicron-dev*.log' | tar -xf -
           docker compose exec -T mitmproxy sh -c 'tar -cf - /tmp/mitmproxy.log' | tar -xf -
           mv ../internal/provider/terraform.log ./tmp
+          mv ./acc-tests.xml ./tmp
+      - name: rerun warn
+        if: always()
+        continue-on-error: true
+        working-directory: acctest
+        run: |
+          if [ -f ./acc-test-rerun.txt ]; then
+            echo "::warning title=${{ github.job }} (${{ matrix.tf-binary }}) - test rerun::$(cat ./acc-test-rerun.txt)"
+          fi
       - name: upload logs
         if: always()
         continue-on-error: true
