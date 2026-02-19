@@ -142,11 +142,11 @@ testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
 	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
 
 .PHONY: testacc
-## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
+## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_GOTESTSUM_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
 testacc:
 	@ echo "-> Running terraform acceptance tests"
 	@ TF_ACC=1 $(GO_TOOL) gotestsum \
-	    --format=testname --rerun-fails=3 --packages=$(TEST_ACC)/... \
+	    --format=testname --rerun-fails=3 --packages=$(TEST_ACC)/... $(TEST_ACC_GOTESTSUM_ARGS) \
 	    -- $(TEST_ACC) -v -count $(TEST_ACC_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TEST_ACC_ARGS) -timeout 20m -run $(TEST_ACC_NAME)
 
 .PHONY: testacc-local
