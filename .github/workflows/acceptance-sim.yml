@@ -90,10 +90,11 @@ jobs:
           export TF_ACC_TERRAFORM_PATH=$(which ${{ matrix.tf-binary }})
           make testacc
         env:
-          TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
+          CHECKPOINT_DISABLE: "1"
           OXIDE_HOST: http://localhost:8080
           OXIDE_TOKEN: ${{ steps.auth-token.outputs.OXIDE_TOKEN }}
           TEST_ACC_GOTESTSUM_ARGS: "--rerun-fails-report=./acctest/acc-test-rerun.txt --junitfile=./acctest/acc-tests.xml"
+          TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
           TF_ACC_SIM: "1"
           TF_LOG: "TRACE"
           TF_LOG_PATH: "terraform.log"
