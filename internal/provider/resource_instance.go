@@ -700,24 +700,16 @@ func (r *instanceResource) UpgradeState(ctx context.Context) map[int64]resource.
 						TimeCreated:  oldNIC.TimeCreated,
 						TimeModified: oldNIC.TimeModified,
 						VPCID:        oldNIC.VPCID,
+
+						// New attribute added in schema v1.
+						//
+						// Ideally we would check the value of ip_config or
+						// ip_addr in the user configuration file, but we don't
+						// have access to it during state migration, so assume
+						// the user has not changed their config and leave
+						// ip_config as nil.
+						IPConfig: nil,
 					}
-
-					if oldNIC.IPConfig != nil {
-						newNIC.IPConfig = &instanceResourceIPConfigModel{}
-
-						if oldNIC.IPConfig.V4 != nil {
-							newNIC.IPConfig.V4 = &instanceResourceIPConfigV4Model{
-								IP: oldNIC.IPConfig.V4.IP,
-							}
-						}
-
-						if oldNIC.IPConfig.V6 != nil {
-							newNIC.IPConfig.V6 = &instanceResourceIPConfigV6Model{
-								IP: oldNIC.IPConfig.V6.IP,
-							}
-						}
-					}
-
 					newNICs = append(newNICs, newNIC)
 				}
 
@@ -747,27 +739,33 @@ func (r *instanceResource) UpgradeState(ctx context.Context) map[int64]resource.
 				}
 
 				newState := instanceResourceModel{
-					AntiAffinityGroups:        oldState.AntiAffinityGroups,
-					AutoRestartPolicy:         oldState.AutoRestartPolicy,
-					BootDiskID:                oldState.BootDiskID,
-					Description:               oldState.Description,
-					DiskAttachments:           oldState.DiskAttachments,
-					ExternalIPs:               newExtIPs,
-					HostnameDeprecated:        oldState.HostnameDeprecated,
-					Hostname:                  oldState.Hostname,
-					ID:                        oldState.ID,
-					Memory:                    oldState.Memory,
-					Name:                      oldState.Name,
-					NetworkInterfaces:         newNICs,
-					AttachedNetworkInterfaces: oldState.AttachedNetworkInterfaces,
-					NCPUs:                     oldState.NCPUs,
-					ProjectID:                 oldState.ProjectID,
-					SSHPublicKeys:             oldState.SSHPublicKeys,
-					StartOnCreate:             oldState.StartOnCreate,
-					TimeCreated:               oldState.TimeCreated,
-					TimeModified:              oldState.TimeModified,
-					Timeouts:                  oldState.Timeouts,
-					UserData:                  oldState.UserData,
+					AntiAffinityGroups: oldState.AntiAffinityGroups,
+					AutoRestartPolicy:  oldState.AutoRestartPolicy,
+					BootDiskID:         oldState.BootDiskID,
+					Description:        oldState.Description,
+					DiskAttachments:    oldState.DiskAttachments,
+					ExternalIPs:        newExtIPs,
+					HostnameDeprecated: oldState.HostName,
+					Hostname:           oldState.HostName,
+					ID:                 oldState.ID,
+					Memory:             oldState.Memory,
+					Name:               oldState.Name,
+					NetworkInterfaces:  newNICs,
+					NCPUs:              oldState.NCPUs,
+					ProjectID:          oldState.ProjectID,
+					SSHPublicKeys:      oldState.SSHPublicKeys,
+					StartOnCreate:      oldState.StartOnCreate,
+					TimeCreated:        oldState.TimeCreated,
+					TimeModified:       oldState.TimeModified,
+					Timeouts:           oldState.Timeouts,
+					UserData:           oldState.UserData,
+
+					// New attribute added in schema v1.
+					//
+					// This is a computed attribute, so leave it as a null map
+					// that is going to be populated when the state is
+					// refreshed.
+					AttachedNetworkInterfaces: types.MapNull(instanceResourceAttachedNICType),
 				}
 
 				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
