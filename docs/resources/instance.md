@@ -153,7 +153,6 @@ resource "oxide_instance" "example" {
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
 - `external_ips` (Attributes) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
-- `host_name` (String, Deprecated) Hostname of the instance.
 - `hostname` (String) Hostname of the instance.
 - `network_interfaces` (Attributes Set) Network interface devices attached to the instance. (see [below for nested schema](#nestedatt--network_interfaces))
 - `ssh_public_keys` (Set of String) An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.
@@ -202,22 +201,10 @@ Required:
 Required:
 
 - `description` (String) Description for the instance network interface.
+- `ip_config` (Attributes) IP stack to create for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config))
 - `name` (String) Name of the instance network interface.
 - `subnet_id` (String) ID of the VPC subnet in which to create the instance network interface.
 - `vpc_id` (String) ID of the VPC in which to create the instance network interface.
-
-Optional:
-
-- `ip_address` (String, Deprecated) IP address for the instance network interface. One will be auto-assigned if not provided.
-- `ip_config` (Attributes) IP stack to create for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config))
-
-Read-Only:
-
-- `id` (String, Deprecated) Unique, immutable, system-controlled identifier of the instance network interface.
-- `mac_address` (String, Deprecated) MAC address assigned to the instance network interface.
-- `primary` (Boolean, Deprecated) True if this is the primary network interface for the instance to which it's attached to.
-- `time_created` (String, Deprecated) Timestamp of when this instance network interface was created.
-- `time_modified` (String, Deprecated) Timestamp of when this instance network interface was last modified.
 
 <a id="nestedatt--network_interfaces--ip_config"></a>
 ### Nested Schema for `network_interfaces.ip_config`
