@@ -232,9 +232,9 @@ func (r *switchPortSettingsResource) Schema(
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"address": schema.StringAttribute{
-										Required:    true,
+										Optional:    true,
 										CustomType:  iptypes.IPAddressType{},
-										Description: "Address of the host to peer with.",
+										Description: "Address of the host to peer with. If not provided, this is an unnumbered BGP session that will be established over the interface specified by `interface_name`.",
 									},
 									"allowed_export": schema.SingleNestedAttribute{
 										Required:    true,
@@ -871,7 +871,12 @@ func toSwitchPortSettingsModel(
 			}
 
 			bgpPeerModel := switchPortSettingsBGPPeerPeerModel{
-				Address:        iptypes.NewIPAddressValue(bgpPeer.Addr),
+				Address: func() iptypes.IPAddress {
+					if bgpPeer.Addr == "" {
+						return iptypes.NewIPAddressNull()
+					}
+					return iptypes.NewIPAddressValue(bgpPeer.Addr)
+				}(),
 				BGPConfig:      types.StringValue(string(bgpPeer.BgpConfig)),
 				ConnectRetry:   types.Int64Value(int64(*bgpPeer.ConnectRetry)),
 				DelayOpen:      types.Int64Value(int64(*bgpPeer.DelayOpen)),
