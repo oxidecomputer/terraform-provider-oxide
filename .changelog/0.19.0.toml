@@ -1,0 +1,15 @@
+[[breaking]]
+title = ""
+description = ""
+
+[[features]]
+title = "`oxide_switch_port_settings`"
+description = "Added support for unnumbered BGP sessions. [#653](https://github.com/oxidecomputer/terraform-provider-oxide/pull/653)."
+
+[[enhancements]]
+title = ""
+description = ""
+
+[[bugs]]
+title = ""
+description = ""

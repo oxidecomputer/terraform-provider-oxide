@@ -206,7 +206,6 @@ Required:
 
 Required:
 
-- `address` (String) Address of the host to peer with.
 - `allowed_export` (Attributes) Export policy for the peer. (see [below for nested schema](#nestedatt--bgp_peers--peers--allowed_export))
 - `allowed_import` (Attributes) Import policy for the peer. (see [below for nested schema](#nestedatt--bgp_peers--peers--allowed_import))
 - `bgp_config` (String) Name or ID of the global BGP configuration used for establishing a session with this peer.
@@ -221,6 +220,7 @@ Required:
 
 Optional:
 
+- `address` (String) Address of the host to peer with. If not provided, this is an unnumbered BGP session that will be established over the interface specified by `interface_name`.
 - `local_pref` (Number) BGP local preference value for routes received from this peer.
 - `md5_auth_key` (String) MD5 authentication key for this BGP session.
 - `min_ttl` (Number) Minimum acceptable TTL for BGP packets from this peer.
