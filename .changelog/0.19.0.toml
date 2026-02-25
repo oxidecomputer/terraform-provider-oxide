@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "Removed deprecated attributes of the `oxide_instance` resource."
+description = "The deprecated attributes `host_name`, `network_interfaces.ip_address`, `network_intefaces.mac_address`, `network_interfaces.id`, `network_interfaces.primary`, `network_interfaces.time_created`, and `network_interfaces.time_modified` have been removed from the `oxide_instance` resource. Use `hostname` and the `attached_network_interfaces` attributes instead. [#651](https://github.com/oxidecomputer/terraform-provider-oxide/pull/651)."
 
 [[features]]
 title = "`oxide_switch_port_settings`"

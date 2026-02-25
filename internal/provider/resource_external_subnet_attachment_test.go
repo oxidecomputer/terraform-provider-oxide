@@ -84,6 +84,12 @@ resource "oxide_instance" "test" {
 			vpc_id      = data.oxide_vpc_subnet.default.vpc_id
 			description = "nic"
 			name        = "nic0"
+
+			ip_config = {
+				v4 = {
+					ip = "auto"
+				}
+			}
 		}
 	]
 }
