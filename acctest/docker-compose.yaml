@@ -3,6 +3,8 @@ services:
     build: "."
     image: "acctest-omicron-dev:${TEST_ACC_DOCKER_TAG:-latest}"
     platform: "linux/amd64"
+    environment:
+      RUST_BACKTRACE: "1"
     command:
       - "omicron-dev"
       - "run-all"
