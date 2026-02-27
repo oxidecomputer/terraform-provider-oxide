@@ -16,9 +16,6 @@ ifeq ($(OS), illumos)
     OS_ARCH = solaris_$(ARCH)
 endif
 
-PROVIDER_PATH ?= registry.terraform.io/oxidecomputer/oxide/$(VERSION)/$(OS_ARCH)/
-PLUGIN_LOCATION ?= ~/.terraform.d/plugins/$(PROVIDER_PATH)
-
 # Acceptance test variables
 TEST_ACC_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/provider
@@ -42,12 +39,11 @@ build:
 	@ echo "-> Building binary in $(BINARY_LOCATION)"
 	@ go build -o $(BINARY_LOCATION) .
 
-## Builds the source code and moves the binary to the local terraform plugin directory.
+## Builds the source code and installs the binary to the GOBIN path.
 .PHONY: install
-install: build
-	@ echo "-> Installing plugin in $(PLUGIN_LOCATION)"
-	@ mkdir -p $(PLUGIN_LOCATION)
-	@ cp $(BINARY_LOCATION) $(PLUGIN_LOCATION)
+install:
+	@ echo "-> Installing plugin"
+	@ go install .
 
 ## Run unit tests. Use TEST_ARGS to set `go test` CLI arguments, and TEST_UNIT_DIR to set packages to be tested
 .PHONY: test
