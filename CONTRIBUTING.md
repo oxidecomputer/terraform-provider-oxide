@@ -9,11 +9,32 @@
 
 There are two make targets to build the provider.
 
-`make install` will build the binary in the `./bin` directory in the root of this repository, and install the provider in your local Terraform plugins directory. Using this target will enable you to use the provider you've just built with your own Terraform configuration files.
+`make install` will build the binary using the `go install` command and place
+it in the path defined by the environment variables  `$GOBIN`, `$GOPATH/bin`,
+or `$HOME/go/bin`, depending on which ones are defined. Refer to `go help
+install` for more information.
 
-There is a caveat when installing with an Apple M1 computer. When building the same version with changes you will have to manually delete the previous binary, or change the version in the Makefile.
+Once the binary is installed, you will need to create or modify the file
+`$HOME/.terraformrc` to point the Oxide provider to its installation path. For
+example:
 
-`make build` will only build the binary in the `./bin` directory. Terraform will not know to look for the provider there, and will not work with Terraform configuration files.
+```hcl
+provider_installation {
+  dev_overrides {
+    "registry.terraform.io/oxidecomputer/oxide" = "$HOME/go/bin"
+  }
+
+  direct {}
+}
+```
+
+Refer to the [Terraform
+documentation](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider#prepare-terraform-for-local-provider-install)
+for more information.
+
+`make build` will only build the binary in the `./bin` directory. Terraform
+will not know to look for the provider there, and will not work with Terraform
+configuration files.
 
 ### Building with local SDK changes or other versions
 
