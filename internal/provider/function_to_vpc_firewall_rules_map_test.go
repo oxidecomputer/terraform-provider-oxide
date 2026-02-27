@@ -14,17 +14,11 @@ import (
 )
 
 func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
-	blockName := newBlockName("firewall_rules")
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
 	vpcName := newResourceName()
-	resourceName := fmt.Sprintf("oxide_vpc_firewall_rules.%s", blockName)
+	resourceName := "oxide_vpc_firewall_rules.test"
 
 	tplData := resourceFirewallRulesConfig{
-		BlockName:         blockName,
-		SupportBlockName:  supportBlockName,
-		SupportBlockName2: supportBlockName2,
-		VPCName:           vpcName,
+		VPCName: vpcName,
 	}
 
 	// Generate initial configuration with old schema.
@@ -97,19 +91,19 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 
 var (
 	testAccFunctionToVPCFirewallRulesConfigTpl = fmt.Sprintf(`
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
 
   rules = [
 %s
@@ -125,19 +119,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `, testAccFunctionToVPCFirewallRulesSetTpl)
 
 	functionToVPCFirewallRulesConfigUpdatedTpl = fmt.Sprintf(`
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
 
   rules = provider::oxide::to_vpc_firewall_rules_map(jsonencode([
 %s
@@ -153,19 +147,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `, testAccFunctionToVPCFirewallRulesSetTpl)
 
 	testAccFunctionToVPCFirewallRulesConfigUpdatedMapTpl = fmt.Sprintf(`
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
 
   rules = {
 %s
@@ -192,7 +186,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
     hosts = [
       {
         type  = "vpc"
-        value = oxide_vpc.{{.SupportBlockName2}}.name
+        value = oxide_vpc.test_vpc.name
       }
     ]
     ports = ["80", 443]
@@ -234,7 +228,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
   targets = [
     {
       type  = "vpc"
-      value = oxide_vpc.{{.SupportBlockName2}}.name
+      value = oxide_vpc.test_vpc.name
     }
   ]
 },
@@ -251,7 +245,7 @@ allow-http-https = {
     hosts = [
       {
         type  = "vpc"
-        value = oxide_vpc.{{.SupportBlockName2}}.name
+        value = oxide_vpc.test_vpc.name
       }
     ]
     ports = ["80", 443]
@@ -292,7 +286,7 @@ icmp = {
   targets = [
     {
       type  = "vpc"
-      value = oxide_vpc.{{.SupportBlockName2}}.name
+      value = oxide_vpc.test_vpc.name
     }
   ]
 }

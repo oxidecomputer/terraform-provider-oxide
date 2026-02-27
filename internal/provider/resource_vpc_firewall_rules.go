@@ -952,18 +952,20 @@ func newFilterTypeFromModel(
 				Value: &oxide.VpcFirewallRuleProtocolUdp{},
 			}
 		case oxide.VpcFirewallRuleProtocolTypeIcmp:
+			icmpVariant := &oxide.VpcFirewallRuleProtocolIcmp{}
+			if !protocolModel.IcmpType.IsNull() || !protocolModel.IcmpCode.IsNull() {
+				icmpVariant.Value = &oxide.VpcFirewallIcmpFilter{
+					Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
+					IcmpType: func() *int {
+						if protocolModel.IcmpType.IsNull() {
+							return nil
+						}
+						return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
+					}(),
+				}
+			}
 			protocol = oxide.VpcFirewallRuleProtocol{
-				Value: &oxide.VpcFirewallRuleProtocolIcmp{
-					Value: &oxide.VpcFirewallIcmpFilter{
-						Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
-						IcmpType: func() *int {
-							if protocolModel.IcmpType.IsNull() {
-								return nil
-							}
-							return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
-						}(),
-					},
-				},
+				Value: icmpVariant,
 			}
 		default:
 			return oxide.VpcFirewallRuleFilter{}, fmt.Errorf(

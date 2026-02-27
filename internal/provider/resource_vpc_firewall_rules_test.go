@@ -22,26 +22,23 @@ import (
 )
 
 type resourceFirewallRulesConfig struct {
-	BlockName         string
-	VPCName           string
-	SupportBlockName  string
-	SupportBlockName2 string
+	VPCName string
 }
 
 var resourceFirewallRulesConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = {
     custom-deny-http = {
       action      = "deny"
@@ -53,7 +50,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
         hosts = [
           {
             type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
+            value = oxide_vpc.test_vpc.name
           }
         ]
         ports     = ["8123"]
@@ -80,7 +77,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
         hosts = [
           {
             type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
+            value = oxide_vpc.test_vpc.name
           }
         ]
       }
@@ -102,19 +99,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 var resourceFirewallRulesUpdateConfigTpl = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = {
     allow-https = {
       action      = "allow"
@@ -126,7 +123,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
         hosts = [
           {
             type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
+            value = oxide_vpc.test_vpc.name
           }
         ]
         ports     = ["443"]
@@ -139,7 +136,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
       targets = [
         {
           type  = "subnet"
-          value = oxide_vpc.{{.SupportBlockName2}}.name
+          value = oxide_vpc.test_vpc.name
         }
       ]
     },
@@ -153,7 +150,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
         hosts = [
           {
             type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
+            value = oxide_vpc.test_vpc.name
           }
         ]
         ports     = ["22"]
@@ -166,7 +163,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
       targets = [
         {
           type  = "subnet"
-          value = oxide_vpc.{{.SupportBlockName2}}.name
+          value = oxide_vpc.test_vpc.name
         }
       ]
     }
@@ -175,19 +172,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 var resourceFirewallRulesUpdateConfigTpl2 = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = {
     allow-https = {
       action      = "allow"
@@ -199,7 +196,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
         hosts = [
           {
             type  = "vpc"
-            value = oxide_vpc.{{.SupportBlockName2}}.name
+            value = oxide_vpc.test_vpc.name
           }
         ]
         ports     = ["443"]
@@ -212,7 +209,7 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
       targets = [
         {
           type  = "subnet"
-          value = oxide_vpc.{{.SupportBlockName2}}.name
+          value = oxide_vpc.test_vpc.name
         }
       ]
     },
@@ -221,37 +218,37 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 var resourceFirewallRulesUpdateConfigTpl3 = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = {}
 }
 `
 
 var resourceFirewallRulesUpdateConfigTpl4 = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = {
     allow-icmp = {
       action      = "allow"
@@ -279,19 +276,19 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 var resourceFirewallRulesUpdateConfigTpl5 = `
-data "oxide_project" "{{.SupportBlockName}}" {
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = {
     allow-icmp = {
       action      = "allow"
@@ -319,20 +316,59 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTplV1 = `
-data "oxide_project" "{{.SupportBlockName}}" {
+var resourceFirewallRulesIcmpNoFilterConfigTpl = `
+data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
 
-resource "oxide_vpc" "{{.SupportBlockName2}}" {
-  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
   description = "a test vpc"
   name        = "{{.VPCName}}"
   dns_name    = "my-vpc-dns"
 }
 
-resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
-  vpc_id = oxide_vpc.{{.SupportBlockName2}}.id
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
+  rules = {
+    allow-icmp = {
+      action      = "allow"
+      description = "Allow ICMP."
+      direction   = "inbound"
+      priority    = 65534
+      status      = "enabled"
+      filters = {
+        protocols = [
+          {
+            type = "icmp"
+          },
+        ]
+      }
+      targets = [
+        {
+          type  = "vpc"
+          value = oxide_vpc.test_vpc.name
+        }
+      ]
+    }
+  }
+}
+`
+
+var resourceFirewallRulesUpdateConfigTplV1 = `
+data "oxide_project" "test_project" {
+  name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "test_vpc" {
+  project_id  = data.oxide_project.test_project.id
+  description = "a test vpc"
+  name        = "{{.VPCName}}"
+  dns_name    = "my-vpc-dns"
+}
+
+resource "oxide_vpc_firewall_rules" "test" {
+  vpc_id = oxide_vpc.test_vpc.id
   rules = [
     {
       action      = "allow"
@@ -362,85 +398,36 @@ resource "oxide_vpc_firewall_rules" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceFirewallRules_full(t *testing.T) {
-	blockName := newBlockName("firewall_rules")
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
 	vpcName := newResourceName()
-	resourceName := fmt.Sprintf("oxide_vpc_firewall_rules.%s", blockName)
-	config, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesConfigTpl,
-	)
+	resourceName := "oxide_vpc_firewall_rules.test"
+	tplData := resourceFirewallRulesConfig{VPCName: vpcName}
+
+	config, err := parsedAccConfig(tplData, resourceFirewallRulesConfigTpl)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTpl,
-	)
+	configUpdate, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl)
 	if err != nil {
 		t.Errorf("error parsing update config template data: %e", err)
 	}
 
-	configUpdate2, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTpl2,
-	)
+	configUpdate2, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl2)
 	if err != nil {
 		t.Errorf("error parsing update config 2 template data: %e", err)
 	}
 
-	configUpdate3, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTpl3,
-	)
+	configUpdate3, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl3)
 	if err != nil {
 		t.Errorf("error parsing update config 3 template data: %e", err)
 	}
 
-	configUpdate4, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTpl4,
-	)
+	configUpdate4, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl4)
 	if err != nil {
 		t.Errorf("error parsing update config 4 template data: %e", err)
 	}
 
-	configUpdate5, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTpl5,
-	)
+	configUpdate5, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
 	if err != nil {
 		t.Errorf("error parsing update config 5 template data: %e", err)
 	}
@@ -479,33 +466,16 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 }
 
 func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
-	blockName := newBlockName("firewall_rules")
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
 	vpcName := newResourceName()
-	resourceName := fmt.Sprintf("oxide_vpc_firewall_rules.%s", blockName)
-	configV1, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTplV1,
-	)
+	resourceName := "oxide_vpc_firewall_rules.test"
+	tplData := resourceFirewallRulesConfig{VPCName: vpcName}
+
+	configV1, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTplV1)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configV2, err := parsedAccConfig(
-		resourceFirewallRulesConfig{
-			BlockName:         blockName,
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: supportBlockName2,
-			VPCName:           vpcName,
-		},
-		resourceFirewallRulesUpdateConfigTpl5,
-	)
+	configV2, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
 	if err != nil {
 		t.Errorf("error parsing update config template data: %e", err)
 	}
@@ -531,6 +501,38 @@ func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
 				Config:                   configV2,
 				Check:                    checkResourceFirewallRulesUpdate5(resourceName),
+			},
+		},
+	})
+}
+
+// Regression test: we found that configuring an ICMP firewall rule without setting an ICMP type or
+// code caused an API error, since we serialized the request to `{"type": "icmp", "value":
+// {"icmp_type": null}}`, which isn't valid. To fix, we now skip setting the nested field entirely
+// if the user hasn't set the ICMP type or code.
+func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
+	vpcName := newResourceName()
+	resourceName := "oxide_vpc_firewall_rules.test"
+
+	config, err := parsedAccConfig(
+		resourceFirewallRulesConfig{VPCName: vpcName},
+		resourceFirewallRulesIcmpNoFilterConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccFirewallRulesDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
+				),
 			},
 		},
 	})
