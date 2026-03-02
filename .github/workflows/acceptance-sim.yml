@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - uses: docker/setup-compose-action@v1
+      - uses: docker/setup-compose-action@v2
       - uses: astral-sh/setup-uv@v7
       # Look up the version of oxide.rs corresponding to the requested omicron version. We'll cache
       # the resulting binary, so that we only build the CLI for a given oxide.rs commit once, and
