@@ -44,6 +44,7 @@ build:
 install:
 	@ echo "-> Installing plugin"
 	@ go install .
+	@ [ ! -f $(HOME)/.terraformrc ] && echo 'Missing $(HOME)/.terraformrc file. Refer to CONTRIBUTING.md for more information.' || true
 
 ## Run unit tests. Use TEST_ARGS to set `go test` CLI arguments, and TEST_UNIT_DIR to set packages to be tested
 .PHONY: test
