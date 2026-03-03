@@ -11,5 +11,5 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
+title = "Correctly handle omitted `icmp_type` attribute in `oxide_vpc_firewall_rules`"
+description = "An omitted `icmp_type` no longer errors with `unable to parse JSON body`. [#658](https://github.com/oxidecomputer/terraform-provider-oxide/pull/658)"
