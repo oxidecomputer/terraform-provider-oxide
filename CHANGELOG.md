@@ -1,4 +1,19 @@
-# 0.18.0
+# 0.18.1 (2026/Mar/3)
+
+### Bug fixes
+
+- **Correctly handle omitted `icmp_type` attribute in `oxide_vpc_firewall_rules`:** An omitted `icmp_type` no longer errors with `unable to parse JSON body`. [#658](https://github.com/oxidecomputer/terraform-provider-oxide/pull/658)
+
+### List of commits
+
+- [d6505ac](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d6505ac) Backport of "Fix regression on icmp protocol config." to rel/v0.18 (#662)
+- [941b8d1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/941b8d1) Backport of "ci: set RUST_BACKTRACE in acceptance tests" to rel/v0.18 (#661)
+- [051ac9f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/051ac9f) Backport of "instance: fix state migration from v0" to rel/v0.18 (#659)
+- [607eb12](https://github.com/oxidecomputer/terraform-provider-oxide/commit/607eb12) Backport of "ci: run tests using gotestsum" to rel/v0.18 (#650)
+- [d1d0020](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d1d0020) Backport of "test: fix address lot flaky test" to rel/v0.18 (#649)
+- [359a39f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/359a39f) Backport of "ci: add job ID to acceptance test artifact" to rel/v0.18 (#646)
+
+# 0.18.0 (2026/Feb/17)
 
 ### Breaking changes
 
