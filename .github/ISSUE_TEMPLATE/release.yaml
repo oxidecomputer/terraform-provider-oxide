@@ -1,0 +1,39 @@
+name: Release
+description: Request a new release to be published.
+title: "Release: Terraform Provider"
+projects: ["oxidecomputer/116"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for requesting a release! Please fill out the information below.
+  - type: input
+    id: oxide_release
+    attributes:
+      label: Oxide Release
+      description: >-
+        Which Oxide release will this need to be compatible with?
+      placeholder: "RXX"
+    validations:
+      required: true
+  - type: input
+    id: release_date
+    attributes:
+      label: Release Date
+      description: >-
+        When does this release need to be published by?
+      placeholder: "Jan 1, 2026"
+    validations:
+      required: false
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: >-
+        Summarize what else is required, if anything. Normally, this will be left as-is.
+      placeholder: >-
+        Please publish a new release of this project, following the standard release process.
+      value: |
+        Please publish a new release of this project, following the standard release process.
+    validations:
+      required: true
