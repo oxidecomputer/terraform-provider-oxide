@@ -3,8 +3,9 @@ FROM rust:bookworm AS builder
 
 ARG OMICRON_SHA
 
-RUN curl -sL "https://github.com/oxidecomputer/omicron/archive/${OMICRON_SHA}.tar.gz" | tar xz && \
-    mv omicron-* omicron
+RUN git clone https://github.com/oxidecomputer/omicron.git /omicron && \
+    cd /omicron && \
+    git checkout "${OMICRON_SHA}"
 
 WORKDIR /omicron
 
