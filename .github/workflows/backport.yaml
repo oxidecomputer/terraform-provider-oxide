@@ -20,7 +20,7 @@ jobs:
           ref: "main"
           clean: false
           fetch-depth: 0
-      - uses: "actions/create-github-app-token@v2"
+      - uses: "actions/create-github-app-token@v3"
         id: "backport-pr-app-token"
         with:
           app-id: "${{ vars.BACKPORT_PR_APP_ID }}"
