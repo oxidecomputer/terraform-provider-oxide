@@ -22,7 +22,7 @@ jobs:
         if: matrix.tf-binary == 'terraform'
         with:
           terraform_wrapper: false
-      - uses: opentofu/setup-opentofu@v1
+      - uses: opentofu/setup-opentofu@v2
         if: matrix.tf-binary == 'tofu'
         with:
           tofu_wrapper: false
