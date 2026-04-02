@@ -114,3 +114,8 @@ jobs:
     uses: "./.github/workflows/acceptance-sim.yml"
     with:
       omicron-sha: ${{ needs.omicron-version.outputs.sha }}
+    secrets:
+      testrail-host: ${{ secrets.TESTRAIL_HOST }}
+      testrail-user: ${{ secrets.TESTRAIL_USER }}
+      testrail-api-key: ${{ secrets.TESTRAIL_API_KEY }}
+      testrail-project: ${{ secrets.TESTRAIL_PROJECT }}

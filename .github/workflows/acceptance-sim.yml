@@ -6,6 +6,15 @@ on:
       omicron-sha:
         type: "string"
         required: true
+    secrets:
+      testrail-host:
+        required: false
+      testrail-project:
+        required: false
+      testrail-user:
+        required: false
+      testrail-api-key:
+        required: false
 
 jobs:
   acceptance:
@@ -107,7 +116,7 @@ jobs:
           docker compose exec -T mitmproxy sh -c 'tar -cf - /tmp/mitmproxy.log' | tar -xf -
           docker compose logs omicron-dev > ./tmp/omicron-dev.log
           mv ../internal/provider/terraform.log ./tmp
-          mv ./acc-tests.xml ./tmp
+          cp ./acc-tests.xml ./tmp
       - name: rerun warn
         if: always()
         continue-on-error: true
@@ -116,6 +125,20 @@ jobs:
           if [ -f ./acc-test-rerun.txt ]; then
             echo "::warning title=${{ github.job }} (${{ matrix.tf-binary }}) - test rerun::$(cat ./acc-test-rerun.txt)"
           fi
+      - name: Execute TRCLI Action
+        if: always()
+        #continue-on-error: true
+        uses: gurock/trcli-action@main
+        with:
+          host: ${{ secrets.testrail-host }}
+          username: ${{ secrets.testrail-user }}
+          password: ${{ secrets.testrail-api-key }}
+          project: ${{ secrets.testrail-project }}
+          report_file_path: ./acctest/acc-tests.xml
+          auto_create_cases_yes: true
+          case_matcher: name
+          title: 'Terraform Provider Acceptance Tests (${{ matrix.tf-binary }})'
+          run_description: 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
       - name: upload logs
         if: always()
         continue-on-error: true
