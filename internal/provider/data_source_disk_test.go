@@ -41,14 +41,14 @@ data "oxide_disk" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceDisk_full(t *testing.T) {
-	blockName := newBlockName("datasource-disk")
-	diskName := newResourceName()
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-disk")
+	diskName := NewResourceName()
+	config, err := ParsedAccConfig(
 		dataSourceDiskConfig{
 			BlockName:         blockName,
 			DiskName:          diskName,
-			SupportBlockName:  newBlockName("support"),
-			SupportBlockName2: newBlockName("support-disk"),
+			SupportBlockName:  NewBlockName("support"),
+			SupportBlockName2: NewBlockName("support-disk"),
 		},
 		dataSourceDiskConfigTpl,
 	)
@@ -57,8 +57,8 @@ func TestAccCloudDataSourceDisk_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 func TestAccSiloResourceIpPool_full(t *testing.T) {
@@ -19,8 +20,8 @@ func TestAccSiloResourceIpPool_full(t *testing.T) {
 	resourceName2 := "oxide_ip_pool.test2"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccIPPoolDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -175,7 +176,7 @@ func checkResourceIPPoolRanges(resourceName string) resource.TestCheckFunc {
 }
 
 func testAccIPPoolDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -191,7 +192,7 @@ func testAccIPPoolDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SystemIpPoolViewParams{Pool: "terraform-acc-myippool"},
 		)
-		if err == nil || !is404(err) {
+		if err == nil || !shared.Is404(err) {
 			return fmt.Errorf("ip_pool (%v) still exists", &res.Name)
 		}
 
@@ -199,7 +200,7 @@ func testAccIPPoolDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SystemIpPoolViewParams{Pool: "terraform-acc-myippool2"},
 		)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 		return fmt.Errorf("ip_pool (%v) still exists", &res2.Name)

@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -95,7 +96,7 @@ This resource manages SSH keys.
 			},
 			"name": schema.StringAttribute{
 				Required: true,
-				MarkdownDescription: replaceBackticks(`
+				MarkdownDescription: shared.ReplaceBackticks(`
 Name of the SSH key. Names must begin with a lower case ASCII letter, be
 composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and ''-'',
 and may not end with a ''-''. Names cannot be a UUID though they may contain a
@@ -154,7 +155,7 @@ func (r *sshKeyResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -211,7 +212,7 @@ func (r *sshKeyResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -224,7 +225,7 @@ func (r *sshKeyResource) Read(
 	}
 	sshKey, err := r.client.CurrentUserSshKeyView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -286,7 +287,7 @@ func (r *sshKeyResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -298,7 +299,7 @@ func (r *sshKeyResource) Delete(
 		SshKey: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.CurrentUserSshKeyDelete(ctx, params); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting SSH key:",
 				"API error: "+err.Error(),

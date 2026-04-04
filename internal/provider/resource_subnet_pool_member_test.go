@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 func TestAccResourceSubnetPoolMember_full(t *testing.T) {
@@ -19,12 +20,12 @@ func TestAccResourceSubnetPoolMember_full(t *testing.T) {
 	memberResourceName := "oxide_subnet_pool_member.test"
 	member2ResourceName := "oxide_subnet_pool_member.test2"
 
-	subnet1 := nextSubnetCIDR(t)
-	subnet2 := nextSubnetCIDR(t)
+	subnet1 := NextSubnetCIDR(t)
+	subnet2 := NextSubnetCIDR(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolMemberDestroy,
 		Steps: []resource.TestStep{
 			// Create pool and one member
@@ -133,13 +134,13 @@ func TestAccResourceSubnetPoolMember_parallel(t *testing.T) {
 	member2ResourceName := "oxide_subnet_pool_member.m2"
 	member3ResourceName := "oxide_subnet_pool_member.m3"
 
-	sub1 := nextSubnetCIDR(t)
-	sub2 := nextSubnetCIDR(t)
-	sub3 := nextSubnetCIDR(t)
+	sub1 := NextSubnetCIDR(t)
+	sub2 := NextSubnetCIDR(t)
+	sub3 := NextSubnetCIDR(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolMemberDestroy,
 		Steps: []resource.TestStep{
 			// Create pool and three members in parallel (no depends_on between members)
@@ -193,11 +194,11 @@ func TestAccResourceSubnetPoolMember_disappears(t *testing.T) {
 	poolResourceName := "oxide_subnet_pool.test"
 	memberResourceName := "oxide_subnet_pool_member.test"
 
-	subnet := nextSubnetCIDR(t)
+	subnet := NextSubnetCIDR(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolMemberDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -224,7 +225,7 @@ func testAccSubnetPoolMemberDisappears(resourceName string) resource.TestCheckFu
 			return fmt.Errorf("resource not found: %s", resourceName)
 		}
 
-		client, err := newTestClient()
+		client, err := NewTestClient()
 		if err != nil {
 			return err
 		}
@@ -262,7 +263,7 @@ resource "oxide_subnet_pool_member" "test" {
 }
 
 func testAccSubnetPoolMemberDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -280,7 +281,7 @@ func testAccSubnetPoolMemberDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SystemSubnetPoolMemberListParams{Pool: oxide.NameOrId(poolID)},
 		)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			// Pool doesn't exist, so member is definitely gone
 			continue
 		}

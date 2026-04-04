@@ -84,11 +84,11 @@ data "oxide_silo" "{{.BlockName}}" {
 `
 
 func TestAccSiloDataSourceSilo_full(t *testing.T) {
-	blockName := newBlockName("datasource-silo")
+	blockName := NewBlockName("datasource-silo")
 
-	dnsName := testAccSiloDNSName()
+	dnsName := SiloDNSName()
 
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		dataSourceSiloConfig{
 			BlockName:   blockName,
 			SiloDNSName: dnsName,
@@ -103,8 +103,8 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",

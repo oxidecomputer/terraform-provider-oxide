@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +41,7 @@ func Test_isIPv4(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isIPv4(tt.args.str)
+			got := shared.IsIPv4(tt.args.str)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -73,7 +74,7 @@ func Test_isIPv6(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isIPv6(tt.args.str)
+			got := shared.IsIPv6(tt.args.str)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -128,12 +129,12 @@ func Test_sliceDiff(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sliceDiff(tt.args.a, tt.args.b)
+			got := shared.SliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name+" by ID", func(t *testing.T) {
-			got := sliceDiffByID(
+			got := shared.SliceDiffByID(
 				tt.args.a, tt.args.b,
 				func(el attr.Value) any {
 					return el.String()
@@ -165,12 +166,12 @@ func Test_sliceDiff_int(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sliceDiff(tt.args.a, tt.args.b)
+			got := shared.SliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name+"by ID", func(t *testing.T) {
-			got := sliceDiffByID(
+			got := shared.SliceDiffByID(
 				tt.args.a, tt.args.b,
 				func(el int) any {
 					return el
@@ -211,12 +212,12 @@ func Test_sliceDiff_model(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sliceDiff(tt.args.a, tt.args.b)
+			got := shared.SliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name, func(t *testing.T) {
-			got := sliceDiffByID(
+			got := shared.SliceDiffByID(
 				tt.args.a, tt.args.b,
 				func(el instanceResourceNICModel) any {
 					return el.Name
@@ -253,7 +254,7 @@ func Test_newNameOrIdList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			set := types.SetValueMust(types.StringType, tt.args)
-			got, diags := newNameOrIdList(set)
+			got, diags := shared.NewNameOrIdList(set)
 			if diags.HasError() {
 				// We know diags can only contain a single error in this function
 				t.Errorf("unexpected error: %s: %s ", diags[0].Summary(), diags[0].Detail())

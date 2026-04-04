@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceDiskConfig struct {
@@ -42,14 +43,14 @@ resource "oxide_disk" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceDisk_full(t *testing.T) {
-	diskName := newResourceName()
-	blockName := newBlockName("disk")
+	diskName := NewResourceName()
+	blockName := NewBlockName("disk")
 	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceDiskConfig{
 			BlockName:        blockName,
 			DiskName:         diskName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		resourceDiskConfigTpl,
 	)
@@ -58,8 +59,8 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccDiskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -98,12 +99,12 @@ resource "oxide_disk" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceDisk_diskType(t *testing.T) {
-	diskName := newResourceName()
-	blockName := newBlockName("disk")
+	diskName := NewResourceName()
+	blockName := NewBlockName("disk")
 	resourceName := fmt.Sprintf("oxide_disk.%s", blockName)
-	supportBlockName := newBlockName("support")
+	supportBlockName := NewBlockName("support")
 
-	configLocal, err := parsedAccConfig(
+	configLocal, err := ParsedAccConfig(
 		resourceDiskTypeConfig{
 			BlockName:        blockName,
 			DiskName:         diskName,
@@ -116,7 +117,7 @@ func TestAccCloudResourceDisk_diskType(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configDistributed, err := parsedAccConfig(
+	configDistributed, err := ParsedAccConfig(
 		resourceDiskTypeConfig{
 			BlockName:        blockName,
 			DiskName:         diskName,
@@ -130,8 +131,8 @@ func TestAccCloudResourceDisk_diskType(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccDiskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -180,7 +181,7 @@ func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 }
 
 func testAccDiskDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ func testAccDiskDestroy(s *terraform.State) error {
 		}
 		res, err := client.DiskView(ctx, params)
 
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

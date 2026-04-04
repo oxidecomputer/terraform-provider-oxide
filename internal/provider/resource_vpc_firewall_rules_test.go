@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/stretchr/testify/require"
 )
 
@@ -398,43 +399,43 @@ resource "oxide_vpc_firewall_rules" "test" {
 `
 
 func TestAccCloudResourceFirewallRules_full(t *testing.T) {
-	vpcName := newResourceName()
+	vpcName := NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 	tplData := resourceFirewallRulesConfig{VPCName: vpcName}
 
-	config, err := parsedAccConfig(tplData, resourceFirewallRulesConfigTpl)
+	config, err := ParsedAccConfig(tplData, resourceFirewallRulesConfigTpl)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl)
+	configUpdate, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl)
 	if err != nil {
 		t.Errorf("error parsing update config template data: %e", err)
 	}
 
-	configUpdate2, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl2)
+	configUpdate2, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl2)
 	if err != nil {
 		t.Errorf("error parsing update config 2 template data: %e", err)
 	}
 
-	configUpdate3, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl3)
+	configUpdate3, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl3)
 	if err != nil {
 		t.Errorf("error parsing update config 3 template data: %e", err)
 	}
 
-	configUpdate4, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl4)
+	configUpdate4, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl4)
 	if err != nil {
 		t.Errorf("error parsing update config 4 template data: %e", err)
 	}
 
-	configUpdate5, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
+	configUpdate5, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
 	if err != nil {
 		t.Errorf("error parsing update config 5 template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccFirewallRulesDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -466,22 +467,22 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 }
 
 func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
-	vpcName := newResourceName()
+	vpcName := NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 	tplData := resourceFirewallRulesConfig{VPCName: vpcName}
 
-	configV1, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTplV1)
+	configV1, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTplV1)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configV2, err := parsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
+	configV2, err := ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
 	if err != nil {
 		t.Errorf("error parsing update config template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { PreCheck(t) },
 		CheckDestroy: testAccFirewallRulesDestroy,
 		Steps: []resource.TestStep{
 			// Initial state with v1 of oxide_vpc_firewall_rules.
@@ -498,7 +499,7 @@ func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 			// Upgrade provider to use the latest version of oxide_vpc_firewall_rules.
 			{
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: ProviderFactories(),
 				Config:                   configV2,
 				Check:                    checkResourceFirewallRulesUpdate5(resourceName),
 			},
@@ -511,10 +512,10 @@ func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 // {"icmp_type": null}}`, which isn't valid. To fix, we now skip setting the nested field entirely
 // if the user hasn't set the ICMP type or code.
 func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
-	vpcName := newResourceName()
+	vpcName := NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceFirewallRulesConfig{VPCName: vpcName},
 		resourceFirewallRulesIcmpNoFilterConfigTpl,
 	)
@@ -523,8 +524,8 @@ func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccFirewallRulesDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -790,7 +791,7 @@ func checkResourceFirewallRulesV1(resourceName string) resource.TestCheckFunc {
 }
 
 func testAccFirewallRulesDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -809,7 +810,7 @@ func testAccFirewallRulesDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.VpcFirewallRulesView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 
@@ -1127,7 +1128,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 			// Upgrade to current version and R16.
 			{
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: ProviderFactories(),
 				PreConfig: func() {
 					version.Store(16)
 				},
@@ -1154,7 +1155,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 			// Upgrade to current version.
 			{
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: ProviderFactories(),
 				PreConfig: func() {
 					version.Store(16)
 				},

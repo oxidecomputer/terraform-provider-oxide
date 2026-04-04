@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -129,7 +130,7 @@ func (r *externalSubnetAttachmentResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -186,7 +187,7 @@ func (r *externalSubnetAttachmentResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -200,7 +201,7 @@ func (r *externalSubnetAttachmentResource) Read(
 
 	externalSubnet, err := r.client.ExternalSubnetView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -266,7 +267,7 @@ func (r *externalSubnetAttachmentResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -284,7 +285,7 @@ func (r *externalSubnetAttachmentResource) Delete(
 		ctx, viewParams,
 	)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			return
 		}
 		resp.Diagnostics.AddError(
@@ -304,7 +305,7 @@ func (r *externalSubnetAttachmentResource) Delete(
 	if _, err := r.client.ExternalSubnetDetach(
 		ctx, detachParams,
 	); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error detaching external subnet:",
 				"API error: "+err.Error(),

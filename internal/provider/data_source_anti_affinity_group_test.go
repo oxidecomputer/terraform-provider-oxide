@@ -40,13 +40,13 @@ data "oxide_anti_affinity_group" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceAntiAffinityGroup_full(t *testing.T) {
-	blockName := newBlockName("datasource-anti-affinity-group")
-	resourceName := newResourceName()
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-anti-affinity-group")
+	resourceName := NewResourceName()
+	config, err := ParsedAccConfig(
 		dataSourceAntiAffinityGroupConfig{
 			BlockName:         blockName,
-			SupportBlockName:  newBlockName("support"),
-			SupportBlockName2: newBlockName("support"),
+			SupportBlockName:  NewBlockName("support"),
+			SupportBlockName2: NewBlockName("support"),
 			Name:              resourceName,
 		},
 		dataSourceAntiAffinityGroupConfigTpl,
@@ -56,8 +56,8 @@ func TestAccCloudDataSourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

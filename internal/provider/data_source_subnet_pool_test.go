@@ -14,11 +14,11 @@ import (
 func TestAccDataSourceSubnetPool_full(t *testing.T) {
 	dataSourceName := "data.oxide_subnet_pool.test"
 
-	subnet := nextSubnetCIDR(t)
+	subnet := NextSubnetCIDR(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolDestroy,
 		Steps: []resource.TestStep{
 			{

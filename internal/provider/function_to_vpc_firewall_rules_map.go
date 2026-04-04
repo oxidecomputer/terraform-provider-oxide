@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 var _ function.Function = (*toVPCFirewallRulesMap)(nil)
@@ -85,7 +86,7 @@ func (f *toVPCFirewallRulesMap) Definition(
 ) {
 	resp.Definition = function.Definition{
 		Summary: "Converts a VPC firewall rule set to the updated map schema.",
-		MarkdownDescription: replaceBackticks(`
+		MarkdownDescription: shared.ReplaceBackticks(`
 The ''provider::oxide::to_vpc_firewall_rules_map'' function converts the
 ''rules'' attribute of an
 [''oxide_vpc_firewall_rules''](https://registry.terraform.io/providers/oxidecomputer/oxide/latest/docs/resources/oxide_vpc_firewall_rules)
@@ -104,7 +105,7 @@ This function will be removed in a future release. Migrate to the new map
 			// HCL configuration.
 			function.StringParameter{
 				Name: "rules_json",
-				MarkdownDescription: replaceBackticks(`
+				MarkdownDescription: shared.ReplaceBackticks(`
 JSON encoded string of the ''rules'' set. Use the
 [''jsonencode''](https://developer.hashicorp.com/terraform/language/functions/jsonencode)
 function to convert the existing ''rules'' set to a JSON string.

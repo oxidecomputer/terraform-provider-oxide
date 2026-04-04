@@ -39,11 +39,11 @@ data "oxide_images" "{{.BlockName}}" {}
 
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImages_project(t *testing.T) {
-	blockName := newBlockName("datasource-images")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-images")
+	config, err := ParsedAccConfig(
 		dataSourceProjectImagesConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		dataSourceProjectImagesConfigTpl,
 	)
@@ -52,8 +52,8 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -67,8 +67,8 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 
 // NB: The silo must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImages_silo(t *testing.T) {
-	blockName := newBlockName("datasource-images")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-images")
+	config, err := ParsedAccConfig(
 		dataSourceSiloImagesConfig{
 			BlockName: blockName,
 		},
@@ -79,8 +79,8 @@ func TestAccCloudDataSourceImages_silo(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

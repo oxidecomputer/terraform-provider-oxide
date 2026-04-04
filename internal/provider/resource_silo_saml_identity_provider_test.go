@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceSiloIdentifyProviderConfig struct {
@@ -99,19 +100,19 @@ resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockNa
 `
 
 func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
-	siloBlockName := newBlockName("silo")
-	siloName := newResourceName()
-	siloSamlIdentityProviderBlockName := newBlockName("silo-idp")
-	siloSamlIdentityProviderName := newResourceName()
+	siloBlockName := NewBlockName("silo")
+	siloName := NewResourceName()
+	siloSamlIdentityProviderBlockName := NewBlockName("silo-idp")
+	siloSamlIdentityProviderName := NewResourceName()
 
 	siloSamlIdentityProviderResourceID := fmt.Sprintf(
 		"oxide_silo_saml_identity_provider.%s",
 		siloSamlIdentityProviderBlockName,
 	)
 
-	siloDNSName := testAccSiloDNSName()
+	siloDNSName := SiloDNSName()
 
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceSiloIdentifyProviderConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
@@ -129,8 +130,8 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",
@@ -178,7 +179,7 @@ func checkResourceSiloSamlIdentityProvider(
 }
 
 func testAccSiloSamlIdentityProviderDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -197,7 +198,7 @@ func testAccSiloSamlIdentityProviderDestroy(s *terraform.State) error {
 		}
 
 		res, err := client.SamlIdentityProviderView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

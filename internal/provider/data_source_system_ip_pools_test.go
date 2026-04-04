@@ -25,11 +25,11 @@ data "oxide_system_ip_pools" "{{.BlockName}}" {
 `
 
 func TestAccSiloDataSourceSystemIPPools_full(t *testing.T) {
-	blockName := newBlockName("datasource-ip-pool")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-ip-pool")
+	config, err := ParsedAccConfig(
 		dataSourceSystemIPPoolsConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		dataSourceSystemIPPoolsConfigTpl,
 	)
@@ -38,8 +38,8 @@ func TestAccSiloDataSourceSystemIPPools_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

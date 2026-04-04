@@ -40,11 +40,11 @@ data "oxide_vpc_router" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
-	blockName := newBlockName("datasource-vpc-router")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-vpc-router")
+	config, err := ParsedAccConfig(
 		dataSourceVPCRouterConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		dataSourceVPCRouterConfigTpl,
 	)
@@ -53,8 +53,8 @@ func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

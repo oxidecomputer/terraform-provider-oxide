@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceVPCInternetGatewayConfig struct {
@@ -69,13 +70,13 @@ resource "oxide_vpc_internet_gateway" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
-	vpcName := newResourceName()
-	internetGatewayName := newResourceName()
-	blockName := newBlockName("internet_gateway")
-	supportBlockName := newBlockName("support")
-	vpcBlockName := newBlockName("vpc")
+	vpcName := NewResourceName()
+	internetGatewayName := NewResourceName()
+	blockName := NewBlockName("internet_gateway")
+	supportBlockName := NewBlockName("support")
+	vpcBlockName := NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_internet_gateway.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceVPCInternetGatewayConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
@@ -89,7 +90,7 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := ParsedAccConfig(
 		resourceVPCInternetGatewayConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
@@ -104,8 +105,8 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccVPCInternetGatewayDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -161,7 +162,7 @@ func checkResourceVPCInternetGatewayUpdate(
 }
 
 func testAccVPCInternetGatewayDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -179,7 +180,7 @@ func testAccVPCInternetGatewayDestroy(s *terraform.State) error {
 			Gateway: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.InternetGatewayView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 		return fmt.Errorf("internet gateway (%v) still exists", &res.Name)

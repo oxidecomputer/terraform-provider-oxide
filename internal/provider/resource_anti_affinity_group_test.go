@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceAntiAffinityGroupConfig struct {
@@ -54,11 +55,11 @@ resource "oxide_anti_affinity_group" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
-	antiAffinityGroupName := newResourceName()
-	blockName := newBlockName("anti_affinity_group")
+	antiAffinityGroupName := NewResourceName()
+	blockName := NewBlockName("anti_affinity_group")
 	resourceName := fmt.Sprintf("oxide_anti_affinity_group.%s", blockName)
-	supportBlockName := newBlockName("support")
-	config, err := parsedAccConfig(
+	supportBlockName := NewBlockName("support")
+	config, err := ParsedAccConfig(
 		resourceAntiAffinityGroupConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupName,
@@ -71,7 +72,7 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	antiAffinityGroupNameUpdated := antiAffinityGroupName + "-updated"
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := ParsedAccConfig(
 		resourceAntiAffinityGroupConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupNameUpdated,
@@ -84,8 +85,8 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccAntiAffinityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -143,7 +144,7 @@ func checkResourceAntiAffinityGroupUpdate(
 }
 
 func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -162,7 +163,7 @@ func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.AntiAffinityGroupView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

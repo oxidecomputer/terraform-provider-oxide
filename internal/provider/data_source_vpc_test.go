@@ -27,11 +27,11 @@ data "oxide_vpc" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceVPC_full(t *testing.T) {
-	blockName := newBlockName("datasource-vpc")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-vpc")
+	config, err := ParsedAccConfig(
 		dataSourceVPCConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		dataSourceVPCConfigTpl,
 	)
@@ -40,8 +40,8 @@ func TestAccCloudDataSourceVPC_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

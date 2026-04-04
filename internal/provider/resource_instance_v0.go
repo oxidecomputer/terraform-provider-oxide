@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Schema and structs source:
@@ -69,7 +70,7 @@ type instanceResourceExternalIPModelV0 struct {
 func (r *instanceResource) schemaV0(ctx context.Context) *schema.Schema {
 	return &schema.Schema{
 		Version: 0,
-		MarkdownDescription: replaceBackticks(`
+		MarkdownDescription: shared.ReplaceBackticks(`
 This resource manages instances.
 
 !> Updates will stop and start the instance.
@@ -176,7 +177,7 @@ This resource manages instances.
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -186,7 +187,7 @@ This resource manages instances.
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -195,7 +196,7 @@ This resource manages instances.
 							Description: "ID of the VPC subnet in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -204,7 +205,7 @@ This resource manages instances.
 							Description: "ID of the VPC in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},

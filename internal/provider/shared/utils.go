@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package shared
 
 import (
 	"net"
@@ -15,45 +15,52 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-// replaceBackticks replaces ” with `. It can be used to defined codeblocks in
-// markdown raw strings.
+// ReplaceBackticks replaces " with `. It can be used to defined
+// codeblocks in markdown raw strings.
 //
-//	var mdString = replaceBackticks(`this is a ''code'' block`)
-func replaceBackticks(s string) string {
+//	var mdString = ReplaceBackticks(
+//		`this is a ''code'' block`,
+//	)
+func ReplaceBackticks(s string) string {
 	return strings.ReplaceAll(s, "''", "`")
 }
 
-func is404(err error) bool {
+// Is404 returns true if the error message indicates an HTTP 404
+// response.
+func Is404(err error) bool {
 	return strings.Contains(err.Error(), "Status: 404")
 }
 
-// Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
+// IsIPv4 checks if the string is an IP version 4.
+// Original function from
+// https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
 // Shamelessly copied here to avoid importing the entire package
-//
-// isIPv4 checks if the string is an IP version 4.
-func isIPv4(str string) bool {
+func IsIPv4(str string) bool {
 	ip := net.ParseIP(str)
 	return ip != nil && strings.Contains(str, ".")
 }
 
-// Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv6
+// IsIPv6 checks if the string is an IP version 6.
+// Original function from
+// https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv6
 // Shamelessly copied here to avoid importing the entire package
-//
-// isIPv6 checks if the string is an IP version 6.
-func isIPv6(str string) bool {
+func IsIPv6(str string) bool {
 	ip := net.ParseIP(str)
 	return ip != nil && strings.Contains(str, ":")
 }
 
-func defaultTimeout() time.Duration {
+// DefaultTimeout returns the default timeout duration used for
+// Terraform operations.
+func DefaultTimeout() time.Duration {
 	return 10 * time.Minute
 }
 
-// sliceDiff returns a slice of the elements in `a` that aren't in `b`.
+// SliceDiff returns a slice of the elements in `a` that aren't
+// in `b`.
 // This function is a bit expensive, but given the fact that
 // the expected number of elements is relatively slow
 // it's not a big deal.
-func sliceDiff[S []E, E any](a, b S) S {
+func SliceDiff[S []E, E any](a, b S) S {
 	mb := make(map[any]struct{}, len(b))
 	for _, x := range b {
 		mb[x] = struct{}{}
@@ -68,9 +75,9 @@ func sliceDiff[S []E, E any](a, b S) S {
 	return diff
 }
 
-// sliceDiffByID is similar to [sliceDiff] but takes idFn, which should return
-// a value used to identity slice elements.
-func sliceDiffByID[S []E, E any](a, b S, idFn func(E) any) S {
+// SliceDiffByID is similar to [SliceDiff] but takes idFn, which
+// should return a value used to identity slice elements.
+func SliceDiffByID[S []E, E any](a, b S, idFn func(E) any) S {
 	mb := make(map[any]struct{}, len(b))
 	for _, x := range b {
 		mb[idFn(x)] = struct{}{}
@@ -85,8 +92,11 @@ func sliceDiffByID[S []E, E any](a, b S, idFn func(E) any) S {
 	return diff
 }
 
-// newNameOrIdList takes a terraform set and converts is into a slice NameOrIds.
-func newNameOrIdList(nameOrIDs types.Set) ([]oxide.NameOrId, diag.Diagnostics) {
+// NewNameOrIdList takes a terraform set and converts is into a
+// slice NameOrIds.
+func NewNameOrIdList(
+	nameOrIDs types.Set,
+) ([]oxide.NameOrId, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var list = []oxide.NameOrId{}
 	for _, item := range nameOrIDs.Elements() {

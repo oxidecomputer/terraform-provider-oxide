@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceSSHKeyConfig struct {
@@ -37,12 +38,12 @@ resource "oxide_ssh_key" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceSSHKey_full(t *testing.T) {
-	sshKeyName := newResourceName()
+	sshKeyName := NewResourceName()
 	description := "An SSH key."
 	publicKey := "ssh-ed25519 AAAA"
-	blockName := newBlockName("ssh_key")
+	blockName := NewBlockName("ssh_key")
 	resourceName := fmt.Sprintf("oxide_ssh_key.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceSSHKeyConfig{
 			BlockName:   blockName,
 			Name:        sshKeyName,
@@ -56,8 +57,8 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSSHKeyDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -90,7 +91,7 @@ func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc
 }
 
 func testAccSSHKeyDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func testAccSSHKeyDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.CurrentUserSshKeyView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

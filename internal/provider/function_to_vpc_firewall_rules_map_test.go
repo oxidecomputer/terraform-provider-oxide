@@ -14,7 +14,7 @@ import (
 )
 
 func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
-	vpcName := newResourceName()
+	vpcName := NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 
 	tplData := resourceFirewallRulesConfig{
@@ -22,7 +22,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 	}
 
 	// Generate initial configuration with old schema.
-	configWithSet, err := parsedAccConfig(
+	configWithSet, err := ParsedAccConfig(
 		tplData,
 		testAccFunctionToVPCFirewallRulesConfigTpl,
 	)
@@ -30,21 +30,21 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 
 	// Generate updated configuration using the function to convert the rules
 	// set to a map.
-	configWithFunction, err := parsedAccConfig(
+	configWithFunction, err := ParsedAccConfig(
 		tplData,
 		functionToVPCFirewallRulesConfigUpdatedTpl,
 	)
 	require.NoError(t, err)
 
 	// Generate final configuration using the new map schema for rules.
-	configWithMap, err := parsedAccConfig(
+	configWithMap, err := ParsedAccConfig(
 		tplData,
 		testAccFunctionToVPCFirewallRulesConfigUpdatedMapTpl,
 	)
 	require.NoError(t, err)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { PreCheck(t) },
 		CheckDestroy: testAccFirewallRulesDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -61,7 +61,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 			{
 				// Apply provider function to migrate to map.
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: ProviderFactories(),
 				Config:                   configWithFunction,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
@@ -74,7 +74,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 			{
 				// Update configuration to the new schema with rules as a map.
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: ProviderFactories(),
 				Config:                   configWithMap,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{

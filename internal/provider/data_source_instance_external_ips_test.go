@@ -68,13 +68,13 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
-	blockName := newBlockName("datasource-instance-external-ips")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-instance-external-ips")
+	config, err := ParsedAccConfig(
 		dataSourceInstanceExternalIPConfig{
 			BlockName:         blockName,
-			SupportBlockName:  newBlockName("support"),
-			InstanceName:      newResourceName(),
-			InstanceBlockName: newBlockName("instance"),
+			SupportBlockName:  NewBlockName("support"),
+			InstanceName:      NewResourceName(),
+			InstanceBlockName: NewBlockName("instance"),
 		},
 		datasourceInstanceExternalIPsConfigTpl,
 	)
@@ -83,8 +83,8 @@ func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -166,7 +167,7 @@ func (r *subnetPoolMemberResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -243,7 +244,7 @@ func (r *subnetPoolMemberResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -260,7 +261,7 @@ func (r *subnetPoolMemberResource) Read(
 		},
 	)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Pool doesn't exist, remove resource from state
 			resp.State.RemoveResource(ctx)
 			return
@@ -335,7 +336,7 @@ func (r *subnetPoolMemberResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -364,7 +365,7 @@ func (r *subnetPoolMemberResource) Delete(
 		// rather than 404. Handle both cases for idempotent deletes.
 		//
 		// TODO: Switch to a 404 in omicron.
-		if !is404(err) && !strings.Contains(err.Error(), "does not exist") {
+		if !shared.Is404(err) && !strings.Contains(err.Error(), "does not exist") {
 			resp.Diagnostics.AddError(
 				"Error deleting subnet pool member:",
 				"API error: "+err.Error(),

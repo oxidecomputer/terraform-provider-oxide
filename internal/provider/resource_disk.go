@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -94,7 +95,7 @@ func (r *diskResource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: replaceBackticks(`
+		MarkdownDescription: shared.ReplaceBackticks(`
 This resource manages disks.
 
 To create a blank disk it's necessary to set ''block_size''. Otherwise, one of ''source_image_id'' or ''source_snapshot_id'' must be set; ''block_size'' will be automatically calculated.
@@ -233,7 +234,7 @@ func (r *diskResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -326,7 +327,7 @@ func (r *diskResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -339,7 +340,7 @@ func (r *diskResource) Read(
 	}
 	disk, err := r.client.DiskView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -403,7 +404,7 @@ func (r *diskResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -415,7 +416,7 @@ func (r *diskResource) Delete(
 		Disk: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.DiskDelete(ctx, params); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to delete disk:",
 				"API error: "+err.Error(),

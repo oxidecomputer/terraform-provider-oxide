@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 func TestAccCloudResourceInstance_full(t *testing.T) {
@@ -153,11 +154,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceName := newResourceName()
-	blockName := newBlockName("instance")
-	supportBlockName := newBlockName("support")
+	instanceName := NewResourceName()
+	blockName := NewBlockName("instance")
+	supportBlockName := NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -169,21 +170,21 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	instanceName2 := newResourceName()
-	instanceDiskName := newResourceName()
-	instanceNicName := newResourceName()
-	instanceFloatingIPName := newResourceName()
-	instanceSshKeyName := newResourceName()
-	instanceAaGroupName := newResourceName()
-	blockName2 := newBlockName("instance")
-	diskBlockName := newBlockName("disk")
-	supportBlockName3 := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
-	supportBlockNameSSHKeys := newBlockName("support-instance-ssh-keys")
-	supportBlockNameAaGroup := newBlockName("support-instance-anti-affinity-group")
+	instanceName2 := NewResourceName()
+	instanceDiskName := NewResourceName()
+	instanceNicName := NewResourceName()
+	instanceFloatingIPName := NewResourceName()
+	instanceSshKeyName := NewResourceName()
+	instanceAaGroupName := NewResourceName()
+	blockName2 := NewBlockName("instance")
+	diskBlockName := NewBlockName("disk")
+	supportBlockName3 := NewBlockName("support")
+	supportBlockName2 := NewBlockName("support")
+	supportBlockNameSSHKeys := NewBlockName("support-instance-ssh-keys")
+	supportBlockNameAaGroup := NewBlockName("support-instance-anti-affinity-group")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	autoRestartPolicy := "best_effort"
-	config2, err := parsedAccConfig(
+	config2, err := ParsedAccConfig(
 		resourceInstanceFullConfig{
 			BlockName:                  blockName2,
 			InstanceName:               instanceName2,
@@ -206,8 +207,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -472,13 +473,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 		ipPoolName = "default"
 	}
 
-	instanceName := newResourceName()
-	floatingIPName := newResourceName()
-	blockName := newBlockName("instance")
-	supportBlockName := newBlockName("support")
-	ipPoolBlockName := newBlockName("ip-pool")
+	instanceName := NewResourceName()
+	floatingIPName := NewResourceName()
+	blockName := NewBlockName("instance")
+	supportBlockName := NewBlockName("support")
+	ipPoolBlockName := NewBlockName("ip-pool")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	initialConfig, err := parsedAccConfig(
+	initialConfig, err := ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -493,7 +494,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing initial config template data: %e", err)
 	}
 
-	updateConfig1, err := parsedAccConfig(
+	updateConfig1, err := ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -506,7 +507,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing first update config template data: %e", err)
 	}
 
-	updateConfig1SingleStack, err := parsedAccConfig(
+	updateConfig1SingleStack, err := ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -519,7 +520,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing first update single stack config template data: %e", err)
 	}
 
-	updateConfig2, err := parsedAccConfig(
+	updateConfig2, err := ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -533,8 +534,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			// Ephemeral external IP with specified IP pool ID.
@@ -613,13 +614,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceSshKeysName := newResourceName()
-	instanceSshKeysName2 := newResourceName()
-	blockNameSshKeys := newBlockName("instance-ssh-keys")
-	supportBlockNameSshKeys := newBlockName("support-instance-ssh-keys")
-	supportBlockNameSshKeys2 := newBlockName("support-instance-ssh-keys-2")
+	instanceSshKeysName := NewResourceName()
+	instanceSshKeysName2 := NewResourceName()
+	blockNameSshKeys := NewBlockName("instance-ssh-keys")
+	supportBlockNameSshKeys := NewBlockName("support-instance-ssh-keys")
+	supportBlockNameSshKeys2 := NewBlockName("support-instance-ssh-keys-2")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameSshKeys)
-	configSshKeys, err := parsedAccConfig(
+	configSshKeys, err := ParsedAccConfig(
 		resourceInstanceSshKeyConfig{
 			BlockName:         blockNameSshKeys,
 			SshKeyName:        instanceSshKeysName2,
@@ -634,8 +635,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -869,17 +870,17 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceNicName := newResourceName()
-	nicName := newResourceName()
-	blockNameSubnet := newBlockName("instance-nic-subnet")
-	blockNameInstanceNic := newBlockName("instance-nic")
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
+	instanceNicName := NewResourceName()
+	nicName := NewResourceName()
+	blockNameSubnet := NewBlockName("instance-nic-subnet")
+	blockNameInstanceNic := NewBlockName("instance-nic")
+	supportBlockName := NewBlockName("support")
+	supportBlockName2 := NewBlockName("support")
 	resourceNameInstanceNic := fmt.Sprintf("oxide_instance.%s", blockNameInstanceNic)
-	nonDefaultSubnetName := newResourceName()
+	nonDefaultSubnetName := NewResourceName()
 	nonDefaultSubnetIPv4Block := fmt.Sprintf("10.%d.%d.0/24", rand.IntN(255), rand.IntN(255))
 	nonDefaultSubnetIPv6NetNum := rand.IntN(200)
-	configNic, err := parsedAccConfig(
+	configNic, err := ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -895,7 +896,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicAdd, err := parsedAccConfig(
+	configNicAdd, err := ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -911,7 +912,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicUpdateSingleStack, err := parsedAccConfig(
+	configNicUpdateSingleStack, err := ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -927,7 +928,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicDelete, err := parsedAccConfig(
+	configNicDelete, err := ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -945,8 +946,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1080,16 +1081,16 @@ resource "oxide_instance" "{{.BlockName}}" {
   disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
 }
 `
-	instanceDiskName := newResourceName()
-	diskName := newResourceName()
-	diskName2 := newResourceName()
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support-update")
-	blockNameInstance := newBlockName("instance")
-	blockNameInstanceDisk := newBlockName("instance-disk")
-	blockNameInstanceDisk2 := newBlockName("instance-disk-2")
+	instanceDiskName := NewResourceName()
+	diskName := NewResourceName()
+	diskName2 := NewResourceName()
+	supportBlockName := NewBlockName("support")
+	supportBlockName2 := NewBlockName("support-update")
+	blockNameInstance := NewBlockName("instance")
+	blockNameInstanceDisk := NewBlockName("instance-disk")
+	blockNameInstanceDisk2 := NewBlockName("instance-disk-2")
 	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	configDisk, err := parsedAccConfig(
+	configDisk, err := ParsedAccConfig(
 		resourceInstanceDiskConfig{
 			BlockName:        blockNameInstance,
 			DiskBlockName:    blockNameInstanceDisk,
@@ -1104,7 +1105,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configDiskUpdate, err := parsedAccConfig(
+	configDiskUpdate, err := ParsedAccConfig(
 		resourceInstanceDiskConfig{
 			BlockName:        blockNameInstance,
 			DiskBlockName:    blockNameInstanceDisk,
@@ -1121,8 +1122,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1205,12 +1206,12 @@ resource "oxide_instance" "{{.BlockName}}" {
   start_on_create = true
 }
 `
-	instanceName := newResourceName()
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support-update")
-	blockNameInstance := newBlockName("instance")
+	instanceName := NewResourceName()
+	supportBlockName := NewBlockName("support")
+	supportBlockName2 := NewBlockName("support-update")
+	blockNameInstance := NewBlockName("instance")
 	resourceNameInstance := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1222,7 +1223,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := ParsedAccConfig(
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1234,7 +1235,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate2, err := parsedAccConfig(
+	configUpdate2, err := ParsedAccConfig(
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1247,8 +1248,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1316,13 +1317,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceName := newResourceName()
-	diskName := newResourceName()
-	blockName := newBlockName("instance-no-boot-disk")
-	diskBlockName := newBlockName("disk")
-	supportBlockName := newBlockName("support")
+	instanceName := NewResourceName()
+	diskName := NewResourceName()
+	blockName := NewBlockName("instance-no-boot-disk")
+	diskBlockName := NewBlockName("disk")
+	supportBlockName := NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceInstanceNoBootDiskConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -1337,8 +1338,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1454,15 +1455,15 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceAntiAffinityGroupsName := newResourceName()
-	antiAffinityGroupName1 := newResourceName()
-	antiAffinityGroupName2 := newResourceName()
-	blockNameAntiAffinityGroups := newBlockName("instance-anti-affinity-groups")
-	supportBlockNameAntiAffinityGroups := newBlockName("support-instance-anti-affinity-groups")
-	supportBlockNameAntiAffinityGroup1 := newBlockName("support-instance-anti-affinity-group")
-	supportBlockNameAntiAffinityGroup2 := newBlockName("support-instance-anti-affinity-group")
+	instanceAntiAffinityGroupsName := NewResourceName()
+	antiAffinityGroupName1 := NewResourceName()
+	antiAffinityGroupName2 := NewResourceName()
+	blockNameAntiAffinityGroups := NewBlockName("instance-anti-affinity-groups")
+	supportBlockNameAntiAffinityGroups := NewBlockName("support-instance-anti-affinity-groups")
+	supportBlockNameAntiAffinityGroup1 := NewBlockName("support-instance-anti-affinity-group")
+	supportBlockNameAntiAffinityGroup2 := NewBlockName("support-instance-anti-affinity-group")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameAntiAffinityGroups)
-	configAntiAffinityGroups, err := parsedAccConfig(
+	configAntiAffinityGroups, err := ParsedAccConfig(
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                  blockNameAntiAffinityGroups,
 			InstanceName:               instanceAntiAffinityGroupsName,
@@ -1476,7 +1477,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configAntiAffinityGroupsUpdate, err := parsedAccConfig(
+	configAntiAffinityGroupsUpdate, err := ParsedAccConfig(
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                   blockNameAntiAffinityGroups,
 			InstanceName:                instanceAntiAffinityGroupsName,
@@ -1492,7 +1493,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configAntiAffinityGroupsUpdate2, err := parsedAccConfig(
+	configAntiAffinityGroupsUpdate2, err := ParsedAccConfig(
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                   blockNameAntiAffinityGroups,
 			InstanceName:                instanceAntiAffinityGroupsName,
@@ -1509,8 +1510,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1986,7 +1987,7 @@ func testResourceInstanceNetworkInterface(
 }
 
 func testAccInstanceDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -2006,7 +2007,7 @@ func testAccInstanceDestroy(s *terraform.State) error {
 			Instance: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.InstanceView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceVPCConfig struct {
@@ -68,11 +69,11 @@ resource "oxide_vpc" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceVPC_full(t *testing.T) {
-	vpcName := newResourceName()
-	blockName := newBlockName("vpc")
+	vpcName := NewResourceName()
+	blockName := NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc.%s", blockName)
-	supportBlockName := newBlockName("support")
-	config, err := parsedAccConfig(
+	supportBlockName := NewBlockName("support")
+	config, err := ParsedAccConfig(
 		resourceVPCConfig{
 			BlockName:        blockName,
 			VPCName:          vpcName,
@@ -85,7 +86,7 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	}
 
 	vpcNameUpdated := vpcName + "-updated"
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := ParsedAccConfig(
 		resourceVPCConfig{
 			BlockName:        blockName,
 			VPCName:          vpcNameUpdated,
@@ -97,10 +98,10 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	blockName2 := newBlockName("vpc")
+	blockName2 := NewBlockName("vpc")
 	resourceName2 := fmt.Sprintf("oxide_vpc.%s", blockName2)
 	vpcName2 := vpcName + "-2"
-	config2, err := parsedAccConfig(
+	config2, err := ParsedAccConfig(
 		resourceVPCConfig{
 			BlockName:        blockName2,
 			VPCName:          vpcName2,
@@ -113,8 +114,8 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccVPCDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -190,7 +191,7 @@ func checkResourceVPCIPv6(resourceName, vpcName string) resource.TestCheckFunc {
 }
 
 func testAccVPCDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -209,7 +210,7 @@ func testAccVPCDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.VpcView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 
