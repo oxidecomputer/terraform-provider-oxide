@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/functions"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/address_lot"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/anti_affinity_group"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/disk"
@@ -246,6 +247,6 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 // Functions defines the functions implemented in the provider.
 func (p *oxideProvider) Functions(_ context.Context) []func() function.Function {
 	return []func() function.Function{
-		vpc_firewall_rules.NewFunction,
+		functions.NewFunction,
 	}
 }

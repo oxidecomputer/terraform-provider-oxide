@@ -2,23 +2,73 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package vpc_firewall_rules_test
+package functions_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/stretchr/testify/require"
 )
+
+type firewallRulesConfig struct {
+	VPCName string
+}
+
+func firewallRulesDestroy(s *terraform.State) error {
+	client, err := provider.NewTestClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "oxide_vpc_firewall_rules" {
+			continue
+		}
+
+		params := oxide.VpcFirewallRulesViewParams{
+			Vpc: oxide.NameOrId(
+				rs.Primary.Attributes["vpc_id"],
+			),
+		}
+
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(
+			ctx, time.Minute,
+		)
+		defer cancel()
+
+		res, err := client.VpcFirewallRulesView(
+			ctx, params,
+		)
+		if err != nil && shared.Is404(err) {
+			continue
+		}
+
+		if len(res.Rules) > 0 {
+			return fmt.Errorf(
+				"firewall rules (%v) still exist",
+				res.Rules,
+			)
+		}
+	}
+
+	return nil
+}
 
 func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 	vpcName := provider.NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 
-	tplData := resourceFirewallRulesConfig{
+	tplData := firewallRulesConfig{
 		VPCName: vpcName,
 	}
 
@@ -46,7 +96,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { provider.PreCheck(t) },
-		CheckDestroy: testAccFirewallRulesDestroy,
+		CheckDestroy: firewallRulesDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Start with the old format with rules as a set.
