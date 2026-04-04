@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package project
 
 import (
 	"context"
@@ -22,21 +22,23 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*projectResource)(nil)
-	_ resource.ResourceWithConfigure = (*projectResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewProjectResource is a helper function to simplify the provider implementation.
-func NewProjectResource() resource.Resource {
-	return &projectResource{}
+// NewResource is a helper function to simplify the provider
+// implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// projectResource is the resource implementation.
-type projectResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type projectResourceModel struct {
+// Model describes the resource data model.
+type Model struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	Name         types.String   `tfsdk:"name"`
@@ -46,7 +48,7 @@ type projectResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *projectResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -54,8 +56,9 @@ func (r *projectResource) Metadata(
 	resp.TypeName = "oxide_project"
 }
 
-// Configure adds the provider configured client to the data source.
-func (r *projectResource) Configure(
+// Configure adds the provider configured client to the data
+// source.
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -67,17 +70,20 @@ func (r *projectResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// ImportState imports an existing project resource into Terraform state.
-func (r *projectResource) ImportState(
+// ImportState imports an existing project resource into Terraform
+// state.
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
 ) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(
+		ctx, path.Root("id"), req, resp,
+	)
 }
 
 // Schema defines the schema for the resource.
-func (r *projectResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -120,13 +126,14 @@ This resource manages projects.
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
-func (r *projectResource) Create(
+// Create creates the resource and sets the initial Terraform
+// state.
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan projectResourceModel
+	var plan Model
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -134,7 +141,9 @@ func (r *projectResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -162,10 +171,15 @@ func (r *projectResource) Create(
 		map[string]any{"success": true},
 	)
 
-	// Map response body to schema and populate Computed attribute values
+	// Map response body to schema and populate Computed
+	// attribute values
 	plan.ID = types.StringValue(project.Id)
-	plan.TimeCreated = types.StringValue(project.TimeCreated.String())
-	plan.TimeModified = types.StringValue(project.TimeModified.String())
+	plan.TimeCreated = types.StringValue(
+		project.TimeCreated.String(),
+	)
+	plan.TimeModified = types.StringValue(
+		project.TimeModified.String(),
+	)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -175,12 +189,12 @@ func (r *projectResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *projectResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state projectResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -188,7 +202,9 @@ func (r *projectResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -221,8 +237,12 @@ func (r *projectResource) Read(
 	state.Description = types.StringValue(project.Description)
 	state.ID = types.StringValue(project.Id)
 	state.Name = types.StringValue(string(project.Name))
-	state.TimeCreated = types.StringValue(project.TimeCreated.String())
-	state.TimeModified = types.StringValue(project.TimeModified.String())
+	state.TimeCreated = types.StringValue(
+		project.TimeCreated.String(),
+	)
+	state.TimeModified = types.StringValue(
+		project.TimeModified.String(),
+	)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -231,14 +251,15 @@ func (r *projectResource) Read(
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *projectResource) Update(
+// Update updates the resource and sets the updated Terraform
+// state on success.
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan projectResourceModel
-	var state projectResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -246,14 +267,17 @@ func (r *projectResource) Update(
 		return
 	}
 
-	// Read Terraform prior state data into the state model to retrieve ID
-	// which is a computed attribute, so it won't show up in the plan.
+	// Read Terraform prior state data into the state model to
+	// retrieve ID which is a computed attribute, so it won't
+	// show up in the plan.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -282,10 +306,15 @@ func (r *projectResource) Update(
 		map[string]any{"success": true},
 	)
 
-	// Map response body to schema and populate Computed attribute values
+	// Map response body to schema and populate Computed
+	// attribute values
 	plan.ID = types.StringValue(project.Id)
-	plan.TimeCreated = types.StringValue(project.TimeCreated.String())
-	plan.TimeModified = types.StringValue(project.TimeModified.String())
+	plan.TimeCreated = types.StringValue(
+		project.TimeCreated.String(),
+	)
+	plan.TimeModified = types.StringValue(
+		project.TimeModified.String(),
+	)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -294,13 +323,14 @@ func (r *projectResource) Update(
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
-func (r *projectResource) Delete(
+// Delete deletes the resource and removes the Terraform state on
+// success.
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state projectResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -308,7 +338,9 @@ func (r *projectResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -316,7 +348,8 @@ func (r *projectResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// Delete VPC and subnet that were created automatically by the system
+	// Delete VPC and subnet that were created automatically
+	// by the system
 	paramsSubnet := oxide.VpcSubnetDeleteParams{
 		Project: oxide.NameOrId(state.ID.ValueString()),
 		Vpc:     oxide.NameOrId("default"),
@@ -333,7 +366,10 @@ func (r *projectResource) Delete(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted default subnet from project with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf(
+			"deleted default subnet from project with ID: %v",
+			state.ID.ValueString(),
+		),
 		map[string]any{"success": true},
 	)
 
@@ -352,7 +388,10 @@ func (r *projectResource) Delete(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted default VPC from project with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf(
+			"deleted default VPC from project with ID: %v",
+			state.ID.ValueString(),
+		),
 		map[string]any{"success": true},
 	)
 
@@ -370,7 +409,10 @@ func (r *projectResource) Delete(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted project with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf(
+			"deleted project with ID: %v",
+			state.ID.ValueString(),
+		),
 		map[string]any{"success": true},
 	)
 }

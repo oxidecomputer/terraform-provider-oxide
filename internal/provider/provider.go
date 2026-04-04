@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/project"
 )
 
 var _ provider.Provider = (*oxideProvider)(nil)
@@ -169,7 +170,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewImagesDataSource,
 		NewInstanceExternalIPsDataSource,
 		NewIpPoolDataSource,
-		NewProjectDataSource,
+		project.NewDataSource,
 		NewProjectsDataSource,
 		NewSiloDataSource,
 		NewSSHKeyDataSource,
@@ -196,7 +197,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewInstanceResource,
 		NewIPPoolResource,
 		NewIpPoolSiloLinkResource,
-		NewProjectResource,
+		project.NewResource,
 		NewSiloResource,
 		NewSiloSamlIdentityProviderResource,
 		NewSnapshotResource,

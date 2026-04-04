@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package project
 
 import (
 	"context"
@@ -17,14 +17,16 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*projectDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*projectDataSource)(nil)
+var _ datasource.DataSource = (*DataSource)(nil)
+var _ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 
-type projectDataSource struct {
+// DataSource is the datasource implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-type projectDataSourceModel struct {
+// DataSourceModel describes the datasource data model.
+type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
@@ -33,12 +35,13 @@ type projectDataSourceModel struct {
 	TimeModified types.String   `tfsdk:"time_modified"`
 }
 
-// NewProjectDataSource initialises a project datasource
-func NewProjectDataSource() datasource.DataSource {
-	return &projectDataSource{}
+// NewDataSource initialises a project datasource.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-func (d *projectDataSource) Metadata(
+// Metadata returns the data source type name.
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -46,8 +49,9 @@ func (d *projectDataSource) Metadata(
 	resp.TypeName = "oxide_project"
 }
 
-// Configure adds the provider configured client to the data source.
-func (d *projectDataSource) Configure(
+// Configure adds the provider configured client to the data
+// source.
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -59,7 +63,8 @@ func (d *projectDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *projectDataSource) Schema(
+// Schema defines the schema for the data source.
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -94,12 +99,13 @@ Retrieve information about a specified project.
 	}
 }
 
-func (d *projectDataSource) Read(
+// Read refreshes the Terraform state with the latest data.
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state projectDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -107,7 +113,9 @@ func (d *projectDataSource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -137,8 +145,12 @@ func (d *projectDataSource) Read(
 	state.Description = types.StringValue(project.Description)
 	state.ID = types.StringValue(project.Id)
 	state.Name = types.StringValue(string(project.Name))
-	state.TimeCreated = types.StringValue(project.TimeCreated.String())
-	state.TimeModified = types.StringValue(project.TimeModified.String())
+	state.TimeCreated = types.StringValue(
+		project.TimeCreated.String(),
+	)
+	state.TimeModified = types.StringValue(
+		project.TimeModified.String(),
+	)
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
