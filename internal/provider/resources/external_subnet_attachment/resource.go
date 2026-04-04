@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package external_subnet_attachment
 
 import (
 	"context"
@@ -22,22 +22,22 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource                = (*externalSubnetAttachmentResource)(nil)
-	_ resource.ResourceWithConfigure   = (*externalSubnetAttachmentResource)(nil)
-	_ resource.ResourceWithImportState = (*externalSubnetAttachmentResource)(nil)
+	_ resource.Resource                = (*Resource)(nil)
+	_ resource.ResourceWithConfigure   = (*Resource)(nil)
+	_ resource.ResourceWithImportState = (*Resource)(nil)
 )
 
-// NewExternalSubnetAttachmentResource is a helper function to simplify the provider implementation.
-func NewExternalSubnetAttachmentResource() resource.Resource {
-	return &externalSubnetAttachmentResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// externalSubnetAttachmentResource is the resource implementation.
-type externalSubnetAttachmentResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type externalSubnetAttachmentResourceModel struct {
+type Model struct {
 	ID               types.String   `tfsdk:"id"`
 	ExternalSubnetID types.String   `tfsdk:"external_subnet_id"`
 	InstanceID       types.String   `tfsdk:"instance_id"`
@@ -45,7 +45,7 @@ type externalSubnetAttachmentResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *externalSubnetAttachmentResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -54,7 +54,7 @@ func (r *externalSubnetAttachmentResource) Metadata(
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *externalSubnetAttachmentResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -67,7 +67,7 @@ func (r *externalSubnetAttachmentResource) Configure(
 }
 
 // ImportState imports an external subnet attachment using the external subnet ID.
-func (r *externalSubnetAttachmentResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -76,7 +76,7 @@ func (r *externalSubnetAttachmentResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *externalSubnetAttachmentResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -118,12 +118,12 @@ func (r *externalSubnetAttachmentResource) Schema(
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *externalSubnetAttachmentResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan externalSubnetAttachmentResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -175,12 +175,12 @@ func (r *externalSubnetAttachmentResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *externalSubnetAttachmentResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state externalSubnetAttachmentResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -236,12 +236,12 @@ func (r *externalSubnetAttachmentResource) Read(
 
 // Update updates the resource and sets the updated Terraform state on success.
 // Only timeouts can change in-place; both mutable attributes trigger replacement.
-func (r *externalSubnetAttachmentResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan externalSubnetAttachmentResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -255,12 +255,12 @@ func (r *externalSubnetAttachmentResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *externalSubnetAttachmentResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state externalSubnetAttachmentResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

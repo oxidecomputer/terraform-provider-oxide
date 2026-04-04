@@ -19,7 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/address_lot"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/anti_affinity_group"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/disk"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/external_subnet"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/external_subnet_attachment"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/floating_ip"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/image"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/images"
@@ -179,8 +183,8 @@ func (p *oxideProvider) Configure(
 // DataSources defines the data sources implemented in the provider.
 func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewAddressLotDataSource,
-		NewAntiAffinityGroupDataSource,
+		address_lot.NewDataSource,
+		anti_affinity_group.NewDataSource,
 		disk.NewDataSource,
 		floating_ip.NewDataSource,
 		image.NewDataSource,
@@ -204,11 +208,11 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 // Resources defines the resources implemented in the provider.
 func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewAddressLotResource,
-		NewAntiAffinityGroupResource,
+		address_lot.NewResource,
+		anti_affinity_group.NewResource,
 		disk.NewResource,
-		NewExternalSubnetAttachmentResource,
-		NewExternalSubnetResource,
+		external_subnet.NewResource,
+		external_subnet_attachment.NewResource,
 		floating_ip.NewResource,
 		image.NewResource,
 		NewInstanceResource,

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package address_lot
 
 import (
 	"context"
@@ -25,39 +25,39 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*addressLotResource)(nil)
-	_ resource.ResourceWithConfigure = (*addressLotResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewAddressLotResource is a helper function to simplify the provider implementation.
-func NewAddressLotResource() resource.Resource {
-	return &addressLotResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// addressLotResource is the resource implementation.
-type addressLotResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type addressLotResourceModel struct {
-	Blocks       []addressLotResourceBlockModel `tfsdk:"blocks"`
-	Description  types.String                   `tfsdk:"description"`
-	Kind         types.String                   `tfsdk:"kind"`
-	Name         types.String                   `tfsdk:"name"`
-	ID           types.String                   `tfsdk:"id"`
-	TimeCreated  types.String                   `tfsdk:"time_created"`
-	TimeModified types.String                   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value                 `tfsdk:"timeouts"`
+type Model struct {
+	Blocks       []BlockModel   `tfsdk:"blocks"`
+	Description  types.String   `tfsdk:"description"`
+	Kind         types.String   `tfsdk:"kind"`
+	Name         types.String   `tfsdk:"name"`
+	ID           types.String   `tfsdk:"id"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-type addressLotResourceBlockModel struct {
+type BlockModel struct {
 	ID           types.String `tfsdk:"id"`
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
 }
 
 // Metadata returns the resource type name.
-func (r *addressLotResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -66,7 +66,7 @@ func (r *addressLotResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *addressLotResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -79,7 +79,7 @@ func (r *addressLotResource) Configure(
 }
 
 // ImportState imports an existing address lot into Terraform state.
-func (r *addressLotResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -88,7 +88,7 @@ func (r *addressLotResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *addressLotResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -170,12 +170,12 @@ func (r *addressLotResource) Schema(
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *addressLotResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan addressLotResourceModel
+	var plan Model
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -226,9 +226,9 @@ func (r *addressLotResource) Create(
 	plan.TimeModified = types.StringValue(lot.Lot.TimeModified.String())
 
 	// Populate blocks with computed values.
-	blockModels := make([]addressLotResourceBlockModel, len(lot.Blocks))
+	blockModels := make([]BlockModel, len(lot.Blocks))
 	for index, item := range lot.Blocks {
-		blockModels[index] = addressLotResourceBlockModel{
+		blockModels[index] = BlockModel{
 			ID:           types.StringValue(item.Id),
 			FirstAddress: types.StringValue(item.FirstAddress),
 			LastAddress:  types.StringValue(item.LastAddress),
@@ -244,12 +244,12 @@ func (r *addressLotResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *addressLotResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state addressLotResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -289,9 +289,9 @@ func (r *addressLotResource) Read(
 	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
 	state.TimeModified = types.StringValue(lot.TimeModified.String())
 
-	blockModels := make([]addressLotResourceBlockModel, len(addressLot.Blocks))
+	blockModels := make([]BlockModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {
-		blockModels[index] = addressLotResourceBlockModel{
+		blockModels[index] = BlockModel{
 			ID:           types.StringValue(item.Id),
 			FirstAddress: types.StringValue(item.FirstAddress),
 			LastAddress:  types.StringValue(item.LastAddress),
@@ -310,7 +310,7 @@ func (r *addressLotResource) Read(
 // Note: the API doesn't currently support updating an Address Lot in place, so we leave this
 // implementation blank and mark all attributes with RequiresReplace.
 // TODO: support in-place updates.
-func (r *addressLotResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
@@ -322,12 +322,12 @@ func (r *addressLotResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *addressLotResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state addressLotResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

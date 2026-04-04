@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package anti_affinity_group
 
 import (
 	"context"
@@ -18,20 +18,20 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*antiAffinityGroupDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*antiAffinityGroupDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewAntiAffinityGroupDataSource initialises an anti-affinity group datasource
-func NewAntiAffinityGroupDataSource() datasource.DataSource {
-	return &antiAffinityGroupDataSource{}
+// NewDataSource initialises an anti-affinity group datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type antiAffinityGroupDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type antiAffinityGroupDataSourceModel struct {
+type DataSourceModel struct {
 	Description   types.String   `tfsdk:"description"`
 	FailureDomain types.String   `tfsdk:"failure_domain"`
 	ID            types.String   `tfsdk:"id"`
@@ -44,7 +44,7 @@ type antiAffinityGroupDataSourceModel struct {
 	ProjectName   types.String   `tfsdk:"project_name"`
 }
 
-func (d *antiAffinityGroupDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -53,7 +53,7 @@ func (d *antiAffinityGroupDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *antiAffinityGroupDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -65,7 +65,7 @@ func (d *antiAffinityGroupDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *antiAffinityGroupDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -116,12 +116,12 @@ Retrieve information about a specified anti-affinity group.
 	}
 }
 
-func (d *antiAffinityGroupDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state antiAffinityGroupDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)

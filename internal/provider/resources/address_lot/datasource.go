@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package address_lot
 
 import (
 	"context"
@@ -17,36 +17,39 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*addressLotDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*addressLotDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
+)
 
-type addressLotDataSource struct {
+// DataSource is the data source implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-type addressLotDataSourceModel struct {
-	Blocks       []addressLotDataSourceBlockModel `tfsdk:"blocks"`
-	Description  types.String                     `tfsdk:"description"`
-	Kind         types.String                     `tfsdk:"kind"`
-	Name         types.String                     `tfsdk:"name"`
-	ID           types.String                     `tfsdk:"id"`
-	TimeCreated  types.String                     `tfsdk:"time_created"`
-	TimeModified types.String                     `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value                   `tfsdk:"timeouts"`
+type DataSourceModel struct {
+	Blocks       []DataSourceBlockModel `tfsdk:"blocks"`
+	Description  types.String           `tfsdk:"description"`
+	Kind         types.String           `tfsdk:"kind"`
+	Name         types.String           `tfsdk:"name"`
+	ID           types.String           `tfsdk:"id"`
+	TimeCreated  types.String           `tfsdk:"time_created"`
+	TimeModified types.String           `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value         `tfsdk:"timeouts"`
 }
 
-type addressLotDataSourceBlockModel struct {
+type DataSourceBlockModel struct {
 	ID           types.String `tfsdk:"id"`
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
 }
 
-// NewAddressLotDataSource initialises an address_lot datasource.
-func NewAddressLotDataSource() datasource.DataSource {
-	return &addressLotDataSource{}
+// NewDataSource initialises an address_lot datasource.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-func (d *addressLotDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -55,7 +58,7 @@ func (d *addressLotDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *addressLotDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -67,7 +70,7 @@ func (d *addressLotDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *addressLotDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -122,12 +125,12 @@ func (d *addressLotDataSource) Schema(
 	}
 }
 
-func (d *addressLotDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state addressLotDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -167,9 +170,9 @@ func (d *addressLotDataSource) Read(
 	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
 	state.TimeModified = types.StringValue(lot.TimeModified.String())
 
-	blockModels := make([]addressLotDataSourceBlockModel, len(addressLot.Blocks))
+	blockModels := make([]DataSourceBlockModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {
-		blockModels[index] = addressLotDataSourceBlockModel{
+		blockModels[index] = DataSourceBlockModel{
 			ID:           types.StringValue(item.Id),
 			FirstAddress: types.StringValue(item.FirstAddress),
 			LastAddress:  types.StringValue(item.LastAddress),

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package external_subnet_attachment_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -114,7 +115,7 @@ func buildExternalSubnetAttachmentConfig(
 	cfg externalSubnetAttachmentTestConfig,
 ) string {
 	t.Helper()
-	config, err := ParsedAccConfig(cfg, externalSubnetAttachmentConfigTpl)
+	config, err := provider.ParsedAccConfig(cfg, externalSubnetAttachmentConfigTpl)
 	if err != nil {
 		t.Fatalf("error parsing config template: %v", err)
 	}
@@ -124,7 +125,7 @@ func buildExternalSubnetAttachmentConfig(
 func TestAccResourceExternalSubnetAttachment_full(t *testing.T) {
 	resourceName := "oxide_external_subnet_attachment.test"
 
-	subnet := NextSubnetCIDR(t)
+	subnet := provider.NextSubnetCIDR(t)
 
 	baseConfig := externalSubnetAttachmentTestConfig{
 		PoolName:          "terraform-acc-ext-subnet-attach",
@@ -146,8 +147,8 @@ func TestAccResourceExternalSubnetAttachment_full(t *testing.T) {
 	detachedConfig.IncludeAttachment = false
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		// Note that this check isn't particularly useful, since destroying the subnet and instance
 		// will automatically destroy the attachment. We include it for completeness, but the real
 		// test is in `testAccExternalSubnetVerifyDetached` below.
@@ -193,7 +194,7 @@ func TestAccResourceExternalSubnetAttachment_full(t *testing.T) {
 func TestAccResourceExternalSubnetAttachment_disappears(t *testing.T) {
 	resourceName := "oxide_external_subnet_attachment.test"
 
-	subnet := NextSubnetCIDR(t)
+	subnet := provider.NextSubnetCIDR(t)
 
 	config := buildExternalSubnetAttachmentConfig(t, externalSubnetAttachmentTestConfig{
 		PoolName:          "terraform-acc-ext-subnet-attach-pool-dis",
@@ -208,8 +209,8 @@ func TestAccResourceExternalSubnetAttachment_disappears(t *testing.T) {
 	})
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccExternalSubnetAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -231,7 +232,7 @@ func testAccExternalSubnetAttachmentDisappears(resourceName string) resource.Tes
 			return fmt.Errorf("resource not found: %s", resourceName)
 		}
 
-		client, err := NewTestClient()
+		client, err := provider.NewTestClient()
 		if err != nil {
 			return err
 		}
@@ -253,7 +254,7 @@ func testAccExternalSubnetVerifyDetached(
 			return fmt.Errorf("resource not found: %s", subnetResourceName)
 		}
 
-		client, err := NewTestClient()
+		client, err := provider.NewTestClient()
 		if err != nil {
 			return err
 		}
@@ -283,7 +284,7 @@ func testAccExternalSubnetVerifyDetached(
 }
 
 func testAccExternalSubnetAttachmentDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

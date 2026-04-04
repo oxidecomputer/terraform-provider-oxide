@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package anti_affinity_group_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -55,11 +56,11 @@ resource "oxide_anti_affinity_group" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
-	antiAffinityGroupName := NewResourceName()
-	blockName := NewBlockName("anti_affinity_group")
+	antiAffinityGroupName := provider.NewResourceName()
+	blockName := provider.NewBlockName("anti_affinity_group")
 	resourceName := fmt.Sprintf("oxide_anti_affinity_group.%s", blockName)
-	supportBlockName := NewBlockName("support")
-	config, err := ParsedAccConfig(
+	supportBlockName := provider.NewBlockName("support")
+	config, err := provider.ParsedAccConfig(
 		resourceAntiAffinityGroupConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupName,
@@ -72,7 +73,7 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	antiAffinityGroupNameUpdated := antiAffinityGroupName + "-updated"
-	configUpdate, err := ParsedAccConfig(
+	configUpdate, err := provider.ParsedAccConfig(
 		resourceAntiAffinityGroupConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupNameUpdated,
@@ -85,8 +86,8 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccAntiAffinityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -144,7 +145,7 @@ func checkResourceAntiAffinityGroupUpdate(
 }
 
 func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package address_lot_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 func testDataSourceAddressLotConfig(name string) string {
@@ -33,10 +34,10 @@ data "oxide_address_lot" "test" {
 
 func TestAccDataSourceAddressLot_full(t *testing.T) {
 	resourceName := "oxide_address_lot.test"
-	addressLotName := NewResourceName()
+	addressLotName := provider.NewResourceName()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testDataSourceAddressLotConfig(addressLotName),
