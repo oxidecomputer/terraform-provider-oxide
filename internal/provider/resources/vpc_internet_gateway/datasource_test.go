@@ -2,80 +2,75 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_internet_gateway_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
-type dataSourceVPCRouterConfig struct {
+type dataSourceVPCInternetGatewayConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-var dataSourceVPCRouterConfigTpl = `
+var dataSourceVPCInternetGatewayConfigTpl = `
 data "oxide_vpc" "test" {
   project_name = "tf-acc-test"
   name         = "default"
 }
 
-resource "oxide_vpc_router" "{{.BlockName}}" {
+resource "oxide_vpc_internet_gateway" "{{.BlockName}}" {
   vpc_id      = data.oxide_vpc.test.id
   name        = "test"
-  description = "test router"
+  description = "test description"
 }
 
-data "oxide_vpc_router" "{{.BlockName}}" {
+data "oxide_vpc_internet_gateway" "{{.BlockName}}" {
   project_name = "tf-acc-test"
   vpc_name     = "default"
-  name         = oxide_vpc_router.{{.BlockName}}.name
+  name         = oxide_vpc_internet_gateway.{{.BlockName}}.name
   timeouts = {
     read = "1m"
   }
 }
 `
 
-func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
-	blockName := NewBlockName("datasource-vpc-router")
-	config, err := ParsedAccConfig(
-		dataSourceVPCRouterConfig{
+func TestAccCloudDataSourceVPCInternetGateway_full(t *testing.T) {
+	blockName := provider.NewBlockName("datasource-vpc-router")
+	config, err := provider.ParsedAccConfig(
+		dataSourceVPCInternetGatewayConfig{
 			BlockName:        blockName,
-			SupportBlockName: NewBlockName("support"),
+			SupportBlockName: provider.NewBlockName("support"),
 		},
-		dataSourceVPCRouterConfigTpl,
+		dataSourceVPCInternetGatewayConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceVPCRouter(
-					fmt.Sprintf("data.oxide_vpc_router.%s", blockName),
+				Check: checkDataSourceVPCInternetGateway(
+					fmt.Sprintf("data.oxide_vpc_internet_gateway.%s", blockName),
 				),
 			},
 		},
 	})
 }
 
-func checkDataSourceVPCRouter(dataName string) resource.TestCheckFunc {
+func checkDataSourceVPCInternetGateway(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
-		resource.TestCheckResourceAttr(
-			dataName,
-			"description",
-			"test router",
-		),
+		resource.TestCheckResourceAttr(dataName, "description", "test description"),
 		resource.TestCheckResourceAttr(dataName, "name", "test"),
-		resource.TestCheckResourceAttr(dataName, "kind", string(oxide.VpcRouterKindCustom)),
 		resource.TestCheckResourceAttrSet(dataName, "vpc_id"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "time_modified"),

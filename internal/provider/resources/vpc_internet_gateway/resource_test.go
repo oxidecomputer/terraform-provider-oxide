@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_internet_gateway_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -70,13 +71,13 @@ resource "oxide_vpc_internet_gateway" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
-	vpcName := NewResourceName()
-	internetGatewayName := NewResourceName()
-	blockName := NewBlockName("internet_gateway")
-	supportBlockName := NewBlockName("support")
-	vpcBlockName := NewBlockName("vpc")
+	vpcName := provider.NewResourceName()
+	internetGatewayName := provider.NewResourceName()
+	blockName := provider.NewBlockName("internet_gateway")
+	supportBlockName := provider.NewBlockName("support")
+	vpcBlockName := provider.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_internet_gateway.%s", blockName)
-	config, err := ParsedAccConfig(
+	config, err := provider.ParsedAccConfig(
 		resourceVPCInternetGatewayConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
@@ -90,7 +91,7 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := ParsedAccConfig(
+	configUpdate, err := provider.ParsedAccConfig(
 		resourceVPCInternetGatewayConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
@@ -105,8 +106,8 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccVPCInternetGatewayDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -162,7 +163,7 @@ func checkResourceVPCInternetGatewayUpdate(
 }
 
 func testAccVPCInternetGatewayDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

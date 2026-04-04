@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_router_route
 
 import (
 	"context"
@@ -19,20 +19,20 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*vpcRouterRouteDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*vpcRouterRouteDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewVPCRouterRouteDataSource initialises a VPC router route datasource
-func NewVPCRouterRouteDataSource() datasource.DataSource {
-	return &vpcRouterRouteDataSource{}
+// NewDataSource initialises a VPC router route datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type vpcRouterRouteDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type vpcRouterRouteDataSourceModel struct {
+type DataSourceModel struct {
 	Description   types.String   `tfsdk:"description"`
 	Destination   types.Object   `tfsdk:"destination"`
 	ID            types.String   `tfsdk:"id"`
@@ -48,17 +48,17 @@ type vpcRouterRouteDataSourceModel struct {
 	Timeouts      timeouts.Value `tfsdk:"timeouts"`
 }
 
-type vpcRouterRouteDestinationDataSourceModel struct {
+type DataSourceDestinationModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type vpcRouterRouteTargetDataSourceModel struct {
+type DataSourceTargetModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-func (d *vpcRouterRouteDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -67,7 +67,7 @@ func (d *vpcRouterRouteDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcRouterRouteDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -79,7 +79,7 @@ func (d *vpcRouterRouteDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcRouterRouteDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -175,12 +175,12 @@ Depending on the type, it will be one of the following:
 	}
 }
 
-func (d *vpcRouterRouteDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state vpcRouterRouteDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -216,8 +216,8 @@ func (d *vpcRouterRouteDataSource) Read(
 		map[string]any{"success": true},
 	)
 
-	// Parse vpcRouterRouteDestinationDataSourceModel into types.Object
-	dm := vpcRouterRouteDestinationDataSourceModel{
+	// Parse DataSourceDestinationModel into types.Object
+	dm := DataSourceDestinationModel{
 		Type:  types.StringValue(string(route.Destination.Type())),
 		Value: types.StringValue(route.Destination.String()),
 	}
@@ -232,8 +232,8 @@ func (d *vpcRouterRouteDataSource) Read(
 	}
 	state.Destination = destination
 
-	// Parse vpcRouterRouteTargetDataSourceModel into types.Object
-	tm := vpcRouterRouteTargetDataSourceModel{
+	// Parse DataSourceTargetModel into types.Object
+	tm := DataSourceTargetModel{
 		Type: types.StringValue(string(route.Target.Type())),
 	}
 

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_router
 
 import (
 	"context"
@@ -22,21 +22,23 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*vpcRouterResource)(nil)
-	_ resource.ResourceWithConfigure = (*vpcRouterResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewVPCRouterResource is a helper function to simplify the provider implementation.
-func NewVPCRouterResource() resource.Resource {
-	return &vpcRouterResource{}
+// NewResource is a helper function to simplify the provider
+// implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// vpcRouterResource is the resource implementation.
-type vpcRouterResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type vpcRouterResourceModel struct {
+// Model describes the resource data model.
+type Model struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	Kind         types.String   `tfsdk:"kind"`
@@ -48,7 +50,7 @@ type vpcRouterResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *vpcRouterResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -57,7 +59,7 @@ func (r *vpcRouterResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcRouterResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -69,16 +71,18 @@ func (r *vpcRouterResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *vpcRouterResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
 ) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(
+		ctx, path.Root("id"), req, resp,
+	)
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcRouterResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -133,19 +137,21 @@ This resource manages VPC routers.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcRouterResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan vpcRouterResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -172,15 +178,22 @@ func (r *vpcRouterResource) Create(
 
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("created VPC router with ID: %v", vpcRouter.Id),
+		fmt.Sprintf(
+			"created VPC router with ID: %v", vpcRouter.Id,
+		),
 		map[string]any{"success": true},
 	)
 
-	// Map response body to schema and populate Computed attribute values
+	// Map response body to schema and populate Computed
+	// attribute values
 	plan.ID = types.StringValue(vpcRouter.Id)
 	plan.Kind = types.StringValue(string(vpcRouter.Kind))
-	plan.TimeCreated = types.StringValue(vpcRouter.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpcRouter.TimeModified.String())
+	plan.TimeCreated = types.StringValue(
+		vpcRouter.TimeCreated.String(),
+	)
+	plan.TimeModified = types.StringValue(
+		vpcRouter.TimeModified.String(),
+	)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -190,12 +203,12 @@ func (r *vpcRouterResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcRouterResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state vpcRouterResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -203,7 +216,9 @@ func (r *vpcRouterResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -229,7 +244,9 @@ func (r *vpcRouterResource) Read(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read VPC Router with ID: %v", vpcRouter.Id),
+		fmt.Sprintf(
+			"read VPC Router with ID: %v", vpcRouter.Id,
+		),
 		map[string]any{"success": true},
 	)
 
@@ -238,8 +255,12 @@ func (r *vpcRouterResource) Read(
 	state.Kind = types.StringValue(string(vpcRouter.Kind))
 	state.Name = types.StringValue(string(vpcRouter.Name))
 	state.VPCID = types.StringValue(string(vpcRouter.VpcId))
-	state.TimeCreated = types.StringValue(vpcRouter.TimeCreated.String())
-	state.TimeModified = types.StringValue(vpcRouter.TimeModified.String())
+	state.TimeCreated = types.StringValue(
+		vpcRouter.TimeCreated.String(),
+	)
+	state.TimeModified = types.StringValue(
+		vpcRouter.TimeModified.String(),
+	)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -248,14 +269,15 @@ func (r *vpcRouterResource) Read(
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcRouterResource) Update(
+// Update updates the resource and sets the updated Terraform state
+// on success.
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan vpcRouterResourceModel
-	var state vpcRouterResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -263,14 +285,17 @@ func (r *vpcRouterResource) Update(
 		return
 	}
 
-	// Read Terraform prior state data into the state model to retrieve ID
-	// which is a computed attribute, so it won't show up in the plan.
+	// Read Terraform prior state data into the state model to
+	// retrieve ID which is a computed attribute, so it won't
+	// show up in the plan.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -295,15 +320,22 @@ func (r *vpcRouterResource) Update(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("updated VPC router with ID: %v", vpcRouter.Id),
+		fmt.Sprintf(
+			"updated VPC router with ID: %v", vpcRouter.Id,
+		),
 		map[string]any{"success": true},
 	)
 
-	// Map response body to schema and populate Computed attribute values
+	// Map response body to schema and populate Computed
+	// attribute values
 	plan.ID = types.StringValue(vpcRouter.Id)
 	plan.Kind = types.StringValue(string(vpcRouter.Kind))
-	plan.TimeCreated = types.StringValue(vpcRouter.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpcRouter.TimeModified.String())
+	plan.TimeCreated = types.StringValue(
+		vpcRouter.TimeCreated.String(),
+	)
+	plan.TimeModified = types.StringValue(
+		vpcRouter.TimeModified.String(),
+	)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -312,13 +344,14 @@ func (r *vpcRouterResource) Update(
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcRouterResource) Delete(
+// Delete deletes the resource and removes the Terraform state on
+// success.
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state vpcRouterResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -326,7 +359,9 @@ func (r *vpcRouterResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -349,7 +384,10 @@ func (r *vpcRouterResource) Delete(
 
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted VPC router with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf(
+			"deleted VPC router with ID: %v",
+			state.ID.ValueString(),
+		),
 		map[string]any{"success": true},
 	)
 }

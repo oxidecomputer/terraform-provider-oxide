@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_router
 
 import (
 	"context"
@@ -18,20 +18,22 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*vpcRouterDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*vpcRouterDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewVPCRouterDataSource initialises an images datasource
-func NewVPCRouterDataSource() datasource.DataSource {
-	return &vpcRouterDataSource{}
+// NewDataSource initialises a VPC router datasource.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type vpcRouterDataSource struct {
+// DataSource is the data source implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-type vpcRouterDataSourceModel struct {
+// DataSourceModel describes the data source data model.
+type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	Kind         types.String   `tfsdk:"kind"`
@@ -44,7 +46,7 @@ type vpcRouterDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcRouterDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -53,7 +55,7 @@ func (d *vpcRouterDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcRouterDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -65,7 +67,7 @@ func (d *vpcRouterDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcRouterDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -116,12 +118,12 @@ Retrieve information about a specified VPC router.
 	}
 }
 
-func (d *vpcRouterDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state vpcRouterDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -129,7 +131,9 @@ func (d *vpcRouterDataSource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -152,7 +156,9 @@ func (d *vpcRouterDataSource) Read(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read VPC router with ID: %v", router.Id),
+		fmt.Sprintf(
+			"read VPC router with ID: %v", router.Id,
+		),
 		map[string]any{"success": true},
 	)
 
@@ -161,8 +167,12 @@ func (d *vpcRouterDataSource) Read(
 	state.Kind = types.StringValue(string(router.Kind))
 	state.Name = types.StringValue(string(router.Name))
 	state.VPCID = types.StringValue(router.VpcId)
-	state.TimeCreated = types.StringValue(router.TimeCreated.String())
-	state.TimeModified = types.StringValue(router.TimeModified.String())
+	state.TimeCreated = types.StringValue(
+		router.TimeCreated.String(),
+	)
+	state.TimeModified = types.StringValue(
+		router.TimeModified.String(),
+	)
 
 	// Save state into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

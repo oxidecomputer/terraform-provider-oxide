@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_subnet
 
 import (
 	"context"
@@ -18,20 +18,20 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*vpcSubnetDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*vpcSubnetDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewVPCSubnetDataSource initialises an images datasource
-func NewVPCSubnetDataSource() datasource.DataSource {
-	return &vpcSubnetDataSource{}
+// NewDataSource initialises a VPC subnet datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type vpcSubnetDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type vpcSubnetDataSourceModel struct {
+type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	IPV4Block    types.String   `tfsdk:"ipv4_block"`
@@ -45,7 +45,7 @@ type vpcSubnetDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcSubnetDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -54,7 +54,7 @@ func (d *vpcSubnetDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcSubnetDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -66,7 +66,7 @@ func (d *vpcSubnetDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcSubnetDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -125,12 +125,12 @@ Retrieve information about a specified VPC subnet.
 	}
 }
 
-func (d *vpcSubnetDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state vpcSubnetDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)

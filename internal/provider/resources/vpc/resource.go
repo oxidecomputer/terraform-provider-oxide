@@ -2,13 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -23,43 +22,44 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*vpcSubnetResource)(nil)
-	_ resource.ResourceWithConfigure = (*vpcSubnetResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewVPCSubnetResource is a helper function to simplify the provider implementation.
-func NewVPCSubnetResource() resource.Resource {
-	return &vpcSubnetResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// vpcSubnetResource is the resource implementation.
-type vpcSubnetResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type vpcSubnetResourceModel struct {
-	Description  types.String         `tfsdk:"description"`
-	ID           types.String         `tfsdk:"id"`
-	IPV4Block    cidrtypes.IPv4Prefix `tfsdk:"ipv4_block"`
-	IPV6Block    cidrtypes.IPv6Prefix `tfsdk:"ipv6_block"`
-	Name         types.String         `tfsdk:"name"`
-	VPCID        types.String         `tfsdk:"vpc_id"`
-	TimeCreated  types.String         `tfsdk:"time_created"`
-	TimeModified types.String         `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
+type Model struct {
+	Description    types.String   `tfsdk:"description"`
+	DNSName        types.String   `tfsdk:"dns_name"`
+	ID             types.String   `tfsdk:"id"`
+	IPV6Prefix     types.String   `tfsdk:"ipv6_prefix"`
+	Name           types.String   `tfsdk:"name"`
+	ProjectID      types.String   `tfsdk:"project_id"`
+	SystemRouterID types.String   `tfsdk:"system_router_id"`
+	TimeCreated    types.String   `tfsdk:"time_created"`
+	TimeModified   types.String   `tfsdk:"time_modified"`
+	Timeouts       timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
-func (r *vpcSubnetResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_vpc_subnet"
+	resp.TypeName = "oxide_vpc"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcSubnetResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -71,8 +71,8 @@ func (r *vpcSubnetResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// ImportState imports an existing VPC subnet into Terraform state.
-func (r *vpcSubnetResource) ImportState(
+// ImportState imports an existing VPC resource into Terraform state.
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -81,50 +81,39 @@ func (r *vpcSubnetResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcSubnetResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
-This resource manages VPC subnets.
+This resource manages VPCs.
 `,
 		Attributes: map[string]schema.Attribute{
-			"vpc_id": schema.StringAttribute{
+			"project_id": schema.StringAttribute{
 				Required:    true,
-				Description: "ID of the VPC that will contain the subnet.",
+				Description: "ID of the project that will contain the VPC.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the VPC subnet.",
+				Description: "Name of the VPC.",
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the VPC subnet.",
+				Description: "Description for the VPC.",
 			},
-			"ipv4_block": schema.StringAttribute{
-				Required:   true,
-				CustomType: cidrtypes.IPv4PrefixType{},
-				Description: "IPv4 address range for this VPC subnet. " +
-					"It must be allocated from an RFC 1918 private address range, " +
-					"and must not overlap with any other existing subnet in the VPC.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
+			"dns_name": schema.StringAttribute{
+				Required:    true,
+				Description: "DNS name of the VPC.",
 			},
-			"ipv6_block": schema.StringAttribute{
-				Optional:   true,
-				Computed:   true,
-				CustomType: cidrtypes.IPv6PrefixType{},
-				Description: "IPv6 address range for this VPC subnet. " +
-					"It must be allocated from the RFC 4193 Unique Local Address range, " +
-					"with the prefix equal to the parent VPC's prefix. " +
-					"A random `/64` block will be assigned if one is not provided. " +
-					"It must not overlap with any existing subnet in the VPC.",
+			"ipv6_prefix": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "IPv6 prefix of the VPC.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
@@ -137,30 +126,34 @@ This resource manages VPC subnets.
 			}),
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the VPC subnet.",
+				Description: "Unique, immutable, system-controlled identifier of the VPC.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"system_router_id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the system router.",
+			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC subnet was created.",
+				Description: "Timestamp of when this VPC was created.",
 			},
 			"time_modified": schema.StringAttribute{
 				Computed:    true,
-				Description: "Timestamp of when this VPC subnet was last modified.",
+				Description: "Timestamp of when this VPC was last modified.",
 			},
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcSubnetResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan vpcSubnetResourceModel
+	var plan Model
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -176,35 +169,36 @@ func (r *vpcSubnetResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.VpcSubnetCreateParams{
-		Vpc: oxide.NameOrId(plan.VPCID.ValueString()),
-		Body: &oxide.VpcSubnetCreate{
+	params := oxide.VpcCreateParams{
+		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
+		Body: &oxide.VpcCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
-			Ipv4Block:   oxide.Ipv4Net(plan.IPV4Block.ValueString()),
-			Ipv6Block:   oxide.Ipv6Net(plan.IPV6Block.ValueString()),
+			DnsName:     oxide.Name(plan.DNSName.ValueString()),
+			Ipv6Prefix:  oxide.Ipv6Net(plan.IPV6Prefix.ValueString()),
 		},
 	}
-	subnet, err := r.client.VpcSubnetCreate(ctx, params)
+	vpc, err := r.client.VpcCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating VPC subnet",
+			"Error creating VPC",
 			"API error: "+err.Error(),
 		)
 		return
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("created VPC subnet with ID: %v", subnet.Id),
+		fmt.Sprintf("created VPC with ID: %v", vpc.Id),
 		map[string]any{"success": true},
 	)
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(subnet.Id)
-	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
-	// IPV6Block is added as well as it is Optional/Computed
-	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
+	plan.ID = types.StringValue(vpc.Id)
+	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
+	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
+	plan.TimeModified = types.StringValue(vpc.TimeModified.String())
+	// IPV6Prefix is added as well as it is Optional/Computed
+	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -214,12 +208,12 @@ func (r *vpcSubnetResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcSubnetResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state vpcSubnetResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -235,10 +229,10 @@ func (r *vpcSubnetResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.VpcSubnetViewParams{
-		Subnet: oxide.NameOrId(state.ID.ValueString()),
+	params := oxide.VpcViewParams{
+		Vpc: oxide.NameOrId(state.ID.ValueString()),
 	}
-	subnet, err := r.client.VpcSubnetView(ctx, params)
+	vpc, err := r.client.VpcView(ctx, params)
 	if err != nil {
 		if shared.Is404(err) {
 			// Remove resource from state during a refresh
@@ -246,25 +240,22 @@ func (r *vpcSubnetResource) Read(
 			return
 		}
 		resp.Diagnostics.AddError(
-			"Unable to read VPC subnet:",
+			"Unable to read VPC:",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("read VPC subnet with ID: %v", subnet.Id),
-		map[string]any{"success": true},
-	)
+	tflog.Trace(ctx, fmt.Sprintf("read VPC with ID: %v", vpc.Id), map[string]any{"success": true})
 
-	state.Description = types.StringValue(subnet.Description)
-	state.ID = types.StringValue(subnet.Id)
-	state.IPV4Block = cidrtypes.NewIPv4PrefixValue(string(subnet.Ipv4Block))
-	state.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
-	state.Name = types.StringValue(string(subnet.Name))
-	state.VPCID = types.StringValue(subnet.VpcId)
-	state.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	state.TimeModified = types.StringValue(subnet.TimeModified.String())
+	state.Description = types.StringValue(vpc.Description)
+	state.DNSName = types.StringValue(string(vpc.DnsName))
+	state.ID = types.StringValue(vpc.Id)
+	state.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
+	state.Name = types.StringValue(string(vpc.Name))
+	state.ProjectID = types.StringValue(vpc.ProjectId)
+	state.SystemRouterID = types.StringValue(vpc.SystemRouterId)
+	state.TimeCreated = types.StringValue(vpc.TimeCreated.String())
+	state.TimeModified = types.StringValue(vpc.TimeModified.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -274,13 +265,13 @@ func (r *vpcSubnetResource) Read(
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcSubnetResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan vpcSubnetResourceModel
-	var state vpcSubnetResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -303,32 +294,34 @@ func (r *vpcSubnetResource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := oxide.VpcSubnetUpdateParams{
-		Subnet: oxide.NameOrId(state.ID.ValueString()),
-		Body: &oxide.VpcSubnetUpdate{
+	params := oxide.VpcUpdateParams{
+		Vpc: oxide.NameOrId(state.ID.ValueString()),
+		Body: &oxide.VpcUpdate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
+			DnsName:     oxide.Name(plan.DNSName.ValueString()),
 		},
 	}
-	subnet, err := r.client.VpcSubnetUpdate(ctx, params)
+	vpc, err := r.client.VpcUpdate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating VPC subnet",
+			"Error updating vpc",
 			"API error: "+err.Error(),
 		)
 		return
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("updated VPC subnet with ID: %v", subnet.Id),
+		fmt.Sprintf("updated VPC with ID: %v", vpc.Id),
 		map[string]any{"success": true},
 	)
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(subnet.Id)
-	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
-	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
-	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
+	plan.ID = types.StringValue(vpc.Id)
+	plan.SystemRouterID = types.StringValue(vpc.SystemRouterId)
+	plan.TimeCreated = types.StringValue(vpc.TimeCreated.String())
+	plan.TimeModified = types.StringValue(vpc.TimeModified.String())
+	plan.IPV6Prefix = types.StringValue(string(vpc.Ipv6Prefix))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -338,12 +331,12 @@ func (r *vpcSubnetResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcSubnetResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state vpcSubnetResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -359,13 +352,15 @@ func (r *vpcSubnetResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	params := oxide.VpcSubnetDeleteParams{
-		Subnet: oxide.NameOrId(state.ID.ValueString()),
+	// Delete subnets that were created automatically by the system
+	paramsSubnet := oxide.VpcSubnetDeleteParams{
+		Vpc:    oxide.NameOrId(state.ID.ValueString()),
+		Subnet: oxide.NameOrId("default"),
 	}
-	if err := r.client.VpcSubnetDelete(ctx, params); err != nil {
+	if err := r.client.VpcSubnetDelete(ctx, paramsSubnet); err != nil {
 		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
-				"Error deleting VPC subnet:",
+				"Error deleting default subnet:",
 				"API error: "+err.Error(),
 			)
 			return
@@ -373,7 +368,25 @@ func (r *vpcSubnetResource) Delete(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted VPC subnet with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf("deleted default subnet from VPC with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
+
+	params := oxide.VpcDeleteParams{
+		Vpc: oxide.NameOrId(state.ID.ValueString()),
+	}
+	if err := r.client.VpcDelete(ctx, params); err != nil {
+		if !shared.Is404(err) {
+			resp.Diagnostics.AddError(
+				"Error deleting VPC:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted VPC with ID: %v", state.ID.ValueString()),
 		map[string]any{"success": true},
 	)
 }

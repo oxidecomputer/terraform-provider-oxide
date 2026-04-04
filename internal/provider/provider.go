@@ -27,6 +27,11 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/projects"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/snapshot"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ssh_key"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_internet_gateway"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router_route"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_subnet"
 )
 
 var _ provider.Provider = (*oxideProvider)(nil)
@@ -183,11 +188,11 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		ssh_key.NewDataSource,
 		NewSubnetPoolDataSource,
 		NewSystemIpPoolsDataSource,
-		NewVPCDataSource,
-		NewVPCInternetGatewayDataSource,
-		NewVPCRouterDataSource,
-		NewVPCRouterRouteDataSource,
-		NewVPCSubnetDataSource,
+		vpc.NewDataSource,
+		vpc_internet_gateway.NewDataSource,
+		vpc_router.NewDataSource,
+		vpc_router_route.NewDataSource,
+		vpc_subnet.NewDataSource,
 	}
 }
 
@@ -214,11 +219,11 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewSubnetPoolSiloLinkResource,
 		NewSwitchPortSettingsResource,
 		NewVPCFirewallRulesResource,
-		NewVPCInternetGatewayResource,
-		NewVPCResource,
-		NewVPCRouterResource,
-		NewVPCRouterRouteResource,
-		NewVPCSubnetResource,
+		vpc_internet_gateway.NewResource,
+		vpc.NewResource,
+		vpc_router.NewResource,
+		vpc_router_route.NewResource,
+		vpc_subnet.NewResource,
 	}
 }
 

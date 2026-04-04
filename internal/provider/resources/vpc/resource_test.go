@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -69,11 +70,11 @@ resource "oxide_vpc" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceVPC_full(t *testing.T) {
-	vpcName := NewResourceName()
-	blockName := NewBlockName("vpc")
+	vpcName := provider.NewResourceName()
+	blockName := provider.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc.%s", blockName)
-	supportBlockName := NewBlockName("support")
-	config, err := ParsedAccConfig(
+	supportBlockName := provider.NewBlockName("support")
+	config, err := provider.ParsedAccConfig(
 		resourceVPCConfig{
 			BlockName:        blockName,
 			VPCName:          vpcName,
@@ -86,7 +87,7 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	}
 
 	vpcNameUpdated := vpcName + "-updated"
-	configUpdate, err := ParsedAccConfig(
+	configUpdate, err := provider.ParsedAccConfig(
 		resourceVPCConfig{
 			BlockName:        blockName,
 			VPCName:          vpcNameUpdated,
@@ -98,10 +99,10 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	blockName2 := NewBlockName("vpc")
+	blockName2 := provider.NewBlockName("vpc")
 	resourceName2 := fmt.Sprintf("oxide_vpc.%s", blockName2)
 	vpcName2 := vpcName + "-2"
-	config2, err := ParsedAccConfig(
+	config2, err := provider.ParsedAccConfig(
 		resourceVPCConfig{
 			BlockName:        blockName2,
 			VPCName:          vpcName2,
@@ -114,8 +115,8 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccVPCDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -191,7 +192,7 @@ func checkResourceVPCIPv6(resourceName, vpcName string) resource.TestCheckFunc {
 }
 
 func testAccVPCDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

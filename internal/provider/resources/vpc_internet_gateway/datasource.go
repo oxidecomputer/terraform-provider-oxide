@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_internet_gateway
 
 import (
 	"context"
@@ -17,21 +17,16 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
+// Compile-time assertions to check that the DataSource implements the
+// necessary Terraform data source interfaces.
 var (
-	_ datasource.DataSource              = (*vpcInternetGatewayDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*vpcInternetGatewayDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewVPCInternetGatewayDataSource initialises an images datasource
-func NewVPCInternetGatewayDataSource() datasource.DataSource {
-	return &vpcInternetGatewayDataSource{}
-}
-
-type vpcInternetGatewayDataSource struct {
-	client *oxide.Client
-}
-
-type vpcInternetGatewayDataSourceModel struct {
+// DataSourceModel represents the Terraform configuration and state
+// for the Oxide VPC internet gateway data source.
+type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	Name         types.String   `tfsdk:"name"`
@@ -43,7 +38,20 @@ type vpcInternetGatewayDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-func (d *vpcInternetGatewayDataSource) Metadata(
+// DataSource is the concrete type that implements the necessary
+// Terraform data source interfaces. It holds state to interact with
+// the Oxide API.
+type DataSource struct {
+	client *oxide.Client
+}
+
+// NewDataSource is a helper to easily construct a DataSource as a
+// type that implements the Terraform data source interface.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
+}
+
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -52,7 +60,7 @@ func (d *vpcInternetGatewayDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *vpcInternetGatewayDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -64,7 +72,7 @@ func (d *vpcInternetGatewayDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *vpcInternetGatewayDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -111,12 +119,12 @@ Retrieve information about a specified VPC internet gateway.
 	}
 }
 
-func (d *vpcInternetGatewayDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state vpcInternetGatewayDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)

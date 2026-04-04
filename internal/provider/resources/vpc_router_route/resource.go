@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_router_route
 
 import (
 	"context"
@@ -24,45 +24,45 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*vpcRouterRouteResource)(nil)
-	_ resource.ResourceWithConfigure = (*vpcRouterRouteResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewVPCRouterRouteResource is a helper function to simplify the provider implementation.
-func NewVPCRouterRouteResource() resource.Resource {
-	return &vpcRouterRouteResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// vpcRouterRouteResource is the resource implementation.
-type vpcRouterRouteResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type vpcRouterRouteResourceModel struct {
-	Description  types.String                    `tfsdk:"description"`
-	Destination  *vpcRouterRouteDestinationModel `tfsdk:"destination"`
-	ID           types.String                    `tfsdk:"id"`
-	Kind         types.String                    `tfsdk:"kind"`
-	Name         types.String                    `tfsdk:"name"`
-	Target       *vpcRouterRouteTargetModel      `tfsdk:"target"`
-	TimeCreated  types.String                    `tfsdk:"time_created"`
-	TimeModified types.String                    `tfsdk:"time_modified"`
-	VPCRouterID  types.String                    `tfsdk:"vpc_router_id"`
-	Timeouts     timeouts.Value                  `tfsdk:"timeouts"`
+type Model struct {
+	Description  types.String      `tfsdk:"description"`
+	Destination  *DestinationModel `tfsdk:"destination"`
+	ID           types.String      `tfsdk:"id"`
+	Kind         types.String      `tfsdk:"kind"`
+	Name         types.String      `tfsdk:"name"`
+	Target       *TargetModel      `tfsdk:"target"`
+	TimeCreated  types.String      `tfsdk:"time_created"`
+	TimeModified types.String      `tfsdk:"time_modified"`
+	VPCRouterID  types.String      `tfsdk:"vpc_router_id"`
+	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
-type vpcRouterRouteDestinationModel struct {
+type DestinationModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type vpcRouterRouteTargetModel struct {
+type TargetModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
 // Metadata returns the resource type name.
-func (r *vpcRouterRouteResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -71,7 +71,7 @@ func (r *vpcRouterRouteResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcRouterRouteResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -84,7 +84,7 @@ func (r *vpcRouterRouteResource) Configure(
 }
 
 // ImportState imports the resource state from Terraform state.
-func (r *vpcRouterRouteResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -93,7 +93,7 @@ func (r *vpcRouterRouteResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcRouterRouteResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -207,12 +207,12 @@ Depending on the type, it will be one of the following:
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcRouterRouteResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan vpcRouterRouteResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -290,12 +290,12 @@ func (r *vpcRouterRouteResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcRouterRouteResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state vpcRouterRouteResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -333,12 +333,12 @@ func (r *vpcRouterRouteResource) Read(
 		map[string]any{"success": true},
 	)
 
-	dm := vpcRouterRouteDestinationModel{
+	dm := DestinationModel{
 		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type())),
 		Value: types.StringValue(vpcRouterRoute.Destination.String()),
 	}
 
-	tm := vpcRouterRouteTargetModel{
+	tm := TargetModel{
 		Type: types.StringValue(string(vpcRouterRoute.Target.Type())),
 	}
 
@@ -365,13 +365,13 @@ func (r *vpcRouterRouteResource) Read(
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcRouterRouteResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan vpcRouterRouteResourceModel
-	var state vpcRouterRouteResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -456,12 +456,12 @@ func (r *vpcRouterRouteResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcRouterRouteResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state vpcRouterRouteResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

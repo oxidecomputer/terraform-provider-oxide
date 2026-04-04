@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceVPCConfig struct {
@@ -27,11 +28,11 @@ data "oxide_vpc" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceVPC_full(t *testing.T) {
-	blockName := NewBlockName("datasource-vpc")
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-vpc")
+	config, err := provider.ParsedAccConfig(
 		dataSourceVPCConfig{
 			BlockName:        blockName,
-			SupportBlockName: NewBlockName("support"),
+			SupportBlockName: provider.NewBlockName("support"),
 		},
 		dataSourceVPCConfigTpl,
 	)
@@ -40,8 +41,8 @@ func TestAccCloudDataSourceVPC_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

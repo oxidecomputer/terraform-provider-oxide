@@ -2,17 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_subnet
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -23,42 +23,44 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*vpcInternetGatewayResource)(nil)
-	_ resource.ResourceWithConfigure = (*vpcInternetGatewayResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewVPCInternetGatewayResource is a helper function to simplify the provider implementation.
-func NewVPCInternetGatewayResource() resource.Resource {
-	return &vpcInternetGatewayResource{}
+// NewResource is a helper function to simplify the provider
+// implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// vpcInternetGatewayResource is the resource implementation.
-type vpcInternetGatewayResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type vpcInternetGatewayResourceModel struct {
-	CascadeDelete types.Bool     `tfsdk:"cascade_delete"`
-	Description   types.String   `tfsdk:"description"`
-	ID            types.String   `tfsdk:"id"`
-	Name          types.String   `tfsdk:"name"`
-	VPCID         types.String   `tfsdk:"vpc_id"`
-	TimeCreated   types.String   `tfsdk:"time_created"`
-	TimeModified  types.String   `tfsdk:"time_modified"`
-	Timeouts      timeouts.Value `tfsdk:"timeouts"`
+type Model struct {
+	Description  types.String         `tfsdk:"description"`
+	ID           types.String         `tfsdk:"id"`
+	IPV4Block    cidrtypes.IPv4Prefix `tfsdk:"ipv4_block"`
+	IPV6Block    cidrtypes.IPv6Prefix `tfsdk:"ipv6_block"`
+	Name         types.String         `tfsdk:"name"`
+	VPCID        types.String         `tfsdk:"vpc_id"`
+	TimeCreated  types.String         `tfsdk:"time_created"`
+	TimeModified types.String         `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
-func (r *vpcInternetGatewayResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_vpc_internet_gateway"
+	resp.TypeName = "oxide_vpc_subnet"
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *vpcInternetGatewayResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -70,8 +72,8 @@ func (r *vpcInternetGatewayResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// ImportState imports the resource state from Terraform.
-func (r *vpcInternetGatewayResource) ImportState(
+// ImportState imports an existing VPC subnet into Terraform state.
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -80,55 +82,53 @@ func (r *vpcInternetGatewayResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcInternetGatewayResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
-This resource manages VPC internet gateways.
+This resource manages VPC subnets.
 `,
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{
+			"vpc_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the VPC internet gateway.",
+				Description: "ID of the VPC that will contain the subnet.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+			},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the VPC subnet.",
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the VPC internet gateway.",
+				Description: "Description for the VPC subnet.",
+			},
+			"ipv4_block": schema.StringAttribute{
+				Required:   true,
+				CustomType: cidrtypes.IPv4PrefixType{},
+				Description: "IPv4 address range for this VPC subnet. " +
+					"It must be allocated from an RFC 1918 private address range, " +
+					"and must not overlap with any other existing subnet in the VPC.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"vpc_id": schema.StringAttribute{
-				Required:    true,
-				Description: "ID of the VPC that will contain the VPC internet gateway.",
+			"ipv6_block": schema.StringAttribute{
+				Optional:   true,
+				Computed:   true,
+				CustomType: cidrtypes.IPv6PrefixType{},
+				Description: "IPv6 address range for this VPC subnet. " +
+					"It must be allocated from the RFC 4193 Unique Local Address range, " +
+					"with the prefix equal to the parent VPC's prefix. " +
+					"A random `/64` block will be assigned if one is not provided. " +
+					"It must not overlap with any existing subnet in the VPC.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-			},
-			"cascade_delete": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				Description: "Whether to also delete routes targeting the VPC internet gateway " +
-					"when deleting the VPC internet gateway.",
-				Default: booldefault.StaticBool(false),
-			},
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the VPC internet gateway.",
-			},
-			"time_created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this VPC internet gateway was created.",
-			},
-			"time_modified": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this VPC internet gateway was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -136,18 +136,34 @@ This resource manages VPC internet gateways.
 				Update: true,
 				Delete: true,
 			}),
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the VPC subnet.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this VPC subnet was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this VPC subnet was last modified.",
+			},
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcInternetGatewayResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan vpcInternetGatewayResourceModel
+	var plan Model
 
+	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -161,33 +177,35 @@ func (r *vpcInternetGatewayResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.InternetGatewayCreateParams{
+	params := oxide.VpcSubnetCreateParams{
 		Vpc: oxide.NameOrId(plan.VPCID.ValueString()),
-		Body: &oxide.InternetGatewayCreate{
+		Body: &oxide.VpcSubnetCreate{
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
+			Ipv4Block:   oxide.Ipv4Net(plan.IPV4Block.ValueString()),
+			Ipv6Block:   oxide.Ipv6Net(plan.IPV6Block.ValueString()),
 		},
 	}
-
-	vpcInternetGateway, err := r.client.InternetGatewayCreate(ctx, params)
+	subnet, err := r.client.VpcSubnetCreate(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating VPC internet gateway",
+			"Error creating VPC subnet",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("created VPC internet gateway with ID: %v", vpcInternetGateway.Id),
+		fmt.Sprintf("created VPC subnet with ID: %v", subnet.Id),
 		map[string]any{"success": true},
 	)
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(vpcInternetGateway.Id)
-	plan.TimeCreated = types.StringValue(vpcInternetGateway.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpcInternetGateway.TimeModified.String())
+	plan.ID = types.StringValue(subnet.Id)
+	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
+	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
+	// IPV6Block is added as well as it is Optional/Computed
+	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -197,12 +215,12 @@ func (r *vpcInternetGatewayResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcInternetGatewayResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state vpcInternetGatewayResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -218,10 +236,10 @@ func (r *vpcInternetGatewayResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.InternetGatewayViewParams{
-		Gateway: oxide.NameOrId(state.ID.ValueString()),
+	params := oxide.VpcSubnetViewParams{
+		Subnet: oxide.NameOrId(state.ID.ValueString()),
 	}
-	vpcInternetGateway, err := r.client.InternetGatewayView(ctx, params)
+	subnet, err := r.client.VpcSubnetView(ctx, params)
 	if err != nil {
 		if shared.Is404(err) {
 			// Remove resource from state during a refresh
@@ -229,23 +247,25 @@ func (r *vpcInternetGatewayResource) Read(
 			return
 		}
 		resp.Diagnostics.AddError(
-			"Unable to read VPC internet gateway:",
+			"Unable to read VPC subnet:",
 			"API error: "+err.Error(),
 		)
 		return
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read VPC internet gateway with ID: %v", vpcInternetGateway.Id),
+		fmt.Sprintf("read VPC subnet with ID: %v", subnet.Id),
 		map[string]any{"success": true},
 	)
 
-	state.Description = types.StringValue(vpcInternetGateway.Description)
-	state.ID = types.StringValue(vpcInternetGateway.Id)
-	state.Name = types.StringValue(string(vpcInternetGateway.Name))
-	state.VPCID = types.StringValue(string(vpcInternetGateway.VpcId))
-	state.TimeCreated = types.StringValue(vpcInternetGateway.TimeCreated.String())
-	state.TimeModified = types.StringValue(vpcInternetGateway.TimeModified.String())
+	state.Description = types.StringValue(subnet.Description)
+	state.ID = types.StringValue(subnet.Id)
+	state.IPV4Block = cidrtypes.NewIPv4PrefixValue(string(subnet.Ipv4Block))
+	state.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
+	state.Name = types.StringValue(string(subnet.Name))
+	state.VPCID = types.StringValue(subnet.VpcId)
+	state.TimeCreated = types.StringValue(subnet.TimeCreated.String())
+	state.TimeModified = types.StringValue(subnet.TimeModified.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -254,20 +274,15 @@ func (r *vpcInternetGatewayResource) Read(
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcInternetGatewayResource) Update(
+// Update updates the resource and sets the updated Terraform state on
+// success.
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	// Internet gateways are currently not updateable.
-	// We only update whether the user performs a cascade delete or not,
-	// which is not part of the InternetGateway object, but rather a query
-	// parameter which you only use during delete. This means we only want
-	// to save it as part of the state.
-
-	var plan vpcInternetGatewayResourceModel
-	var state vpcInternetGatewayResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -275,8 +290,8 @@ func (r *vpcInternetGatewayResource) Update(
 		return
 	}
 
-	// Read Terraform prior state data into the state model to retrieve ID
-	// which is a computed attribute, so it won't show up in the plan.
+	// Read Terraform prior state data into the state model to retrieve
+	// ID which is a computed attribute, so it won't show up in the plan.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -290,27 +305,32 @@ func (r *vpcInternetGatewayResource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := oxide.InternetGatewayViewParams{
-		Gateway: oxide.NameOrId(state.ID.ValueString()),
+	params := oxide.VpcSubnetUpdateParams{
+		Subnet: oxide.NameOrId(state.ID.ValueString()),
+		Body: &oxide.VpcSubnetUpdate{
+			Description: plan.Description.ValueString(),
+			Name:        oxide.Name(plan.Name.ValueString()),
+		},
 	}
-	vpcInternetGateway, err := r.client.InternetGatewayView(ctx, params)
+	subnet, err := r.client.VpcSubnetUpdate(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
-			// Remove resource from state during a refresh
-			resp.State.RemoveResource(ctx)
-			return
-		}
 		resp.Diagnostics.AddError(
-			"Unable to read VPC internet gateway:",
+			"Error updating VPC subnet",
 			"API error: "+err.Error(),
 		)
 		return
 	}
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("updated VPC subnet with ID: %v", subnet.Id),
+		map[string]any{"success": true},
+	)
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(vpcInternetGateway.Id)
-	plan.TimeCreated = types.StringValue(vpcInternetGateway.TimeCreated.String())
-	plan.TimeModified = types.StringValue(vpcInternetGateway.TimeModified.String())
+	plan.ID = types.StringValue(subnet.Id)
+	plan.TimeCreated = types.StringValue(subnet.TimeCreated.String())
+	plan.TimeModified = types.StringValue(subnet.TimeModified.String())
+	plan.IPV6Block = cidrtypes.NewIPv6PrefixValue(string(subnet.Ipv6Block))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -319,13 +339,14 @@ func (r *vpcInternetGatewayResource) Update(
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcInternetGatewayResource) Delete(
+// Delete deletes the resource and removes the Terraform state on
+// success.
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state vpcInternetGatewayResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -341,27 +362,24 @@ func (r *vpcInternetGatewayResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	params := oxide.InternetGatewayDeleteParams{
-		Gateway: oxide.NameOrId(state.ID.ValueString()),
-		// We expect all routes to be managed by terraform so we shouldn't
-		// use a cascade delete. If there are any dangling routes that
-		// were manually created by the user, terraform shouldn't attemt
-		// to handle them, and the user should manage them manually as well.
-		Cascade: state.CascadeDelete.ValueBoolPointer(),
+	params := oxide.VpcSubnetDeleteParams{
+		Subnet: oxide.NameOrId(state.ID.ValueString()),
 	}
-	if err := r.client.InternetGatewayDelete(ctx, params); err != nil {
+	if err := r.client.VpcSubnetDelete(ctx, params); err != nil {
 		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
-				"Unable to delete VPC internet gateway:",
+				"Error deleting VPC subnet:",
 				"API error: "+err.Error(),
 			)
 			return
 		}
 	}
-
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted VPC internet gateway with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf(
+			"deleted VPC subnet with ID: %v",
+			state.ID.ValueString(),
+		),
 		map[string]any{"success": true},
 	)
 }

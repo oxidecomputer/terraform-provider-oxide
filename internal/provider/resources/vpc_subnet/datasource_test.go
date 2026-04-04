@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_subnet_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceVPCSubnetConfig struct {
@@ -28,11 +29,11 @@ data "oxide_vpc_subnet" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
-	blockName := NewBlockName("datasource-vpc-subnet")
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-vpc-subnet")
+	config, err := provider.ParsedAccConfig(
 		dataSourceVPCSubnetConfig{
 			BlockName:        blockName,
-			SupportBlockName: NewBlockName("support"),
+			SupportBlockName: provider.NewBlockName("support"),
 		},
 		dataSourceVPCSubnetConfigTpl,
 	)
@@ -41,20 +42,25 @@ func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: checkDataSourceVPCSubnet(
-					fmt.Sprintf("data.oxide_vpc_subnet.%s", blockName),
+					fmt.Sprintf(
+						"data.oxide_vpc_subnet.%s",
+						blockName,
+					),
 				),
 			},
 		},
 	})
 }
 
-func checkDataSourceVPCSubnet(dataName string) resource.TestCheckFunc {
+func checkDataSourceVPCSubnet(
+	dataName string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "description", "The default subnet for default"),
