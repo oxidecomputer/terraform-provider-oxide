@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_firewall_rules_test
 
 import (
 	"fmt"
@@ -10,11 +10,12 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
-	vpcName := NewResourceName()
+	vpcName := provider.NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 
 	tplData := resourceFirewallRulesConfig{
@@ -22,7 +23,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 	}
 
 	// Generate initial configuration with old schema.
-	configWithSet, err := ParsedAccConfig(
+	configWithSet, err := provider.ParsedAccConfig(
 		tplData,
 		testAccFunctionToVPCFirewallRulesConfigTpl,
 	)
@@ -30,21 +31,21 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 
 	// Generate updated configuration using the function to convert the rules
 	// set to a map.
-	configWithFunction, err := ParsedAccConfig(
+	configWithFunction, err := provider.ParsedAccConfig(
 		tplData,
 		functionToVPCFirewallRulesConfigUpdatedTpl,
 	)
 	require.NoError(t, err)
 
 	// Generate final configuration using the new map schema for rules.
-	configWithMap, err := ParsedAccConfig(
+	configWithMap, err := provider.ParsedAccConfig(
 		tplData,
 		testAccFunctionToVPCFirewallRulesConfigUpdatedMapTpl,
 	)
 	require.NoError(t, err)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { PreCheck(t) },
+		PreCheck:     func() { provider.PreCheck(t) },
 		CheckDestroy: testAccFirewallRulesDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -61,7 +62,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 			{
 				// Apply provider function to migrate to map.
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: ProviderFactories(),
+				ProtoV6ProviderFactories: provider.ProviderFactories(),
 				Config:                   configWithFunction,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
@@ -74,7 +75,7 @@ func TestAccFunctionToVPCFirewallRulesMap_full(t *testing.T) {
 			{
 				// Update configuration to the new schema with rules as a map.
 				ExternalProviders:        map[string]resource.ExternalProvider{},
-				ProtoV6ProviderFactories: ProviderFactories(),
+				ProtoV6ProviderFactories: provider.ProviderFactories(),
 				Config:                   configWithMap,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{

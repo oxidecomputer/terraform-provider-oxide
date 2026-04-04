@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_firewall_rules
 
 import (
 	"context"
@@ -32,78 +32,78 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource                 = (*vpcFirewallRulesResource)(nil)
-	_ resource.ResourceWithConfigure    = (*vpcFirewallRulesResource)(nil)
-	_ resource.ResourceWithUpgradeState = (*vpcFirewallRulesResource)(nil)
+	_ resource.Resource                 = (*Resource)(nil)
+	_ resource.ResourceWithConfigure    = (*Resource)(nil)
+	_ resource.ResourceWithUpgradeState = (*Resource)(nil)
 )
 
 var (
-	vpcFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
+	RuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
 )
 
-// NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
-func NewVPCFirewallRulesResource() resource.Resource {
-	return &vpcFirewallRulesResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// vpcFirewallRulesResource is the resource implementation.
-type vpcFirewallRulesResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type vpcFirewallRulesResourceModel struct {
+type Model struct {
 	// This ID is specific to Terraform only
-	ID       types.String                                 `tfsdk:"id"`
-	Rules    map[string]vpcFirewallRulesResourceRuleModel `tfsdk:"rules"`
-	Timeouts timeouts.Value                               `tfsdk:"timeouts"`
-	VPCID    types.String                                 `tfsdk:"vpc_id"`
+	ID       types.String         `tfsdk:"id"`
+	Rules    map[string]RuleModel `tfsdk:"rules"`
+	Timeouts timeouts.Value       `tfsdk:"timeouts"`
+	VPCID    types.String         `tfsdk:"vpc_id"`
 
-	// Populated from the same fields within [vpcFirewallRulesResourceRuleModel].
+	// Populated from the same fields within [RuleModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-type vpcFirewallRulesResourceRuleModel struct {
-	Action      types.String                              `tfsdk:"action"`
-	Description types.String                              `tfsdk:"description"`
-	Direction   types.String                              `tfsdk:"direction"`
-	Filters     *vpcFirewallRulesResourceRuleFiltersModel `tfsdk:"filters"`
-	Name        types.String                              `tfsdk:"name"`
-	Priority    types.Int64                               `tfsdk:"priority"`
-	Status      types.String                              `tfsdk:"status"`
-	Targets     []vpcFirewallRulesResourceRuleTargetModel `tfsdk:"targets"`
+type RuleModel struct {
+	Action      types.String      `tfsdk:"action"`
+	Description types.String      `tfsdk:"description"`
+	Direction   types.String      `tfsdk:"direction"`
+	Filters     *RuleFiltersModel `tfsdk:"filters"`
+	Name        types.String      `tfsdk:"name"`
+	Priority    types.Int64       `tfsdk:"priority"`
+	Status      types.String      `tfsdk:"status"`
+	Targets     []RuleTargetModel `tfsdk:"targets"`
 
 	// Used to retrieve the timestamps from the API and populate the same fields
-	// within [vpcFirewallRulesResourceModel]. The `tfsdk:"-"` struct field tag is used
+	// within [Model]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
 	TimeCreated  types.String `tfsdk:"-"`
 	TimeModified types.String `tfsdk:"-"`
 }
 
-type vpcFirewallRulesResourceRuleTargetModel struct {
+type RuleTargetModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type vpcFirewallRulesResourceRuleFiltersModel struct {
-	Hosts     []vpcFirewallRuleHostFilterModel     `tfsdk:"hosts"`
-	Ports     types.Set                            `tfsdk:"ports"`
-	Protocols []vpcFirewallRuleProtocolFilterModel `tfsdk:"protocols"`
+type RuleFiltersModel struct {
+	Hosts     []HostFilterModel     `tfsdk:"hosts"`
+	Ports     types.Set             `tfsdk:"ports"`
+	Protocols []ProtocolFilterModel `tfsdk:"protocols"`
 }
 
-type vpcFirewallRuleHostFilterModel struct {
+type HostFilterModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type vpcFirewallRuleProtocolFilterModel struct {
+type ProtocolFilterModel struct {
 	Type     types.String `tfsdk:"type"`
 	IcmpType types.Int32  `tfsdk:"icmp_type"`
 	IcmpCode types.String `tfsdk:"icmp_code"`
 }
 
 // Metadata returns the resource type name.
-func (r *vpcFirewallRulesResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -112,7 +112,7 @@ func (r *vpcFirewallRulesResource) Metadata(
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *vpcFirewallRulesResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -125,7 +125,7 @@ func (r *vpcFirewallRulesResource) Configure(
 }
 
 // ImportState imports an existing VPC firewall rules resource into Terraform state.
-func (r *vpcFirewallRulesResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -140,7 +140,7 @@ func (r *vpcFirewallRulesResource) ImportState(
 // allowed to jump to whatever new version they choose. When adding a new
 // version, you must ensure that each of the existing StateUpgrader functions
 // are also updated to handle the new schema.
-func (r *vpcFirewallRulesResource) UpgradeState(
+func (r *Resource) UpgradeState(
 	ctx context.Context,
 ) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
@@ -150,7 +150,7 @@ func (r *vpcFirewallRulesResource) UpgradeState(
 }
 
 // Schema defines the schema for the resource.
-func (r *vpcFirewallRulesResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -237,7 +237,7 @@ to use the new schema as soon as possible.
 				Validators: []validator.Map{
 					mapvalidator.KeysAre(
 						stringvalidator.RegexMatches(
-							vpcFirewallRuleNameRegexp,
+							RuleNameRegexp,
 							`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-', and may not end with a '-'. They can be at most 63 characters long.`,
 						),
 					),
@@ -456,12 +456,12 @@ Depending on the type, it will be one of the following:
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *vpcFirewallRulesResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan vpcFirewallRulesResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -537,12 +537,12 @@ func (r *vpcFirewallRulesResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *vpcFirewallRulesResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state vpcFirewallRulesResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -612,13 +612,13 @@ func (r *vpcFirewallRulesResource) Read(
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *vpcFirewallRulesResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan vpcFirewallRulesResourceModel
-	var state vpcFirewallRulesResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -702,12 +702,12 @@ func (r *vpcFirewallRulesResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *vpcFirewallRulesResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state vpcFirewallRulesResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -749,7 +749,7 @@ func (r *vpcFirewallRulesResource) Delete(
 // newVPCFirewallRulesUpdateBody builds the parameters required by the Oxide
 // vpc_firewall_rules_update API using the specified rules.
 func newVPCFirewallRulesUpdateBody(
-	rules map[string]vpcFirewallRulesResourceRuleModel,
+	rules map[string]RuleModel,
 ) (*oxide.VpcFirewallRuleUpdateParams, error) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
@@ -790,17 +790,17 @@ func newVPCFirewallRulesUpdateBody(
 }
 
 // newVPCFirewallRulesModel translates a slice of [oxide.VpcFirewallRule] into a
-// slice of [vpcFirewallRulesResourceRuleModel].
+// slice of [RuleModel].
 func newVPCFirewallRulesModel(
 	rules []oxide.VpcFirewallRule,
-) (map[string]vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
+) (map[string]RuleModel, diag.Diagnostics) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	// See the comment within [newVPCFirewallRulesUpdateBody] for more information.
-	model := make(map[string]vpcFirewallRulesResourceRuleModel)
+	model := make(map[string]RuleModel)
 
 	for _, rule := range rules {
-		m := vpcFirewallRulesResourceRuleModel{
+		m := RuleModel{
 			Action:      types.StringValue(string(rule.Action)),
 			Description: types.StringValue(rule.Description),
 			Direction:   types.StringValue(string(rule.Direction)),
@@ -827,12 +827,12 @@ func newVPCFirewallRulesModel(
 
 func newFiltersModelFromResponse(
 	filter oxide.VpcFirewallRuleFilter,
-) (*vpcFirewallRulesResourceRuleFiltersModel, diag.Diagnostics) {
+) (*RuleFiltersModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var hostsModel = []vpcFirewallRuleHostFilterModel{}
+	var hostsModel = []HostFilterModel{}
 	for _, h := range filter.Hosts {
-		m := vpcFirewallRuleHostFilterModel{
+		m := HostFilterModel{
 			Type:  types.StringValue(string(h.Type())),
 			Value: types.StringValue(h.String()),
 		}
@@ -850,9 +850,9 @@ func newFiltersModelFromResponse(
 		return nil, diags
 	}
 
-	var protocolModels = []vpcFirewallRuleProtocolFilterModel{}
+	var protocolModels = []ProtocolFilterModel{}
 	for _, protocol := range filter.Protocols {
-		protocolModel := vpcFirewallRuleProtocolFilterModel{
+		protocolModel := ProtocolFilterModel{
 			Type:     types.StringValue(string(protocol.Type())),
 			IcmpCode: types.StringNull(),
 			IcmpType: types.Int32Null(),
@@ -881,7 +881,7 @@ func newFiltersModelFromResponse(
 		protocolModels = append(protocolModels, protocolModel)
 	}
 
-	model := vpcFirewallRulesResourceRuleFiltersModel{}
+	model := RuleFiltersModel{}
 
 	if len(hostsModel) > 0 {
 		model.Hosts = hostsModel
@@ -904,11 +904,11 @@ func newFiltersModelFromResponse(
 
 func newTargetsModelFromResponse(
 	target []oxide.VpcFirewallRuleTarget,
-) []vpcFirewallRulesResourceRuleTargetModel {
-	var model []vpcFirewallRulesResourceRuleTargetModel
+) []RuleTargetModel {
+	var model []RuleTargetModel
 
 	for _, t := range target {
-		m := vpcFirewallRulesResourceRuleTargetModel{
+		m := RuleTargetModel{
 			Type:  types.StringValue(string(t.Type())),
 			Value: types.StringValue(t.String()),
 		}
@@ -920,7 +920,7 @@ func newTargetsModelFromResponse(
 }
 
 func newFilterTypeFromModel(
-	model *vpcFirewallRulesResourceRuleFiltersModel,
+	model *RuleFiltersModel,
 ) (oxide.VpcFirewallRuleFilter, error) {
 	var hosts []oxide.VpcFirewallRuleHostFilter
 	for _, host := range model.Hosts {
@@ -986,7 +986,7 @@ func newFilterTypeFromModel(
 }
 
 func newTargetTypeFromModel(
-	model []vpcFirewallRulesResourceRuleTargetModel,
+	model []RuleTargetModel,
 ) ([]oxide.VpcFirewallRuleTarget, error) {
 	var target []oxide.VpcFirewallRuleTarget
 

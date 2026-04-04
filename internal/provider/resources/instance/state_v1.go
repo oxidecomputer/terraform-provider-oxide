@@ -1,4 +1,4 @@
-package provider
+package instance
 
 import (
 	"context"
@@ -21,68 +21,68 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type instanceResourceModelV1 struct {
-	AntiAffinityGroups        types.Set                          `tfsdk:"anti_affinity_groups"`
-	AutoRestartPolicy         types.String                       `tfsdk:"auto_restart_policy"`
-	BootDiskID                types.String                       `tfsdk:"boot_disk_id"`
-	Description               types.String                       `tfsdk:"description"`
-	DiskAttachments           types.Set                          `tfsdk:"disk_attachments"`
-	ExternalIPs               *instanceResourceExternalIPModelV1 `tfsdk:"external_ips"`
-	HostnameDeprecated        types.String                       `tfsdk:"host_name"`
-	Hostname                  types.String                       `tfsdk:"hostname"`
-	ID                        types.String                       `tfsdk:"id"`
-	Memory                    types.Int64                        `tfsdk:"memory"`
-	Name                      types.String                       `tfsdk:"name"`
-	NetworkInterfaces         []instanceResourceNICModelV1       `tfsdk:"network_interfaces"`
-	AttachedNetworkInterfaces types.Map                          `tfsdk:"attached_network_interfaces"`
-	NCPUs                     types.Int64                        `tfsdk:"ncpus"`
-	ProjectID                 types.String                       `tfsdk:"project_id"`
-	SSHPublicKeys             types.Set                          `tfsdk:"ssh_public_keys"`
-	StartOnCreate             types.Bool                         `tfsdk:"start_on_create"`
-	TimeCreated               types.String                       `tfsdk:"time_created"`
-	TimeModified              types.String                       `tfsdk:"time_modified"`
-	Timeouts                  timeouts.Value                     `tfsdk:"timeouts"`
-	UserData                  types.String                       `tfsdk:"user_data"`
+type ModelV1 struct {
+	AntiAffinityGroups        types.Set          `tfsdk:"anti_affinity_groups"`
+	AutoRestartPolicy         types.String       `tfsdk:"auto_restart_policy"`
+	BootDiskID                types.String       `tfsdk:"boot_disk_id"`
+	Description               types.String       `tfsdk:"description"`
+	DiskAttachments           types.Set          `tfsdk:"disk_attachments"`
+	ExternalIPs               *ExternalIPModelV1 `tfsdk:"external_ips"`
+	HostnameDeprecated        types.String       `tfsdk:"host_name"`
+	Hostname                  types.String       `tfsdk:"hostname"`
+	ID                        types.String       `tfsdk:"id"`
+	Memory                    types.Int64        `tfsdk:"memory"`
+	Name                      types.String       `tfsdk:"name"`
+	NetworkInterfaces         []NICModelV1       `tfsdk:"network_interfaces"`
+	AttachedNetworkInterfaces types.Map          `tfsdk:"attached_network_interfaces"`
+	NCPUs                     types.Int64        `tfsdk:"ncpus"`
+	ProjectID                 types.String       `tfsdk:"project_id"`
+	SSHPublicKeys             types.Set          `tfsdk:"ssh_public_keys"`
+	StartOnCreate             types.Bool         `tfsdk:"start_on_create"`
+	TimeCreated               types.String       `tfsdk:"time_created"`
+	TimeModified              types.String       `tfsdk:"time_modified"`
+	Timeouts                  timeouts.Value     `tfsdk:"timeouts"`
+	UserData                  types.String       `tfsdk:"user_data"`
 }
 
-type instanceResourceNICModelV1 struct {
-	Description  types.String                     `tfsdk:"description"`
-	ID           types.String                     `tfsdk:"id"`
-	IPAddr       types.String                     `tfsdk:"ip_address"`
-	IPConfig     *instanceResourceIPConfigModelV1 `tfsdk:"ip_config"`
-	MAC          types.String                     `tfsdk:"mac_address"`
-	Name         types.String                     `tfsdk:"name"`
-	Primary      types.Bool                       `tfsdk:"primary"`
-	SubnetID     types.String                     `tfsdk:"subnet_id"`
-	TimeCreated  types.String                     `tfsdk:"time_created"`
-	TimeModified types.String                     `tfsdk:"time_modified"`
-	VPCID        types.String                     `tfsdk:"vpc_id"`
+type NICModelV1 struct {
+	Description  types.String     `tfsdk:"description"`
+	ID           types.String     `tfsdk:"id"`
+	IPAddr       types.String     `tfsdk:"ip_address"`
+	IPConfig     *IPConfigModelV1 `tfsdk:"ip_config"`
+	MAC          types.String     `tfsdk:"mac_address"`
+	Name         types.String     `tfsdk:"name"`
+	Primary      types.Bool       `tfsdk:"primary"`
+	SubnetID     types.String     `tfsdk:"subnet_id"`
+	TimeCreated  types.String     `tfsdk:"time_created"`
+	TimeModified types.String     `tfsdk:"time_modified"`
+	VPCID        types.String     `tfsdk:"vpc_id"`
 }
 
-type instanceResourceIPConfigModelV1 struct {
-	V4 *instanceResourceIPConfigV4ModelV1 `tfsdk:"v4"`
-	V6 *instanceResourceIPConfigV6ModelV1 `tfsdk:"v6"`
+type IPConfigModelV1 struct {
+	V4 *IPConfigV4ModelV1 `tfsdk:"v4"`
+	V6 *IPConfigV6ModelV1 `tfsdk:"v6"`
 }
 
-type instanceResourceIPConfigV4ModelV1 struct {
+type IPConfigV4ModelV1 struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-type instanceResourceIPConfigV6ModelV1 struct {
+type IPConfigV6ModelV1 struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-type instanceResourceExternalIPModelV1 struct {
-	Ephemeral []instanceResourceEphemeralIPModelV1 `tfsdk:"ephemeral"`
-	Floating  []instanceResourceFloatingIPModelV1  `tfsdk:"floating"`
+type ExternalIPModelV1 struct {
+	Ephemeral []EphemeralIPModelV1 `tfsdk:"ephemeral"`
+	Floating  []FloatingIPModelV1  `tfsdk:"floating"`
 }
 
-type instanceResourceEphemeralIPModelV1 struct {
+type EphemeralIPModelV1 struct {
 	PoolID    types.String `tfsdk:"pool_id"`
 	IPVersion types.String `tfsdk:"ip_version"`
 }
 
-type instanceResourceFloatingIPModelV1 struct {
+type FloatingIPModelV1 struct {
 	ID types.String `tfsdk:"id"`
 }
 
@@ -91,38 +91,38 @@ type instanceResourceFloatingIPModelV1 struct {
 // a migration is needed in the future.
 
 //nolint:unused
-type instanceResourceAttachedNICModelV1 struct {
-	ID           types.String                   `tfsdk:"id"`
-	Name         types.String                   `tfsdk:"name"`
-	Description  types.String                   `tfsdk:"description"`
-	SubnetID     types.String                   `tfsdk:"subnet_id"`
-	VPCID        types.String                   `tfsdk:"vpc_id"`
-	InstanceID   types.String                   `tfsdk:"instance_id"`
-	Primary      types.Bool                     `tfsdk:"primary"`
-	MAC          types.String                   `tfsdk:"mac_address"`
-	IPStack      instanceResourceIPStackModelV1 `tfsdk:"ip_stack"`
-	TimeCreated  types.String                   `tfsdk:"time_created"`
-	TimeModified types.String                   `tfsdk:"time_modified"`
+type AttachedNICModelV1 struct {
+	ID           types.String   `tfsdk:"id"`
+	Name         types.String   `tfsdk:"name"`
+	Description  types.String   `tfsdk:"description"`
+	SubnetID     types.String   `tfsdk:"subnet_id"`
+	VPCID        types.String   `tfsdk:"vpc_id"`
+	InstanceID   types.String   `tfsdk:"instance_id"`
+	Primary      types.Bool     `tfsdk:"primary"`
+	MAC          types.String   `tfsdk:"mac_address"`
+	IPStack      IPStackModelV1 `tfsdk:"ip_stack"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
 }
 
 //nolint:unused
-type instanceResourceIPStackModelV1 struct {
-	V4 *instanceResourceIPStackV4ModelV1 `tfsdk:"v4"`
-	V6 *instanceResourceIPStackV6ModelV1 `tfsdk:"v6"`
+type IPStackModelV1 struct {
+	V4 *IPStackV4ModelV1 `tfsdk:"v4"`
+	V6 *IPStackV6ModelV1 `tfsdk:"v6"`
 }
 
 //nolint:unused
-type instanceResourceIPStackV4ModelV1 struct {
+type IPStackV4ModelV1 struct {
 	IP types.String `tfsdk:"ip"`
 }
 
 //nolint:unused
-type instanceResourceIPStackV6ModelV1 struct {
+type IPStackV6ModelV1 struct {
 	IP types.String `tfsdk:"ip"`
 }
 
 //nolint:unused
-var instanceResourceNICTypeV1 = types.ObjectType{}.WithAttributeTypes(map[string]attr.Type{
+var NICTypeV1 = types.ObjectType{}.WithAttributeTypes(map[string]attr.Type{
 	"name":        types.StringType,
 	"description": types.StringType,
 	"subnet_id":   types.StringType,
@@ -151,7 +151,7 @@ var instanceResourceNICTypeV1 = types.ObjectType{}.WithAttributeTypes(map[string
 )
 
 //nolint:unused
-var instanceResourceAttachedNICTypeV1 = types.ObjectType{}.WithAttributeTypes(
+var AttachedNICTypeV1 = types.ObjectType{}.WithAttributeTypes(
 	map[string]attr.Type{
 		"id":          types.StringType,
 		"name":        types.StringType,
@@ -180,7 +180,7 @@ var instanceResourceAttachedNICTypeV1 = types.ObjectType{}.WithAttributeTypes(
 	},
 )
 
-func (r *instanceResource) schemaV1(
+func (r *Resource) schemaV1(
 	ctx context.Context,
 ) *schema.Schema {
 	return &schema.Schema{
@@ -302,7 +302,7 @@ This resource manages instances.
 			},
 			// Changes to network_interfaces need to be tracked manually.
 			// When adding a new attribute, check if they also need to be
-			// added to instanceResourceNICModel.Hash() and
+			// added to NICModel.Hash() and
 			// instanceNetworkInterfacesPlanModifier.PlanModifySet().
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,

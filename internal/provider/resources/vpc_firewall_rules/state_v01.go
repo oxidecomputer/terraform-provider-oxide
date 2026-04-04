@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_firewall_rules
 
 import (
 	"context"
@@ -46,7 +46,7 @@ import (
 // are first upgraded to v0.1, and then the v0.1 state is upgraded to the
 // latest schema version. This way future upgrades only need to handle
 // upgrades from v0.1.
-func (r *vpcFirewallRulesResource) stateUpgraderV01(
+func (r *Resource) stateUpgraderV01(
 	ctx context.Context,
 	req resource.UpgradeStateRequest,
 	resp *resource.UpgradeStateResponse,
@@ -108,7 +108,7 @@ func (r *vpcFirewallRulesResource) stateUpgraderV01(
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
-func (r *vpcFirewallRulesResource) schemaV00(ctx context.Context) schema.Schema {
+func (r *Resource) schemaV00(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
@@ -307,7 +307,7 @@ type vpcFirewallRulesResourceModelV00 struct {
 	Timeouts timeouts.Value                         `tfsdk:"timeouts"`
 	VPCID    types.String                           `tfsdk:"vpc_id"`
 
-	// Populated from the same fields within [vpcFirewallRulesResourceRuleModel].
+	// Populated from the same fields within [RuleModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 }
@@ -352,7 +352,7 @@ type vpcFirewallRulesResourceRuleModelV00 struct {
 	Targets     []vpcFirewallRulesResourceRuleTargetModelV00 `tfsdk:"targets"`
 
 	// Used to retrieve the timestamps from the API and populate the same fields
-	// within [vpcFirewallRulesResourceModel]. The `tfsdk:"-"` struct field tag is used
+	// within [Model]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
 	TimeCreated  types.String `tfsdk:"-"`
 	TimeModified types.String `tfsdk:"-"`
@@ -437,7 +437,7 @@ type vpcFirewallRulesResourceRuleTargetModelV00 struct {
 	Value types.String `tfsdk:"value"`
 }
 
-func (r *vpcFirewallRulesResource) schemaV01(ctx context.Context) schema.Schema {
+func (r *Resource) schemaV01(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
@@ -667,18 +667,18 @@ type vpcFirewallRulesResourceModelV01 struct {
 	Timeouts timeouts.Value                         `tfsdk:"timeouts"`
 	VPCID    types.String                           `tfsdk:"vpc_id"`
 
-	// Populated from the same fields within [vpcFirewallRulesResourceRuleModel].
+	// Populated from the same fields within [RuleModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-func (m vpcFirewallRulesResourceModelV01) upgrade() vpcFirewallRulesResourceModel {
-	rules := make(map[string]vpcFirewallRulesResourceRuleModel, len(m.Rules))
+func (m vpcFirewallRulesResourceModelV01) upgrade() Model {
+	rules := make(map[string]RuleModel, len(m.Rules))
 	for _, r := range m.Rules {
 		rules[r.Name.ValueString()] = r.upgrade()
 	}
 
-	return vpcFirewallRulesResourceModel{
+	return Model{
 		ID:           m.ID,
 		Rules:        rules,
 		Timeouts:     m.Timeouts,
@@ -699,19 +699,19 @@ type vpcFirewallRulesResourceRuleModelV01 struct {
 	Targets     []vpcFirewallRulesResourceRuleTargetModelV01 `tfsdk:"targets"`
 
 	// Used to retrieve the timestamps from the API and populate the same fields
-	// within [vpcFirewallRulesResourceModel]. The `tfsdk:"-"` struct field tag is used
+	// within [Model]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
 	TimeCreated  types.String `tfsdk:"-"`
 	TimeModified types.String `tfsdk:"-"`
 }
 
-func (r vpcFirewallRulesResourceRuleModelV01) upgrade() vpcFirewallRulesResourceRuleModel {
-	targets := make([]vpcFirewallRulesResourceRuleTargetModel, len(r.Targets))
+func (r vpcFirewallRulesResourceRuleModelV01) upgrade() RuleModel {
+	targets := make([]RuleTargetModel, len(r.Targets))
 	for i, t := range r.Targets {
-		targets[i] = vpcFirewallRulesResourceRuleTargetModel(t)
+		targets[i] = RuleTargetModel(t)
 	}
 
-	return vpcFirewallRulesResourceRuleModel{
+	return RuleModel{
 		Action:       r.Action,
 		Description:  r.Description,
 		Direction:    r.Direction,
@@ -731,22 +731,22 @@ type vpcFirewallRulesResourceRuleFiltersModelV01 struct {
 	Protocols []vpcFirewallRuleProtocolFilterModelV01 `tfsdk:"protocols"`
 }
 
-func (f *vpcFirewallRulesResourceRuleFiltersModelV01) upgrade() *vpcFirewallRulesResourceRuleFiltersModel {
+func (f *vpcFirewallRulesResourceRuleFiltersModelV01) upgrade() *RuleFiltersModel {
 	if f == nil {
 		return nil
 	}
 
-	hosts := make([]vpcFirewallRuleHostFilterModel, len(f.Hosts))
+	hosts := make([]HostFilterModel, len(f.Hosts))
 	for i, h := range f.Hosts {
-		hosts[i] = vpcFirewallRuleHostFilterModel(h)
+		hosts[i] = HostFilterModel(h)
 	}
 
-	protocols := make([]vpcFirewallRuleProtocolFilterModel, len(f.Protocols))
+	protocols := make([]ProtocolFilterModel, len(f.Protocols))
 	for i, p := range f.Protocols {
-		protocols[i] = vpcFirewallRuleProtocolFilterModel(p)
+		protocols[i] = ProtocolFilterModel(p)
 	}
 
-	return &vpcFirewallRulesResourceRuleFiltersModel{
+	return &RuleFiltersModel{
 		Hosts:     hosts,
 		Ports:     f.Ports,
 		Protocols: protocols,

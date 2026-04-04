@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package switch_port_settings
 
 import (
 	"context"
@@ -24,86 +24,86 @@ import (
 )
 
 var (
-	_ resource.Resource              = (*switchPortSettingsResource)(nil)
-	_ resource.ResourceWithConfigure = (*switchPortSettingsResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-type switchPortSettingsResource struct {
+type Resource struct {
 	client *oxide.Client
 }
 
-type switchPortSettingsModel struct {
-	ID           types.String                       `tfsdk:"id"`
-	Name         types.String                       `tfsdk:"name"`
-	Description  types.String                       `tfsdk:"description"`
-	Addresses    []switchPortSettingsAddressModel   `tfsdk:"addresses"`
-	BGPPeers     []switchPortSettingsBGPPeerModel   `tfsdk:"bgp_peers"`
-	Links        []switchPortSettingsLinkModel      `tfsdk:"links"`
-	PortConfig   *switchPortSettingsPortConfigModel `tfsdk:"port_config"`
-	Routes       []switchPortSettingsRouteModel     `tfsdk:"routes"`
-	TimeCreated  types.String                       `tfsdk:"time_created"`
-	TimeModified types.String                       `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value                     `tfsdk:"timeouts"`
+type Model struct {
+	ID           types.String     `tfsdk:"id"`
+	Name         types.String     `tfsdk:"name"`
+	Description  types.String     `tfsdk:"description"`
+	Addresses    []AddressModel   `tfsdk:"addresses"`
+	BGPPeers     []BGPPeerModel   `tfsdk:"bgp_peers"`
+	Links        []LinkModel      `tfsdk:"links"`
+	PortConfig   *PortConfigModel `tfsdk:"port_config"`
+	Routes       []RouteModel     `tfsdk:"routes"`
+	TimeCreated  types.String     `tfsdk:"time_created"`
+	TimeModified types.String     `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value   `tfsdk:"timeouts"`
 }
 
-type switchPortSettingsAddressModel struct {
-	Addresses []switchPortSettingsAddressAddressModel `tfsdk:"addresses"`
-	LinkName  types.String                            `tfsdk:"link_name"`
+type AddressModel struct {
+	Addresses []AddressDetailModel `tfsdk:"addresses"`
+	LinkName  types.String         `tfsdk:"link_name"`
 }
 
-type switchPortSettingsAddressAddressModel struct {
+type AddressDetailModel struct {
 	Address      cidrtypes.IPPrefix `tfsdk:"address"`
 	AddressLotID types.String       `tfsdk:"address_lot_id"`
 	VlanID       types.Int32        `tfsdk:"vlan_id"`
 }
 
-type switchPortSettingsBGPPeerModel struct {
-	LinkName types.String                         `tfsdk:"link_name"`
-	Peers    []switchPortSettingsBGPPeerPeerModel `tfsdk:"peers"`
+type BGPPeerModel struct {
+	LinkName types.String         `tfsdk:"link_name"`
+	Peers    []BGPPeerDetailModel `tfsdk:"peers"`
 }
 
-type switchPortSettingsBGPPeerPeerModel struct {
-	Address                iptypes.IPAddress                                `tfsdk:"address"`
-	AllowedExport          *switchPortSettingsBGPPeerPeerAllowedExportModel `tfsdk:"allowed_export"`
-	AllowedImport          *switchPortSettingsBGPPeerPeerAllowedImportModel `tfsdk:"allowed_import"`
-	BGPConfig              types.String                                     `tfsdk:"bgp_config"`
-	Communities            []types.Int64                                    `tfsdk:"communities"`
-	ConnectRetry           types.Int64                                      `tfsdk:"connect_retry"`
-	DelayOpen              types.Int64                                      `tfsdk:"delay_open"`
-	EnforceFirstAs         types.Bool                                       `tfsdk:"enforce_first_as"`
-	HoldTime               types.Int64                                      `tfsdk:"hold_time"`
-	IdleHoldTime           types.Int64                                      `tfsdk:"idle_hold_time"`
-	InterfaceName          types.String                                     `tfsdk:"interface_name"`
-	Keepalive              types.Int64                                      `tfsdk:"keepalive"`
-	LocalPref              types.Int64                                      `tfsdk:"local_pref"`
-	MD5AuthKey             types.String                                     `tfsdk:"md5_auth_key"`
-	MinTTL                 types.Int32                                      `tfsdk:"min_ttl"`
-	MultiExitDiscriminator types.Int64                                      `tfsdk:"multi_exit_discriminator"`
-	RemoteASN              types.Int64                                      `tfsdk:"remote_asn"`
-	VlanID                 types.Int32                                      `tfsdk:"vlan_id"`
+type BGPPeerDetailModel struct {
+	Address                iptypes.IPAddress          `tfsdk:"address"`
+	AllowedExport          *BGPPeerAllowedExportModel `tfsdk:"allowed_export"`
+	AllowedImport          *BGPPeerAllowedImportModel `tfsdk:"allowed_import"`
+	BGPConfig              types.String               `tfsdk:"bgp_config"`
+	Communities            []types.Int64              `tfsdk:"communities"`
+	ConnectRetry           types.Int64                `tfsdk:"connect_retry"`
+	DelayOpen              types.Int64                `tfsdk:"delay_open"`
+	EnforceFirstAs         types.Bool                 `tfsdk:"enforce_first_as"`
+	HoldTime               types.Int64                `tfsdk:"hold_time"`
+	IdleHoldTime           types.Int64                `tfsdk:"idle_hold_time"`
+	InterfaceName          types.String               `tfsdk:"interface_name"`
+	Keepalive              types.Int64                `tfsdk:"keepalive"`
+	LocalPref              types.Int64                `tfsdk:"local_pref"`
+	MD5AuthKey             types.String               `tfsdk:"md5_auth_key"`
+	MinTTL                 types.Int32                `tfsdk:"min_ttl"`
+	MultiExitDiscriminator types.Int64                `tfsdk:"multi_exit_discriminator"`
+	RemoteASN              types.Int64                `tfsdk:"remote_asn"`
+	VlanID                 types.Int32                `tfsdk:"vlan_id"`
 }
 
-type switchPortSettingsBGPPeerPeerAllowedExportModel struct {
+type BGPPeerAllowedExportModel struct {
 	Type  types.String   `tfsdk:"type"`
 	Value []types.String `tfsdk:"value"`
 }
 
-type switchPortSettingsBGPPeerPeerAllowedImportModel struct {
+type BGPPeerAllowedImportModel struct {
 	Type  types.String   `tfsdk:"type"`
 	Value []types.String `tfsdk:"value"`
 }
 
-type switchPortSettingsLinkModel struct {
-	Autoneg  types.Bool                       `tfsdk:"autoneg"`
-	FEC      types.String                     `tfsdk:"fec"`
-	LinkName types.String                     `tfsdk:"link_name"`
-	LLDP     *switchPortSettingsLinkLLDPModel `tfsdk:"lldp"`
-	MTU      types.Int32                      `tfsdk:"mtu"`
-	Speed    types.String                     `tfsdk:"speed"`
-	TxEq     *switchPortSettingsLinkTxEqModel `tfsdk:"tx_eq"`
+type LinkModel struct {
+	Autoneg  types.Bool     `tfsdk:"autoneg"`
+	FEC      types.String   `tfsdk:"fec"`
+	LinkName types.String   `tfsdk:"link_name"`
+	LLDP     *LinkLLDPModel `tfsdk:"lldp"`
+	MTU      types.Int32    `tfsdk:"mtu"`
+	Speed    types.String   `tfsdk:"speed"`
+	TxEq     *LinkTxEqModel `tfsdk:"tx_eq"`
 }
 
-type switchPortSettingsLinkLLDPModel struct {
+type LinkLLDPModel struct {
 	ChassisID         types.String      `tfsdk:"chassis_id"`
 	Enabled           types.Bool        `tfsdk:"enabled"`
 	LinkDescription   types.String      `tfsdk:"link_description"`
@@ -113,7 +113,7 @@ type switchPortSettingsLinkLLDPModel struct {
 	SystemName        types.String      `tfsdk:"system_name"`
 }
 
-type switchPortSettingsLinkTxEqModel struct {
+type LinkTxEqModel struct {
 	Main  types.Int32 `tfsdk:"main"`
 	Post1 types.Int32 `tfsdk:"post1"`
 	Post2 types.Int32 `tfsdk:"post2"`
@@ -121,29 +121,29 @@ type switchPortSettingsLinkTxEqModel struct {
 	Pre2  types.Int32 `tfsdk:"pre2"`
 }
 
-type switchPortSettingsPortConfigModel struct {
+type PortConfigModel struct {
 	Geometry types.String `tfsdk:"geometry"`
 }
 
-type switchPortSettingsRouteModel struct {
-	LinkName types.String                        `tfsdk:"link_name"`
-	Routes   []switchPortSettingsRouteRouteModel `tfsdk:"routes"`
+type RouteModel struct {
+	LinkName types.String       `tfsdk:"link_name"`
+	Routes   []RouteDetailModel `tfsdk:"routes"`
 }
 
-type switchPortSettingsRouteRouteModel struct {
+type RouteDetailModel struct {
 	Dst         types.String      `tfsdk:"dst"`
 	GW          iptypes.IPAddress `tfsdk:"gw"`
 	RIBPriority types.Int32       `tfsdk:"rib_priority"`
 	VID         types.Int32       `tfsdk:"vid"`
 }
 
-// NewSwitchPortSettingsResource contructs a Terraform resource.
-func NewSwitchPortSettingsResource() resource.Resource {
-	return &switchPortSettingsResource{}
+// NewResource contructs a Terraform resource.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
 // Metadata sets the metadata for the resource.
-func (r *switchPortSettingsResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -152,7 +152,7 @@ func (r *switchPortSettingsResource) Metadata(
 }
 
 // Configure sets data needed by other methods for this resources.
-func (r *switchPortSettingsResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -165,7 +165,7 @@ func (r *switchPortSettingsResource) Configure(
 }
 
 // ImportState contains logic on how to import the resource.
-func (r *switchPortSettingsResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -174,7 +174,7 @@ func (r *switchPortSettingsResource) ImportState(
 }
 
 // Schema defines the Terraform configuration for this resource.
-func (r *switchPortSettingsResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -540,12 +540,12 @@ func (r *switchPortSettingsResource) Schema(
 }
 
 // Create sets the switch port settings.
-func (r *switchPortSettingsResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan switchPortSettingsModel
+	var plan Model
 
 	// Read Terraform plan data into the model.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -561,7 +561,7 @@ func (r *switchPortSettingsResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params, diags := toNetworkingSwitchPortSettingsCreateParams(plan)
+	params, diags := toCreateParams(plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -595,12 +595,12 @@ func (r *switchPortSettingsResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *switchPortSettingsResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state switchPortSettingsModel
+	var state Model
 
 	// Read Terraform prior state data into the model.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -644,7 +644,7 @@ func (r *switchPortSettingsResource) Read(
 	state.TimeCreated = types.StringValue(settings.TimeCreated.String())
 	state.TimeModified = types.StringValue(settings.TimeModified.String())
 
-	model, diags := toSwitchPortSettingsModel(settings)
+	model, diags := toModel(settings)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -669,20 +669,20 @@ func (r *switchPortSettingsResource) Read(
 // Update updates the resource and sets the updated Terraform state on success.
 // There is no Oxide API to update switch port settings so all the switch port
 // settings are overwritten using the `switch_port_settings_create` API.
-func (r *switchPortSettingsResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) { // plan is the resource data model for the update request.
 	// Read the Terraform plan data.
-	var plan switchPortSettingsModel
+	var plan Model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the Terraform state data to retreive compute attributes.
-	var state switchPortSettingsModel
+	var state Model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -697,7 +697,7 @@ func (r *switchPortSettingsResource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params, diags := toNetworkingSwitchPortSettingsCreateParams(plan)
+	params, diags := toCreateParams(plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -731,13 +731,13 @@ func (r *switchPortSettingsResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *switchPortSettingsResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
 	// Read the Terraform state.
-	var state switchPortSettingsModel
+	var state Model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -773,8 +773,8 @@ func (r *switchPortSettingsResource) Delete(
 	)
 }
 
-// toSwitchPortSettingsModel converts [oxide.SwitchPortSettings]
-// to [switchPortSettingsModel]. It's used deserialize the Oxide
+// toModel converts [oxide.SwitchPortSettings]
+// to [Model]. It's used deserialize the Oxide
 // `switch_port_settings_create` API response into the Terraform data model used
 // by this resource.
 //
@@ -800,16 +800,16 @@ func (r *switchPortSettingsResource) Delete(
 // attributes as well. That's why you'll see a bunch of anonymous functions to
 // set values to null if they are either null or their zero value as retrieved
 // from Oxide.
-func toSwitchPortSettingsModel(
+func toModel(
 	settings *oxide.SwitchPortSettings,
-) (switchPortSettingsModel, diag.Diagnostics) {
+) (Model, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	model := switchPortSettingsModel{
+	model := Model{
 		ID:          types.StringValue(settings.Id),
 		Name:        types.StringValue(string(settings.Name)),
 		Description: types.StringValue(settings.Description),
-		PortConfig: &switchPortSettingsPortConfigModel{
+		PortConfig: &PortConfigModel{
 			Geometry: types.StringValue(string(settings.Port.Geometry)),
 		},
 		TimeCreated:  types.StringValue(settings.TimeCreated.String()),
@@ -825,15 +825,15 @@ func toSwitchPortSettingsModel(
 			"The API returned an empty array for this required attribute.",
 		)
 	} else {
-		linkToAddrs := make(map[string][]switchPortSettingsAddressAddressModel)
+		linkToAddrs := make(map[string][]AddressDetailModel)
 		for _, address := range settings.Addresses {
 			link := string(address.InterfaceName)
 
 			if _, ok := linkToAddrs[link]; !ok {
-				linkToAddrs[link] = make([]switchPortSettingsAddressAddressModel, 0)
+				linkToAddrs[link] = make([]AddressDetailModel, 0)
 			}
 
-			addressModel := switchPortSettingsAddressAddressModel{
+			addressModel := AddressDetailModel{
 				Address:      cidrtypes.NewIPPrefixValue(address.Address.String()),
 				AddressLotID: types.StringValue(string(address.AddressLotId)),
 				VlanID: func() types.Int32 {
@@ -847,9 +847,9 @@ func toSwitchPortSettingsModel(
 			linkToAddrs[link] = append(linkToAddrs[link], addressModel)
 		}
 
-		addressModels := make([]switchPortSettingsAddressModel, 0)
+		addressModels := make([]AddressModel, 0)
 		for linkName, addrModels := range linkToAddrs {
-			addressModel := switchPortSettingsAddressModel{
+			addressModel := AddressModel{
 				Addresses: addrModels,
 				LinkName:  types.StringValue(linkName),
 			}
@@ -863,15 +863,15 @@ func toSwitchPortSettingsModel(
 	// BGP Peers
 	//
 	if len(settings.BgpPeers) > 0 {
-		linkToBGPPeer := make(map[string][]switchPortSettingsBGPPeerPeerModel)
+		linkToBGPPeer := make(map[string][]BGPPeerDetailModel)
 		for _, bgpPeer := range settings.BgpPeers {
 			link := string(bgpPeer.InterfaceName)
 
 			if _, ok := linkToBGPPeer[link]; !ok {
-				linkToBGPPeer[link] = make([]switchPortSettingsBGPPeerPeerModel, 0)
+				linkToBGPPeer[link] = make([]BGPPeerDetailModel, 0)
 			}
 
-			bgpPeerModel := switchPortSettingsBGPPeerPeerModel{
+			bgpPeerModel := BGPPeerDetailModel{
 				Address: func() iptypes.IPAddress {
 					if bgpPeer.Addr == "" {
 						return iptypes.NewIPAddressNull()
@@ -926,7 +926,7 @@ func toSwitchPortSettingsModel(
 				}(),
 			}
 
-			bgpPeerModel.AllowedExport = &switchPortSettingsBGPPeerPeerAllowedExportModel{
+			bgpPeerModel.AllowedExport = &BGPPeerAllowedExportModel{
 				Type: types.StringValue(string(bgpPeer.AllowedExport.Type())),
 				Value: func() []types.String {
 					if allow, ok := bgpPeer.AllowedExport.AsAllow(); ok {
@@ -943,7 +943,7 @@ func toSwitchPortSettingsModel(
 				}(),
 			}
 
-			bgpPeerModel.AllowedImport = &switchPortSettingsBGPPeerPeerAllowedImportModel{
+			bgpPeerModel.AllowedImport = &BGPPeerAllowedImportModel{
 				Type: types.StringValue(string(bgpPeer.AllowedImport.Type())),
 				Value: func() []types.String {
 					if allow, ok := bgpPeer.AllowedImport.AsAllow(); ok {
@@ -971,9 +971,9 @@ func toSwitchPortSettingsModel(
 			linkToBGPPeer[link] = append(linkToBGPPeer[link], bgpPeerModel)
 		}
 
-		bgpPeersModels := make([]switchPortSettingsBGPPeerModel, 0)
+		bgpPeersModels := make([]BGPPeerModel, 0)
 		for linkName, bgpPeers := range linkToBGPPeer {
-			bgpPeerModel := switchPortSettingsBGPPeerModel{
+			bgpPeerModel := BGPPeerModel{
 				Peers:    bgpPeers,
 				LinkName: types.StringValue(linkName),
 			}
@@ -992,9 +992,9 @@ func toSwitchPortSettingsModel(
 			"The API returned an empty array for this required attribute.",
 		)
 	} else {
-		linkModels := make([]switchPortSettingsLinkModel, 0)
+		linkModels := make([]LinkModel, 0)
 		for _, link := range settings.Links {
-			linkModel := switchPortSettingsLinkModel{
+			linkModel := LinkModel{
 				Autoneg: func() types.Bool {
 					if link.Autoneg == nil {
 						return types.BoolNull()
@@ -1018,7 +1018,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			if link.LldpLinkConfig != nil {
-				linkModel.LLDP = &switchPortSettingsLinkLLDPModel{
+				linkModel.LLDP = &LinkLLDPModel{
 					Enabled: types.BoolPointerValue(link.LldpLinkConfig.Enabled),
 				}
 
@@ -1063,7 +1063,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			if link.TxEqConfig != nil {
-				linkModel.TxEq = &switchPortSettingsLinkTxEqModel{
+				linkModel.TxEq = &LinkTxEqModel{
 					Main: func() types.Int32 {
 						if link.TxEqConfig.Main == nil {
 							return types.Int32Null()
@@ -1107,15 +1107,15 @@ func toSwitchPortSettingsModel(
 	// Routes
 	//
 	if len(settings.Routes) > 0 {
-		linkToRoutes := make(map[string][]switchPortSettingsRouteRouteModel)
+		linkToRoutes := make(map[string][]RouteDetailModel)
 		for _, route := range settings.Routes {
 			link := string(route.InterfaceName)
 
 			if _, ok := linkToRoutes[link]; !ok {
-				linkToRoutes[link] = make([]switchPortSettingsRouteRouteModel, 0)
+				linkToRoutes[link] = make([]RouteDetailModel, 0)
 			}
 
-			routeModel := switchPortSettingsRouteRouteModel{
+			routeModel := RouteDetailModel{
 				Dst: types.StringValue(route.Dst.String()),
 				GW:  iptypes.NewIPAddressValue(route.Gw),
 				RIBPriority: func() types.Int32 {
@@ -1135,9 +1135,9 @@ func toSwitchPortSettingsModel(
 			linkToRoutes[link] = append(linkToRoutes[link], routeModel)
 		}
 
-		routeModels := make([]switchPortSettingsRouteModel, 0)
+		routeModels := make([]RouteModel, 0)
 		for linkName, rts := range linkToRoutes {
-			routeModel := switchPortSettingsRouteModel{
+			routeModel := RouteModel{
 				Routes:   rts,
 				LinkName: types.StringValue(linkName),
 			}
@@ -1150,12 +1150,12 @@ func toSwitchPortSettingsModel(
 	return model, diags
 }
 
-// toNetworkingSwitchPortSettingsCreateParams converts [switchPortSettingsModel]
+// toCreateParams converts [Model]
 // to [oxide.NetworkingSwitchPortSettingsCreateParams]. This is far simpler than
-// [toSwitchPortSettingsModel] since the Oxide `switch_port_settings_create` API
+// [toModel] since the Oxide `switch_port_settings_create` API
 // request body matches the Terraform schema.
-func toNetworkingSwitchPortSettingsCreateParams(
-	model switchPortSettingsModel,
+func toCreateParams(
+	model Model,
 ) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
 	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{

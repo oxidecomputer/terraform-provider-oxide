@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package switch_port_settings_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -158,11 +159,11 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
   ]
 }
 `
-	switchPortSettingsName := NewResourceName()
-	blockName := NewBlockName("switch-port-settings")
+	switchPortSettingsName := provider.NewResourceName()
+	blockName := provider.NewBlockName("switch-port-settings")
 	resourceName := fmt.Sprintf("oxide_switch_port_settings.%s", blockName)
 
-	initialConfig, err := ParsedAccConfig(
+	initialConfig, err := provider.ParsedAccConfig(
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
@@ -173,7 +174,7 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 		t.Errorf("error parsing initial config template data: %e", err)
 	}
 
-	updateConfig, err := ParsedAccConfig(
+	updateConfig, err := provider.ParsedAccConfig(
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
@@ -186,9 +187,9 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			PreCheck(t)
+			provider.PreCheck(t)
 		},
-		ProtoV6ProviderFactories: ProviderFactories(),
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccSwitchPortSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -344,7 +345,7 @@ func checkResourceSwitchPortSettingsUpdate(
 }
 
 func testAccSwitchPortSettingsDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

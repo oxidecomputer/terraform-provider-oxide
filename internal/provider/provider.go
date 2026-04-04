@@ -27,6 +27,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/floating_ip"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/image"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/images"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/instance"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/instance_external_ips"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool_silo_link"
@@ -39,8 +40,10 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_member"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_silo_link"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/switch_port_settings"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/system_ip_pools"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_firewall_rules"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_internet_gateway"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router_route"
@@ -219,7 +222,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		external_subnet_attachment.NewResource,
 		floating_ip.NewResource,
 		image.NewResource,
-		NewInstanceResource,
+		instance.NewResource,
 		ip_pool.NewResource,
 		ip_pool_silo_link.NewResource,
 		project.NewResource,
@@ -230,8 +233,8 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		subnet_pool_member.NewResource,
 		subnet_pool.NewResource,
 		subnet_pool_silo_link.NewResource,
-		NewSwitchPortSettingsResource,
-		NewVPCFirewallRulesResource,
+		switch_port_settings.NewResource,
+		vpc_firewall_rules.NewResource,
 		vpc_internet_gateway.NewResource,
 		vpc.NewResource,
 		vpc_router.NewResource,
@@ -243,6 +246,6 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 // Functions defines the functions implemented in the provider.
 func (p *oxideProvider) Functions(_ context.Context) []func() function.Function {
 	return []func() function.Function{
-		NewToVPCFirewallRulesMapFunction,
+		vpc_firewall_rules.NewFunction,
 	}
 }

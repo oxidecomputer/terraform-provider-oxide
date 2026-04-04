@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package instance
 
 import (
 	"context"
@@ -27,29 +27,29 @@ import (
 // Schema and structs source:
 // https://github.com/oxidecomputer/terraform-provider-oxide/blob/v0.17.0/internal/provider/resource_instance.go
 
-type instanceResourceModelV0 struct {
-	AntiAffinityGroups types.Set                           `tfsdk:"anti_affinity_groups"`
-	AutoRestartPolicy  types.String                        `tfsdk:"auto_restart_policy"`
-	BootDiskID         types.String                        `tfsdk:"boot_disk_id"`
-	Description        types.String                        `tfsdk:"description"`
-	DiskAttachments    types.Set                           `tfsdk:"disk_attachments"`
-	ExternalIPs        []instanceResourceExternalIPModelV0 `tfsdk:"external_ips"`
-	HostName           types.String                        `tfsdk:"host_name"`
-	ID                 types.String                        `tfsdk:"id"`
-	Memory             types.Int64                         `tfsdk:"memory"`
-	Name               types.String                        `tfsdk:"name"`
-	NetworkInterfaces  []instanceResourceNICModelV0        `tfsdk:"network_interfaces"`
-	NCPUs              types.Int64                         `tfsdk:"ncpus"`
-	ProjectID          types.String                        `tfsdk:"project_id"`
-	SSHPublicKeys      types.Set                           `tfsdk:"ssh_public_keys"`
-	StartOnCreate      types.Bool                          `tfsdk:"start_on_create"`
-	TimeCreated        types.String                        `tfsdk:"time_created"`
-	TimeModified       types.String                        `tfsdk:"time_modified"`
-	Timeouts           timeouts.Value                      `tfsdk:"timeouts"`
-	UserData           types.String                        `tfsdk:"user_data"`
+type ModelV0 struct {
+	AntiAffinityGroups types.Set           `tfsdk:"anti_affinity_groups"`
+	AutoRestartPolicy  types.String        `tfsdk:"auto_restart_policy"`
+	BootDiskID         types.String        `tfsdk:"boot_disk_id"`
+	Description        types.String        `tfsdk:"description"`
+	DiskAttachments    types.Set           `tfsdk:"disk_attachments"`
+	ExternalIPs        []ExternalIPModelV0 `tfsdk:"external_ips"`
+	HostName           types.String        `tfsdk:"host_name"`
+	ID                 types.String        `tfsdk:"id"`
+	Memory             types.Int64         `tfsdk:"memory"`
+	Name               types.String        `tfsdk:"name"`
+	NetworkInterfaces  []NICModelV0        `tfsdk:"network_interfaces"`
+	NCPUs              types.Int64         `tfsdk:"ncpus"`
+	ProjectID          types.String        `tfsdk:"project_id"`
+	SSHPublicKeys      types.Set           `tfsdk:"ssh_public_keys"`
+	StartOnCreate      types.Bool          `tfsdk:"start_on_create"`
+	TimeCreated        types.String        `tfsdk:"time_created"`
+	TimeModified       types.String        `tfsdk:"time_modified"`
+	Timeouts           timeouts.Value      `tfsdk:"timeouts"`
+	UserData           types.String        `tfsdk:"user_data"`
 }
 
-type instanceResourceNICModelV0 struct {
+type NICModelV0 struct {
 	Description  types.String `tfsdk:"description"`
 	ID           types.String `tfsdk:"id"`
 	IPAddr       types.String `tfsdk:"ip_address"`
@@ -62,12 +62,12 @@ type instanceResourceNICModelV0 struct {
 	VPCID        types.String `tfsdk:"vpc_id"`
 }
 
-type instanceResourceExternalIPModelV0 struct {
+type ExternalIPModelV0 struct {
 	ID   types.String `tfsdk:"id"`
 	Type types.String `tfsdk:"type"`
 }
 
-func (r *instanceResource) schemaV0(ctx context.Context) *schema.Schema {
+func (r *Resource) schemaV0(ctx context.Context) *schema.Schema {
 	return &schema.Schema{
 		Version: 0,
 		MarkdownDescription: shared.ReplaceBackticks(`

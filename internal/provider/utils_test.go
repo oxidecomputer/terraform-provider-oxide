@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/instance"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/stretchr/testify/assert"
 )
@@ -184,27 +185,27 @@ func Test_sliceDiff_int(t *testing.T) {
 
 func Test_sliceDiff_model(t *testing.T) {
 	type args struct {
-		a []instanceResourceNICModel
-		b []instanceResourceNICModel
+		a []instance.NICModel
+		b []instance.NICModel
 	}
 	tests := []struct {
 		name string
 		args args
-		want []instanceResourceNICModel
+		want []instance.NICModel
 	}{
 		{
 			name: "success",
 			args: args{
-				a: []instanceResourceNICModel{
+				a: []instance.NICModel{
 					{Name: types.StringValue("bib")},
 					{Name: types.StringValue("bob")},
 					{Name: types.StringValue("bub")},
 				},
-				b: []instanceResourceNICModel{
+				b: []instance.NICModel{
 					{Name: types.StringValue("bub")},
 				},
 			},
-			want: []instanceResourceNICModel{
+			want: []instance.NICModel{
 				{Name: types.StringValue("bib")},
 				{Name: types.StringValue("bob")},
 			},
@@ -219,7 +220,7 @@ func Test_sliceDiff_model(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := shared.SliceDiffByID(
 				tt.args.a, tt.args.b,
-				func(el instanceResourceNICModel) any {
+				func(el instance.NICModel) any {
 					return el.Name
 				},
 			)

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package vpc_firewall_rules
 
 import (
 	"context"
@@ -63,9 +63,9 @@ var vpcFirewallRuleReturnObjectType = types.ObjectType{
 	},
 }
 
-// NewToVPCFirewallRulesMapFunction returns a new function.Function for the
+// NewFunction returns a new function.Function for the
 // to_vpc_firewall_rules_map provider function.
-func NewToVPCFirewallRulesMapFunction() function.Function {
+func NewFunction() function.Function {
 	return &toVPCFirewallRulesMap{}
 }
 
@@ -136,7 +136,7 @@ func (f *toVPCFirewallRulesMap) Run(
 		return
 	}
 
-	rulesMap := make(map[string]vpcFirewallRulesResourceRuleModel)
+	rulesMap := make(map[string]RuleModel)
 	for _, r := range rulesSet {
 		rule, diags := r.toModel()
 		if diags.HasError() {
@@ -164,8 +164,8 @@ type vpcFirewallRuleV1Json struct {
 	Targets     []vpcFirewallRuleTargetV1Json `json:"targets"`
 }
 
-func (j vpcFirewallRuleV1Json) toModel() (vpcFirewallRulesResourceRuleModel, diag.Diagnostics) {
-	rule := vpcFirewallRulesResourceRuleModel{
+func (j vpcFirewallRuleV1Json) toModel() (RuleModel, diag.Diagnostics) {
+	rule := RuleModel{
 		Action:      types.StringValue(j.Action),
 		Description: types.StringValue(j.Description),
 		Direction:   types.StringValue(j.Direction),
@@ -176,15 +176,15 @@ func (j vpcFirewallRuleV1Json) toModel() (vpcFirewallRulesResourceRuleModel, dia
 	if j.Filters != nil {
 		filters, diags := j.Filters.toModel()
 		if diags.HasError() {
-			return vpcFirewallRulesResourceRuleModel{}, diags
+			return RuleModel{}, diags
 		}
 		rule.Filters = &filters
 	}
 
 	if j.Targets != nil {
-		rule.Targets = make([]vpcFirewallRulesResourceRuleTargetModel, len(j.Targets))
+		rule.Targets = make([]RuleTargetModel, len(j.Targets))
 		for i, t := range j.Targets {
-			rule.Targets[i] = vpcFirewallRulesResourceRuleTargetModel{
+			rule.Targets[i] = RuleTargetModel{
 				Type:  types.StringValue(t.Type),
 				Value: types.StringValue(t.Value),
 			}
@@ -203,12 +203,12 @@ type vpcFirewallRuleFiltersV1Json struct {
 	Ports []any `json:"ports"`
 }
 
-func (j vpcFirewallRuleFiltersV1Json) toModel() (vpcFirewallRulesResourceRuleFiltersModel, diag.Diagnostics) {
-	var hosts []vpcFirewallRuleHostFilterModel
+func (j vpcFirewallRuleFiltersV1Json) toModel() (RuleFiltersModel, diag.Diagnostics) {
+	var hosts []HostFilterModel
 	if j.Hosts != nil {
-		hosts = make([]vpcFirewallRuleHostFilterModel, len(j.Hosts))
+		hosts = make([]HostFilterModel, len(j.Hosts))
 		for i, h := range j.Hosts {
-			hosts[i] = vpcFirewallRuleHostFilterModel{
+			hosts[i] = HostFilterModel{
 				Type:  types.StringValue(h.Type),
 				Value: types.StringValue(h.Value),
 			}
@@ -225,19 +225,19 @@ func (j vpcFirewallRuleFiltersV1Json) toModel() (vpcFirewallRulesResourceRuleFil
 		var diags diag.Diagnostics
 		ports, diags = types.SetValue(types.StringType, portsValues)
 		if diags.HasError() {
-			return vpcFirewallRulesResourceRuleFiltersModel{}, diags
+			return RuleFiltersModel{}, diags
 		}
 	}
 
-	var protocols []vpcFirewallRuleProtocolFilterModel
+	var protocols []ProtocolFilterModel
 	if j.Protocols != nil {
-		protocols = make([]vpcFirewallRuleProtocolFilterModel, len(j.Protocols))
+		protocols = make([]ProtocolFilterModel, len(j.Protocols))
 		for i, p := range j.Protocols {
 			protocols[i] = p.toModel()
 		}
 	}
 
-	return vpcFirewallRulesResourceRuleFiltersModel{
+	return RuleFiltersModel{
 		Hosts:     hosts,
 		Ports:     ports,
 		Protocols: protocols,
@@ -255,8 +255,8 @@ type vpcFirewallRuleProtocolV1Json struct {
 	IcmpCode *string `json:"icmp_code"`
 }
 
-func (j vpcFirewallRuleProtocolV1Json) toModel() vpcFirewallRuleProtocolFilterModel {
-	model := vpcFirewallRuleProtocolFilterModel{
+func (j vpcFirewallRuleProtocolV1Json) toModel() ProtocolFilterModel {
+	model := ProtocolFilterModel{
 		Type: types.StringValue(j.Type),
 	}
 
