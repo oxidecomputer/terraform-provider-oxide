@@ -19,6 +19,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/functions"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/address_lot"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/anti_affinity_group"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/disk"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/external_subnet"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/external_subnet_attachment"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/floating_ip"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/image"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/images"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/instance"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/instance_external_ips"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool_silo_link"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/project"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/projects"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/silo"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/silo_saml_identity_provider"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/snapshot"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ssh_key"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_member"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_silo_link"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/switch_port_settings"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/system_ip_pools"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_firewall_rules"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_internet_gateway"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router_route"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_subnet"
 )
 
 var _ provider.Provider = (*oxideProvider)(nil)
@@ -161,62 +191,62 @@ func (p *oxideProvider) Configure(
 // DataSources defines the data sources implemented in the provider.
 func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewAddressLotDataSource,
-		NewAntiAffinityGroupDataSource,
-		NewDiskDataSource,
-		NewFloatingIPDataSource,
-		NewImageDataSource,
-		NewImagesDataSource,
-		NewInstanceExternalIPsDataSource,
-		NewIpPoolDataSource,
-		NewProjectDataSource,
-		NewProjectsDataSource,
-		NewSiloDataSource,
-		NewSSHKeyDataSource,
-		NewSubnetPoolDataSource,
-		NewSystemIpPoolsDataSource,
-		NewVPCDataSource,
-		NewVPCInternetGatewayDataSource,
-		NewVPCRouterDataSource,
-		NewVPCRouterRouteDataSource,
-		NewVPCSubnetDataSource,
+		address_lot.NewDataSource,
+		anti_affinity_group.NewDataSource,
+		disk.NewDataSource,
+		floating_ip.NewDataSource,
+		image.NewDataSource,
+		images.NewDataSource,
+		instance_external_ips.NewDataSource,
+		ip_pool.NewDataSource,
+		project.NewDataSource,
+		projects.NewDataSource,
+		silo.NewDataSource,
+		ssh_key.NewDataSource,
+		subnet_pool.NewDataSource,
+		system_ip_pools.NewDataSource,
+		vpc.NewDataSource,
+		vpc_internet_gateway.NewDataSource,
+		vpc_router.NewDataSource,
+		vpc_router_route.NewDataSource,
+		vpc_subnet.NewDataSource,
 	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewAddressLotResource,
-		NewAntiAffinityGroupResource,
-		NewDiskResource,
-		NewExternalSubnetAttachmentResource,
-		NewExternalSubnetResource,
-		NewFloatingIPResource,
-		NewImageResource,
-		NewInstanceResource,
-		NewIPPoolResource,
-		NewIpPoolSiloLinkResource,
-		NewProjectResource,
-		NewSiloResource,
-		NewSiloSamlIdentityProviderResource,
-		NewSnapshotResource,
-		NewSSHKeyResource,
-		NewSubnetPoolMemberResource,
-		NewSubnetPoolResource,
-		NewSubnetPoolSiloLinkResource,
-		NewSwitchPortSettingsResource,
-		NewVPCFirewallRulesResource,
-		NewVPCInternetGatewayResource,
-		NewVPCResource,
-		NewVPCRouterResource,
-		NewVPCRouterRouteResource,
-		NewVPCSubnetResource,
+		address_lot.NewResource,
+		anti_affinity_group.NewResource,
+		disk.NewResource,
+		external_subnet.NewResource,
+		external_subnet_attachment.NewResource,
+		floating_ip.NewResource,
+		image.NewResource,
+		instance.NewResource,
+		ip_pool.NewResource,
+		ip_pool_silo_link.NewResource,
+		project.NewResource,
+		silo.NewResource,
+		silo_saml_identity_provider.NewResource,
+		snapshot.NewResource,
+		ssh_key.NewResource,
+		subnet_pool_member.NewResource,
+		subnet_pool.NewResource,
+		subnet_pool_silo_link.NewResource,
+		switch_port_settings.NewResource,
+		vpc_firewall_rules.NewResource,
+		vpc_internet_gateway.NewResource,
+		vpc.NewResource,
+		vpc_router.NewResource,
+		vpc_router_route.NewResource,
+		vpc_subnet.NewResource,
 	}
 }
 
 // Functions defines the functions implemented in the provider.
 func (p *oxideProvider) Functions(_ context.Context) []func() function.Function {
 	return []func() function.Function{
-		NewToVPCFirewallRulesMapFunction,
+		functions.NewFunction,
 	}
 }

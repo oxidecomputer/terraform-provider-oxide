@@ -1,0 +1,117 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package shared
+
+import (
+	"net"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/oxidecomputer/oxide.go/oxide"
+)
+
+// ReplaceBackticks replaces " with `. It can be used to defined
+// codeblocks in markdown raw strings.
+//
+//	var mdString = ReplaceBackticks(
+//		`this is a ''code'' block`,
+//	)
+func ReplaceBackticks(s string) string {
+	return strings.ReplaceAll(s, "''", "`")
+}
+
+// Is404 returns true if the error message indicates an HTTP 404
+// response.
+func Is404(err error) bool {
+	return strings.Contains(err.Error(), "Status: 404")
+}
+
+// IsIPv4 checks if the string is an IP version 4.
+// Original function from
+// https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
+// Shamelessly copied here to avoid importing the entire package
+func IsIPv4(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil && strings.Contains(str, ".")
+}
+
+// IsIPv6 checks if the string is an IP version 6.
+// Original function from
+// https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv6
+// Shamelessly copied here to avoid importing the entire package
+func IsIPv6(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil && strings.Contains(str, ":")
+}
+
+// DefaultTimeout returns the default timeout duration used for
+// Terraform operations.
+func DefaultTimeout() time.Duration {
+	return 10 * time.Minute
+}
+
+// SliceDiff returns a slice of the elements in `a` that aren't
+// in `b`.
+// This function is a bit expensive, but given the fact that
+// the expected number of elements is relatively slow
+// it's not a big deal.
+func SliceDiff[S []E, E any](a, b S) S {
+	mb := make(map[any]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+
+	var diff S
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
+// SliceDiffByID is similar to [SliceDiff] but takes idFn, which
+// should return a value used to identity slice elements.
+func SliceDiffByID[S []E, E any](a, b S, idFn func(E) any) S {
+	mb := make(map[any]struct{}, len(b))
+	for _, x := range b {
+		mb[idFn(x)] = struct{}{}
+	}
+
+	var diff S
+	for _, x := range a {
+		if _, found := mb[idFn(x)]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
+// NewNameOrIdList takes a terraform set and converts is into a
+// slice NameOrIds.
+func NewNameOrIdList(
+	nameOrIDs types.Set,
+) ([]oxide.NameOrId, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var list = []oxide.NameOrId{}
+	for _, item := range nameOrIDs.Elements() {
+		id, err := strconv.Unquote(item.String())
+		if err != nil {
+			diags.AddError(
+				"Error retrieving name or ID information",
+				"name or ID parse error: "+err.Error(),
+			)
+			return []oxide.NameOrId{}, diags
+		}
+
+		n := oxide.NameOrId(id)
+		list = append(list, n)
+	}
+
+	return list, diags
+}

@@ -156,7 +156,7 @@ provider "oxide" {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resource.UnitTest(t, resource.TestCase{
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: ProviderFactories(),
 				Steps: []resource.TestStep{
 					{
 						PreConfig: func() {
