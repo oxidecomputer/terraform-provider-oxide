@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package ip_pool_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -20,8 +21,8 @@ func TestAccSiloResourceIpPool_full(t *testing.T) {
 	resourceName2 := "oxide_ip_pool.test2"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccIPPoolDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -176,7 +177,7 @@ func checkResourceIPPoolRanges(resourceName string) resource.TestCheckFunc {
 }
 
 func testAccIPPoolDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

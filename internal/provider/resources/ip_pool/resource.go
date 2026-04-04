@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package ip_pool
 
 import (
 	"context"
@@ -24,37 +24,41 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*ipPoolResource)(nil)
-	_ resource.ResourceWithConfigure = (*ipPoolResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewIPPoolResource is a helper function to simplify the provider implementation.
-func NewIPPoolResource() resource.Resource {
-	return &ipPoolResource{}
+// NewResource is a helper function to simplify the provider
+// implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// ipPoolResource is the resource implementation.
-type ipPoolResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type ipPoolResourceModel struct {
-	Description  types.String               `tfsdk:"description"`
-	ID           types.String               `tfsdk:"id"`
-	Name         types.String               `tfsdk:"name"`
-	Ranges       []ipPoolResourceRangeModel `tfsdk:"ranges"`
-	TimeCreated  types.String               `tfsdk:"time_created"`
-	TimeModified types.String               `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value             `tfsdk:"timeouts"`
+// Model represents the Terraform configuration and state for
+// the Oxide IP pool resource.
+type Model struct {
+	Description  types.String   `tfsdk:"description"`
+	ID           types.String   `tfsdk:"id"`
+	Name         types.String   `tfsdk:"name"`
+	Ranges       []RangeModel   `tfsdk:"ranges"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-type ipPoolResourceRangeModel struct {
+// RangeModel represents an IP pool range.
+type RangeModel struct {
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
 }
 
 // Metadata returns the resource type name.
-func (r *ipPoolResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -63,7 +67,7 @@ func (r *ipPoolResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *ipPoolResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -75,7 +79,7 @@ func (r *ipPoolResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *ipPoolResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -84,7 +88,7 @@ func (r *ipPoolResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *ipPoolResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -143,12 +147,12 @@ This resource manages IP pools.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *ipPoolResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan ipPoolResourceModel
+	var plan Model
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -202,12 +206,12 @@ func (r *ipPoolResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *ipPoolResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state ipPoolResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -266,11 +270,11 @@ func (r *ipPoolResource) Read(
 
 	// Set the size of the slice to avoid a panic when importing
 	if len(state.Ranges) == 0 && len(ipPoolRanges.Items) != 0 {
-		state.Ranges = make([]ipPoolResourceRangeModel, len(ipPoolRanges.Items))
+		state.Ranges = make([]RangeModel, len(ipPoolRanges.Items))
 	}
 
 	for index, item := range ipPoolRanges.Items {
-		ipPoolRange := ipPoolResourceRangeModel{}
+		ipPoolRange := RangeModel{}
 
 		// Extract first/last addresses from the IpRange variant
 		switch v := item.Range.Value.(type) {
@@ -301,14 +305,15 @@ func (r *ipPoolResource) Read(
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *ipPoolResource) Update(
+// Update updates the resource and sets the updated Terraform state
+// on success.
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan ipPoolResourceModel
-	var state ipPoolResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -383,13 +388,14 @@ func (r *ipPoolResource) Update(
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
-func (r *ipPoolResource) Delete(
+// Delete deletes the resource and removes the Terraform state on
+// success.
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state ipPoolResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -473,7 +479,7 @@ func (r *ipPoolResource) Delete(
 func addRanges(
 	ctx context.Context,
 	client *oxide.Client,
-	ranges []ipPoolResourceRangeModel,
+	ranges []RangeModel,
 	poolID string,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -522,7 +528,7 @@ func addRanges(
 func removeRanges(
 	ctx context.Context,
 	client *oxide.Client,
-	ranges []ipPoolResourceRangeModel,
+	ranges []RangeModel,
 	poolID string,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics

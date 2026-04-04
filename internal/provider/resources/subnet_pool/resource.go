@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package subnet_pool
 
 import (
 	"context"
@@ -25,21 +25,22 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*subnetPoolResource)(nil)
-	_ resource.ResourceWithConfigure = (*subnetPoolResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewSubnetPoolResource is a helper function to simplify the provider implementation.
-func NewSubnetPoolResource() resource.Resource {
-	return &subnetPoolResource{}
+// NewResource is a helper function to simplify the provider
+// implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// subnetPoolResource is the resource implementation.
-type subnetPoolResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type subnetPoolResourceModel struct {
+type Model struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	IpVersion    types.String   `tfsdk:"ip_version"`
@@ -50,7 +51,7 @@ type subnetPoolResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *subnetPoolResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -59,7 +60,7 @@ func (r *subnetPoolResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *subnetPoolResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -71,7 +72,7 @@ func (r *subnetPoolResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *subnetPoolResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -80,13 +81,15 @@ func (r *subnetPoolResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *subnetPoolResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "This resource manages subnet pools. Use `oxide_subnet_pool_member` to add members to the pool.",
+		MarkdownDescription: "This resource manages subnet pools." +
+			" Use `oxide_subnet_pool_member` to add members" +
+			" to the pool.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -97,8 +100,10 @@ func (r *subnetPoolResource) Schema(
 				Description: "Description for the subnet pool.",
 			},
 			"ip_version": schema.StringAttribute{
-				Required:    true,
-				Description: "The IP version for this pool. All subnets in the pool must match this version.",
+				Required: true,
+				Description: "The IP version for this pool." +
+					" All subnets in the pool must match" +
+					" this version.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("v4", "v6"),
 				},
@@ -113,31 +118,34 @@ func (r *subnetPoolResource) Schema(
 				Delete: true,
 			}),
 			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the subnet pool.",
+				Computed: true,
+				Description: "Unique, immutable, system-controlled" +
+					" identifier of the subnet pool.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"time_created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this subnet pool was created.",
+				Computed: true,
+				Description: "Timestamp of when this subnet pool" +
+					" was created.",
 			},
 			"time_modified": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this subnet pool was last modified.",
+				Computed: true,
+				Description: "Timestamp of when this subnet pool" +
+					" was last modified.",
 			},
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *subnetPoolResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan subnetPoolResourceModel
+	var plan Model
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -145,7 +153,9 @@ func (r *subnetPoolResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -177,7 +187,9 @@ func (r *subnetPoolResource) Create(
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(pool.Id)
 	plan.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(pool.TimeModified.String())
+	plan.TimeModified = types.StringValue(
+		pool.TimeModified.String(),
+	)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -187,12 +199,12 @@ func (r *subnetPoolResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *subnetPoolResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state subnetPoolResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -200,7 +212,9 @@ func (r *subnetPoolResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -208,9 +222,11 @@ func (r *subnetPoolResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	pool, err := r.client.SystemSubnetPoolView(ctx, oxide.SystemSubnetPoolViewParams{
-		Pool: oxide.NameOrId(state.ID.ValueString()),
-	})
+	pool, err := r.client.SystemSubnetPoolView(
+		ctx, oxide.SystemSubnetPoolViewParams{
+			Pool: oxide.NameOrId(state.ID.ValueString()),
+		},
+	)
 	if err != nil {
 		if shared.Is404(err) {
 			// Remove resource from state during a refresh
@@ -234,7 +250,9 @@ func (r *subnetPoolResource) Read(
 	state.IpVersion = types.StringValue(string(pool.IpVersion))
 	state.Name = types.StringValue(string(pool.Name))
 	state.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	state.TimeModified = types.StringValue(pool.TimeModified.String())
+	state.TimeModified = types.StringValue(
+		pool.TimeModified.String(),
+	)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -243,14 +261,15 @@ func (r *subnetPoolResource) Read(
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *subnetPoolResource) Update(
+// Update updates the resource and sets the updated Terraform state
+// on success.
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan subnetPoolResourceModel
-	var state subnetPoolResourceModel
+	var plan Model
+	var state Model
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -258,14 +277,17 @@ func (r *subnetPoolResource) Update(
 		return
 	}
 
-	// Read Terraform prior state data into the state model to retrieve ID
-	// which is a computed attribute, so it won't show up in the plan.
+	// Read Terraform prior state data into the state model to
+	// retrieve ID which is a computed attribute, so it won't show
+	// up in the plan.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -291,14 +313,19 @@ func (r *subnetPoolResource) Update(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("updated subnet pool with ID: %v", pool.Id),
+		fmt.Sprintf(
+			"updated subnet pool with ID: %v", pool.Id,
+		),
 		map[string]any{"success": true},
 	)
 
-	// Map response body to schema and populate Computed attribute values
+	// Map response body to schema and populate Computed attribute
+	// values
 	plan.ID = types.StringValue(pool.Id)
 	plan.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	plan.TimeModified = types.StringValue(pool.TimeModified.String())
+	plan.TimeModified = types.StringValue(
+		pool.TimeModified.String(),
+	)
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -307,13 +334,14 @@ func (r *subnetPoolResource) Update(
 	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
-func (r *subnetPoolResource) Delete(
+// Delete deletes the resource and removes the Terraform state on
+// success.
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state subnetPoolResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -321,7 +349,9 @@ func (r *subnetPoolResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -344,7 +374,10 @@ func (r *subnetPoolResource) Delete(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted subnet pool with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf(
+			"deleted subnet pool with ID: %v",
+			state.ID.ValueString(),
+		),
 		map[string]any{"success": true},
 	)
 }

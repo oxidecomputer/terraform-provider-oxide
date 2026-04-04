@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package ip_pool
 
 import (
 	"context"
@@ -17,14 +17,23 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*ipPoolDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*ipPoolDataSource)(nil)
+// Compile-time assertions to check that the DataSource implements the
+// necessary Terraform data source interfaces.
+var (
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
+)
 
-type ipPoolDataSource struct {
+// DataSource is the concrete type that implements the necessary
+// Terraform data source interfaces. It holds state to interact with
+// the Oxide API.
+type DataSource struct {
 	client *oxide.Client
 }
 
-type ipPoolDataSourceModel struct {
+// DataSourceModel represents the Terraform configuration and state
+// for the Oxide IP pool data source.
+type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
 	IsDefault    types.Bool     `tfsdk:"is_default"`
@@ -34,13 +43,14 @@ type ipPoolDataSourceModel struct {
 	TimeModified types.String   `tfsdk:"time_modified"`
 }
 
-// NewIpPoolDataSource initialises an ip_pool datasource
-func NewIpPoolDataSource() datasource.DataSource {
-	return &ipPoolDataSource{}
+// NewDataSource is a helper to easily construct a DataSource as a
+// type that implements the Terraform data source interface.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
 // Metadata returns the data source type name.
-func (d *ipPoolDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -49,7 +59,7 @@ func (d *ipPoolDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *ipPoolDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -62,7 +72,7 @@ func (d *ipPoolDataSource) Configure(
 }
 
 // Schema defines the schema for the data source.
-func (d *ipPoolDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -102,12 +112,12 @@ Retrieve information about a specified IP pool.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *ipPoolDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state ipPoolDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)

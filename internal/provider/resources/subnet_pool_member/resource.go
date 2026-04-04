@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package subnet_pool_member
 
 import (
 	"context"
@@ -26,21 +26,21 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*subnetPoolMemberResource)(nil)
-	_ resource.ResourceWithConfigure = (*subnetPoolMemberResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewSubnetPoolMemberResource is a helper function to simplify the provider implementation.
-func NewSubnetPoolMemberResource() resource.Resource {
-	return &subnetPoolMemberResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// subnetPoolMemberResource is the resource implementation.
-type subnetPoolMemberResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type subnetPoolMemberResourceModel struct {
+type Model struct {
 	ID              types.String       `tfsdk:"id"`
 	SubnetPoolID    types.String       `tfsdk:"subnet_pool_id"`
 	Subnet          cidrtypes.IPPrefix `tfsdk:"subnet"`
@@ -51,7 +51,7 @@ type subnetPoolMemberResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *subnetPoolMemberResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -60,7 +60,7 @@ func (r *subnetPoolMemberResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *subnetPoolMemberResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -72,7 +72,7 @@ func (r *subnetPoolMemberResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *subnetPoolMemberResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -92,7 +92,7 @@ func (r *subnetPoolMemberResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *subnetPoolMemberResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -154,12 +154,12 @@ func (r *subnetPoolMemberResource) Schema(
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *subnetPoolMemberResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan subnetPoolMemberResourceModel
+	var plan Model
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -231,12 +231,12 @@ func (r *subnetPoolMemberResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *subnetPoolMemberResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state subnetPoolMemberResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -309,7 +309,7 @@ func (r *subnetPoolMemberResource) Read(
 
 // Update updates the resource and sets the updated Terraform state on success.
 // Note: All attributes require replacement, so this should never be called.
-func (r *subnetPoolMemberResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
@@ -323,12 +323,12 @@ func (r *subnetPoolMemberResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *subnetPoolMemberResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state subnetPoolMemberResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

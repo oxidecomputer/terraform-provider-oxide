@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package subnet_pool
 
 import (
 	"context"
@@ -17,37 +17,44 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*subnetPoolDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*subnetPoolDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
+)
 
-type subnetPoolDataSource struct {
+// DataSource is the data source implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-type subnetPoolDataSourceModel struct {
-	Description  types.String                      `tfsdk:"description"`
-	ID           types.String                      `tfsdk:"id"`
-	IpVersion    types.String                      `tfsdk:"ip_version"`
-	Name         types.String                      `tfsdk:"name"`
-	Members      []subnetPoolDataSourceMemberModel `tfsdk:"members"`
-	Timeouts     timeouts.Value                    `tfsdk:"timeouts"`
-	TimeCreated  types.String                      `tfsdk:"time_created"`
-	TimeModified types.String                      `tfsdk:"time_modified"`
+// DataSourceModel are the attributes that are supported on this
+// data source.
+type DataSourceModel struct {
+	Description  types.String            `tfsdk:"description"`
+	ID           types.String            `tfsdk:"id"`
+	IpVersion    types.String            `tfsdk:"ip_version"`
+	Name         types.String            `tfsdk:"name"`
+	Members      []DataSourceMemberModel `tfsdk:"members"`
+	Timeouts     timeouts.Value          `tfsdk:"timeouts"`
+	TimeCreated  types.String            `tfsdk:"time_created"`
+	TimeModified types.String            `tfsdk:"time_modified"`
 }
 
-type subnetPoolDataSourceMemberModel struct {
+// DataSourceMemberModel represents a subnet pool member in the data
+// source.
+type DataSourceMemberModel struct {
 	Subnet          types.String `tfsdk:"subnet"`
 	MinPrefixLength types.Int64  `tfsdk:"min_prefix_length"`
 	MaxPrefixLength types.Int64  `tfsdk:"max_prefix_length"`
 }
 
-// NewSubnetPoolDataSource initialises a subnet_pool datasource
-func NewSubnetPoolDataSource() datasource.DataSource {
-	return &subnetPoolDataSource{}
+// NewDataSource initialises a subnet_pool datasource.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
 // Metadata returns the data source type name.
-func (d *subnetPoolDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -56,7 +63,7 @@ func (d *subnetPoolDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *subnetPoolDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -69,13 +76,14 @@ func (d *subnetPoolDataSource) Configure(
 }
 
 // Schema defines the schema for the data source.
-func (d *subnetPoolDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Retrieve information about a specified subnet pool.",
+		MarkdownDescription: "Retrieve information about a" +
+			" specified subnet pool.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -86,16 +94,21 @@ func (d *subnetPoolDataSource) Schema(
 				Description: "Description for the subnet pool.",
 			},
 			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the subnet pool.",
+				Computed: true,
+				Description: "Unique, immutable," +
+					" system-controlled identifier of" +
+					" the subnet pool.",
 			},
 			"ip_version": schema.StringAttribute{
-				Computed:    true,
-				Description: "The IP version for this pool (v4 or v6).",
+				Computed: true,
+				Description: "The IP version for this pool" +
+					" (v4 or v6).",
 			},
 			"members": schema.ListNestedAttribute{
-				Computed:    true,
-				Description: "List of subnet members in the pool. Members are managed via the `oxide_subnet_pool_member` resource.",
+				Computed: true,
+				Description: "List of subnet members in the" +
+					" pool. Members are managed via the" +
+					" `oxide_subnet_pool_member` resource.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"subnet": schema.StringAttribute{
@@ -103,23 +116,29 @@ func (d *subnetPoolDataSource) Schema(
 							Description: "The subnet CIDR.",
 						},
 						"min_prefix_length": schema.Int64Attribute{
-							Computed:    true,
-							Description: "Minimum prefix length for allocations from this subnet.",
+							Computed: true,
+							Description: "Minimum prefix" +
+								" length for allocations" +
+								" from this subnet.",
 						},
 						"max_prefix_length": schema.Int64Attribute{
-							Computed:    true,
-							Description: "Maximum prefix length for allocations from this subnet.",
+							Computed: true,
+							Description: "Maximum prefix" +
+								" length for allocations" +
+								" from this subnet.",
 						},
 					},
 				},
 			},
 			"time_created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this subnet pool was created.",
+				Computed: true,
+				Description: "Timestamp of when this subnet" +
+					" pool was created.",
 			},
 			"time_modified": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this subnet pool was last modified.",
+				Computed: true,
+				Description: "Timestamp of when this subnet" +
+					" pool was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx),
 		},
@@ -127,12 +146,12 @@ func (d *subnetPoolDataSource) Schema(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *subnetPoolDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state subnetPoolDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -140,7 +159,9 @@ func (d *subnetPoolDataSource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -162,7 +183,9 @@ func (d *subnetPoolDataSource) Read(
 
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read subnet pool with ID: %v", pool.Id),
+		fmt.Sprintf(
+			"read subnet pool with ID: %v", pool.Id,
+		),
 		map[string]any{"success": true},
 	)
 
@@ -171,8 +194,12 @@ func (d *subnetPoolDataSource) Read(
 	state.ID = types.StringValue(pool.Id)
 	state.IpVersion = types.StringValue(string(pool.IpVersion))
 	state.Name = types.StringValue(string(pool.Name))
-	state.TimeCreated = types.StringValue(pool.TimeCreated.String())
-	state.TimeModified = types.StringValue(pool.TimeModified.String())
+	state.TimeCreated = types.StringValue(
+		pool.TimeCreated.String(),
+	)
+	state.TimeModified = types.StringValue(
+		pool.TimeModified.String(),
+	)
 
 	// Read members
 	members, err := d.client.SystemSubnetPoolMemberListAllPages(
@@ -191,16 +218,27 @@ func (d *subnetPoolDataSource) Read(
 
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read %d subnet pool members from pool with ID: %v", len(members), pool.Id),
+		fmt.Sprintf(
+			"read %d subnet pool members from pool with ID: %v",
+			len(members), pool.Id,
+		),
 		map[string]any{"success": true},
 	)
 
-	state.Members = make([]subnetPoolDataSourceMemberModel, len(members))
+	state.Members = make(
+		[]DataSourceMemberModel, len(members),
+	)
 	for i, member := range members {
-		state.Members[i] = subnetPoolDataSourceMemberModel{
-			Subnet:          types.StringValue(member.Subnet.String()),
-			MinPrefixLength: types.Int64Value(int64(*member.MinPrefixLength)),
-			MaxPrefixLength: types.Int64Value(int64(*member.MaxPrefixLength)),
+		state.Members[i] = DataSourceMemberModel{
+			Subnet: types.StringValue(
+				member.Subnet.String(),
+			),
+			MinPrefixLength: types.Int64Value(
+				int64(*member.MinPrefixLength),
+			),
+			MaxPrefixLength: types.Int64Value(
+				int64(*member.MaxPrefixLength),
+			),
 		}
 	}
 

@@ -23,10 +23,15 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/floating_ip"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/image"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/images"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool_silo_link"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/project"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/projects"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/snapshot"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ssh_key"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_member"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_silo_link"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_internet_gateway"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router"
@@ -181,12 +186,12 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		image.NewDataSource,
 		images.NewDataSource,
 		NewInstanceExternalIPsDataSource,
-		NewIpPoolDataSource,
+		ip_pool.NewDataSource,
 		project.NewDataSource,
 		projects.NewDataSource,
 		NewSiloDataSource,
 		ssh_key.NewDataSource,
-		NewSubnetPoolDataSource,
+		subnet_pool.NewDataSource,
 		NewSystemIpPoolsDataSource,
 		vpc.NewDataSource,
 		vpc_internet_gateway.NewDataSource,
@@ -207,16 +212,16 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		floating_ip.NewResource,
 		image.NewResource,
 		NewInstanceResource,
-		NewIPPoolResource,
-		NewIpPoolSiloLinkResource,
+		ip_pool.NewResource,
+		ip_pool_silo_link.NewResource,
 		project.NewResource,
 		NewSiloResource,
 		NewSiloSamlIdentityProviderResource,
 		snapshot.NewResource,
 		ssh_key.NewResource,
-		NewSubnetPoolMemberResource,
-		NewSubnetPoolResource,
-		NewSubnetPoolSiloLinkResource,
+		subnet_pool_member.NewResource,
+		subnet_pool.NewResource,
+		subnet_pool_silo_link.NewResource,
 		NewSwitchPortSettingsResource,
 		NewVPCFirewallRulesResource,
 		vpc_internet_gateway.NewResource,

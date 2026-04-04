@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package subnet_pool_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -19,8 +20,8 @@ func TestAccResourceSubnetPool_full(t *testing.T) {
 	resourceName := "oxide_subnet_pool.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolDestroy,
 		Steps: []resource.TestStep{
 			// Create
@@ -58,19 +59,44 @@ resource "oxide_subnet_pool" "test" {
 }
 `
 
-func checkResourceSubnetPool(resourceName string) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-subnet-pool"),
-		resource.TestCheckResourceAttr(resourceName, "description", "a test subnet pool"),
-		resource.TestCheckResourceAttr(resourceName, "ip_version", "v4"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.update", "4m"),
-	}...)
+func checkResourceSubnetPool(
+	resourceName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		[]resource.TestCheckFunc{
+			resource.TestCheckResourceAttrSet(
+				resourceName, "id",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "name",
+				"terraform-acc-subnet-pool",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "description",
+				"a test subnet pool",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "ip_version", "v4",
+			),
+			resource.TestCheckResourceAttrSet(
+				resourceName, "time_created",
+			),
+			resource.TestCheckResourceAttrSet(
+				resourceName, "time_modified",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "timeouts.read", "1m",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "timeouts.create", "3m",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "timeouts.delete", "2m",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "timeouts.update", "4m",
+			),
+		}...)
 }
 
 var testResourceSubnetPoolUpdateConfig = `
@@ -81,56 +107,85 @@ resource "oxide_subnet_pool" "test" {
 }
 `
 
-func checkResourceSubnetPoolUpdate(resourceName string) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttr(resourceName, "name", "terraform-acc-subnet-pool-new"),
-		resource.TestCheckResourceAttr(resourceName, "description", "an updated subnet pool"),
-		resource.TestCheckResourceAttr(resourceName, "ip_version", "v4"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
-		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
-	}...)
+func checkResourceSubnetPoolUpdate(
+	resourceName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		[]resource.TestCheckFunc{
+			resource.TestCheckResourceAttrSet(
+				resourceName, "id",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "name",
+				"terraform-acc-subnet-pool-new",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "description",
+				"an updated subnet pool",
+			),
+			resource.TestCheckResourceAttr(
+				resourceName, "ip_version", "v4",
+			),
+			resource.TestCheckResourceAttrSet(
+				resourceName, "time_created",
+			),
+			resource.TestCheckResourceAttrSet(
+				resourceName, "time_modified",
+			),
+		}...)
 }
 
 func TestAccResourceSubnetPool_disappears(t *testing.T) {
 	resourceName := "oxide_subnet_pool.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceSubnetPoolDisappearsConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(
+						resourceName, "id",
+					),
 					// Delete the pool outside of Terraform
-					testAccSubnetPoolDisappears(resourceName),
+					testAccSubnetPoolDisappears(
+						resourceName,
+					),
 				),
-				// Expect Terraform to detect the pool is gone and plan to recreate
+				// Expect Terraform to detect the pool is gone
+				// and plan to recreate
 				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
 }
 
-// testAccSubnetPoolDisappears deletes the pool via the API to simulate
-// out-of-band deletion, testing that the Read function properly removes it from state.
-func testAccSubnetPoolDisappears(resourceName string) resource.TestCheckFunc {
+// testAccSubnetPoolDisappears deletes the pool via the API to
+// simulate out-of-band deletion, testing that the Read function
+// properly removes it from state.
+func testAccSubnetPoolDisappears(
+	resourceName string,
+) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
+			return fmt.Errorf(
+				"resource not found: %s", resourceName,
+			)
 		}
 
-		client, err := NewTestClient()
+		client, err := provider.NewTestClient()
 		if err != nil {
 			return err
 		}
 
 		return client.SystemSubnetPoolDelete(
 			context.Background(),
-			oxide.SystemSubnetPoolDeleteParams{Pool: oxide.NameOrId(rs.Primary.ID)},
+			oxide.SystemSubnetPoolDeleteParams{
+				Pool: oxide.NameOrId(rs.Primary.ID),
+			},
 		)
 	}
 }
@@ -144,7 +199,7 @@ resource "oxide_subnet_pool" "test" {
 `
 
 func testAccSubnetPoolDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -158,13 +213,17 @@ func testAccSubnetPoolDestroy(s *terraform.State) error {
 
 		res, err := client.SubnetPoolView(
 			ctx,
-			oxide.SubnetPoolViewParams{Pool: oxide.NameOrId(rs.Primary.ID)},
+			oxide.SubnetPoolViewParams{
+				Pool: oxide.NameOrId(rs.Primary.ID),
+			},
 		)
 		if err != nil && shared.Is404(err) {
 			continue
 		}
 		if err == nil {
-			return fmt.Errorf("subnet_pool (%v) still exists", res.Name)
+			return fmt.Errorf(
+				"subnet_pool (%v) still exists", res.Name,
+			)
 		}
 		return err
 	}
