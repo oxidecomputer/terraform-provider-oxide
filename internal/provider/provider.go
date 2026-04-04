@@ -19,8 +19,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/disk"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/floating_ip"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/image"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/images"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/project"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/projects"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/snapshot"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ssh_key"
 )
@@ -167,14 +171,14 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 	return []func() datasource.DataSource{
 		NewAddressLotDataSource,
 		NewAntiAffinityGroupDataSource,
-		NewDiskDataSource,
+		disk.NewDataSource,
 		floating_ip.NewDataSource,
-		NewImageDataSource,
-		NewImagesDataSource,
+		image.NewDataSource,
+		images.NewDataSource,
 		NewInstanceExternalIPsDataSource,
 		NewIpPoolDataSource,
 		project.NewDataSource,
-		NewProjectsDataSource,
+		projects.NewDataSource,
 		NewSiloDataSource,
 		ssh_key.NewDataSource,
 		NewSubnetPoolDataSource,
@@ -192,11 +196,11 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 	return []func() resource.Resource{
 		NewAddressLotResource,
 		NewAntiAffinityGroupResource,
-		NewDiskResource,
+		disk.NewResource,
 		NewExternalSubnetAttachmentResource,
 		NewExternalSubnetResource,
 		floating_ip.NewResource,
-		NewImageResource,
+		image.NewResource,
 		NewInstanceResource,
 		NewIPPoolResource,
 		NewIpPoolSiloLinkResource,

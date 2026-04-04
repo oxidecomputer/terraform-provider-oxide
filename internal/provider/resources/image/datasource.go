@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package image
 
 import (
 	"context"
@@ -18,41 +18,41 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*imageDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*imageDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewImageDataSource initialises an images datasource
-func NewImageDataSource() datasource.DataSource {
-	return &imageDataSource{}
+// NewDataSource initialises an images datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type imageDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type imageDataSourceModel struct {
-	ID           types.String                `tfsdk:"id"`
-	ProjectName  types.String                `tfsdk:"project_name"`
-	ProjectID    types.String                `tfsdk:"project_id"`
-	Timeouts     timeouts.Value              `tfsdk:"timeouts"`
-	BlockSize    types.Int64                 `tfsdk:"block_size"`
-	Description  types.String                `tfsdk:"description"`
-	Digest       *imageDataSourceDigestModel `tfsdk:"digest"`
-	Name         types.String                `tfsdk:"name"`
-	OS           types.String                `tfsdk:"os"`
-	Size         types.Int64                 `tfsdk:"size"`
-	TimeCreated  types.String                `tfsdk:"time_created"`
-	TimeModified types.String                `tfsdk:"time_modified"`
-	Version      types.String                `tfsdk:"version"`
+type DataSourceModel struct {
+	ID           types.String           `tfsdk:"id"`
+	ProjectName  types.String           `tfsdk:"project_name"`
+	ProjectID    types.String           `tfsdk:"project_id"`
+	Timeouts     timeouts.Value         `tfsdk:"timeouts"`
+	BlockSize    types.Int64            `tfsdk:"block_size"`
+	Description  types.String           `tfsdk:"description"`
+	Digest       *DataSourceDigestModel `tfsdk:"digest"`
+	Name         types.String           `tfsdk:"name"`
+	OS           types.String           `tfsdk:"os"`
+	Size         types.Int64            `tfsdk:"size"`
+	TimeCreated  types.String           `tfsdk:"time_created"`
+	TimeModified types.String           `tfsdk:"time_modified"`
+	Version      types.String           `tfsdk:"version"`
 }
 
-type imageDataSourceDigestModel struct {
+type DataSourceDigestModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-func (d *imageDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -61,7 +61,7 @@ func (d *imageDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *imageDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -73,7 +73,7 @@ func (d *imageDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *imageDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -146,12 +146,12 @@ Retrieve information about a specified image.
 	}
 }
 
-func (d *imageDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state imageDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -206,7 +206,7 @@ func (d *imageDataSource) Read(
 			)
 			return
 		}
-		digestState := imageDataSourceDigestModel{
+		digestState := DataSourceDigestModel{
 			Type:  types.StringValue(string(image.Digest.Type())),
 			Value: types.StringValue(sha256.Value),
 		}

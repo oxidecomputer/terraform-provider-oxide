@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package image_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -72,19 +73,19 @@ var resourceImageConfigTpl = `
  `
 
 func TestAccCloudResourceImage_full(t *testing.T) {
-	imageName := NewResourceName()
-	blockName := NewBlockName("image")
-	supportBlockName := NewBlockName("support")
+	imageName := provider.NewResourceName()
+	blockName := provider.NewBlockName("image")
+	supportBlockName := provider.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_image.%s", blockName)
-	config, err := ParsedAccConfig(
+	config, err := provider.ParsedAccConfig(
 		resourceImageConfig{
 			BlockName:         blockName,
 			ImageName:         imageName,
-			DiskName:          NewResourceName(),
-			SnapshotName:      NewResourceName(),
+			DiskName:          provider.NewResourceName(),
+			SnapshotName:      provider.NewResourceName(),
 			SupportBlockName:  supportBlockName,
-			DiskBlockName:     NewBlockName("support"),
-			SnapshotBlockName: NewBlockName("support"),
+			DiskBlockName:     provider.NewBlockName("support"),
+			SnapshotBlockName: provider.NewBlockName("support"),
 		},
 		resourceImageConfigTpl,
 	)
@@ -93,8 +94,8 @@ func TestAccCloudResourceImage_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccImageDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -128,7 +129,7 @@ func checkResourceImage(resourceName, imageName string) resource.TestCheckFunc {
 }
 
 func testAccImageDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

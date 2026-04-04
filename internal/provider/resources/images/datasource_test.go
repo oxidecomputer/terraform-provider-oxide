@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package images_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceProjectImagesConfig struct {
@@ -39,11 +40,11 @@ data "oxide_images" "{{.BlockName}}" {}
 
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImages_project(t *testing.T) {
-	blockName := NewBlockName("datasource-images")
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-images")
+	config, err := provider.ParsedAccConfig(
 		dataSourceProjectImagesConfig{
 			BlockName:        blockName,
-			SupportBlockName: NewBlockName("support"),
+			SupportBlockName: provider.NewBlockName("support"),
 		},
 		dataSourceProjectImagesConfigTpl,
 	)
@@ -52,8 +53,8 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -67,8 +68,8 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 
 // NB: The silo must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImages_silo(t *testing.T) {
-	blockName := NewBlockName("datasource-images")
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-images")
+	config, err := provider.ParsedAccConfig(
 		dataSourceSiloImagesConfig{
 			BlockName: blockName,
 		},
@@ -79,8 +80,8 @@ func TestAccCloudDataSourceImages_silo(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

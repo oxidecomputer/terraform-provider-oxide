@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package images
 
 import (
 	"context"
@@ -19,30 +19,30 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*imagesDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*imagesDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewImagesDataSource initialises an images datasource
-func NewImagesDataSource() datasource.DataSource {
-	return &imagesDataSource{}
+// NewDataSource initialises an images datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type imagesDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type imagesDataSourceModel struct {
+type DataSourceModel struct {
 	ID        types.String   `tfsdk:"id"`
 	ProjectID types.String   `tfsdk:"project_id"`
 	Timeouts  timeouts.Value `tfsdk:"timeouts"`
-	Images    []imageModel   `tfsdk:"images"`
+	Images    []ImageModel   `tfsdk:"images"`
 }
 
-type imageModel struct {
+type ImageModel struct {
 	BlockSize    types.Int64      `tfsdk:"block_size"`
 	Description  types.String     `tfsdk:"description"`
-	Digest       imageDigestModel `tfsdk:"digest"`
+	Digest       ImageDigestModel `tfsdk:"digest"`
 	ID           types.String     `tfsdk:"id"`
 	Name         types.String     `tfsdk:"name"`
 	OS           types.String     `tfsdk:"os"`
@@ -52,12 +52,12 @@ type imageModel struct {
 	Version      types.String     `tfsdk:"version"`
 }
 
-type imageDigestModel struct {
+type ImageDigestModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-func (d *imagesDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -66,7 +66,7 @@ func (d *imagesDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *imagesDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -78,7 +78,7 @@ func (d *imagesDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *imagesDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -157,12 +157,12 @@ Retrieve a list of all images belonging to a silo or project.
 	}
 }
 
-func (d *imagesDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state imagesDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -208,7 +208,7 @@ func (d *imagesDataSource) Read(
 
 	// Map response body to model
 	for _, image := range images.Items {
-		imageState := imageModel{
+		imageState := ImageModel{
 			BlockSize:    types.Int64Value(int64(image.BlockSize)),
 			Description:  types.StringValue(image.Description),
 			ID:           types.StringValue(image.Id),
@@ -229,7 +229,7 @@ func (d *imagesDataSource) Read(
 				)
 				return
 			}
-			imageState.Digest = imageDigestModel{
+			imageState.Digest = ImageDigestModel{
 				Type:  types.StringValue(string(image.Digest.Type())),
 				Value: types.StringValue(sha256.Value),
 			}

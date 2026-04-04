@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package disk
 
 import (
 	"context"
@@ -18,46 +18,46 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*diskDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*diskDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewDiskDataSource is a helper function to simplify the provider implementation.
-func NewDiskDataSource() datasource.DataSource {
-	return &diskDataSource{}
+// NewDataSource is a helper function to simplify the provider implementation.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-// diskDataSource is the data source implementation.
-type diskDataSource struct {
+// DataSource is the data source implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-// diskDataSourceModel are the attributes that are supported on this data source.
-type diskDataSourceModel struct {
-	ID           types.String              `tfsdk:"id"`
-	Name         types.String              `tfsdk:"name"`
-	Description  types.String              `tfsdk:"description"`
-	BlockSize    types.Int64               `tfsdk:"block_size"`
-	DevicePath   types.String              `tfsdk:"device_path"`
-	ProjectName  types.String              `tfsdk:"project_name"`
-	ProjectID    types.String              `tfsdk:"project_id"`
-	Size         types.Int64               `tfsdk:"size"`
-	State        *diskDataSourceModelState `tfsdk:"state"`
-	ImageID      types.String              `tfsdk:"image_id"`
-	SnapshotID   types.String              `tfsdk:"snapshot_id"`
-	TimeCreated  types.String              `tfsdk:"time_created"`
-	TimeModified types.String              `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value            `tfsdk:"timeouts"`
+// DataSourceModel are the attributes that are supported on this data source.
+type DataSourceModel struct {
+	ID           types.String          `tfsdk:"id"`
+	Name         types.String          `tfsdk:"name"`
+	Description  types.String          `tfsdk:"description"`
+	BlockSize    types.Int64           `tfsdk:"block_size"`
+	DevicePath   types.String          `tfsdk:"device_path"`
+	ProjectName  types.String          `tfsdk:"project_name"`
+	ProjectID    types.String          `tfsdk:"project_id"`
+	Size         types.Int64           `tfsdk:"size"`
+	State        *DataSourceStateModel `tfsdk:"state"`
+	ImageID      types.String          `tfsdk:"image_id"`
+	SnapshotID   types.String          `tfsdk:"snapshot_id"`
+	TimeCreated  types.String          `tfsdk:"time_created"`
+	TimeModified types.String          `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value        `tfsdk:"timeouts"`
 }
 
-// diskDataSourceModelState are the attributes for the disk state.
-type diskDataSourceModelState struct {
+// DataSourceStateModel are the attributes for the disk state.
+type DataSourceStateModel struct {
 	State    types.String `tfsdk:"state"`
 	Instance types.String `tfsdk:"instance"`
 }
 
 // Metadata sets the resource type name.
-func (d *diskDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -66,7 +66,7 @@ func (d *diskDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *diskDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -79,7 +79,7 @@ func (d *diskDataSource) Configure(
 }
 
 // Schema defines the schema for the data source.
-func (d *diskDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -157,12 +157,12 @@ Retrieve information about a specified disk.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *diskDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state diskDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model.
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -211,7 +211,7 @@ func (d *diskDataSource) Read(
 	}
 
 	// Set disk state
-	state.State = &diskDataSourceModelState{
+	state.State = &DataSourceStateModel{
 		State: types.StringValue(string(disk.State.State())),
 	}
 	switch v := disk.State.Value.(type) {

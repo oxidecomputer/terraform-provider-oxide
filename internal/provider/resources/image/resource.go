@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package image
 
 import (
 	"context"
@@ -23,21 +23,21 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*imageResource)(nil)
-	_ resource.ResourceWithConfigure = (*imageResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewImageResource is a helper function to simplify the provider implementation.
-func NewImageResource() resource.Resource {
-	return &imageResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// imageResource is the resource implementation.
-type imageResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type imageResourceModel struct {
+type Model struct {
 	BlockSize        types.Int64    `tfsdk:"block_size"`
 	Description      types.String   `tfsdk:"description"`
 	Digest           types.Object   `tfsdk:"digest"`
@@ -53,13 +53,13 @@ type imageResourceModel struct {
 	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
-type imageResourceDigestModel struct {
+type DigestModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
 // Metadata returns the resource type name.
-func (r *imageResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -68,7 +68,7 @@ func (r *imageResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *imageResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -81,7 +81,7 @@ func (r *imageResource) Configure(
 }
 
 // ImportState imports an existing image resource into Terraform state.
-func (r *imageResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -90,7 +90,7 @@ func (r *imageResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *imageResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -191,12 +191,12 @@ This resource manages images.
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *imageResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan imageResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -251,7 +251,7 @@ func (r *imageResource) Create(
 		plan.BlockSize = types.Int64Value(int64(image.BlockSize))
 	}
 
-	// Parse imageResourceDigestModel into types.Object
+	// Parse DigestModel into types.Object
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
@@ -267,7 +267,7 @@ func (r *imageResource) Create(
 			)
 			return
 		}
-		dm := imageResourceDigestModel{
+		dm := DigestModel{
 			Type:  types.StringValue(string(image.Digest.Type())),
 			Value: types.StringValue(sha256.Value),
 		}
@@ -287,12 +287,12 @@ func (r *imageResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *imageResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state imageResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -350,7 +350,7 @@ func (r *imageResource) Read(
 		state.ProjectID = types.StringValue(image.ProjectId)
 	}
 
-	// Parse imageResourceDigestModel into types.Object
+	// Parse DigestModel into types.Object
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
@@ -366,7 +366,7 @@ func (r *imageResource) Read(
 			)
 			return
 		}
-		dm := imageResourceDigestModel{
+		dm := DigestModel{
 			Type:  types.StringValue(string(image.Digest.Type())),
 			Value: types.StringValue(sha256.Value),
 		}
@@ -386,7 +386,7 @@ func (r *imageResource) Read(
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *imageResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
@@ -397,12 +397,12 @@ func (r *imageResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *imageResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state imageResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

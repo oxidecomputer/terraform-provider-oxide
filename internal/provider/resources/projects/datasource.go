@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package projects
 
 import (
 	"context"
@@ -17,20 +17,23 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*projectsDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*projectsDataSource)(nil)
+var _ datasource.DataSource = (*DataSource)(nil)
+var _ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 
-type projectsDataSource struct {
+// DataSource is the datasource implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-type projectsDataSourceModel struct {
+// DataSourceModel describes the datasource data model.
+type DataSourceModel struct {
 	ID       types.String   `tfsdk:"id"`
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
-	Projects []projectModel `tfsdk:"projects"`
+	Projects []ProjectModel `tfsdk:"projects"`
 }
 
-type projectModel struct {
+// ProjectModel describes an individual project in the list.
+type ProjectModel struct {
 	Description  types.String `tfsdk:"description"`
 	ID           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
@@ -38,13 +41,13 @@ type projectModel struct {
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-// NewProjectsDataSource initialises a projects datasource
-func NewProjectsDataSource() datasource.DataSource {
-	return &projectsDataSource{}
+// NewDataSource initialises a projects datasource.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
 // Metadata returns the data source type name.
-func (d *projectsDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -52,8 +55,9 @@ func (d *projectsDataSource) Metadata(
 	resp.TypeName = "oxide_projects"
 }
 
-// Configure adds the provider configured client to the data source.
-func (d *projectsDataSource) Configure(
+// Configure adds the provider configured client to the data
+// source.
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -66,7 +70,7 @@ func (d *projectsDataSource) Configure(
 }
 
 // Schema defines the schema for the data source.
-func (d *projectsDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -112,12 +116,12 @@ Retrieve a list of projects.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *projectsDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state projectsDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -125,7 +129,9 @@ func (d *projectsDataSource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -151,22 +157,35 @@ func (d *projectsDataSource) Read(
 		return
 	}
 
-	tflog.Trace(ctx, "read all projects", map[string]any{"success": true})
+	tflog.Trace(
+		ctx, "read all projects",
+		map[string]any{"success": true},
+	)
 
 	// Set a unique ID for the datasource payload
 	state.ID = types.StringValue(uuid.New().String())
 
 	// Map response body to model
 	for _, project := range projects.Items {
-		projectState := projectModel{
-			Description:  types.StringValue(project.Description),
-			ID:           types.StringValue(project.Id),
-			Name:         types.StringValue(string(project.Name)),
-			TimeCreated:  types.StringValue(project.TimeCreated.String()),
-			TimeModified: types.StringValue(project.TimeModified.String()),
+		projectState := ProjectModel{
+			Description: types.StringValue(
+				project.Description,
+			),
+			ID: types.StringValue(project.Id),
+			Name: types.StringValue(
+				string(project.Name),
+			),
+			TimeCreated: types.StringValue(
+				project.TimeCreated.String(),
+			),
+			TimeModified: types.StringValue(
+				project.TimeModified.String(),
+			),
 		}
 
-		state.Projects = append(state.Projects, projectState)
+		state.Projects = append(
+			state.Projects, projectState,
+		)
 	}
 
 	// Save state into Terraform state

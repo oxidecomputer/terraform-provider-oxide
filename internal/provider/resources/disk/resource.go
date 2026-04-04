@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package disk
 
 import (
 	"context"
@@ -27,21 +27,21 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*diskResource)(nil)
-	_ resource.ResourceWithConfigure = (*diskResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewDiskResource is a helper function to simplify the provider implementation.
-func NewDiskResource() resource.Resource {
-	return &diskResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// diskResource is the resource implementation.
-type diskResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type diskResourceModel struct {
+type Model struct {
 	BlockSize        types.Int64    `tfsdk:"block_size"`
 	Description      types.String   `tfsdk:"description"`
 	DevicePath       types.String   `tfsdk:"device_path"`
@@ -58,7 +58,7 @@ type diskResourceModel struct {
 }
 
 // Metadata returns the resource type name.
-func (r *diskResource) Metadata(
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -67,7 +67,7 @@ func (r *diskResource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (r *diskResource) Configure(
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -80,7 +80,7 @@ func (r *diskResource) Configure(
 }
 
 // ImportState imports an existing disk resource into Terraform state.
-func (r *diskResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -89,7 +89,7 @@ func (r *diskResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *diskResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -222,12 +222,12 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *diskResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan diskResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -314,12 +314,12 @@ func (r *diskResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *diskResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state diskResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -380,7 +380,7 @@ func (r *diskResource) Read(
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *diskResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
@@ -391,12 +391,12 @@ func (r *diskResource) Update(
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *diskResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state diskResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

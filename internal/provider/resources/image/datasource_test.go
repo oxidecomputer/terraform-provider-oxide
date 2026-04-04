@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package image_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceImageConfig struct {
@@ -37,12 +38,12 @@ data "oxide_image" "{{.BlockName}}" {
 
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImage_full(t *testing.T) {
-	blockName := NewBlockName("datasource-image")
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-image")
+	config, err := provider.ParsedAccConfig(
 		dataSourceImageConfig{
 			BlockName:         blockName,
-			SupportBlockName:  NewBlockName("support"),
-			SupportBlockName2: NewBlockName("support"),
+			SupportBlockName:  provider.NewBlockName("support"),
+			SupportBlockName2: provider.NewBlockName("support"),
 		},
 		dataSourceImageConfigTpl,
 	)
@@ -51,8 +52,8 @@ func TestAccCloudDataSourceImage_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

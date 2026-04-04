@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package disk_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceDiskConfig struct {
@@ -41,14 +42,14 @@ data "oxide_disk" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceDisk_full(t *testing.T) {
-	blockName := NewBlockName("datasource-disk")
-	diskName := NewResourceName()
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-disk")
+	diskName := provider.NewResourceName()
+	config, err := provider.ParsedAccConfig(
 		dataSourceDiskConfig{
 			BlockName:         blockName,
 			DiskName:          diskName,
-			SupportBlockName:  NewBlockName("support"),
-			SupportBlockName2: NewBlockName("support-disk"),
+			SupportBlockName:  provider.NewBlockName("support"),
+			SupportBlockName2: provider.NewBlockName("support-disk"),
 		},
 		dataSourceDiskConfigTpl,
 	)
@@ -57,8 +58,8 @@ func TestAccCloudDataSourceDisk_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
