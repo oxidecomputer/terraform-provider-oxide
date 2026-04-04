@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package snapshot_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -57,11 +58,11 @@ resource "oxide_snapshot" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceSnapshot_full(t *testing.T) {
-	diskName := NewResourceName()
-	snapshotName := NewResourceName()
-	blockName := NewBlockName("snapshot")
+	diskName := provider.NewResourceName()
+	snapshotName := provider.NewResourceName()
+	blockName := provider.NewBlockName("snapshot")
 	resourceName := fmt.Sprintf("oxide_snapshot.%s", blockName)
-	config, err := ParsedAccConfig(
+	config, err := provider.ParsedAccConfig(
 		resourceSnapshotConfig{
 			BlockName:        blockName,
 			SnapshotName:     snapshotName,
@@ -76,8 +77,8 @@ func TestAccCloudResourceSnapshot_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		CheckDestroy:             testAccSnapshotDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -111,7 +112,7 @@ func checkResourceSnapshot(resourceName, snapshotName string) resource.TestCheck
 }
 
 func testAccSnapshotDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

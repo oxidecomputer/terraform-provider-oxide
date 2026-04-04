@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package floating_ip_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceFloatingIPConfig struct {
@@ -40,13 +41,13 @@ data "oxide_floating_ip" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
-	blockName := NewBlockName("datasource-floating-ip")
-	resourceName := NewResourceName()
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-floating-ip")
+	resourceName := provider.NewResourceName()
+	config, err := provider.ParsedAccConfig(
 		dataSourceFloatingIPConfig{
 			BlockName:         blockName,
-			SupportBlockName:  NewBlockName("support"),
-			SupportBlockName2: NewBlockName("support"),
+			SupportBlockName:  provider.NewBlockName("support"),
+			SupportBlockName2: provider.NewBlockName("support"),
 			Name:              resourceName,
 		},
 		dataSourceFloatingIPConfigTpl,
@@ -56,8 +57,8 @@ func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

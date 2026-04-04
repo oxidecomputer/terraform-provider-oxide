@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package snapshot
 
 import (
 	"context"
@@ -22,43 +22,43 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*sshKeyResource)(nil)
-	_ resource.ResourceWithConfigure = (*sshKeyResource)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewSSHKeyResource is a helper function to simplify the provider implementation.
-func NewSSHKeyResource() resource.Resource {
-	return &sshKeyResource{}
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// sshKeyResource is the resource implementation.
-type sshKeyResource struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-// sshKeyResourceModel are the attributes that are supported on this resource.
-type sshKeyResourceModel struct {
+type Model struct {
+	Description  types.String   `tfsdk:"description"`
+	DiskID       types.String   `tfsdk:"disk_id"`
 	ID           types.String   `tfsdk:"id"`
 	Name         types.String   `tfsdk:"name"`
-	Description  types.String   `tfsdk:"description"`
-	PublicKey    types.String   `tfsdk:"public_key"`
-	SiloUserID   types.String   `tfsdk:"silo_user_id"`
+	ProjectID    types.String   `tfsdk:"project_id"`
+	Size         types.Int64    `tfsdk:"size"`
 	TimeCreated  types.String   `tfsdk:"time_created"`
 	TimeModified types.String   `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-// Metadata sets the resource type name.
-func (r *sshKeyResource) Metadata(
+// Metadata returns the resource type name.
+func (r *Resource) Metadata(
 	_ context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_ssh_key"
+	resp.TypeName = "oxide_snapshot"
 }
 
-// Configure adds the provider configured client to the resource.
-func (r *sshKeyResource) Configure(
+// Configure adds the provider configured client to the data source.
+func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
 	_ *resource.ConfigureResponse,
@@ -70,8 +70,7 @@ func (r *sshKeyResource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// ImportState configures the resource to be imported by its ID.
-func (r *sshKeyResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -80,56 +79,45 @@ func (r *sshKeyResource) ImportState(
 }
 
 // Schema defines the schema for the resource.
-func (r *sshKeyResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
-This resource manages SSH keys.
+This resource manages snapshots.
+
+-> This resource currently only provides create, read and delete actions. An update requires a resource replacement.
 `,
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the SSH key.",
+			"project_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the project that will contain the snapshot.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
-				MarkdownDescription: shared.ReplaceBackticks(`
-Name of the SSH key. Names must begin with a lower case ASCII letter, be
-composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and ''-'',
-and may not end with a ''-''. Names cannot be a UUID though they may contain a
-UUID.`),
+				Required:    true,
+				Description: "Name of the snapshot.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the SSH key.",
+				Description: "Description for the snapshot.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"public_key": schema.StringAttribute{
+			"disk_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Public SSH key.",
+				Description: "ID of the disk to create the snapshot from.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-			},
-			"silo_user_id": schema.StringAttribute{
-				Computed:    true,
-				Description: "User ID that owns this SSH key.",
-			},
-			"time_created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this SSH key was created.",
-			},
-			"time_modified": schema.StringAttribute{
-				Computed:    true,
-				Description: "Timestamp of when this SSH key was last modified.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -137,19 +125,35 @@ UUID.`),
 				Update: true,
 				Delete: true,
 			}),
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the snapshot.",
+			},
+			"size": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Size of the snapshot in bytes.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this snapshot was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this snapshot was last modified.",
+			},
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *sshKeyResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan sshKeyResourceModel
+	var plan Model
 
-	// Read Terraform plan data into the model.
+	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -163,35 +167,52 @@ func (r *sshKeyResource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.CurrentUserSshKeyCreateParams{
-		Body: &oxide.SshKeyCreate{
-			Description: plan.Description.ValueString(),
-			Name:        oxide.Name(plan.Name.ValueString()),
-			PublicKey:   plan.PublicKey.ValueString(),
-		},
+	params := oxide.DiskViewParams{
+		Disk: oxide.NameOrId(plan.DiskID.ValueString()),
 	}
-
-	sshKey, err := r.client.CurrentUserSshKeyCreate(ctx, params)
+	disk, err := r.client.DiskView(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating SSH key",
+			"Error retrieving information from disk",
 			"API error: "+err.Error(),
 		)
 		return
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("created SSH key with ID: %v", sshKey.Id),
+		fmt.Sprintf("read information about disk with ID: %v", disk.Id),
 		map[string]any{"success": true},
 	)
 
-	// Map response body to schema and populate computed attribute values.
-	plan.ID = types.StringValue(sshKey.Id)
-	plan.SiloUserID = types.StringValue(sshKey.SiloUserId)
-	plan.TimeCreated = types.StringValue(sshKey.TimeCreated.String())
-	plan.TimeModified = types.StringValue(sshKey.TimeModified.String())
+	params2 := oxide.SnapshotCreateParams{
+		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
+		Body: &oxide.SnapshotCreate{
+			Description: plan.Description.ValueString(),
+			Name:        oxide.Name(plan.Name.ValueString()),
+			Disk:        oxide.NameOrId(disk.Name),
+		},
+	}
+	snapshot, err := r.client.SnapshotCreate(ctx, params2)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating snapshot",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created snapshot with ID: %v", snapshot.Id),
+		map[string]any{"success": true},
+	)
 
-	// Save plan into Terraform state.
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(snapshot.Id)
+	plan.Size = types.Int64Value(int64(snapshot.Size))
+	plan.TimeCreated = types.StringValue(snapshot.TimeCreated.String())
+	plan.TimeModified = types.StringValue(snapshot.TimeModified.String())
+
+	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -199,14 +220,14 @@ func (r *sshKeyResource) Create(
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *sshKeyResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state sshKeyResourceModel
+	var state Model
 
-	// Read Terraform prior state data into the model.
+	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -220,10 +241,10 @@ func (r *sshKeyResource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.CurrentUserSshKeyViewParams{
-		SshKey: oxide.NameOrId(state.ID.ValueString()),
+	params := oxide.SnapshotViewParams{
+		Snapshot: oxide.NameOrId(state.ID.ValueString()),
 	}
-	sshKey, err := r.client.CurrentUserSshKeyView(ctx, params)
+	snapshot, err := r.client.SnapshotView(ctx, params)
 	if err != nil {
 		if shared.Is404(err) {
 			// Remove resource from state during a refresh
@@ -231,24 +252,25 @@ func (r *sshKeyResource) Read(
 			return
 		}
 		resp.Diagnostics.AddError(
-			"Unable to read SSH key:",
+			"Unable to read snapshot:",
 			"API error: "+err.Error(),
 		)
 		return
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read SSH key with ID: %v", sshKey.Id),
+		fmt.Sprintf("read information about snapshot with ID: %v", snapshot.Id),
 		map[string]any{"success": true},
 	)
 
-	state.Description = types.StringValue(sshKey.Description)
-	state.ID = types.StringValue(sshKey.Id)
-	state.Name = types.StringValue(string(sshKey.Name))
-	state.PublicKey = types.StringValue(string(sshKey.PublicKey))
-	state.SiloUserID = types.StringValue(string(sshKey.SiloUserId))
-	state.TimeCreated = types.StringValue(sshKey.TimeCreated.String())
-	state.TimeModified = types.StringValue(sshKey.TimeModified.String())
+	state.Description = types.StringValue(snapshot.Description)
+	state.DiskID = types.StringValue(string(snapshot.DiskId))
+	state.ID = types.StringValue(snapshot.Id)
+	state.Name = types.StringValue(string(snapshot.Name))
+	state.ProjectID = types.StringValue(snapshot.ProjectId)
+	state.Size = types.Int64Value(int64(snapshot.Size))
+	state.TimeCreated = types.StringValue(snapshot.TimeCreated.String())
+	state.TimeModified = types.StringValue(snapshot.TimeModified.String())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -257,29 +279,24 @@ func (r *sshKeyResource) Read(
 	}
 }
 
-// Update is intentionally unimplemented since SSH keys do not have an update
-// API. All of its configurable attributes are marked as requiring replacement
-// to tell Terraform to destroy and create this resource upon change to its
-// attributes. If an update API is created in the future this method should be
-// implemented.
-func (r *sshKeyResource) Update(
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
 	resp.Diagnostics.AddError(
-		"Error updating SSH key",
-		"the oxide API currently does not support updating SSH keys",
-	)
+		"Error updating snapshot",
+		"the oxide API currently does not support updating snapshots")
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *sshKeyResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state sshKeyResourceModel
+	var state Model
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -295,13 +312,13 @@ func (r *sshKeyResource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	params := oxide.CurrentUserSshKeyDeleteParams{
-		SshKey: oxide.NameOrId(state.ID.ValueString()),
+	params := oxide.SnapshotDeleteParams{
+		Snapshot: oxide.NameOrId(state.ID.ValueString()),
 	}
-	if err := r.client.CurrentUserSshKeyDelete(ctx, params); err != nil {
+	if err := r.client.SnapshotDelete(ctx, params); err != nil {
 		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
-				"Error deleting SSH key:",
+				"Error deleting snapshot:",
 				"API error: "+err.Error(),
 			)
 			return
@@ -309,7 +326,7 @@ func (r *sshKeyResource) Delete(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("deleted SSH key with ID: %v", state.ID.ValueString()),
+		fmt.Sprintf("deleted snapshot with ID: %v", state.ID.ValueString()),
 		map[string]any{"success": true},
 	)
 }

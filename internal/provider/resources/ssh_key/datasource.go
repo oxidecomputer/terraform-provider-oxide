@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package ssh_key
 
 import (
 	"context"
@@ -18,22 +18,22 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*sshKeyDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*sshKeyDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewSSHKeyDataSource is a helper function to simplify the provider implementation.
-func NewSSHKeyDataSource() datasource.DataSource {
-	return &sshKeyDataSource{}
+// NewDataSource is a helper function to simplify the provider implementation.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-// sshKeyDataSource is the data source implementation.
-type sshKeyDataSource struct {
+// DataSource is the data source implementation.
+type DataSource struct {
 	client *oxide.Client
 }
 
-// sshKeyDataSourceModel are the attributes that are supported on this data source.
-type sshKeyDataSourceModel struct {
+// DataSourceModel are the attributes that are supported on this data source.
+type DataSourceModel struct {
 	ID           types.String   `tfsdk:"id"`
 	Name         types.String   `tfsdk:"name"`
 	Description  types.String   `tfsdk:"description"`
@@ -45,7 +45,7 @@ type sshKeyDataSourceModel struct {
 }
 
 // Metadata sets the resource type name.
-func (d *sshKeyDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -54,7 +54,7 @@ func (d *sshKeyDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *sshKeyDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -67,7 +67,7 @@ func (d *sshKeyDataSource) Configure(
 }
 
 // Schema defines the schema for the data source.
-func (d *sshKeyDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -111,12 +111,12 @@ Retrieve information about a specified SSH key.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *sshKeyDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state sshKeyDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model.
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)

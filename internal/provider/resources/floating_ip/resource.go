@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package floating_ip
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-// floatingIPResourceModel represents the Terraform configuration and state for
+// Model represents the Terraform configuration and state for
 // the Oxide floating IP resource.
-type floatingIPResourceModel struct {
+type Model struct {
 	ID           types.String      `tfsdk:"id"`
 	Name         types.String      `tfsdk:"name"`
 	Description  types.String      `tfsdk:"description"`
@@ -40,29 +40,29 @@ type floatingIPResourceModel struct {
 	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
 }
 
-// Compile-time assertions to check that the floatingIPResource implements the
+// Compile-time assertions to check that the Resource implements the
 // necessary Terraform resource interfaces.
 var (
-	_ resource.Resource                = (*floatingIPResource)(nil)
-	_ resource.ResourceWithConfigure   = (*floatingIPResource)(nil)
-	_ resource.ResourceWithImportState = (*floatingIPResource)(nil)
+	_ resource.Resource                = (*Resource)(nil)
+	_ resource.ResourceWithConfigure   = (*Resource)(nil)
+	_ resource.ResourceWithImportState = (*Resource)(nil)
 )
 
-// floatingIPResource is the concrete type that implements the necessary
+// Resource is the concrete type that implements the necessary
 // Terraform resource interfaces. It holds state to interact with the Oxide API.
-type floatingIPResource struct {
+type Resource struct {
 	client *oxide.Client
 }
 
-// NewFloatingIPResource is a helper to easily construct a floatingIPResource as
+// NewResource is a helper to easily construct a Resource as
 // a type that implements the Terraform resource interface.
-func NewFloatingIPResource() resource.Resource {
-	return &floatingIPResource{}
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
 // Metadata configures the Terraform resource name for the Oxide floating IP
 // resource.
-func (f *floatingIPResource) Metadata(
+func (f *Resource) Metadata(
 	ctx context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -70,8 +70,8 @@ func (f *floatingIPResource) Metadata(
 	resp.TypeName = "oxide_floating_ip"
 }
 
-// Configure sets up necessary data or clients needed by the floatingIPResource.
-func (f *floatingIPResource) Configure(
+// Configure sets up necessary data or clients needed by the Resource.
+func (f *Resource) Configure(
 	ctx context.Context,
 	req resource.ConfigureRequest,
 	resp *resource.ConfigureResponse,
@@ -84,7 +84,7 @@ func (f *floatingIPResource) Configure(
 }
 
 // ImportState imports an Oxide floating IP using its ID.
-func (f *floatingIPResource) ImportState(
+func (f *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -93,7 +93,7 @@ func (f *floatingIPResource) ImportState(
 }
 
 // Schema defines the attributes for this Oxide floating IP resource.
-func (f *floatingIPResource) Schema(
+func (f *Resource) Schema(
 	ctx context.Context,
 	req resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -190,12 +190,12 @@ This resource manages Oxide floating IPs.
 }
 
 // Create creates an Oxide floating IP using the Oxide API.
-func (f *floatingIPResource) Create(
+func (f *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan floatingIPResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -278,12 +278,12 @@ func (f *floatingIPResource) Create(
 }
 
 // Read fetches an Oxide floating IP from the Oxide API.
-func (f *floatingIPResource) Read(
+func (f *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state floatingIPResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -341,13 +341,13 @@ func (f *floatingIPResource) Read(
 // Update updates an Oxide floating IP using the Oxide API. Not all attributes
 // can be updated. Refer to [Schema] and the floating_ip_update Oxide API
 // documentation for more information.
-func (f *floatingIPResource) Update(
+func (f *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan floatingIPResourceModel
-	var state floatingIPResourceModel
+	var plan Model
+	var state Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -408,12 +408,12 @@ func (f *floatingIPResource) Update(
 }
 
 // Delete deletes an Oxide floating IP using the Oxide API.
-func (f *floatingIPResource) Delete(
+func (f *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state floatingIPResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

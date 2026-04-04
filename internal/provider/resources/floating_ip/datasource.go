@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package floating_ip
 
 import (
 	"context"
@@ -17,9 +17,9 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-// floatingIPDataSourceModel represents the Terraform configuration and state
+// DataSourceModel represents the Terraform configuration and state
 // for the Oxide floating IP resource.
-type floatingIPDataSourceModel struct {
+type DataSourceModel struct {
 	ID           types.String   `tfsdk:"id"`
 	Name         types.String   `tfsdk:"name"`
 	Description  types.String   `tfsdk:"description"`
@@ -33,29 +33,29 @@ type floatingIPDataSourceModel struct {
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-// Compile-time assertions to check that the floatingIPDataSource implements the
+// Compile-time assertions to check that the DataSource implements the
 // necessary Terraform data source interfaces.
 var (
-	_ datasource.DataSource              = (*floatingIPDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*floatingIPDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// floatingIPResource is the concrete type that implements the necessary
+// DataSource is the concrete type that implements the necessary
 // Terraform resource interfaces. It holds state to interact with the Oxide API.
-type floatingIPDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-// NewFloatingIPDataSource is a helper to easily construct a
-// floatingIPDataSource as a type that implements the Terraform data source
+// NewDataSource is a helper to easily construct a
+// DataSource as a type that implements the Terraform data source
 // interface.
-func NewFloatingIPDataSource() datasource.DataSource {
-	return &floatingIPDataSource{}
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
 // Metadata configures the Terraform data source name for the Oxide floating IP
 // data source.
-func (f *floatingIPDataSource) Metadata(
+func (f *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -63,8 +63,8 @@ func (f *floatingIPDataSource) Metadata(
 	resp.TypeName = "oxide_floating_ip"
 }
 
-// Configure sets up necessary data or clients needed by the floatingIPDataSource.
-func (f *floatingIPDataSource) Configure(
+// Configure sets up necessary data or clients needed by the DataSource.
+func (f *DataSource) Configure(
 	ctx context.Context,
 	req datasource.ConfigureRequest,
 	resp *datasource.ConfigureResponse,
@@ -77,7 +77,7 @@ func (f *floatingIPDataSource) Configure(
 }
 
 // Schema defines the attributes for this Oxide floating IP data source.
-func (f *floatingIPDataSource) Schema(
+func (f *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -135,12 +135,12 @@ Retrieve information about a specified floating IP.
 }
 
 // Read fetches an Oxide floating IP from the Oxide API.
-func (f *floatingIPDataSource) Read(
+func (f *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state floatingIPDataSourceModel
+	var state DataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
