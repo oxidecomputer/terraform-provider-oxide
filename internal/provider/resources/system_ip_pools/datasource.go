@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package system_ip_pools
 
 import (
 	"context"
@@ -17,20 +17,27 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*systemIpPoolsDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*systemIpPoolsDataSource)(nil)
+var (
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
+)
 
-type systemIpPoolsDataSource struct {
+// NewDataSource initialises a system_ip_pools datasource.
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
+}
+
+type DataSource struct {
 	client *oxide.Client
 }
 
-type systemIpPoolsDataSourceModel struct {
-	ID       types.String        `tfsdk:"id"`
-	Timeouts timeouts.Value      `tfsdk:"timeouts"`
-	IpPools  []systemIpPoolModel `tfsdk:"ip_pools"`
+type DataSourceModel struct {
+	ID       types.String   `tfsdk:"id"`
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
+	IpPools  []IpPoolModel  `tfsdk:"ip_pools"`
 }
 
-type systemIpPoolModel struct {
+type IpPoolModel struct {
 	Description  types.String `tfsdk:"description"`
 	ID           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
@@ -38,12 +45,7 @@ type systemIpPoolModel struct {
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-// NewSystemIpPoolsDataSource initialises a system_ip_pools data source.
-func NewSystemIpPoolsDataSource() datasource.DataSource {
-	return &systemIpPoolsDataSource{}
-}
-
-func (d *systemIpPoolsDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -52,7 +54,7 @@ func (d *systemIpPoolsDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *systemIpPoolsDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -64,7 +66,7 @@ func (d *systemIpPoolsDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *systemIpPoolsDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -109,12 +111,12 @@ Retrieve all configured IP pools for the Oxide system.
 	}
 }
 
-func (d *systemIpPoolsDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state systemIpPoolsDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -122,7 +124,9 @@ func (d *systemIpPoolsDataSource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(
+		ctx, shared.DefaultTimeout(),
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -148,7 +152,7 @@ func (d *systemIpPoolsDataSource) Read(
 	state.ID = types.StringValue(uuid.New().String())
 
 	for _, ipPool := range ipPools {
-		poolState := systemIpPoolModel{
+		poolState := IpPoolModel{
 			Description:  types.StringValue(ipPool.Description),
 			ID:           types.StringValue(ipPool.Id),
 			Name:         types.StringValue(string(ipPool.Name)),

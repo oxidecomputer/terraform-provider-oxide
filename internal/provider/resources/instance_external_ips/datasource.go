@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package instance_external_ips
 
 import (
 	"context"
@@ -19,32 +19,32 @@ import (
 )
 
 var (
-	_ datasource.DataSource              = (*instanceExternalIPsDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*instanceExternalIPsDataSource)(nil)
+	_ datasource.DataSource              = (*DataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 )
 
-// NewInstanceExternalIPsDataSource initialises an images datasource
-func NewInstanceExternalIPsDataSource() datasource.DataSource {
-	return &instanceExternalIPsDataSource{}
+// NewDataSource initialises an instance external IPs datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
-type instanceExternalIPsDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type instanceExternalIPsDatasourceModel struct {
-	ID          types.String                `tfsdk:"id"`
-	InstanceID  types.String                `tfsdk:"instance_id"`
-	Timeouts    timeouts.Value              `tfsdk:"timeouts"`
-	ExternalIPs []externalIPDatasourceModel `tfsdk:"external_ips"`
+type DataSourceModel struct {
+	ID          types.String      `tfsdk:"id"`
+	InstanceID  types.String      `tfsdk:"instance_id"`
+	Timeouts    timeouts.Value    `tfsdk:"timeouts"`
+	ExternalIPs []ExternalIPModel `tfsdk:"external_ips"`
 }
 
-type externalIPDatasourceModel struct {
+type ExternalIPModel struct {
 	IP   types.String `tfsdk:"ip"`
 	Kind types.String `tfsdk:"kind"`
 }
 
-func (d *instanceExternalIPsDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -53,7 +53,7 @@ func (d *instanceExternalIPsDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *instanceExternalIPsDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -65,7 +65,7 @@ func (d *instanceExternalIPsDataSource) Configure(
 	d.client = req.ProviderData.(*oxide.Client)
 }
 
-func (d *instanceExternalIPsDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -102,12 +102,12 @@ Retrieve information of all external IPs associated to an instance.
 	}
 }
 
-func (d *instanceExternalIPsDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state instanceExternalIPsDatasourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -161,7 +161,7 @@ func (d *instanceExternalIPsDataSource) Read(
 			)
 			return
 		}
-		externalIPState := externalIPDatasourceModel{
+		externalIPState := ExternalIPModel{
 			IP:   types.StringValue(ipAddr),
 			Kind: types.StringValue(string(ip.Kind())),
 		}

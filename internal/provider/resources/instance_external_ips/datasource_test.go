@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package instance_external_ips_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 type dataSourceInstanceExternalIPConfig struct {
@@ -68,13 +69,13 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
-	blockName := NewBlockName("datasource-instance-external-ips")
-	config, err := ParsedAccConfig(
+	blockName := provider.NewBlockName("datasource-instance-external-ips")
+	config, err := provider.ParsedAccConfig(
 		dataSourceInstanceExternalIPConfig{
 			BlockName:         blockName,
-			SupportBlockName:  NewBlockName("support"),
-			InstanceName:      NewResourceName(),
-			InstanceBlockName: NewBlockName("instance"),
+			SupportBlockName:  provider.NewBlockName("support"),
+			InstanceName:      provider.NewResourceName(),
+			InstanceBlockName: provider.NewBlockName("instance"),
 		},
 		datasourceInstanceExternalIPsConfigTpl,
 	)
@@ -83,8 +84,8 @@ func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

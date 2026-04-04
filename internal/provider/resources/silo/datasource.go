@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package silo
 
 import (
 	"context"
@@ -17,14 +17,14 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-var _ datasource.DataSource = (*siloDataSource)(nil)
-var _ datasource.DataSourceWithConfigure = (*siloDataSource)(nil)
+var _ datasource.DataSource = (*DataSource)(nil)
+var _ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 
-type siloDataSource struct {
+type DataSource struct {
 	client *oxide.Client
 }
 
-type siloDataSourceModel struct {
+type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	Discoverable types.Bool     `tfsdk:"discoverable"`
 	ID           types.String   `tfsdk:"id"`
@@ -35,13 +35,13 @@ type siloDataSourceModel struct {
 	TimeModified types.String   `tfsdk:"time_modified"`
 }
 
-// NewSiloDataSource initialises a silo datasource
-func NewSiloDataSource() datasource.DataSource {
-	return &siloDataSource{}
+// NewDataSource initialises a silo datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
 }
 
 // Metadata returns the data source type name.
-func (d *siloDataSource) Metadata(
+func (d *DataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
@@ -50,7 +50,7 @@ func (d *siloDataSource) Metadata(
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *siloDataSource) Configure(
+func (d *DataSource) Configure(
 	_ context.Context,
 	req datasource.ConfigureRequest,
 	_ *datasource.ConfigureResponse,
@@ -63,7 +63,7 @@ func (d *siloDataSource) Configure(
 }
 
 // Schema defines the schema for the data source.
-func (d *siloDataSource) Schema(
+func (d *DataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -107,12 +107,12 @@ Retrieve information about a specified silo.
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *siloDataSource) Read(
+func (d *DataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state siloDataSourceModel
+	var state DataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package silo
 
 import (
 	"context"
@@ -32,53 +32,53 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-// Compile-time assertions to check that siloResource implements the necessary
+// Compile-time assertions to check that Resource implements the necessary
 // Terraform resource interfaces.
 var (
-	_ resource.Resource                = (*siloResource)(nil)
-	_ resource.ResourceWithConfigure   = (*siloResource)(nil)
-	_ resource.ResourceWithImportState = (*siloResource)(nil)
+	_ resource.Resource                = (*Resource)(nil)
+	_ resource.ResourceWithConfigure   = (*Resource)(nil)
+	_ resource.ResourceWithImportState = (*Resource)(nil)
 )
 
-// NewSiloResource is a helper to easily construct a siloResource as a type that
+// NewResource is a helper to easily construct a Resource as a type that
 // implements the Terraform resource interface.
-func NewSiloResource() resource.Resource {
-	return &siloResource{}
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-// siloResource is the concrete type that implements the necessary Terraform
+// Resource is the concrete type that implements the necessary Terraform
 // resource interfaces. It holds state to interact with the Oxide API.
-type siloResource struct {
+type Resource struct {
 	client *oxide.Client
 }
 
-// siloResourceModel represents the Terraform configuration and state for the
+// Model represents the Terraform configuration and state for the
 // Oxide silo resource.
-type siloResourceModel struct {
-	ID               types.String                      `tfsdk:"id"`
-	Name             types.String                      `tfsdk:"name"`
-	Description      types.String                      `tfsdk:"description"`
-	Quotas           *siloResourceQuotasModel          `tfsdk:"quotas"`
-	TlsCertificates  []siloResourceTlsCertificateModel `tfsdk:"tls_certificates"`
-	Discoverable     types.Bool                        `tfsdk:"discoverable"`
-	IdentityMode     types.String                      `tfsdk:"identity_mode"`
-	AdminGroupName   types.String                      `tfsdk:"admin_group_name"`
-	MappedFleetRoles map[string][]string               `tfsdk:"mapped_fleet_roles"`
-	TimeCreated      types.String                      `tfsdk:"time_created"`
-	TimeModified     types.String                      `tfsdk:"time_modified"`
-	Timeouts         timeouts.Value                    `tfsdk:"timeouts"`
+type Model struct {
+	ID               types.String          `tfsdk:"id"`
+	Name             types.String          `tfsdk:"name"`
+	Description      types.String          `tfsdk:"description"`
+	Quotas           *QuotasModel          `tfsdk:"quotas"`
+	TlsCertificates  []TLSCertificateModel `tfsdk:"tls_certificates"`
+	Discoverable     types.Bool            `tfsdk:"discoverable"`
+	IdentityMode     types.String          `tfsdk:"identity_mode"`
+	AdminGroupName   types.String          `tfsdk:"admin_group_name"`
+	MappedFleetRoles map[string][]string   `tfsdk:"mapped_fleet_roles"`
+	TimeCreated      types.String          `tfsdk:"time_created"`
+	TimeModified     types.String          `tfsdk:"time_modified"`
+	Timeouts         timeouts.Value        `tfsdk:"timeouts"`
 }
 
-// siloResourceQuotasModel represents quotas for an Oxide silo.
-type siloResourceQuotasModel struct {
+// QuotasModel represents quotas for an Oxide silo.
+type QuotasModel struct {
 	Cpus    types.Int64 `tfsdk:"cpus"`
 	Memory  types.Int64 `tfsdk:"memory"`
 	Storage types.Int64 `tfsdk:"storage"`
 }
 
-// siloResourceTlsCertificateModel represents a TLS certificate for an Oxide
+// TLSCertificateModel represents a TLS certificate for an Oxide
 // silo.
-type siloResourceTlsCertificateModel struct {
+type TLSCertificateModel struct {
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Cert        types.String `tfsdk:"cert"`
@@ -87,7 +87,7 @@ type siloResourceTlsCertificateModel struct {
 }
 
 // Metadata configures the Terraform resource name for this resource.
-func (r *siloResource) Metadata(
+func (r *Resource) Metadata(
 	ctx context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -96,7 +96,7 @@ func (r *siloResource) Metadata(
 }
 
 // Configure sets up necessary data or clients needed by this resource.
-func (r *siloResource) Configure(
+func (r *Resource) Configure(
 	ctx context.Context,
 	req resource.ConfigureRequest,
 	resp *resource.ConfigureResponse,
@@ -109,7 +109,7 @@ func (r *siloResource) Configure(
 }
 
 // ImportState imports this resource using its ID.
-func (r *siloResource) ImportState(
+func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
@@ -120,7 +120,7 @@ func (r *siloResource) ImportState(
 const tlsCertificateRegEx = `^[a-zA-Z0-9-]+$`
 
 // Schema defines the attributes for this resource.
-func (r *siloResource) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -296,12 +296,12 @@ attributes will result in the silo being destroyed and created anew.
 }
 
 // Create creates this resource using the Oxide API.
-func (r *siloResource) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan siloResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -373,12 +373,12 @@ func (r *siloResource) Create(
 }
 
 // Read fetches this resource using the Oxide API.
-func (r *siloResource) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state siloResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -427,7 +427,7 @@ func (r *siloResource) Read(
 	state.ID = types.StringValue(silo.Id)
 	state.Name = types.StringValue(string(silo.Name))
 	state.Description = types.StringValue(silo.Description)
-	state.Quotas = &siloResourceQuotasModel{
+	state.Quotas = &QuotasModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
@@ -447,13 +447,13 @@ func (r *siloResource) Read(
 // Update updates this resource using the Oxide API. Not all attributes can
 // be updated. Refer to [Schema] and the Oxide API documentation for more
 // information.
-func (r *siloResource) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan siloResourceModel
-	var state siloResourceModel
+	var plan Model
+	var state Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -511,7 +511,7 @@ func (r *siloResource) Update(
 	}
 
 	plan.ID = types.StringValue(siloQuotas.SiloId)
-	plan.Quotas = &siloResourceQuotasModel{
+	plan.Quotas = &QuotasModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
@@ -526,12 +526,12 @@ func (r *siloResource) Update(
 }
 
 // Delete deletes this resource using the Oxide API.
-func (r *siloResource) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state siloResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -582,7 +582,7 @@ func stringMapToFleetRoleMap(mappedFleetRoles map[string][]string) map[string][]
 }
 
 func tlsCertsModelToCertificateCreateSlice(
-	tlsCertificates []siloResourceTlsCertificateModel,
+	tlsCertificates []TLSCertificateModel,
 ) []oxide.CertificateCreate {
 	var model []oxide.CertificateCreate
 

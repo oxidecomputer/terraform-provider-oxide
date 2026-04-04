@@ -27,15 +27,19 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/floating_ip"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/image"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/images"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/instance_external_ips"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ip_pool_silo_link"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/project"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/projects"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/silo"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/silo_saml_identity_provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/snapshot"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/ssh_key"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_member"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/subnet_pool_silo_link"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/system_ip_pools"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_internet_gateway"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resources/vpc_router"
@@ -189,14 +193,14 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		floating_ip.NewDataSource,
 		image.NewDataSource,
 		images.NewDataSource,
-		NewInstanceExternalIPsDataSource,
+		instance_external_ips.NewDataSource,
 		ip_pool.NewDataSource,
 		project.NewDataSource,
 		projects.NewDataSource,
-		NewSiloDataSource,
+		silo.NewDataSource,
 		ssh_key.NewDataSource,
 		subnet_pool.NewDataSource,
-		NewSystemIpPoolsDataSource,
+		system_ip_pools.NewDataSource,
 		vpc.NewDataSource,
 		vpc_internet_gateway.NewDataSource,
 		vpc_router.NewDataSource,
@@ -219,8 +223,8 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		ip_pool.NewResource,
 		ip_pool_silo_link.NewResource,
 		project.NewResource,
-		NewSiloResource,
-		NewSiloSamlIdentityProviderResource,
+		silo.NewResource,
+		silo_saml_identity_provider.NewResource,
 		snapshot.NewResource,
 		ssh_key.NewResource,
 		subnet_pool_member.NewResource,

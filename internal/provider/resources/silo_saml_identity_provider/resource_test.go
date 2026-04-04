@@ -2,11 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
-package provider
+package silo_saml_identity_provider_test
 
 import (
 	"context"
@@ -17,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -100,19 +97,19 @@ resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockNa
 `
 
 func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
-	siloBlockName := NewBlockName("silo")
-	siloName := NewResourceName()
-	siloSamlIdentityProviderBlockName := NewBlockName("silo-idp")
-	siloSamlIdentityProviderName := NewResourceName()
+	siloBlockName := provider.NewBlockName("silo")
+	siloName := provider.NewResourceName()
+	siloSamlIdentityProviderBlockName := provider.NewBlockName("silo-idp")
+	siloSamlIdentityProviderName := provider.NewResourceName()
 
 	siloSamlIdentityProviderResourceID := fmt.Sprintf(
 		"oxide_silo_saml_identity_provider.%s",
 		siloSamlIdentityProviderBlockName,
 	)
 
-	siloDNSName := SiloDNSName()
+	siloDNSName := provider.SiloDNSName()
 
-	config, err := ParsedAccConfig(
+	config, err := provider.ParsedAccConfig(
 		resourceSiloIdentifyProviderConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
@@ -130,8 +127,8 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { provider.PreCheck(t) },
+		ProtoV6ProviderFactories: provider.ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",
@@ -179,7 +176,7 @@ func checkResourceSiloSamlIdentityProvider(
 }
 
 func testAccSiloSamlIdentityProviderDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := provider.NewTestClient()
 	if err != nil {
 		return err
 	}

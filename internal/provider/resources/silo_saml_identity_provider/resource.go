@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package silo_saml_identity_provider
 
 import (
 	"context"
@@ -21,49 +21,53 @@ import (
 )
 
 var (
-	_ resource.Resource              = (*siloSamlIdentityProvider)(nil)
-	_ resource.ResourceWithConfigure = (*siloSamlIdentityProvider)(nil)
+	_ resource.Resource              = (*Resource)(nil)
+	_ resource.ResourceWithConfigure = (*Resource)(nil)
 )
 
-// NewSiloSamlIdentityProviderResource returns a new silo SAML identity provider resource.
-func NewSiloSamlIdentityProviderResource() resource.Resource {
-	return &siloSamlIdentityProvider{}
+// NewResource returns a new silo SAML identity provider resource.
+func NewResource() resource.Resource {
+	return &Resource{}
 }
 
-type siloSamlIdentityProvider struct {
+// Resource is the resource implementation.
+type Resource struct {
 	client *oxide.Client
 }
 
-type siloSamlIdentityProviderResourceModel struct {
-	ID                    types.String                                 `tfsdk:"id"`
-	Name                  types.String                                 `tfsdk:"name"`
-	Description           types.String                                 `tfsdk:"description"`
-	Silo                  types.String                                 `tfsdk:"silo"`
-	AcsUrl                types.String                                 `tfsdk:"acs_url"`
-	IdpEntityId           types.String                                 `tfsdk:"idp_entity_id"`
-	SloUrl                types.String                                 `tfsdk:"slo_url"`
-	SpClientId            types.String                                 `tfsdk:"sp_client_id"`
-	TechnicalContactEmail types.String                                 `tfsdk:"technical_contact_email"`
-	IdpMetadataSource     *siloSamlIdentityProviderMetadataSourceModel `tfsdk:"idp_metadata_source"`
-	GroupAttributeName    types.String                                 `tfsdk:"group_attribute_name"`
-	SigningKeypair        *siloSamlIdentityProviderSigningKeypairModel `tfsdk:"signing_keypair"`
-	TimeCreated           types.String                                 `tfsdk:"time_created"`
-	TimeModified          types.String                                 `tfsdk:"time_modified"`
-	Timeouts              timeouts.Value                               `tfsdk:"timeouts"`
+// Model are the attributes that are supported on this resource.
+type Model struct {
+	ID                    types.String         `tfsdk:"id"`
+	Name                  types.String         `tfsdk:"name"`
+	Description           types.String         `tfsdk:"description"`
+	Silo                  types.String         `tfsdk:"silo"`
+	AcsUrl                types.String         `tfsdk:"acs_url"`
+	IdpEntityId           types.String         `tfsdk:"idp_entity_id"`
+	SloUrl                types.String         `tfsdk:"slo_url"`
+	SpClientId            types.String         `tfsdk:"sp_client_id"`
+	TechnicalContactEmail types.String         `tfsdk:"technical_contact_email"`
+	IdpMetadataSource     *MetadataSourceModel `tfsdk:"idp_metadata_source"`
+	GroupAttributeName    types.String         `tfsdk:"group_attribute_name"`
+	SigningKeypair        *SigningKeypairModel `tfsdk:"signing_keypair"`
+	TimeCreated           types.String         `tfsdk:"time_created"`
+	TimeModified          types.String         `tfsdk:"time_modified"`
+	Timeouts              timeouts.Value       `tfsdk:"timeouts"`
 }
 
-type siloSamlIdentityProviderSigningKeypairModel struct {
+// SigningKeypairModel represents the signing keypair sub-model.
+type SigningKeypairModel struct {
 	PrivateKey types.String `tfsdk:"private_key"`
 	PublicCert types.String `tfsdk:"public_cert"`
 }
 
-type siloSamlIdentityProviderMetadataSourceModel struct {
+// MetadataSourceModel represents the IDP metadata source sub-model.
+type MetadataSourceModel struct {
 	Type types.String `tfsdk:"type"`
 	Url  types.String `tfsdk:"url"`
 	Data types.String `tfsdk:"data"`
 }
 
-func (r *siloSamlIdentityProvider) Metadata(
+func (r *Resource) Metadata(
 	ctx context.Context,
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
@@ -71,7 +75,7 @@ func (r *siloSamlIdentityProvider) Metadata(
 	resp.TypeName = "oxide_silo_saml_identity_provider"
 }
 
-func (r *siloSamlIdentityProvider) Configure(
+func (r *Resource) Configure(
 	ctx context.Context,
 	req resource.ConfigureRequest,
 	resp *resource.ConfigureResponse,
@@ -83,7 +87,7 @@ func (r *siloSamlIdentityProvider) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-func (r *siloSamlIdentityProvider) Schema(
+func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
@@ -207,12 +211,12 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 	}
 }
 
-func (r *siloSamlIdentityProvider) Create(
+func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan siloSamlIdentityProviderResourceModel
+	var plan Model
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -300,12 +304,12 @@ func (r *siloSamlIdentityProvider) Create(
 	}
 }
 
-func (r *siloSamlIdentityProvider) Read(
+func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state siloSamlIdentityProviderResourceModel
+	var state Model
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -367,7 +371,7 @@ func (r *siloSamlIdentityProvider) Read(
 //
 // An error is added to the diagnostics so that Terraform will stop execution
 // and prompt the user to fix their configuration.
-func (r *siloSamlIdentityProvider) Update(
+func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
@@ -384,7 +388,7 @@ func (r *siloSamlIdentityProvider) Update(
 // A warning is added to the diagnostics so that the resource will be removed
 // from the state and Terraform execution will continue and prompt the user on
 // what happened.
-func (r *siloSamlIdentityProvider) Delete(
+func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
