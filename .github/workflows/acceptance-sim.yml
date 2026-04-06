@@ -125,7 +125,7 @@ jobs:
           if [ -f ./acc-test-rerun.txt ]; then
             echo "::warning title=${{ github.job }} (${{ matrix.tf-binary }}) - test rerun::$(cat ./acc-test-rerun.txt)"
           fi
-      - name: Execute TRCLI Action
+      - name: upload test results to TestRail
         if: always()
         continue-on-error: true
         uses: oxidecomputer/trcli-action@1ac634c97714109c05cbfbe4d92b9fc7349626c3
