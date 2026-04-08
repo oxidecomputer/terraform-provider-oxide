@@ -216,7 +216,5 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 
 // Functions defines the functions implemented in the provider.
 func (p *oxideProvider) Functions(_ context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewToVPCFirewallRulesMapFunction,
-	}
+	return []func() function.Function{}
 }
