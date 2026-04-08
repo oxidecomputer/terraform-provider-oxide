@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package shared
 
 import (
 	"testing"
@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/oxidecomputer/oxide.go/oxide"
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +40,7 @@ func Test_isIPv4(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shared.IsIPv4(tt.args.str)
+			got := IsIPv4(tt.args.str)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -74,7 +73,7 @@ func Test_isIPv6(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shared.IsIPv6(tt.args.str)
+			got := IsIPv6(tt.args.str)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -129,12 +128,12 @@ func Test_sliceDiff(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shared.SliceDiff(tt.args.a, tt.args.b)
+			got := SliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name+" by ID", func(t *testing.T) {
-			got := shared.SliceDiffByID(
+			got := SliceDiffByID(
 				tt.args.a, tt.args.b,
 				func(el attr.Value) any {
 					return el.String()
@@ -166,12 +165,12 @@ func Test_sliceDiff_int(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shared.SliceDiff(tt.args.a, tt.args.b)
+			got := SliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name+"by ID", func(t *testing.T) {
-			got := shared.SliceDiffByID(
+			got := SliceDiffByID(
 				tt.args.a, tt.args.b,
 				func(el int) any {
 					return el
@@ -215,12 +214,12 @@ func Test_sliceDiff_model(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shared.SliceDiff(tt.args.a, tt.args.b)
+			got := SliceDiff(tt.args.a, tt.args.b)
 			assert.Equal(t, tt.want, got)
 		})
 
 		t.Run(tt.name, func(t *testing.T) {
-			got := shared.SliceDiffByID(
+			got := SliceDiffByID(
 				tt.args.a, tt.args.b,
 				func(el localModel) any {
 					return el.Name
@@ -257,7 +256,7 @@ func Test_newNameOrIdList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			set := types.SetValueMust(types.StringType, tt.args)
-			got, diags := shared.NewNameOrIdList(set)
+			got, diags := NewNameOrIdList(set)
 			if diags.HasError() {
 				// We know diags can only contain a single error in this function
 				t.Errorf("unexpected error: %s: %s ", diags[0].Summary(), diags[0].Detail())
