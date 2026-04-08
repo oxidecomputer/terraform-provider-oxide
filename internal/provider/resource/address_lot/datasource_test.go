@@ -1,0 +1,62 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package addresslot_test
+
+import (
+	"fmt"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func testDataSourceAddressLotConfig(name string) string {
+	return fmt.Sprintf(`
+resource "oxide_address_lot" "test" {
+	description       = "a test address lot"
+	name              = "%[1]s"
+	kind              = "infra"
+	blocks = [
+		{
+			first_address = "172.0.1.1"
+			last_address  = "172.0.1.10"
+		},
+	]
+}
+
+data "oxide_address_lot" "test" {
+  name = oxide_address_lot.test.name
+}
+`, name)
+}
+
+func TestAccDataSourceAddressLot_full(t *testing.T) {
+	resourceName := "oxide_address_lot.test"
+	addressLotName := sharedtest.NewResourceName()
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testDataSourceAddressLotConfig(addressLotName),
+				Check:  checkDataSourceAddressLot(resourceName, addressLotName),
+			},
+		},
+	})
+}
+
+func checkDataSourceAddressLot(dataName string, addressLotName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(dataName, "id"),
+		resource.TestCheckResourceAttr(dataName, "description", "a test address lot"),
+		resource.TestCheckResourceAttr(dataName, "name", addressLotName),
+		resource.TestCheckResourceAttrSet(dataName, "blocks.0.first_address"),
+		resource.TestCheckResourceAttrSet(dataName, "blocks.0.last_address"),
+		resource.TestCheckResourceAttr(dataName, "blocks.0.first_address", "172.0.1.1"),
+		resource.TestCheckResourceAttr(dataName, "blocks.0.last_address", "172.0.1.10"),
+		resource.TestCheckResourceAttrSet(dataName, "time_created"),
+		resource.TestCheckResourceAttrSet(dataName, "time_modified"),
+	}...)
+}

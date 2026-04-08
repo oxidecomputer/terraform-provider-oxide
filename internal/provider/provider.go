@@ -19,6 +19,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	addresslot "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/address_lot"
+	antiaffinitygroup "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/anti_affinity_group"
+	disk "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/disk"
+	externalsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/external_subnet"
+	externalsubnetattachment "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/external_subnet_attachment"
+	floatingip "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/floating_ip"
+	image "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/image"
+	images "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/images"
+	instance "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/instance"
+	instanceexternalips "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/instance_external_ips"
+	ippool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/ip_pool"
+	ippoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/ip_pool_silo_link"
+	project "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/project"
+	projects "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/projects"
+	silo "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/silo"
+	silosamlidp "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/silo_saml_identity_provider"
+	snapshot "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/snapshot"
+	sshkey "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/ssh_key"
+	subnetpool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/subnet_pool"
+	subnetpoolmember "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/subnet_pool_member"
+	subnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/subnet_pool_silo_link"
+	switchportsettings "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/switch_port_settings"
+	systemippools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/system_ip_pools"
+	vpc "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/vpc"
+	vpcfirewallrules "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/vpc_firewall_rules"
+	vpcinternetgateway "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/vpc_internet_gateway"
+	vpcrouter "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/vpc_router"
+	vpcrouterroute "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/vpc_router_route"
+	vpcsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/resource/vpc_subnet"
 )
 
 var _ provider.Provider = (*oxideProvider)(nil)
@@ -161,56 +191,56 @@ func (p *oxideProvider) Configure(
 // DataSources defines the data sources implemented in the provider.
 func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewAddressLotDataSource,
-		NewAntiAffinityGroupDataSource,
-		NewDiskDataSource,
-		NewFloatingIPDataSource,
-		NewImageDataSource,
-		NewImagesDataSource,
-		NewInstanceExternalIPsDataSource,
-		NewIpPoolDataSource,
-		NewProjectDataSource,
-		NewProjectsDataSource,
-		NewSiloDataSource,
-		NewSSHKeyDataSource,
-		NewSubnetPoolDataSource,
-		NewSystemIpPoolsDataSource,
-		NewVPCDataSource,
-		NewVPCInternetGatewayDataSource,
-		NewVPCRouterDataSource,
-		NewVPCRouterRouteDataSource,
-		NewVPCSubnetDataSource,
+		addresslot.NewDataSource,
+		antiaffinitygroup.NewDataSource,
+		disk.NewDataSource,
+		floatingip.NewDataSource,
+		image.NewDataSource,
+		images.NewDataSource,
+		instanceexternalips.NewDataSource,
+		ippool.NewDataSource,
+		project.NewDataSource,
+		projects.NewDataSource,
+		silo.NewDataSource,
+		sshkey.NewDataSource,
+		subnetpool.NewDataSource,
+		systemippools.NewDataSource,
+		vpc.NewDataSource,
+		vpcinternetgateway.NewDataSource,
+		vpcrouter.NewDataSource,
+		vpcrouterroute.NewDataSource,
+		vpcsubnet.NewDataSource,
 	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewAddressLotResource,
-		NewAntiAffinityGroupResource,
-		NewDiskResource,
-		NewExternalSubnetAttachmentResource,
-		NewExternalSubnetResource,
-		NewFloatingIPResource,
-		NewImageResource,
-		NewInstanceResource,
-		NewIPPoolResource,
-		NewIpPoolSiloLinkResource,
-		NewProjectResource,
-		NewSiloResource,
-		NewSiloSamlIdentityProviderResource,
-		NewSnapshotResource,
-		NewSSHKeyResource,
-		NewSubnetPoolMemberResource,
-		NewSubnetPoolResource,
-		NewSubnetPoolSiloLinkResource,
-		NewSwitchPortSettingsResource,
-		NewVPCFirewallRulesResource,
-		NewVPCInternetGatewayResource,
-		NewVPCResource,
-		NewVPCRouterResource,
-		NewVPCRouterRouteResource,
-		NewVPCSubnetResource,
+		addresslot.NewResource,
+		antiaffinitygroup.NewResource,
+		disk.NewResource,
+		externalsubnetattachment.NewResource,
+		externalsubnet.NewResource,
+		floatingip.NewResource,
+		image.NewResource,
+		instance.NewResource,
+		ippool.NewResource,
+		ippoolsilolink.NewResource,
+		project.NewResource,
+		silo.NewResource,
+		silosamlidp.NewResource,
+		snapshot.NewResource,
+		sshkey.NewResource,
+		subnetpoolmember.NewResource,
+		subnetpool.NewResource,
+		subnetpoolsilolink.NewResource,
+		switchportsettings.NewResource,
+		vpcfirewallrules.NewResource,
+		vpcinternetgateway.NewResource,
+		vpc.NewResource,
+		vpcrouter.NewResource,
+		vpcrouterroute.NewResource,
+		vpcsubnet.NewResource,
 	}
 }
 

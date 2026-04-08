@@ -1,0 +1,551 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package disk
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+)
+
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource                     = (*Resource)(nil)
+	_ resource.ResourceWithConfigure        = (*Resource)(nil)
+	_ resource.ResourceWithConfigValidators = (*Resource)(nil)
+)
+
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() resource.Resource {
+	return &Resource{}
+}
+
+// Resource is the resource implementation.
+type Resource struct {
+	client *oxide.Client
+}
+
+type Model struct {
+	BlockSize        types.Int64    `tfsdk:"block_size"`
+	Description      types.String   `tfsdk:"description"`
+	DevicePath       types.String   `tfsdk:"device_path"`
+	DiskType         types.String   `tfsdk:"disk_type"`
+	ID               types.String   `tfsdk:"id"`
+	SourceImageID    types.String   `tfsdk:"source_image_id"`
+	Name             types.String   `tfsdk:"name"`
+	ProjectID        types.String   `tfsdk:"project_id"`
+	Size             types.Int64    `tfsdk:"size"`
+	SourceSnapshotID types.String   `tfsdk:"source_snapshot_id"`
+	ReadOnly         types.Bool     `tfsdk:"read_only"`
+	TimeCreated      types.String   `tfsdk:"time_created"`
+	TimeModified     types.String   `tfsdk:"time_modified"`
+	Timeouts         timeouts.Value `tfsdk:"timeouts"`
+}
+
+// Metadata returns the resource type name.
+func (r *Resource) Metadata(
+	_ context.Context,
+	req resource.MetadataRequest,
+	resp *resource.MetadataResponse,
+) {
+	resp.TypeName = "oxide_disk"
+}
+
+// Configure adds the provider configured client to the data source.
+func (r *Resource) Configure(
+	_ context.Context,
+	req resource.ConfigureRequest,
+	_ *resource.ConfigureResponse,
+) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*oxide.Client)
+}
+
+// ImportState imports an existing disk resource into Terraform state.
+func (r *Resource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// ConfigValidators returns the config validators for the resource.
+func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		&LocalSourceValidator{},
+		&ReadOnlySourceValidator{},
+	}
+}
+
+// Schema defines the schema for the resource.
+func (r *Resource) Schema(
+	ctx context.Context,
+	_ resource.SchemaRequest,
+	resp *resource.SchemaResponse,
+) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: shared.ReplaceBackticks(`
+This resource manages disks.
+
+To create a blank disk it's necessary to set ''block_size''. Otherwise, one of ''source_image_id'' or ''source_snapshot_id'' must be set; ''block_size'' will be automatically calculated.
+
+!> Disks cannot be deleted while attached to instances. Please detach or delete associated instances before attempting to delete.
+
+-> This resource currently only provides create, read and delete actions. An update requires a resource replacement
+`),
+		Attributes: map[string]schema.Attribute{
+			"project_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the project that will contain the disk.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the disk.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"size": schema.Int64Attribute{
+				Required:    true,
+				Description: "Size of the disk in bytes.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"description": schema.StringAttribute{
+				Required:    true,
+				Description: "Description for the disk.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"source_image_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "Image ID of the disk source if applicable.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("block_size"),
+					}...),
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_snapshot_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"source_snapshot_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "Snapshot ID of the disk source if applicable.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("block_size"),
+					}...),
+					stringvalidator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_image_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"block_size": schema.Int64Attribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Size of blocks in bytes.",
+				Validators: []validator.Int64{
+					int64validator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_image_id"),
+					}...),
+					int64validator.ConflictsWith(path.Expressions{
+						path.MatchRoot("source_snapshot_id"),
+					}...),
+				},
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"disk_type": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: `Type of disk. Must be one of "distributed" or "local". Defaults to "distributed".`,
+				Default:     stringdefault.StaticString(string(oxide.DiskBackendTypeDistributed)),
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						string(oxide.DiskBackendTypeDistributed),
+						string(oxide.DiskBackendTypeLocal),
+					),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"read_only": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: `Whether the disk is read-only. Defaults to "false".`,
+				Default:     booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				// TODO: Restore once updates are enabled
+				// Update: true,
+				Delete: true,
+			}),
+			"device_path": schema.StringAttribute{
+				Computed:    true,
+				Description: "Path of the disk.",
+			},
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the disk.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this disk was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this disk was last modified.",
+			},
+		},
+	}
+}
+
+// Create creates the resource and sets the initial Terraform state.
+func (r *Resource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
+	var plan Model
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
+	var diskBackend oxide.DiskBackend
+	switch oxide.DiskBackendType(plan.DiskType.ValueString()) {
+	case oxide.DiskBackendTypeDistributed:
+		var ds oxide.DiskSource
+		if !plan.SourceImageID.IsNull() {
+			ds = oxide.DiskSource{Value: &oxide.DiskSourceImage{
+				ImageId:  plan.SourceImageID.ValueString(),
+				ReadOnly: plan.ReadOnly.ValueBoolPointer(),
+			}}
+		} else if !plan.SourceSnapshotID.IsNull() {
+			ds = oxide.DiskSource{Value: &oxide.DiskSourceSnapshot{
+				SnapshotId: plan.SourceSnapshotID.ValueString(),
+				ReadOnly:   plan.ReadOnly.ValueBoolPointer(),
+			}}
+		} else if !plan.BlockSize.IsNull() {
+			ds = oxide.DiskSource{Value: &oxide.DiskSourceBlank{
+				BlockSize: oxide.BlockSize(plan.BlockSize.ValueInt64()),
+			}}
+		}
+		diskBackend = oxide.DiskBackend{Value: &oxide.DiskBackendDistributed{
+			DiskSource: ds,
+		}}
+	case oxide.DiskBackendTypeLocal:
+		diskBackend = oxide.DiskBackend{Value: &oxide.DiskBackendLocal{}}
+	default:
+		resp.Diagnostics.AddError(
+			"Invalid disk type",
+			fmt.Sprintf("Unexpected disk type: %s", plan.DiskType.ValueString()),
+		)
+		return
+	}
+
+	params := oxide.DiskCreateParams{
+		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
+		Body: &oxide.DiskCreate{
+			Description: plan.Description.ValueString(),
+			Name:        oxide.Name(plan.Name.ValueString()),
+			Size:        oxide.ByteCount(plan.Size.ValueInt64()),
+			DiskBackend: diskBackend,
+		},
+	}
+
+	disk, err := r.client.DiskCreate(ctx, params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating disk",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("created disk with ID: %v", disk.Id),
+		map[string]any{"success": true},
+	)
+
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(disk.Id)
+	plan.DevicePath = types.StringValue(disk.DevicePath)
+	plan.BlockSize = types.Int64Value(int64(disk.BlockSize))
+	plan.DiskType = types.StringValue(string(disk.DiskType))
+	plan.ReadOnly = types.BoolPointerValue(disk.ReadOnly)
+	plan.TimeCreated = types.StringValue(disk.TimeCreated.String())
+	plan.TimeModified = types.StringValue(disk.TimeModified.String())
+
+	// Save plan into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (r *Resource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
+	var state Model
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	params := oxide.DiskViewParams{
+		Disk: oxide.NameOrId(state.ID.ValueString()),
+	}
+	disk, err := r.client.DiskView(ctx, params)
+	if err != nil {
+		if shared.Is404(err) {
+			// Remove resource from state during a refresh
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		resp.Diagnostics.AddError(
+			"Unable to read disk:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+	tflog.Trace(ctx, fmt.Sprintf("read disk with ID: %v", disk.Id), map[string]any{"success": true})
+
+	state.BlockSize = types.Int64Value(int64(disk.BlockSize))
+	state.Description = types.StringValue(disk.Description)
+	state.DevicePath = types.StringValue(disk.DevicePath)
+	state.DiskType = types.StringValue(string(disk.DiskType))
+	state.ReadOnly = types.BoolPointerValue(disk.ReadOnly)
+	state.ID = types.StringValue(disk.Id)
+	state.Name = types.StringValue(string(disk.Name))
+	state.ProjectID = types.StringValue(disk.ProjectId)
+	state.Size = types.Int64Value(int64(disk.Size))
+	state.TimeCreated = types.StringValue(disk.TimeCreated.String())
+	state.TimeModified = types.StringValue(disk.TimeModified.String())
+
+	// Only set SourceImageID and SourceSnapshotID if they've been set to avoid unintentional drift
+	if disk.ImageId != "" {
+		state.SourceImageID = types.StringValue(disk.ImageId)
+	}
+	if disk.SnapshotId != "" {
+		state.SourceSnapshotID = types.StringValue(disk.SnapshotId)
+	}
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *Resource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
+	resp.Diagnostics.AddError(
+		"Error updating disk",
+		"the oxide API currently does not support updating disks")
+}
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *Resource) Delete(
+	ctx context.Context,
+	req resource.DeleteRequest,
+	resp *resource.DeleteResponse,
+) {
+	var state Model
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	params := oxide.DiskDeleteParams{
+		Disk: oxide.NameOrId(state.ID.ValueString()),
+	}
+	if err := r.client.DiskDelete(ctx, params); err != nil {
+		if !shared.Is404(err) {
+			resp.Diagnostics.AddError(
+				"Unable to delete disk:",
+				"API error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	tflog.Trace(
+		ctx,
+		fmt.Sprintf("deleted disk with ID: %v", state.ID.ValueString()),
+		map[string]any{"success": true},
+	)
+}
+
+// LocalSourceValidator validates that source-related fields are not set when disk_type is
+// "local".
+type LocalSourceValidator struct{}
+
+func (v *LocalSourceValidator) Description(_ context.Context) string {
+	return `Validates that source_image_id, source_snapshot_id, block_size, and read_only are not set when disk_type is "local".`
+}
+
+func (v *LocalSourceValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *LocalSourceValidator) ValidateResource(
+	ctx context.Context,
+	req resource.ValidateConfigRequest,
+	resp *resource.ValidateConfigResponse,
+) {
+	var config Model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if config.DiskType.IsNull() || config.DiskType.IsUnknown() ||
+		config.DiskType.ValueString() != string(oxide.DiskBackendTypeLocal) {
+		return
+	}
+
+	if !config.SourceImageID.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("source_image_id"),
+			"Invalid configuration",
+			`"source_image_id" cannot be set when disk_type is "local".`,
+		)
+	}
+	if !config.SourceSnapshotID.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("source_snapshot_id"),
+			"Invalid configuration",
+			`"source_snapshot_id" cannot be set when disk_type is "local".`,
+		)
+	}
+	if !config.BlockSize.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("block_size"),
+			"Invalid configuration",
+			`"block_size" cannot be set when disk_type is "local".`,
+		)
+	}
+	if !config.ReadOnly.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("read_only"),
+			"Invalid configuration",
+			`"read_only" cannot be set when disk_type is "local".`,
+		)
+	}
+}
+
+// ReadOnlySourceValidator validates that one of source_image_id or source_snapshot_id is set
+// when read_only is set.
+type ReadOnlySourceValidator struct{}
+
+func (v *ReadOnlySourceValidator) Description(_ context.Context) string {
+	return `Validates that one of source_image_id or source_snapshot_id is set when read_only is set.`
+}
+
+func (v *ReadOnlySourceValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *ReadOnlySourceValidator) ValidateResource(
+	ctx context.Context,
+	req resource.ValidateConfigRequest,
+	resp *resource.ValidateConfigResponse,
+) {
+	var config Model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if config.ReadOnly.IsNull() || config.ReadOnly.IsUnknown() || !config.ReadOnly.ValueBool() {
+		return
+	}
+
+	if config.SourceImageID.IsNull() && config.SourceSnapshotID.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("read_only"),
+			"Invalid configuration",
+			`"read_only" requires "source_image_id" or "source_snapshot_id" to be set.`,
+		)
+	}
+}
