@@ -38,13 +38,13 @@ data "oxide_ssh_key" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
-	blockName := newBlockName("datasource-ssh-key")
-	resourceName := newResourceName()
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-ssh-key")
+	resourceName := NewResourceName()
+	config, err := ParsedAccConfig(
 		dataSourceSSHKeyConfig{
 			BlockName:         blockName,
-			SupportBlockName:  newBlockName("support"),
-			SupportBlockName2: newBlockName("support"),
+			SupportBlockName:  NewBlockName("support"),
+			SupportBlockName2: NewBlockName("support"),
 			Name:              resourceName,
 		},
 		dataSourceSSHKeyConfigTpl,
@@ -54,8 +54,8 @@ func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

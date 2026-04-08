@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -155,7 +156,7 @@ func (r *ipPoolResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -214,7 +215,7 @@ func (r *ipPoolResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -322,7 +323,7 @@ func (r *ipPoolResource) Update(
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -334,14 +335,14 @@ func (r *ipPoolResource) Update(
 	stateRanges := state.Ranges
 
 	// Check plan and if it has a range that the state doesn't then attach it
-	rangesToAdd := sliceDiff(planRanges, stateRanges)
+	rangesToAdd := shared.SliceDiff(planRanges, stateRanges)
 	resp.Diagnostics.Append(addRanges(ctx, r.client, rangesToAdd, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Check state and if it has a range that the plan doesn't then detach it
-	rangesToDetach := sliceDiff(stateRanges, planRanges)
+	rangesToDetach := shared.SliceDiff(stateRanges, planRanges)
 	resp.Diagnostics.Append(removeRanges(ctx, r.client, rangesToDetach, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -396,7 +397,7 @@ func (r *ipPoolResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -413,7 +414,7 @@ func (r *ipPoolResource) Delete(
 		},
 	)
 	if err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error retrieving IP Pool ranges:",
 				"API error: "+err.Error(),
@@ -434,7 +435,7 @@ func (r *ipPoolResource) Delete(
 			Body: &item.Range,
 		}
 		if err := r.client.SystemIpPoolRangeRemove(ctx, params); err != nil {
-			if !is404(err) {
+			if !shared.Is404(err) {
 				resp.Diagnostics.AddError(
 					"Error deleting IP Pool range:",
 					"API error: "+err.Error(),
@@ -454,7 +455,7 @@ func (r *ipPoolResource) Delete(
 		oxide.SystemIpPoolDeleteParams{
 			Pool: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting IP Pool:",
 				"API error: "+err.Error(),

@@ -20,19 +20,19 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+func ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"oxide": providerserver.NewProtocol6WithError(New()),
 	}
 }
 
-func testAccPreCheck(t *testing.T) {
-	if _, err := newTestClient(); err != nil {
+func PreCheck(t *testing.T) {
+	if _, err := NewTestClient(); err != nil {
 		t.Fatalf("failed to create oxide client for acceptance tests: %v", err)
 	}
 }
 
-func newTestClient() (*oxide.Client, error) {
+func NewTestClient() (*oxide.Client, error) {
 	client, err := oxide.NewClient(
 		oxide.WithUserAgent(fmt.Sprintf("terraform-provider-oxide/%s", Version)),
 	)
@@ -44,7 +44,7 @@ func newTestClient() (*oxide.Client, error) {
 
 }
 
-func parsedAccConfig(config any, tpl string) (string, error) {
+func ParsedAccConfig(config any, tpl string) (string, error) {
 	var buf bytes.Buffer
 	tmpl, _ := template.New("test").Parse(tpl)
 	err := tmpl.Execute(&buf, config)
@@ -55,17 +55,17 @@ func parsedAccConfig(config any, tpl string) (string, error) {
 	return buf.String(), nil
 }
 
-func newResourceName() string {
+func NewResourceName() string {
 	return fmt.Sprintf("acc-terraform-%s", uuid.New())
 }
 
-func newBlockName(resource string) string {
+func NewBlockName(resource string) string {
 	return fmt.Sprintf("acc-%s-%s", resource, uuid.New())
 }
 
-// testAccCaptureResourceID captures the resource ID for later comparison.
+// CaptureResourceID captures the resource ID for later comparison.
 // Use with resource.TestCheckResourceAttrPtr to verify updates don't recreate resources.
-func testAccCaptureResourceID(resourceName string, id *string) resource.TestCheckFunc {
+func CaptureResourceID(resourceName string, id *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -76,10 +76,10 @@ func testAccCaptureResourceID(resourceName string, id *string) resource.TestChec
 	}
 }
 
-// testAccVerifyResourceIDChanged verifies the resource ID is different from the previously captured
+// VerifyResourceIDChanged verifies the resource ID is different from the previously captured
 // ID.
 // Use to confirm a resource was replaced (destroyed and recreated).
-func testAccVerifyResourceIDChanged(
+func VerifyResourceIDChanged(
 	resourceName string,
 	previousID *string,
 ) resource.TestCheckFunc {
@@ -95,7 +95,7 @@ func testAccVerifyResourceIDChanged(
 	}
 }
 
-func testAccSiloDNSName() string {
+func SiloDNSName() string {
 	if v := os.Getenv("OXIDE_TEST_SILO_DNS_NAME"); v != "" {
 		return v
 	}
@@ -104,13 +104,13 @@ func testAccSiloDNSName() string {
 
 var subnetCounter uint32
 
-// nextSubnetCIDR returns sequential /24 subnet CIDRs from the 10.128.0.0/16 range.
+// NextSubnetCIDR returns sequential /24 subnet CIDRs from the 10.128.0.0/16 range.
 // TODO: extend if we ever need more than 256 subnets in tests.
-func nextSubnetCIDR(t *testing.T) string {
+func NextSubnetCIDR(t *testing.T) string {
 	t.Helper()
 	n := atomic.AddUint32(&subnetCounter, 1) - 1
 	if n > 255 {
-		t.Fatal("nextSubnetCIDR: exhausted all 256 /24 subnets in 10.128.0.0/16")
+		t.Fatal("NextSubnetCIDR: exhausted all 256 /24 subnets in 10.128.0.0/16")
 	}
 	return fmt.Sprintf("10.128.%d.0/24", n)
 }

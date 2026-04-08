@@ -37,12 +37,12 @@ data "oxide_image" "{{.BlockName}}" {
 
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImage_full(t *testing.T) {
-	blockName := newBlockName("datasource-image")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-image")
+	config, err := ParsedAccConfig(
 		dataSourceImageConfig{
 			BlockName:         blockName,
-			SupportBlockName:  newBlockName("support"),
-			SupportBlockName2: newBlockName("support"),
+			SupportBlockName:  NewBlockName("support"),
+			SupportBlockName2: NewBlockName("support"),
 		},
 		dataSourceImageConfigTpl,
 	)
@@ -51,8 +51,8 @@ func TestAccCloudDataSourceImage_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

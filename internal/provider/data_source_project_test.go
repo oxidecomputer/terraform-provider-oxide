@@ -26,11 +26,11 @@ data "oxide_project" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceProject_full(t *testing.T) {
-	blockName := newBlockName("datasource-project")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-project")
+	config, err := ParsedAccConfig(
 		dataSourceProjectConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		dataSourceProjectConfigTpl,
 	)
@@ -39,8 +39,8 @@ func TestAccCloudDataSourceProject_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

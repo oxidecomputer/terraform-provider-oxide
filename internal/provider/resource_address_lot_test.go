@@ -9,10 +9,10 @@ import (
 
 func TestAccAddressLot_full(t *testing.T) {
 	resourceName := "oxide_address_lot.test"
-	addressLotName := newResourceName()
+	addressLotName := NewResourceName()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceAddressLotConfig(addressLotName),

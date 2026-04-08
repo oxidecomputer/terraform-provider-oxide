@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceProjectConfig struct {
@@ -41,10 +42,10 @@ resource "oxide_project" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceProject_full(t *testing.T) {
-	projectName := newResourceName()
-	blockName := newBlockName("project")
+	projectName := NewResourceName()
+	blockName := NewBlockName("project")
 	resourceName := fmt.Sprintf("oxide_project.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceProjectConfig{
 			BlockName:   blockName,
 			ProjectName: projectName,
@@ -56,7 +57,7 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	}
 
 	projectNameUpdated := projectName + "-updated"
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := ParsedAccConfig(
 		resourceProjectConfig{
 			BlockName:   blockName,
 			ProjectName: projectNameUpdated,
@@ -68,8 +69,8 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccProjectDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -118,7 +119,7 @@ func checkResourceProjectUpdate(resourceName, projectName string) resource.TestC
 }
 
 func testAccProjectDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -136,7 +137,7 @@ func testAccProjectDestroy(s *terraform.State) error {
 			Project: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.ProjectView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 		return fmt.Errorf("project (%v) still exists", &res.Name)

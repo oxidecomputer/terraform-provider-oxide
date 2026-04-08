@@ -28,11 +28,11 @@ data "oxide_vpc_subnet" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
-	blockName := newBlockName("datasource-vpc-subnet")
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-vpc-subnet")
+	config, err := ParsedAccConfig(
 		dataSourceVPCSubnetConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: NewBlockName("support"),
 		},
 		dataSourceVPCSubnetConfigTpl,
 	)
@@ -41,8 +41,8 @@ func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

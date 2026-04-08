@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // TestAccSiloResourceSwitchPortSettings_full tests whether Terraform
@@ -157,11 +158,11 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
   ]
 }
 `
-	switchPortSettingsName := newResourceName()
-	blockName := newBlockName("switch-port-settings")
+	switchPortSettingsName := NewResourceName()
+	blockName := NewBlockName("switch-port-settings")
 	resourceName := fmt.Sprintf("oxide_switch_port_settings.%s", blockName)
 
-	initialConfig, err := parsedAccConfig(
+	initialConfig, err := ParsedAccConfig(
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
@@ -172,7 +173,7 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 		t.Errorf("error parsing initial config template data: %e", err)
 	}
 
-	updateConfig, err := parsedAccConfig(
+	updateConfig, err := ParsedAccConfig(
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
@@ -185,9 +186,9 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			PreCheck(t)
 		},
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSwitchPortSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -343,7 +344,7 @@ func checkResourceSwitchPortSettingsUpdate(
 }
 
 func testAccSwitchPortSettingsDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -361,7 +362,7 @@ func testAccSwitchPortSettingsDestroy(s *terraform.State) error {
 				Port: oxide.NameOrId(rs.Primary.Attributes["id"]),
 			},
 		)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

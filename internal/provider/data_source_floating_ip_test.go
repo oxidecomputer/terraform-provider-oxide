@@ -40,13 +40,13 @@ data "oxide_floating_ip" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
-	blockName := newBlockName("datasource-floating-ip")
-	resourceName := newResourceName()
-	config, err := parsedAccConfig(
+	blockName := NewBlockName("datasource-floating-ip")
+	resourceName := NewResourceName()
+	config, err := ParsedAccConfig(
 		dataSourceFloatingIPConfig{
 			BlockName:         blockName,
-			SupportBlockName:  newBlockName("support"),
-			SupportBlockName2: newBlockName("support"),
+			SupportBlockName:  NewBlockName("support"),
+			SupportBlockName2: NewBlockName("support"),
 			Name:              resourceName,
 		},
 		dataSourceFloatingIPConfigTpl,
@@ -56,8 +56,8 @@ func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

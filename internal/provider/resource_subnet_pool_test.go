@@ -12,14 +12,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 func TestAccResourceSubnetPool_full(t *testing.T) {
 	resourceName := "oxide_subnet_pool.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolDestroy,
 		Steps: []resource.TestStep{
 			// Create
@@ -95,8 +96,8 @@ func TestAccResourceSubnetPool_disappears(t *testing.T) {
 	resourceName := "oxide_subnet_pool.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -122,7 +123,7 @@ func testAccSubnetPoolDisappears(resourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("resource not found: %s", resourceName)
 		}
 
-		client, err := newTestClient()
+		client, err := NewTestClient()
 		if err != nil {
 			return err
 		}
@@ -143,7 +144,7 @@ resource "oxide_subnet_pool" "test" {
 `
 
 func testAccSubnetPoolDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -159,7 +160,7 @@ func testAccSubnetPoolDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SubnetPoolViewParams{Pool: oxide.NameOrId(rs.Primary.ID)},
 		)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 		if err == nil {

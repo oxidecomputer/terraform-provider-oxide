@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 var (
@@ -121,7 +122,7 @@ Retrieve information about a specified VPC router route.
 						Computed:            true,
 					},
 					"value": schema.StringAttribute{
-						MarkdownDescription: replaceBackticks(`
+						MarkdownDescription: shared.ReplaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
   - ''subnet'': Name of the VPC subnet.
@@ -149,7 +150,7 @@ Depending on the type, it will be one of the following:
 						Computed:            true,
 					},
 					"value": schema.StringAttribute{
-						MarkdownDescription: replaceBackticks(`
+						MarkdownDescription: shared.ReplaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
   - ''subnet'': Name of the VPC subnet.
@@ -187,7 +188,7 @@ func (d *vpcRouterRouteDataSource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

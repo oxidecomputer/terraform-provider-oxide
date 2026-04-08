@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceImageConfig struct {
@@ -71,19 +72,19 @@ var resourceImageConfigTpl = `
  `
 
 func TestAccCloudResourceImage_full(t *testing.T) {
-	imageName := newResourceName()
-	blockName := newBlockName("image")
-	supportBlockName := newBlockName("support")
+	imageName := NewResourceName()
+	blockName := NewBlockName("image")
+	supportBlockName := NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_image.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := ParsedAccConfig(
 		resourceImageConfig{
 			BlockName:         blockName,
 			ImageName:         imageName,
-			DiskName:          newResourceName(),
-			SnapshotName:      newResourceName(),
+			DiskName:          NewResourceName(),
+			SnapshotName:      NewResourceName(),
 			SupportBlockName:  supportBlockName,
-			DiskBlockName:     newBlockName("support"),
-			SnapshotBlockName: newBlockName("support"),
+			DiskBlockName:     NewBlockName("support"),
+			SnapshotBlockName: NewBlockName("support"),
 		},
 		resourceImageConfigTpl,
 	)
@@ -92,8 +93,8 @@ func TestAccCloudResourceImage_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { PreCheck(t) },
+		ProtoV6ProviderFactories: ProviderFactories(),
 		CheckDestroy:             testAccImageDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -127,7 +128,7 @@ func checkResourceImage(resourceName, imageName string) resource.TestCheckFunc {
 }
 
 func testAccImageDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -146,7 +147,7 @@ func testAccImageDestroy(s *terraform.State) error {
 		}
 		res, err := client.ImageView(ctx, params)
 
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 
