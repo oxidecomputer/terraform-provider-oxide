@@ -275,7 +275,7 @@ func (r *externalSubnetResource) Create(
 
 		params.Body.Allocator = oxide.ExternalSubnetAllocator{
 			Value: &oxide.ExternalSubnetAllocatorAuto{
-				PrefixLen:    &prefixLen,
+				PrefixLength: &prefixLen,
 				PoolSelector: poolSelector,
 			},
 		}
