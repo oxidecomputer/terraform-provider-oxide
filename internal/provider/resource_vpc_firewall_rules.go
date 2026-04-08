@@ -325,7 +325,7 @@ Depending on the type, it will be one of the following:
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
 												Required:    true,
-												Description: "The protocol type. Must be one of `tcp`, `udp`, or `icmp`.",
+												Description: "The protocol type. Must be one of `tcp`, `udp`, `icmp`, or `icmp6`.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
 														string(
@@ -337,19 +337,22 @@ Depending on the type, it will be one of the following:
 														string(
 															oxide.VpcFirewallRuleProtocolTypeIcmp,
 														),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeIcmp6,
+														),
 													),
 												},
 											},
 											"icmp_type": schema.Int32Attribute{
 												Optional:    true,
-												Description: "ICMP type. Only valid when type is `icmp`.",
+												Description: "ICMP type. Only valid when type is `icmp` or `icmp6`.",
 												Validators: []validator.Int32{
 													int32validator.Between(0, 255),
 												},
 											},
 											"icmp_code": schema.StringAttribute{
 												Optional:    true,
-												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.",
+												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` or `icmp6` and `icmp_type` is provided.",
 												Validators: []validator.String{
 													stringvalidator.AlsoRequires(path.Expressions{
 														path.MatchRelative().
@@ -866,6 +869,15 @@ func newFiltersModelFromResponse(
 					protocolModel.IcmpType = types.Int32Value(int32(*v.Value.IcmpType))
 				}
 			}
+		case *oxide.VpcFirewallRuleProtocolIcmp6:
+			if v.Value != nil {
+				if v.Value.Code != "" {
+					protocolModel.IcmpCode = types.StringValue(string(v.Value.Code))
+				}
+				if v.Value.IcmpType != nil {
+					protocolModel.IcmpType = types.Int32Value(int32(*v.Value.IcmpType))
+				}
+			}
 		case *oxide.VpcFirewallRuleProtocolTcp:
 			// No additional fields
 		case *oxide.VpcFirewallRuleProtocolUdp:
@@ -953,6 +965,22 @@ func newFilterTypeFromModel(
 			}
 		case oxide.VpcFirewallRuleProtocolTypeIcmp:
 			icmpVariant := &oxide.VpcFirewallRuleProtocolIcmp{}
+			if !protocolModel.IcmpType.IsNull() || !protocolModel.IcmpCode.IsNull() {
+				icmpVariant.Value = &oxide.VpcFirewallIcmpFilter{
+					Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
+					IcmpType: func() *int {
+						if protocolModel.IcmpType.IsNull() {
+							return nil
+						}
+						return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
+					}(),
+				}
+			}
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: icmpVariant,
+			}
+		case oxide.VpcFirewallRuleProtocolTypeIcmp6:
+			icmpVariant := &oxide.VpcFirewallRuleProtocolIcmp6{}
 			if !protocolModel.IcmpType.IsNull() || !protocolModel.IcmpCode.IsNull() {
 				icmpVariant.Value = &oxide.VpcFirewallIcmpFilter{
 					Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
