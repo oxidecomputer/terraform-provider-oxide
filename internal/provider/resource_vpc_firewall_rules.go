@@ -38,7 +38,7 @@ var (
 )
 
 var (
-	vpcFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
+	VPCFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
 )
 
 // NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
@@ -187,7 +187,7 @@ rules when updating this resource.
 				Validators: []validator.Map{
 					mapvalidator.KeysAre(
 						stringvalidator.RegexMatches(
-							vpcFirewallRuleNameRegexp,
+							VPCFirewallRuleNameRegexp,
 							`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-', and may not end with a '-'. They can be at most 63 characters long.`,
 						),
 					),

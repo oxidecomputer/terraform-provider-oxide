@@ -2,12 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type dataSourceDiskConfig struct {
@@ -37,8 +38,8 @@ data "oxide_disk" "test" {
 `
 
 func TestAccCloudDataSourceDisk_full(t *testing.T) {
-	diskName := NewResourceName()
-	config, err := ParsedAccConfig(
+	diskName := sharedtest.NewResourceName()
+	config, err := sharedtest.ParsedAccConfig(
 		dataSourceDiskConfig{
 			DiskName: diskName,
 		},
@@ -49,8 +50,8 @@ func TestAccCloudDataSourceDisk_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

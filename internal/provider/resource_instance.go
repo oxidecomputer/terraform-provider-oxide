@@ -880,7 +880,7 @@ func (r *instanceResource) Create(
 	// The control plane API counts the BootDisk and the Disk attachments when it calculates the
 	// limit on disk attachments. If bootdisk is set explicitly, we don't want it to be in the API
 	// call, but we need it in the state entry.
-	params.Body.Disks = filterBootDiskFromDisks(disks, params.Body.BootDisk)
+	params.Body.Disks = FilterBootDiskFromDisks(disks, params.Body.BootDisk)
 
 	externalIPs := newExternalIPsOnCreate(plan.ExternalIPs)
 	params.Body.ExternalIps = externalIPs
@@ -1921,7 +1921,7 @@ func diskAttachmentName(d oxide.InstanceDiskAttachment) oxide.Name {
 	}
 }
 
-func filterBootDiskFromDisks(
+func FilterBootDiskFromDisks(
 	disks []oxide.InstanceDiskAttachment,
 	bootDisk oxide.InstanceDiskAttachment,
 ) []oxide.InstanceDiskAttachment {

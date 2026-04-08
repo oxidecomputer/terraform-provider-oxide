@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type vpcSubnetTestConfig struct {
@@ -55,7 +56,7 @@ resource "oxide_vpc_subnet" "test" {
 
 func buildVPCSubnetConfig(t *testing.T, cfg vpcSubnetTestConfig) string {
 	t.Helper()
-	config, err := ParsedAccConfig(cfg, vpcSubnetConfigTpl)
+	config, err := sharedtest.ParsedAccConfig(cfg, vpcSubnetConfigTpl)
 	if err != nil {
 		t.Fatalf("error parsing config template: %v", err)
 	}
@@ -83,8 +84,8 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 	ipv6Config.IPv6Block = "fdfe:f6a5:5f06:a643::/64"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccVPCSubnetDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -160,7 +161,7 @@ func checkResourceVPCSubnetIPv6(subnetName string) resource.TestCheckFunc {
 }
 
 func testAccVPCSubnetDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}

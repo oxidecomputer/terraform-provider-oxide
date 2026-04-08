@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceVPCRouterRouteConfig struct {
@@ -137,15 +138,15 @@ resource "oxide_vpc_router_route" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
-	vpcName := NewResourceName()
-	routerName := NewResourceName()
-	routerRouteName := NewResourceName()
-	routerBlockName := NewBlockName("router")
-	blockName := NewBlockName("route")
-	supportBlockName := NewBlockName("support")
-	vpcBlockName := NewBlockName("vpc")
+	vpcName := sharedtest.NewResourceName()
+	routerName := sharedtest.NewResourceName()
+	routerRouteName := sharedtest.NewResourceName()
+	routerBlockName := sharedtest.NewBlockName("router")
+	blockName := sharedtest.NewBlockName("route")
+	supportBlockName := sharedtest.NewBlockName("support")
+	vpcBlockName := sharedtest.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_router_route.%s", blockName)
-	config, err := ParsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceVPCRouterRouteConfig{
 			VPCName:            vpcName,
 			SupportBlockName:   supportBlockName,
@@ -162,7 +163,7 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 	}
 
 	routerRouteNameUpdated := routerRouteName + "-updated"
-	configUpdate, err := ParsedAccConfig(
+	configUpdate, err := sharedtest.ParsedAccConfig(
 		resourceVPCRouterRouteConfig{
 			VPCName:            vpcName,
 			SupportBlockName:   supportBlockName,
@@ -178,14 +179,14 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	vpcNameDrop := NewResourceName()
-	routerNameDrop := NewResourceName()
-	routerRouteNameDrop := NewResourceName()
-	routerBlockNameDrop := NewBlockName("router")
-	supportBlockNameDrop := NewBlockName("support")
-	vpcBlockNameDrop := NewBlockName("vpc")
+	vpcNameDrop := sharedtest.NewResourceName()
+	routerNameDrop := sharedtest.NewResourceName()
+	routerRouteNameDrop := sharedtest.NewResourceName()
+	routerBlockNameDrop := sharedtest.NewBlockName("router")
+	supportBlockNameDrop := sharedtest.NewBlockName("support")
+	vpcBlockNameDrop := sharedtest.NewBlockName("vpc")
 	resourceNameDrop := fmt.Sprintf("oxide_vpc_router_route.%s", blockName)
-	configDrop, err := ParsedAccConfig(
+	configDrop, err := sharedtest.ParsedAccConfig(
 		resourceVPCRouterRouteConfig{
 			VPCName:            vpcNameDrop,
 			SupportBlockName:   supportBlockNameDrop,
@@ -202,8 +203,8 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccVPCRouterRouteDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -311,7 +312,7 @@ func checkResourceVPCRouterRouteTargetDrop(resourceName, routerName string) reso
 }
 
 func testAccVPCRouterRouteDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}

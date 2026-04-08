@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 // TestAccSiloResourceSwitchPortSettings_full tests whether Terraform
@@ -158,11 +159,11 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
   ]
 }
 `
-	switchPortSettingsName := NewResourceName()
-	blockName := NewBlockName("switch-port-settings")
+	switchPortSettingsName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("switch-port-settings")
 	resourceName := fmt.Sprintf("oxide_switch_port_settings.%s", blockName)
 
-	initialConfig, err := ParsedAccConfig(
+	initialConfig, err := sharedtest.ParsedAccConfig(
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
@@ -173,7 +174,7 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 		t.Errorf("error parsing initial config template data: %e", err)
 	}
 
-	updateConfig, err := ParsedAccConfig(
+	updateConfig, err := sharedtest.ParsedAccConfig(
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
@@ -186,9 +187,9 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			PreCheck(t)
+			sharedtest.PreCheck(t)
 		},
-		ProtoV6ProviderFactories: ProviderFactories(),
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccSwitchPortSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -344,7 +345,7 @@ func checkResourceSwitchPortSettingsUpdate(
 }
 
 func testAccSwitchPortSettingsDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}

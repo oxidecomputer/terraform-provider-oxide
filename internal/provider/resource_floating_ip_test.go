@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceFloatingIPConfig struct {
@@ -86,11 +87,11 @@ resource "oxide_floating_ip" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceFloatingIP_full(t *testing.T) {
-	floatingIPName := NewResourceName()
-	blockName := NewBlockName("floating_ip")
+	floatingIPName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("floating_ip")
 	resourceName := fmt.Sprintf("oxide_floating_ip.%s", blockName)
-	supportBlockName := NewBlockName("support")
-	config, err := ParsedAccConfig(
+	supportBlockName := sharedtest.NewBlockName("support")
+	config, err := sharedtest.ParsedAccConfig(
 		resourceFloatingIPConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
@@ -103,7 +104,7 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 	}
 
 	floatingIPNameUpdated := floatingIPName + "-updated"
-	configUpdate, err := ParsedAccConfig(
+	configUpdate, err := sharedtest.ParsedAccConfig(
 		resourceFloatingIPConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPNameUpdated,
@@ -115,7 +116,7 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configV6, err := ParsedAccConfig(
+	configV6, err := sharedtest.ParsedAccConfig(
 		resourceFloatingIPConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
@@ -127,7 +128,7 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configNonDefaultPool, err := ParsedAccConfig(
+	configNonDefaultPool, err := sharedtest.ParsedAccConfig(
 		resourceFloatingIPConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
@@ -140,8 +141,8 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccFloatingIPDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -235,7 +236,7 @@ func checkResourceFloatingIPNonDefaultPool(
 }
 
 func testAccFloatingIPDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}

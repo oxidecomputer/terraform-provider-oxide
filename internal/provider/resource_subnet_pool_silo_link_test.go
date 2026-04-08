@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
@@ -21,8 +22,8 @@ func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
 	linkResourceName := "oxide_subnet_pool_silo_link.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			// Create pool and link.
 			{
@@ -118,8 +119,8 @@ func TestAccResourceSubnetPoolSiloLink_disappears(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testResourceSubnetPoolSiloLinkDisappearsConfig,
@@ -143,7 +144,7 @@ func testAccSubnetPoolSiloLinkDisappears(resourceName string) resource.TestCheck
 			return fmt.Errorf("resource not found: %s", resourceName)
 		}
 
-		client, err := NewTestClient()
+		client, err := sharedtest.NewTestClient()
 		if err != nil {
 			return err
 		}
@@ -176,7 +177,7 @@ resource "oxide_subnet_pool_silo_link" "test" {
 `
 
 func TestAccResourceSubnetPoolSiloLink_multiSiloImport(t *testing.T) {
-	siloDNSName := SiloDNSName()
+	siloDNSName := sharedtest.SiloDNSName()
 
 	link1ResourceName := "oxide_subnet_pool_silo_link.link1"
 	link2ResourceName := "oxide_subnet_pool_silo_link.link2"
@@ -185,8 +186,8 @@ func TestAccResourceSubnetPoolSiloLink_multiSiloImport(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",
@@ -320,7 +321,7 @@ func testAccLinksDestroyed(poolResourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("resource not found: %s", poolResourceName)
 		}
 
-		client, err := NewTestClient()
+		client, err := sharedtest.NewTestClient()
 		if err != nil {
 			return err
 		}

@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type dataSourceProjectConfig struct {
@@ -26,11 +27,11 @@ data "oxide_project" "{{.BlockName}}" {
 `
 
 func TestAccCloudDataSourceProject_full(t *testing.T) {
-	blockName := NewBlockName("datasource-project")
-	config, err := ParsedAccConfig(
+	blockName := sharedtest.NewBlockName("datasource-project")
+	config, err := sharedtest.ParsedAccConfig(
 		dataSourceProjectConfig{
 			BlockName:        blockName,
-			SupportBlockName: NewBlockName("support"),
+			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
 		dataSourceProjectConfigTpl,
 	)
@@ -39,8 +40,8 @@ func TestAccCloudDataSourceProject_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

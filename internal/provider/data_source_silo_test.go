@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type dataSourceSiloConfig struct {
@@ -84,11 +85,11 @@ data "oxide_silo" "{{.BlockName}}" {
 `
 
 func TestAccSiloDataSourceSilo_full(t *testing.T) {
-	blockName := NewBlockName("datasource-silo")
+	blockName := sharedtest.NewBlockName("datasource-silo")
 
-	dnsName := SiloDNSName()
+	dnsName := sharedtest.SiloDNSName()
 
-	config, err := ParsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		dataSourceSiloConfig{
 			BlockName:   blockName,
 			SiloDNSName: dnsName,
@@ -103,8 +104,8 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",

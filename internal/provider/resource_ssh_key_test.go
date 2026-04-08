@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceSSHKeyConfig struct {
@@ -38,12 +39,12 @@ resource "oxide_ssh_key" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceSSHKey_full(t *testing.T) {
-	sshKeyName := NewResourceName()
+	sshKeyName := sharedtest.NewResourceName()
 	description := "An SSH key."
 	publicKey := "ssh-ed25519 AAAA"
-	blockName := NewBlockName("ssh_key")
+	blockName := sharedtest.NewBlockName("ssh_key")
 	resourceName := fmt.Sprintf("oxide_ssh_key.%s", blockName)
-	config, err := ParsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceSSHKeyConfig{
 			BlockName:   blockName,
 			Name:        sshKeyName,
@@ -57,8 +58,8 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccSSHKeyDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -91,7 +92,7 @@ func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc
 }
 
 func testAccSSHKeyDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}

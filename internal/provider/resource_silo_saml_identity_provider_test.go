@@ -6,7 +6,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceSiloIdentifyProviderConfig struct {
@@ -100,19 +101,19 @@ resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockNa
 `
 
 func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
-	siloBlockName := NewBlockName("silo")
-	siloName := NewResourceName()
-	siloSamlIdentityProviderBlockName := NewBlockName("silo-idp")
-	siloSamlIdentityProviderName := NewResourceName()
+	siloBlockName := sharedtest.NewBlockName("silo")
+	siloName := sharedtest.NewResourceName()
+	siloSamlIdentityProviderBlockName := sharedtest.NewBlockName("silo-idp")
+	siloSamlIdentityProviderName := sharedtest.NewResourceName()
 
 	siloSamlIdentityProviderResourceID := fmt.Sprintf(
 		"oxide_silo_saml_identity_provider.%s",
 		siloSamlIdentityProviderBlockName,
 	)
 
-	siloDNSName := SiloDNSName()
+	siloDNSName := sharedtest.SiloDNSName()
 
-	config, err := ParsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceSiloIdentifyProviderConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
@@ -130,8 +131,8 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { PreCheck(t) },
-		ProtoV6ProviderFactories: ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",
@@ -179,7 +180,7 @@ func checkResourceSiloSamlIdentityProvider(
 }
 
 func testAccSiloSamlIdentityProviderDestroy(s *terraform.State) error {
-	client, err := NewTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}

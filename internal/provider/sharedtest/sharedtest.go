@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package sharedtest
 
 import (
 	"bytes"
@@ -18,33 +18,46 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	provider "github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
 )
 
 func ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
-		"oxide": providerserver.NewProtocol6WithError(New()),
+		"oxide": providerserver.NewProtocol6WithError(
+			provider.New(),
+		),
 	}
 }
 
 func PreCheck(t *testing.T) {
 	if _, err := NewTestClient(); err != nil {
-		t.Fatalf("failed to create oxide client for acceptance tests: %v", err)
+		t.Fatalf(
+			"failed to create oxide client for acceptance tests: %v",
+			err,
+		)
 	}
 }
 
 func NewTestClient() (*oxide.Client, error) {
 	client, err := oxide.NewClient(
-		oxide.WithUserAgent(fmt.Sprintf("terraform-provider-oxide/%s", Version)),
+		oxide.WithUserAgent(
+			fmt.Sprintf(
+				"terraform-provider-oxide/%s",
+				provider.Version,
+			),
+		),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return client, nil
-
 }
 
-func ParsedAccConfig(config any, tpl string) (string, error) {
+func ParsedAccConfig(
+	config any,
+	tpl string,
+) (string, error) {
 	var buf bytes.Buffer
 	tmpl, _ := template.New("test").Parse(tpl)
 	err := tmpl.Execute(&buf, config)
@@ -63,22 +76,29 @@ func NewBlockName(resource string) string {
 	return fmt.Sprintf("acc-%s-%s", resource, uuid.New())
 }
 
-// CaptureResourceID captures the resource ID for later comparison.
-// Use with resource.TestCheckResourceAttrPtr to verify updates don't recreate resources.
-func CaptureResourceID(resourceName string, id *string) resource.TestCheckFunc {
+// CaptureResourceID captures the resource ID for later
+// comparison. Use with resource.TestCheckResourceAttrPtr
+// to verify updates don't recreate resources.
+func CaptureResourceID(
+	resourceName string,
+	id *string,
+) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
+			return fmt.Errorf(
+				"resource not found: %s",
+				resourceName,
+			)
 		}
 		*id = rs.Primary.ID
 		return nil
 	}
 }
 
-// VerifyResourceIDChanged verifies the resource ID is different from the previously captured
-// ID.
-// Use to confirm a resource was replaced (destroyed and recreated).
+// VerifyResourceIDChanged verifies the resource ID is
+// different from the previously captured ID. Use to confirm
+// a resource was replaced (destroyed and recreated).
 func VerifyResourceIDChanged(
 	resourceName string,
 	previousID *string,
@@ -86,10 +106,17 @@ func VerifyResourceIDChanged(
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
+			return fmt.Errorf(
+				"resource not found: %s",
+				resourceName,
+			)
 		}
 		if rs.Primary.ID == *previousID {
-			return fmt.Errorf("resource was not replaced: ID unchanged (%s)", *previousID)
+			return fmt.Errorf(
+				"resource was not replaced: "+
+					"ID unchanged (%s)",
+				*previousID,
+			)
 		}
 		return nil
 	}
@@ -104,13 +131,18 @@ func SiloDNSName() string {
 
 var subnetCounter uint32
 
-// NextSubnetCIDR returns sequential /24 subnet CIDRs from the 10.128.0.0/16 range.
-// TODO: extend if we ever need more than 256 subnets in tests.
+// NextSubnetCIDR returns sequential /24 subnet CIDRs from
+// the 10.128.0.0/16 range.
+// TODO: extend if we ever need more than 256 subnets in
+// tests.
 func NextSubnetCIDR(t *testing.T) string {
 	t.Helper()
 	n := atomic.AddUint32(&subnetCounter, 1) - 1
 	if n > 255 {
-		t.Fatal("NextSubnetCIDR: exhausted all 256 /24 subnets in 10.128.0.0/16")
+		t.Fatal(
+			"NextSubnetCIDR: exhausted all 256 /24" +
+				" subnets in 10.128.0.0/16",
+		)
 	}
 	return fmt.Sprintf("10.128.%d.0/24", n)
 }
