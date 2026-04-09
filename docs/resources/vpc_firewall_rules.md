@@ -158,12 +158,12 @@ Required:
 
 Required:
 
-- `type` (String) The protocol type. Must be one of `tcp`, `udp`, or `icmp`.
+- `type` (String) The protocol type. Must be one of `tcp`, `udp`, `icmp`, or `icmp6`.
 
 Optional:
 
-- `icmp_code` (String) ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.
-- `icmp_type` (Number) ICMP type. Only valid when type is `icmp`.
+- `icmp_code` (String) ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` or `icmp6` and `icmp_type` is provided.
+- `icmp_type` (Number) ICMP type. Only valid when type is `icmp` or `icmp6`.
 
 
 

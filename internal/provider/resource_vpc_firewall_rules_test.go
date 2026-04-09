@@ -262,6 +262,10 @@ resource "oxide_vpc_firewall_rules" "test" {
             type = "icmp"
             icmp_type = 3
           },
+          {
+            type = "icmp6"
+            icmp_type = 3
+          },
         ]
       }
       targets = [
@@ -725,6 +729,20 @@ func checkResourceFirewallRulesUpdate4(resourceName string) resource.TestCheckFu
 		resource.TestCheckNoResourceAttr(
 			resourceName,
 			"rules.allow-icmp.filters.protocols.0.icmp_code",
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"rules.allow-icmp.filters.protocols.1.type",
+			"icmp6",
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"rules.allow-icmp.filters.protocols.1.icmp_type",
+			"3",
+		),
+		resource.TestCheckNoResourceAttr(
+			resourceName,
+			"rules.allow-icmp.filters.protocols.1.icmp_code",
 		),
 		resource.TestCheckResourceAttr(resourceName, "rules.allow-icmp.targets.0.type", "subnet"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.allow-icmp.targets.0.value"),
