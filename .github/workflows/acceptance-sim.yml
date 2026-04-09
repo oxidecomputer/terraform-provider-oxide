@@ -11,7 +11,7 @@ on:
         required: false
       testrail-project:
         required: false
-      testrail-user:
+      testrail-username:
         required: false
       testrail-api-key:
         required: false
@@ -128,17 +128,24 @@ jobs:
       - name: upload test results to TestRail
         if: always()
         continue-on-error: true
-        uses: oxidecomputer/trcli-action@1ac634c97714109c05cbfbe4d92b9fc7349626c3
-        with:
-          host: ${{ secrets.testrail-host }}
-          username: ${{ secrets.testrail-user }}
-          password: ${{ secrets.testrail-api-key }}
-          project: ${{ secrets.testrail-project }}
-          report_file_path: ./acctest/acc-tests.xml
-          auto_create_cases_yes: true
-          case_matcher: name
-          title: 'Acceptance Tests (${{ matrix.tf-binary }})'
-          run_description: 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          TESTRAIL_HOST: ${{ secrets.testrail-host }}
+          TESTRAIL_USERNAME: ${{ secrets.testrail-username }}
+          TESTRAIL_API_KEY: ${{ secrets.testrail-api-key }}
+          TESTRAIL_PROJECT: ${{ secrets.testrail-project }}
+        run: |
+          uvx trcli \
+            --host "${TESTRAIL_HOST}" \
+            --username "${TESTRAIL_USERNAME}" \
+            --key "${TESTRAIL_API_KEY}" \
+            --project "${TESTRAIL_PROJECT}" \
+            --yes `# Auto-create new test cases.` \
+            parse_junit \
+              --file './acctest/acc-tests.xml' \
+              --title '${{ matrix.tf-binary }} - ${{ github.run_id }} - ${{ job.check_run_id }}' \
+              --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ github.check_run_id }}' \
+              --update-existing-cases 'yes' \
+              --case-matcher 'auto'
       - name: upload logs
         if: always()
         continue-on-error: true
