@@ -10,6 +10,10 @@ description = "The deprecated function `to_vpc_firewall_rules_map` has been remo
 title = "`oxide_switch_port_settings`"
 description = "Added support for unnumbered BGP sessions. [#653](https://github.com/oxidecomputer/terraform-provider-oxide/pull/653)."
 
+[[features]]
+title = "Support read-only disks."
+description = "Added support for read-only disks in the `oxide_disk` resource and data source. [#642](https://github.com/oxidecomputer/terraform-provider-oxide/pull/642)"
+
 [[enhancements]]
 title = "Support `icmp6` in `oxide_vpc_firewall_rules`"
 description = "Added support for `icmp6` firewall rules to the `oxide_vpc_firewall_rules` resource. [#735](https://github.com/oxidecomputer/terraform-provider-oxide/pull/735)."

@@ -1,3 +1,64 @@
+# 0.19.0
+
+### Breaking changes
+
+- **Removed deprecated attributes of the `oxide_instance` resource.:** The deprecated attributes `host_name`, `network_interfaces.ip_address`, `network_intefaces.mac_address`, `network_interfaces.id`, `network_interfaces.primary`, `network_interfaces.time_created`, and `network_interfaces.time_modified` have been removed from the `oxide_instance` resource. Use `hostname` and the `attached_network_interfaces` attributes instead. [#651](https://github.com/oxidecomputer/terraform-provider-oxide/pull/651).
+- **Removed deprecated `to_vpc_firewall_rules_map` function.:** The deprecated function `to_vpc_firewall_rules_map` has been removed. [#736](https://github.com/oxidecomputer/terraform-provider-oxide/pull/736).
+
+### New features
+
+- **`oxide_switch_port_settings`:** Added support for unnumbered BGP sessions. [#653](https://github.com/oxidecomputer/terraform-provider-oxide/pull/653).
+- **Support read-only disks.:** Added support for read-only disks in the `oxide_disk` resource and data source. [#642](https://github.com/oxidecomputer/terraform-provider-oxide/pull/642)
+
+### Enhancements
+
+- **Support `icmp6` in `oxide_vpc_firewall_rules`:** Added support for `icmp6` firewall rules to the `oxide_vpc_firewall_rules` resource. [#735](https://github.com/oxidecomputer/terraform-provider-oxide/pull/735).
+
+### Bug fixes
+
+- **Correctly handle omitted `icmp_type` attribute in `oxide_vpc_firewall_rules`:** An omitted `icmp_type` no longer errors with `unable to parse JSON body`. [#658](https://github.com/oxidecomputer/terraform-provider-oxide/pull/658)
+
+### List of commits
+
+- [622e1f7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/622e1f7) Support icmp6 protocol in firewall rules. (#735)
+- [1be8224](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1be8224) breaking: remove `to_vpc_firewall_rules_map` function (#736)
+- [f2c5078](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f2c5078) Symlink .agents/skills to .claude/skills. (#734)
+- [833cc48](https://github.com/oxidecomputer/terraform-provider-oxide/commit/833cc48) Bump oxide.go to latest. (#703)
+- [fc049c9](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fc049c9) Support read-only disks. (#642)
+- [9f6dc9b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9f6dc9b) ci: add TestRail (#699)
+- [e352aa7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e352aa7) build(deps): bump opentofu/setup-opentofu from 1 to 2 (#694)
+- [49d4a9a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/49d4a9a) build(deps): bump google.golang.org/grpc from 1.79.1 to 1.79.3 (#692)
+- [0ec4678](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0ec4678) deps: bump terrafrom-plugin-framework (#690)
+- [a4edbe4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a4edbe4) ci: save omicron-dev container logs (#689)
+- [6f4cf37](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6f4cf37) build(deps): bump actions/create-github-app-token from 2 to 3 (#683)
+- [cfd743f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cfd743f) build(deps): bump docker/build-push-action from 6 to 7 (#681)
+- [8543f50](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8543f50) build(deps): bump docker/login-action from 3 to 4 (#680)
+- [32fc1b2](https://github.com/oxidecomputer/terraform-provider-oxide/commit/32fc1b2) build(deps): bump docker/setup-buildx-action from 3 to 4 (#679)
+- [b518aee](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b518aee) ci: fix omicron build (#678)
+- [7ffbbfc](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7ffbbfc) misc: release issue template (#675)
+- [1a40d57](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1a40d57) build(deps): bump docker/setup-compose-action from 1 to 2 (#664)
+- [628895a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/628895a) build(deps): bump crazy-max/ghaction-import-gpg from 6 to 7 (#666)
+- [074606c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/074606c) build(deps): bump actions/upload-artifact from 6 to 7 (#665)
+- [5389003](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5389003) build(deps): bump hashicorp/setup-terraform from 3 to 4 (#668)
+- [8290d9d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8290d9d) build(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.38.2 to 2.39.0 (#670)
+- [40d8c18](https://github.com/oxidecomputer/terraform-provider-oxide/commit/40d8c18) misc: update changelog for v0.18.1 (#674)
+- [40f9686](https://github.com/oxidecomputer/terraform-provider-oxide/commit/40f9686) build(deps): bump github.com/hashicorp/terraform-plugin-framework from 1.17.0 to 1.18.0 (#667)
+- [a191d2b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a191d2b) misc: update changelog (#673)
+- [954d98c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/954d98c) docs: fix `make install` path (#663)
+- [fb5a461](https://github.com/oxidecomputer/terraform-provider-oxide/commit/fb5a461) Fix regression on icmp protocol config. (#658)
+- [31f49dc](https://github.com/oxidecomputer/terraform-provider-oxide/commit/31f49dc) build(deps): bump goreleaser/goreleaser-action from 6.4.0 to 7.0.0 (#654)
+- [e5c1706](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e5c1706) build(deps): bump github.com/cloudflare/circl from 1.6.1 to 1.6.3 (#656)
+- [81e6b97](https://github.com/oxidecomputer/terraform-provider-oxide/commit/81e6b97) build(deps): bump github.com/cloudflare/circl from 1.6.1 to 1.6.3 in /tools (#657)
+- [ab31beb](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ab31beb) ci: set RUST_BACKTRACE in acceptance tests (#660)
+- [ed9af4b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ed9af4b) instance: remove deprecated attributes (#651)
+- [d263a03](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d263a03) instance: fix state migration from v0 (#652)
+- [a38797d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a38797d) feat(switch_port_settings): support unnumbered bgp sessions (#653)
+- [7e82bc9](https://github.com/oxidecomputer/terraform-provider-oxide/commit/7e82bc9) ci: run tests using gotestsum (#647)
+- [6088782](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6088782) test: fix address lot flaky test (#648)
+- [8a285e5](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8a285e5) ci: add job ID to acceptance test artifact (#645)
+- [0bf94c0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0bf94c0) docs: update release checklist (#644)
+- [2759d9d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2759d9d) release: prepare release v0.18.0 (#643)
+
 # 0.18.1 (2026/Mar/3)
 
 ### Bug fixes
