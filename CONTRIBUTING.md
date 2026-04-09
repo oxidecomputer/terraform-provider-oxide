@@ -122,14 +122,39 @@ where the patch version is (`vX.Y.0`).
   git pull origin main
   git checkout -b release-vX.Y.Z
   ```
-- [ ] Update `CHANGELOG.md`.
+- [ ] Ensure the `.changelog/vX.Y.Z.toml` file has the changelog entries for the release and generate changelog.
   ```
   make changelog
+  ```
+- [ ] Update `CHANGELOG.md` with the release date.
+  ```diff
+  - # vX.Y.Z
+  + # vX.Y.Z (Year/Month/Day)
+  ```
+- [ ] Update `Version` in `internal/provider/version.go`.
+  ```diff
+    // Version contains the current terraform provider version.
+  - const Version = "A.B.C"
+  + const Version = "X.Y.Z"
+  ```
+- [ ] Update the example block in `README.md`.
+  ```diff
+  terraform {
+    required_version = ">= 1.11"
+
+    required_providers {
+      oxide = {
+        source  = "oxidecomputer/oxide"
+  -     version = "A.B.C"
+  +     version = "X.Y.Z"
+      }
+    }
+  }
   ```
 - [ ] `.0 ->` Update the `Build status` table in `README.md` to point to the new release line branch.
 - [ ] Commit changes and open a PR.
   ```
-  git add CHANGELOG.md README.md
+  git add CHANGELOG.md README.md internal/provider/version.go
   git commit -m 'release vX.Y.Z'
   git push origin release-vX.Y.Z
   ```
