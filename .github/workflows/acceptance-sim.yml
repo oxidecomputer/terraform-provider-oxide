@@ -143,9 +143,10 @@ jobs:
             parse_junit \
               --file './acctest/acc-tests.xml' \
               --title '${{ matrix.tf-binary }} - ${{ github.run_id }} - ${{ job.check_run_id }}' \
-              --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ github.check_run_id }}' \
+              --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}' \
               --update-existing-cases 'yes' \
-              --case-matcher 'auto'
+              --case-matcher 'auto' \
+              --close-run
       - name: upload logs
         if: always()
         continue-on-error: true
