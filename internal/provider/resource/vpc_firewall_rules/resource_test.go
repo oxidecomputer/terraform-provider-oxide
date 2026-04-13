@@ -892,12 +892,12 @@ func TestFirewallRules_v0_upgrade(t *testing.T) {
 		var respFile string
 		switch version.Load() {
 		case 15:
-			respFile = "r15_get_vpc_firewall_rules.json"
+			respFile = "r15.json"
 		case 16:
-			respFile = "r16_get_vpc_firewall_rules.json"
+			respFile = "r16.json"
 		}
 
-		respPath := filepath.Join("test-fixtures", "resource_vpc_firewall_rules", respFile)
+		respPath := filepath.Join("test-fixtures", respFile)
 		f, err := testFixtures.ReadFile(respPath)
 		if err != nil {
 			t.Errorf("failed to read file %q: %v", respPath, err)
