@@ -19,10 +19,14 @@ formatters:
   enable:
     - gofmt
     - golines
+    - goimports
   settings:
     golines:
       max-len: 100
       shorten-comments: true
+    goimports:
+      local-prefixes:
+        - github.com/oxidecomputer/terraform-provider-oxide
 
 run:
   timeout: 5m
