@@ -20,9 +20,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/stretchr/testify/require"
+
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
-	"github.com/stretchr/testify/require"
 )
 
 //go:embed test-fixtures
@@ -271,6 +272,10 @@ resource "oxide_vpc_firewall_rules" "test" {
         protocols = [
           {
             type = "icmp"
+            icmp_type = 3
+          },
+          {
+            type = "icmp6"
             icmp_type = 3
           },
         ]
@@ -736,6 +741,20 @@ func checkResourceFirewallRulesUpdate4(resourceName string) resource.TestCheckFu
 		resource.TestCheckNoResourceAttr(
 			resourceName,
 			"rules.allow-icmp.filters.protocols.0.icmp_code",
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"rules.allow-icmp.filters.protocols.1.type",
+			"icmp6",
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			"rules.allow-icmp.filters.protocols.1.icmp_type",
+			"3",
+		),
+		resource.TestCheckNoResourceAttr(
+			resourceName,
+			"rules.allow-icmp.filters.protocols.1.icmp_code",
 		),
 		resource.TestCheckResourceAttr(resourceName, "rules.allow-icmp.targets.0.type", "subnet"),
 		resource.TestCheckResourceAttrSet(resourceName, "rules.allow-icmp.targets.0.value"),

@@ -6,8 +6,9 @@ package vpcrouter_test
 
 import (
 	"fmt"
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 	"testing"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/oxidecomputer/oxide.go/oxide"

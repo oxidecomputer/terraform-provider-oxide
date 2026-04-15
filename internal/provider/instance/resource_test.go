@@ -16,7 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
-	instance "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/instance"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/instance"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )

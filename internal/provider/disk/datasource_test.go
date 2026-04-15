@@ -5,8 +5,9 @@
 package disk_test
 
 import (
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 	"testing"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )

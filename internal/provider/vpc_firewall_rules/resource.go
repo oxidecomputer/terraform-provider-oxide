@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
@@ -167,57 +168,6 @@ overwrite any other firewall rules for the VPC once applied.
 !> Setting the ''rules'' attribute to ''{}'' will delete all firewall rules for the
 VPC which may cause undesired network traffic. Please double check the firewall
 rules when updating this resource.
-
-### Migrating ''rules''
-
-Previous versions of this resource stored firewall rules in a set. This
-resulted in slow plans in environments with a significant number of rules.
-
-Newer versions store the rules in a map for better performance, but this change
-requires you to update your configuration files to:
-
-1. Update the ''rules'' attribute from a set to a map.
-2. Define the ''rules'' map keys as the VPC firewall rule name. Note that this
-   key must then comply with the [Oxide
-   API](https://docs.oxide.computer/api/vpc_firewall_rules_update) requirements
-   for VPC firewall rule names.
-3. Remove the ''name'' attribute from all entries of the ''rules'' map.
-
-Previous ''rules'' schema:
-
-''''''terraform
-resource "oxide_vpc_firewall_rules" "example" {
-  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = [
-    {
-      name        = "allow-https"
-      action      = "allow"
-      description = "Allow HTTPS."
-      # ...
-    }
-  ]
-}
-''''''
-
-New ''rules'' schema:
-
-''''''terraform
-resource "oxide_vpc_firewall_rules" "example" {
-  vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
-  rules = {
-    allow-https = {
-      action      = "allow"
-      description = "Allow HTTPS."
-      # ...
-    }
-  }
-}
-''''''
-
-You can use the ''provider::oxide::to_vpc_firewall_rules_map'' provider
-function to help you convert existing rules, but note that this function is
-provided as a temporary solution. You should update your configuration files
-to use the new schema as soon as possible.
 `),
 		Attributes: map[string]schema.Attribute{
 			"vpc_id": schema.StringAttribute{
@@ -326,7 +276,7 @@ Depending on the type, it will be one of the following:
 										Attributes: map[string]schema.Attribute{
 											"type": schema.StringAttribute{
 												Required:    true,
-												Description: "The protocol type. Must be one of `tcp`, `udp`, or `icmp`.",
+												Description: "The protocol type. Must be one of `tcp`, `udp`, `icmp`, or `icmp6`.",
 												Validators: []validator.String{
 													stringvalidator.OneOf(
 														string(
@@ -338,19 +288,22 @@ Depending on the type, it will be one of the following:
 														string(
 															oxide.VpcFirewallRuleProtocolTypeIcmp,
 														),
+														string(
+															oxide.VpcFirewallRuleProtocolTypeIcmp6,
+														),
 													),
 												},
 											},
 											"icmp_type": schema.Int32Attribute{
 												Optional:    true,
-												Description: "ICMP type. Only valid when type is `icmp`.",
+												Description: "ICMP type. Only valid when type is `icmp` or `icmp6`.",
 												Validators: []validator.Int32{
 													int32validator.Between(0, 255),
 												},
 											},
 											"icmp_code": schema.StringAttribute{
 												Optional:    true,
-												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` and `icmp_type` is provided.",
+												Description: "ICMP code (e.g., 0) or range (e.g., 1-3). Omit to filter all traffic of the specified `icmp_type`. Only valid when type is `icmp` or `icmp6` and `icmp_type` is provided.",
 												Validators: []validator.String{
 													stringvalidator.AlsoRequires(path.Expressions{
 														path.MatchRelative().
@@ -867,6 +820,15 @@ func newFiltersModel(
 					protocolModel.IcmpType = types.Int32Value(int32(*v.Value.IcmpType))
 				}
 			}
+		case *oxide.VpcFirewallRuleProtocolIcmp6:
+			if v.Value != nil {
+				if v.Value.Code != "" {
+					protocolModel.IcmpCode = types.StringValue(string(v.Value.Code))
+				}
+				if v.Value.IcmpType != nil {
+					protocolModel.IcmpType = types.Int32Value(int32(*v.Value.IcmpType))
+				}
+			}
 		case *oxide.VpcFirewallRuleProtocolTcp:
 			// No additional fields
 		case *oxide.VpcFirewallRuleProtocolUdp:
@@ -954,6 +916,22 @@ func newFilterTypeFromModel(
 			}
 		case oxide.VpcFirewallRuleProtocolTypeIcmp:
 			icmpVariant := &oxide.VpcFirewallRuleProtocolIcmp{}
+			if !protocolModel.IcmpType.IsNull() || !protocolModel.IcmpCode.IsNull() {
+				icmpVariant.Value = &oxide.VpcFirewallIcmpFilter{
+					Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
+					IcmpType: func() *int {
+						if protocolModel.IcmpType.IsNull() {
+							return nil
+						}
+						return oxide.NewPointer(int(protocolModel.IcmpType.ValueInt32()))
+					}(),
+				}
+			}
+			protocol = oxide.VpcFirewallRuleProtocol{
+				Value: icmpVariant,
+			}
+		case oxide.VpcFirewallRuleProtocolTypeIcmp6:
+			icmpVariant := &oxide.VpcFirewallRuleProtocolIcmp6{}
 			if !protocolModel.IcmpType.IsNull() || !protocolModel.IcmpCode.IsNull() {
 				icmpVariant.Value = &oxide.VpcFirewallIcmpFilter{
 					Code: oxide.IcmpParamRange(protocolModel.IcmpCode.ValueString()),
