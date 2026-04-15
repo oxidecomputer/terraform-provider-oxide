@@ -11,8 +11,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 	"github.com/stretchr/testify/require"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 // lintignore:AT004

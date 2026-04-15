@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
