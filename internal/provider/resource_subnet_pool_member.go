@@ -6,6 +6,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -360,11 +361,11 @@ func (r *subnetPoolMemberResource) Delete(
 	}
 
 	if err := r.client.SystemSubnetPoolMemberRemove(ctx, params); err != nil {
-		// The API returns 400 with "does not exist" if the member is already gone,
-		// rather than 404. Handle both cases for idempotent deletes.
+		// The API returns 400 InvalidRequest with "does not exist" if the member
+		// is already gone, rather than 404. Handle both cases for idempotent deletes.
 		//
 		// TODO: Switch to a 404 in omicron.
-		if !is404(err) && !strings.Contains(err.Error(), "does not exist") {
+		if !is404(err) && !(errors.Is(err, oxide.ErrInvalidRequest) && strings.Contains(err.Error(), "does not exist")) {
 			resp.Diagnostics.AddError(
 				"Error deleting subnet pool member:",
 				"API error: "+err.Error(),
