@@ -5,6 +5,7 @@
 package provider
 
 import (
+	"errors"
 	"net"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ func replaceBackticks(s string) string {
 }
 
 func is404(err error) bool {
-	return strings.Contains(err.Error(), "Status: 404")
+	return errors.Is(err, oxide.ErrObjectNotFound)
 }
 
 // Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
