@@ -19,13 +19,13 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceFloatingIPConfig struct {
+type resourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 	FloatingIPName   string
 }
 
-var resourceFloatingIPConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -45,7 +45,7 @@ resource "oxide_floating_ip" "{{.BlockName}}" {
 }
 `
 
-var resourceFloatingIPUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -58,7 +58,7 @@ resource "oxide_floating_ip" "{{.BlockName}}" {
 }
 `
 
-var resourceFloatingIPv6ConfigTpl = `
+var resourceV6ConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -71,7 +71,7 @@ resource "oxide_floating_ip" "{{.BlockName}}" {
 }
 `
 
-var resourceFloatingIPNonDefaultPoolConfigTpl = `
+var resourceNonDefaultPoolConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -94,12 +94,12 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 	resourceName := fmt.Sprintf("oxide_floating_ip.%s", blockName)
 	supportBlockName := sharedtest.NewBlockName("support")
 	config, err := sharedtest.ParsedAccConfig(
-		resourceFloatingIPConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
 			SupportBlockName: supportBlockName,
 		},
-		resourceFloatingIPConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -107,36 +107,36 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 
 	floatingIPNameUpdated := floatingIPName + "-updated"
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceFloatingIPConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPNameUpdated,
 			SupportBlockName: supportBlockName,
 		},
-		resourceFloatingIPUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	configV6, err := sharedtest.ParsedAccConfig(
-		resourceFloatingIPConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
 			SupportBlockName: supportBlockName,
 		},
-		resourceFloatingIPv6ConfigTpl,
+		resourceV6ConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	configNonDefaultPool, err := sharedtest.ParsedAccConfig(
-		resourceFloatingIPConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
 			SupportBlockName: supportBlockName,
 		},
-		resourceFloatingIPNonDefaultPoolConfigTpl,
+		resourceNonDefaultPoolConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -145,23 +145,23 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccFloatingIPDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceFloatingIP(resourceName, floatingIPName),
+				Check:  checkResource(resourceName, floatingIPName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceFloatingIPUpdate(resourceName, floatingIPNameUpdated),
+				Check:  checkResourceUpdate(resourceName, floatingIPNameUpdated),
 			},
 			{
 				Config: configV6,
-				Check:  checkResourceFloatingIPV6(resourceName, floatingIPName),
+				Check:  checkResourceV6(resourceName, floatingIPName),
 			},
 			{
 				Config: configNonDefaultPool,
-				Check:  checkResourceFloatingIPNonDefaultPool(resourceName, floatingIPName),
+				Check:  checkResourceNonDefaultPool(resourceName, floatingIPName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -176,13 +176,13 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 	})
 }
 
-func checkResourceFloatingIP(resourceName, floatingIPName string) resource.TestCheckFunc {
+func checkResource(resourceName, floatingIPName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", floatingIPName),
 		resource.TestCheckResourceAttr(resourceName, "description", "Floating IP."),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
-		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccFloatingIPIsV4),
+		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccResourceIsV4),
 		resource.TestCheckResourceAttrSet(resourceName, "ip_pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "ip_version", "v4"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -194,13 +194,13 @@ func checkResourceFloatingIP(resourceName, floatingIPName string) resource.TestC
 	}...)
 }
 
-func checkResourceFloatingIPUpdate(resourceName, floatingIPName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName, floatingIPName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", floatingIPName),
 		resource.TestCheckResourceAttr(resourceName, "description", "Floating IP (updated)."),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
-		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccFloatingIPIsV4),
+		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccResourceIsV4),
 		resource.TestCheckResourceAttrSet(resourceName, "ip_pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "ip_version", "v4"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -208,13 +208,13 @@ func checkResourceFloatingIPUpdate(resourceName, floatingIPName string) resource
 	}...)
 }
 
-func checkResourceFloatingIPV6(resourceName, floatingIPName string) resource.TestCheckFunc {
+func checkResourceV6(resourceName, floatingIPName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", floatingIPName),
 		resource.TestCheckResourceAttr(resourceName, "description", "Floating IP (v6)."),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
-		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccFloatingIPIsV6),
+		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccResourceIsV6),
 		resource.TestCheckResourceAttrSet(resourceName, "ip_pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "ip_version", "v6"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
@@ -222,7 +222,7 @@ func checkResourceFloatingIPV6(resourceName, floatingIPName string) resource.Tes
 	}...)
 }
 
-func checkResourceFloatingIPNonDefaultPool(
+func checkResourceNonDefaultPool(
 	resourceName, floatingIPName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -230,14 +230,14 @@ func checkResourceFloatingIPNonDefaultPool(
 		resource.TestCheckResourceAttr(resourceName, "name", floatingIPName),
 		resource.TestCheckResourceAttr(resourceName, "description", "Floating IP (non-default)."),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
-		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccFloatingIPIsV4),
+		resource.TestCheckResourceAttrWith(resourceName, "ip", testAccResourceIsV4),
 		resource.TestCheckResourceAttrSet(resourceName, "ip_pool_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
 }
 
-func testAccFloatingIPDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
@@ -267,14 +267,14 @@ func testAccFloatingIPDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccFloatingIPIsV4(value string) error {
+func testAccResourceIsV4(value string) error {
 	if !shared.IsIPv4(value) {
 		return fmt.Errorf("expected %s to be IPv4", value)
 	}
 	return nil
 }
 
-func testAccFloatingIPIsV6(value string) error {
+func testAccResourceIsV6(value string) error {
 	if !shared.IsIPv6(value) {
 		return fmt.Errorf("expected %s to be IPv6", value)
 	}

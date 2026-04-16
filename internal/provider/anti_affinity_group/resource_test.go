@@ -19,13 +19,13 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceAntiAffinityGroupConfig struct {
+type resourceConfig struct {
 	BlockName             string
 	SupportBlockName      string
 	AntiAffinityGroupName string
 }
 
-var resourceAntiAffinityGroupConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -44,7 +44,7 @@ resource "oxide_anti_affinity_group" "{{.BlockName}}" {
   }
 `
 
-var resourceAntiAffinityGroupUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -63,12 +63,12 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	resourceName := fmt.Sprintf("oxide_anti_affinity_group.%s", blockName)
 	supportBlockName := sharedtest.NewBlockName("support")
 	config, err := sharedtest.ParsedAccConfig(
-		resourceAntiAffinityGroupConfig{
+		resourceConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupName,
 			SupportBlockName:      supportBlockName,
 		},
-		resourceAntiAffinityGroupConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -76,12 +76,12 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 
 	antiAffinityGroupNameUpdated := antiAffinityGroupName + "-updated"
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceAntiAffinityGroupConfig{
+		resourceConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupNameUpdated,
 			SupportBlockName:      supportBlockName,
 		},
-		resourceAntiAffinityGroupUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -90,15 +90,15 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccAntiAffinityGroupDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceAntiAffinityGroup(resourceName, antiAffinityGroupName),
+				Check:  checkResource(resourceName, antiAffinityGroupName),
 			},
 			{
 				Config: configUpdate,
-				Check: checkResourceAntiAffinityGroupUpdate(
+				Check: checkResourceUpdate(
 					resourceName,
 					antiAffinityGroupNameUpdated,
 				),
@@ -112,7 +112,7 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	})
 }
 
-func checkResourceAntiAffinityGroup(
+func checkResource(
 	resourceName, antiAffinityGroupName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -131,7 +131,7 @@ func checkResourceAntiAffinityGroup(
 	}...)
 }
 
-func checkResourceAntiAffinityGroupUpdate(
+func checkResourceUpdate(
 	resourceName, antiAffinityGroupName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -146,7 +146,7 @@ func checkResourceAntiAffinityGroupUpdate(
 	}...)
 }
 
-func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

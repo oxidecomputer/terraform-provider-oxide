@@ -13,11 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceProjectsConfig struct {
+type dataSourceConfig struct {
 	BlockName string
 }
 
-var dataSourceProjectsConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_projects" "{{.BlockName}}" {
   timeouts = {
     read = "1m"
@@ -28,10 +28,10 @@ data "oxide_projects" "{{.BlockName}}" {
 func TestAccCloudDataSourceProjects_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-projects")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceProjectsConfig{
+		dataSourceConfig{
 			BlockName: blockName,
 		},
-		dataSourceProjectsConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -43,7 +43,7 @@ func TestAccCloudDataSourceProjects_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceProjects(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_projects.%s", blockName),
 				),
 			},
@@ -51,7 +51,7 @@ func TestAccCloudDataSourceProjects_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceProjects(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),

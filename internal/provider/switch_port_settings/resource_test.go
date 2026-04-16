@@ -192,19 +192,19 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 			sharedtest.PreCheck(t)
 		},
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSwitchPortSettingsDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: initialConfig,
-				Check:  checkResourceSwitchPortSettings(resourceName, switchPortSettingsName),
+				Check:  checkResource(resourceName, switchPortSettingsName),
 			},
 			{
 				Config: updateConfig,
-				Check:  checkResourceSwitchPortSettingsUpdate(resourceName, switchPortSettingsName),
+				Check:  checkResourceUpdate(resourceName, switchPortSettingsName),
 			},
 			{
 				Config: initialConfig,
-				Check:  checkResourceSwitchPortSettings(resourceName, switchPortSettingsName),
+				Check:  checkResource(resourceName, switchPortSettingsName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -215,7 +215,7 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 	})
 }
 
-func checkResourceSwitchPortSettings(resourceName string, name string) resource.TestCheckFunc {
+func checkResource(resourceName string, name string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -279,7 +279,7 @@ func checkResourceSwitchPortSettings(resourceName string, name string) resource.
 	}...)
 }
 
-func checkResourceSwitchPortSettingsUpdate(
+func checkResourceUpdate(
 	resourceName string,
 	name string,
 ) resource.TestCheckFunc {
@@ -346,7 +346,7 @@ func checkResourceSwitchPortSettingsUpdate(
 	}...)
 }
 
-func testAccSwitchPortSettingsDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

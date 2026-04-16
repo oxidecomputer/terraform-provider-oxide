@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceVPCInternetGatewayConfig struct {
+type dataSourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-var dataSourceVPCInternetGatewayConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_vpc" "test" {
   project_name = "tf-acc-test"
   name         = "default"
@@ -43,11 +43,11 @@ data "oxide_vpc_internet_gateway" "{{.BlockName}}" {
 func TestAccCloudDataSourceVPCInternetGateway_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-vpc-router")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceVPCInternetGatewayConfig{
+		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
-		dataSourceVPCInternetGatewayConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -59,7 +59,7 @@ func TestAccCloudDataSourceVPCInternetGateway_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceVPCInternetGateway(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_vpc_internet_gateway.%s", blockName),
 				),
 			},
@@ -67,7 +67,7 @@ func TestAccCloudDataSourceVPCInternetGateway_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceVPCInternetGateway(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "description", "test description"),

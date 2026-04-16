@@ -13,16 +13,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceProjectImagesConfig struct {
+type dataSourceProjectConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-type dataSourceSiloImagesConfig struct {
+type dataSourceSiloConfig struct {
 	BlockName string
 }
 
-var dataSourceProjectImagesConfigTpl = `
+var dataSourceProjectConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -35,7 +35,7 @@ data "oxide_images" "{{.BlockName}}" {
 }
 `
 
-var dataSourceSiloImagesConfigTpl = `
+var dataSourceSiloConfigTpl = `
 data "oxide_images" "{{.BlockName}}" {}
 `
 
@@ -43,11 +43,11 @@ data "oxide_images" "{{.BlockName}}" {}
 func TestAccCloudDataSourceImages_project(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-images")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceProjectImagesConfig{
+		dataSourceProjectConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
-		dataSourceProjectImagesConfigTpl,
+		dataSourceProjectConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -59,7 +59,7 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceProjectImages(
+				Check: checkDataSourceProject(
 					fmt.Sprintf("data.oxide_images.%s", blockName),
 				),
 			},
@@ -71,10 +71,10 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 func TestAccCloudDataSourceImages_silo(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-images")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceSiloImagesConfig{
+		dataSourceSiloConfig{
 			BlockName: blockName,
 		},
-		dataSourceSiloImagesConfigTpl,
+		dataSourceSiloConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -86,7 +86,7 @@ func TestAccCloudDataSourceImages_silo(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceSiloImages(
+				Check: checkDataSourceSilo(
 					fmt.Sprintf("data.oxide_images.%s", blockName),
 				),
 			},
@@ -94,7 +94,7 @@ func TestAccCloudDataSourceImages_silo(t *testing.T) {
 	})
 }
 
-func checkDataSourceProjectImages(dataName string) resource.TestCheckFunc {
+func checkDataSourceProject(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
@@ -110,7 +110,7 @@ func checkDataSourceProjectImages(dataName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkDataSourceSiloImages(dataName string) resource.TestCheckFunc {
+func checkDataSourceSilo(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttrSet(dataName, "images.0.block_size"),

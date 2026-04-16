@@ -19,12 +19,12 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceProjectConfig struct {
+type resourceConfig struct {
 	BlockName   string
 	ProjectName string
 }
 
-var resourceProjectConfigTpl = `
+var resourceConfigTpl = `
 resource "oxide_project" "{{.BlockName}}" {
 	description       = "a test project"
 	name              = "{{.ProjectName}}"
@@ -37,7 +37,7 @@ resource "oxide_project" "{{.BlockName}}" {
   }
 `
 
-var resourceProjectUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 resource "oxide_project" "{{.BlockName}}" {
 	description       = "a new description for project"
 	name              = "{{.ProjectName}}"
@@ -49,11 +49,11 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("project")
 	resourceName := fmt.Sprintf("oxide_project.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceProjectConfig{
+		resourceConfig{
 			BlockName:   blockName,
 			ProjectName: projectName,
 		},
-		resourceProjectConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -61,11 +61,11 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 
 	projectNameUpdated := projectName + "-updated"
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceProjectConfig{
+		resourceConfig{
 			BlockName:   blockName,
 			ProjectName: projectNameUpdated,
 		},
-		resourceProjectUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -74,15 +74,15 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccProjectDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceProject(resourceName, projectName),
+				Check:  checkResource(resourceName, projectName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceProjectUpdate(resourceName, projectNameUpdated),
+				Check:  checkResourceUpdate(resourceName, projectNameUpdated),
 			},
 			{
 				ResourceName:      resourceName,
@@ -93,7 +93,7 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	})
 }
 
-func checkResourceProject(resourceName, projectName string) resource.TestCheckFunc {
+func checkResource(resourceName, projectName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test project"),
@@ -107,7 +107,7 @@ func checkResourceProject(resourceName, projectName string) resource.TestCheckFu
 	}...)
 }
 
-func checkResourceProjectUpdate(resourceName, projectName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName, projectName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(
@@ -121,7 +121,7 @@ func checkResourceProjectUpdate(resourceName, projectName string) resource.TestC
 	}...)
 }
 
-func testAccProjectDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

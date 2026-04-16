@@ -20,13 +20,13 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceIPPoolSiloLinkConfig struct {
+type resourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 	IPPoolName       string
 }
 
-type resourceIPPoolSiloLinkConfigUpdate struct {
+type resourceConfigUpdate struct {
 	BlockName         string
 	BlockName2        string
 	SupportBlockName  string
@@ -36,7 +36,7 @@ type resourceIPPoolSiloLinkConfigUpdate struct {
 }
 
 // TODO: Change the silo ID when we have a silo datasource
-var resourceIPPoolSiloLinkConfigTpl = `
+var resourceConfigTpl = `
 resource "oxide_ip_pool" "{{.SupportBlockName}}" {
   description       = "a test ip_pool"
   name              = "{{.IPPoolName}}"
@@ -61,7 +61,7 @@ resource "oxide_ip_pool_silo_link" "{{.BlockName}}" {
 }
 `
 
-var resourceIPPoolSiloLinkUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 resource "oxide_ip_pool" "{{.SupportBlockName}}" {
   description       = "a test ip_pool"
   name              = "{{.IPPoolName}}"
@@ -107,19 +107,19 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 	resourceName := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
 	resourceName2 := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceIPPoolSiloLinkConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: supportBlockName,
 			IPPoolName:       ipPoolName,
 		},
-		resourceIPPoolSiloLinkConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceIPPoolSiloLinkConfigUpdate{
+		resourceConfigUpdate{
 			BlockName:         blockName,
 			IPPoolName:        ipPoolName,
 			BlockName2:        blockName2,
@@ -127,7 +127,7 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 			SupportBlockName:  supportBlockName,
 			SupportBlockName2: sharedtest.NewBlockName("support"),
 		},
-		resourceIPPoolSiloLinkUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -136,15 +136,15 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccIPPoolSiloLinkDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceIPPoolSiloLink(resourceName),
+				Check:  checkResource(resourceName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceIPPoolSiloLinkUpdate(resourceName, resourceName2),
+				Check:  checkResourceUpdate(resourceName, resourceName2),
 			},
 			{
 				ResourceName:      resourceName,
@@ -155,7 +155,7 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 	})
 }
 
-func checkResourceIPPoolSiloLink(resourceName string) resource.TestCheckFunc {
+func checkResource(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "silo_id"),
@@ -168,7 +168,7 @@ func checkResourceIPPoolSiloLink(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceIPPoolSiloLinkUpdate(resourceName, resourceName2 string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName, resourceName2 string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "silo_id"),
@@ -181,7 +181,7 @@ func checkResourceIPPoolSiloLinkUpdate(resourceName, resourceName2 string) resou
 	}...)
 }
 
-func testAccIPPoolSiloLinkDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

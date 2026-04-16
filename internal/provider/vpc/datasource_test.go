@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceVPCConfig struct {
+type dataSourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-var dataSourceVPCConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_vpc" "{{.BlockName}}" {
   project_name = "tf-acc-test"
   name         = "default"
@@ -31,11 +31,11 @@ data "oxide_vpc" "{{.BlockName}}" {
 func TestAccCloudDataSourceVPC_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-vpc")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceVPCConfig{
+		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
-		dataSourceVPCConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -47,7 +47,7 @@ func TestAccCloudDataSourceVPC_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceVPC(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_vpc.%s", blockName),
 				),
 			},
@@ -55,7 +55,7 @@ func TestAccCloudDataSourceVPC_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceVPC(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "description", "Default VPC"),

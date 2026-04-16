@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceVPCSubnetConfig struct {
+type dataSourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-var dataSourceVPCSubnetConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_vpc_subnet" "{{.BlockName}}" {
   project_name = "tf-acc-test"
   vpc_name     = "default"
@@ -32,11 +32,11 @@ data "oxide_vpc_subnet" "{{.BlockName}}" {
 func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-vpc-subnet")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceVPCSubnetConfig{
+		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
-		dataSourceVPCSubnetConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -48,7 +48,7 @@ func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceVPCSubnet(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_vpc_subnet.%s", blockName),
 				),
 			},
@@ -56,7 +56,7 @@ func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceVPCSubnet(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "description", "The default subnet for default"),

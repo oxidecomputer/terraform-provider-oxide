@@ -19,14 +19,14 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type vpcSubnetTestConfig struct {
+type resourceConfig struct {
 	SubnetName  string
 	Description string
 	IPv4Block   string
 	IPv6Block   string // optional, rendered conditionally
 }
 
-var vpcSubnetConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -56,9 +56,9 @@ resource "oxide_vpc_subnet" "test" {
 }
 `
 
-func buildVPCSubnetConfig(t *testing.T, cfg vpcSubnetTestConfig) string {
+func buildResourceConfig(t *testing.T, cfg resourceConfig) string {
 	t.Helper()
-	config, err := sharedtest.ParsedAccConfig(cfg, vpcSubnetConfigTpl)
+	config, err := sharedtest.ParsedAccConfig(cfg, resourceConfigTpl)
 	if err != nil {
 		t.Fatalf("error parsing config template: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 	resourceName := "oxide_vpc_subnet.test"
 
 	// Initial creation config.
-	baseConfig := vpcSubnetTestConfig{
+	baseConfig := resourceConfig{
 		SubnetName:  "terraform-acc-vpc-subnet",
 		Description: "a test vpc subnet",
 		IPv4Block:   "192.168.1.0/24",
@@ -88,15 +88,15 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccVPCSubnetDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: buildVPCSubnetConfig(t, baseConfig),
-				Check:  checkResourceVPCSubnet("terraform-acc-vpc-subnet"),
+				Config: buildResourceConfig(t, baseConfig),
+				Check:  checkResource("terraform-acc-vpc-subnet"),
 			},
 			{
-				Config: buildVPCSubnetConfig(t, updateConfig),
-				Check:  checkResourceVPCSubnetUpdate("terraform-acc-vpc-subnet-updated"),
+				Config: buildResourceConfig(t, updateConfig),
+				Check:  checkResourceUpdate("terraform-acc-vpc-subnet-updated"),
 			},
 			{
 				ResourceName:      resourceName,
@@ -104,14 +104,14 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: buildVPCSubnetConfig(t, ipv6Config),
-				Check:  checkResourceVPCSubnetIPv6("terraform-acc-vpc-subnet-v6"),
+				Config: buildResourceConfig(t, ipv6Config),
+				Check:  checkResourceIPv6("terraform-acc-vpc-subnet-v6"),
 			},
 		},
 	})
 }
 
-func checkResourceVPCSubnet(subnetName string) resource.TestCheckFunc {
+func checkResource(subnetName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "id"),
 		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "description", "a test vpc subnet"),
@@ -128,7 +128,7 @@ func checkResourceVPCSubnet(subnetName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceVPCSubnetUpdate(subnetName string) resource.TestCheckFunc {
+func checkResourceUpdate(subnetName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "id"),
 		resource.TestCheckResourceAttr(
@@ -145,7 +145,7 @@ func checkResourceVPCSubnetUpdate(subnetName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceVPCSubnetIPv6(subnetName string) resource.TestCheckFunc {
+func checkResourceIPv6(subnetName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet("oxide_vpc_subnet.test", "id"),
 		resource.TestCheckResourceAttr("oxide_vpc_subnet.test", "description", "a test vpc subnet"),
@@ -162,7 +162,7 @@ func checkResourceVPCSubnetIPv6(subnetName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccVPCSubnetDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

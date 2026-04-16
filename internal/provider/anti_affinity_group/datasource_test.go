@@ -13,14 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceAntiAffinityGroupConfig struct {
+type dataSourceConfig struct {
 	BlockName         string
 	Name              string
 	SupportBlockName  string
 	SupportBlockName2 string
 }
 
-var dataSourceAntiAffinityGroupConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -45,13 +45,13 @@ func TestAccCloudDataSourceAntiAffinityGroup_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-anti-affinity-group")
 	resourceName := sharedtest.NewResourceName()
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceAntiAffinityGroupConfig{
+		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
 			SupportBlockName2: sharedtest.NewBlockName("support"),
 			Name:              resourceName,
 		},
-		dataSourceAntiAffinityGroupConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -63,7 +63,7 @@ func TestAccCloudDataSourceAntiAffinityGroup_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceAntiAffinityGroup(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_anti_affinity_group.%s", blockName),
 					resourceName,
 				),
@@ -72,7 +72,7 @@ func TestAccCloudDataSourceAntiAffinityGroup_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceAntiAffinityGroup(dataName, keyName string) resource.TestCheckFunc {
+func checkDataSource(dataName, keyName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "name", keyName),

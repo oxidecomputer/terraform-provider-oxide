@@ -18,7 +18,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type externalSubnetAttachmentTestConfig struct {
+type resourceConfig struct {
 	PoolName         string
 	PoolDescription  string
 	PoolMemberSubnet string
@@ -33,7 +33,7 @@ type externalSubnetAttachmentTestConfig struct {
 	IncludeAttachment bool
 }
 
-var externalSubnetAttachmentConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -112,12 +112,12 @@ resource "oxide_external_subnet_attachment" "test" {
 {{- end}}
 `
 
-func buildExternalSubnetAttachmentConfig(
+func buildResourceConfig(
 	t *testing.T,
-	cfg externalSubnetAttachmentTestConfig,
+	cfg resourceConfig,
 ) string {
 	t.Helper()
-	config, err := sharedtest.ParsedAccConfig(cfg, externalSubnetAttachmentConfigTpl)
+	config, err := sharedtest.ParsedAccConfig(cfg, resourceConfigTpl)
 	if err != nil {
 		t.Fatalf("error parsing config template: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestAccResourceExternalSubnetAttachment_full(t *testing.T) {
 
 	subnet := sharedtest.NextSubnetCIDR(t)
 
-	baseConfig := externalSubnetAttachmentTestConfig{
+	baseConfig := resourceConfig{
 		PoolName:          "terraform-acc-ext-subnet-attach",
 		PoolDescription:   "a subnet pool for external subnet attachment tests",
 		PoolMemberSubnet:  subnet,
@@ -153,12 +153,12 @@ func TestAccResourceExternalSubnetAttachment_full(t *testing.T) {
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		// Note that this check isn't particularly useful, since destroying the subnet and instance
 		// will automatically destroy the attachment. We include it for completeness, but the real
-		// test is in `testAccExternalSubnetVerifyDetached` below.
-		CheckDestroy: testAccExternalSubnetAttachmentDestroy,
+		// test is in `testAccResourceVerifyDetached` below.
+		CheckDestroy: testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			// Create attachment.
 			{
-				Config: buildExternalSubnetAttachmentConfig(t, attachedConfig),
+				Config: buildResourceConfig(t, attachedConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrPair(
@@ -182,11 +182,11 @@ func TestAccResourceExternalSubnetAttachment_full(t *testing.T) {
 			},
 			// Remove attachment.
 			{
-				Config: buildExternalSubnetAttachmentConfig(t, detachedConfig),
+				Config: buildResourceConfig(t, detachedConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("oxide_external_subnet.test", "id"),
 					resource.TestCheckResourceAttrSet("oxide_instance.test", "id"),
-					testAccExternalSubnetVerifyDetached("oxide_external_subnet.test"),
+					testAccResourceVerifyDetached("oxide_external_subnet.test"),
 				),
 			},
 		},
@@ -198,7 +198,7 @@ func TestAccResourceExternalSubnetAttachment_disappears(t *testing.T) {
 
 	subnet := sharedtest.NextSubnetCIDR(t)
 
-	config := buildExternalSubnetAttachmentConfig(t, externalSubnetAttachmentTestConfig{
+	config := buildResourceConfig(t, resourceConfig{
 		PoolName:          "terraform-acc-ext-subnet-attach-pool-dis",
 		PoolDescription:   "a subnet pool for disappears test",
 		PoolMemberSubnet:  subnet,
@@ -213,13 +213,13 @@ func TestAccResourceExternalSubnetAttachment_disappears(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccExternalSubnetAttachmentDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					testAccExternalSubnetAttachmentDisappears(resourceName),
+					testAccResourceDisappears(resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -227,7 +227,7 @@ func TestAccResourceExternalSubnetAttachment_disappears(t *testing.T) {
 	})
 }
 
-func testAccExternalSubnetAttachmentDisappears(resourceName string) resource.TestCheckFunc {
+func testAccResourceDisappears(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -247,7 +247,7 @@ func testAccExternalSubnetAttachmentDisappears(resourceName string) resource.Tes
 	}
 }
 
-func testAccExternalSubnetVerifyDetached(
+func testAccResourceVerifyDetached(
 	subnetResourceName string,
 ) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -285,7 +285,7 @@ func testAccExternalSubnetVerifyDetached(
 	}
 }
 
-func testAccExternalSubnetAttachmentDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

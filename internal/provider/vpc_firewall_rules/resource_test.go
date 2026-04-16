@@ -29,15 +29,15 @@ import (
 //go:embed test-fixtures
 var testFixtures embed.FS
 
-// vpcFirewallRuleNameRegexp is the same regexp used in the resource to validate
+// ruleNameRegexp is the same regexp used in the resource to validate
 // firewall rule names.
-var vpcFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
+var ruleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
 
-type resourceFirewallRulesConfig struct {
+type resourceConfig struct {
 	VPCName string
 }
 
-var resourceFirewallRulesConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -110,7 +110,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -183,7 +183,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTpl2 = `
+var resourceUpdateConfigTpl2 = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -229,7 +229,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTpl3 = `
+var resourceUpdateConfigTpl3 = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -247,7 +247,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTpl4 = `
+var resourceUpdateConfigTpl4 = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -291,7 +291,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTpl5 = `
+var resourceUpdateConfigTpl5 = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -332,7 +332,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesIcmpNoFilterConfigTpl = `
+var resourceIcmpNoFilterConfigTpl = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -371,7 +371,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 }
 `
 
-var resourceFirewallRulesUpdateConfigTplV1 = `
+var resourceUpdateConfigTplV1 = `
 data "oxide_project" "test_project" {
   name = "tf-acc-test"
 }
@@ -416,34 +416,34 @@ resource "oxide_vpc_firewall_rules" "test" {
 func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 	vpcName := sharedtest.NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
-	tplData := resourceFirewallRulesConfig{VPCName: vpcName}
+	tplData := resourceConfig{VPCName: vpcName}
 
-	config, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesConfigTpl)
+	config, err := sharedtest.ParsedAccConfig(tplData, resourceConfigTpl)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl)
+	configUpdate, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl)
 	if err != nil {
 		t.Errorf("error parsing update config template data: %e", err)
 	}
 
-	configUpdate2, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl2)
+	configUpdate2, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl2)
 	if err != nil {
 		t.Errorf("error parsing update config 2 template data: %e", err)
 	}
 
-	configUpdate3, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl3)
+	configUpdate3, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl3)
 	if err != nil {
 		t.Errorf("error parsing update config 3 template data: %e", err)
 	}
 
-	configUpdate4, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl4)
+	configUpdate4, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl4)
 	if err != nil {
 		t.Errorf("error parsing update config 4 template data: %e", err)
 	}
 
-	configUpdate5, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
+	configUpdate5, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl5)
 	if err != nil {
 		t.Errorf("error parsing update config 5 template data: %e", err)
 	}
@@ -451,31 +451,31 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccFirewallRulesDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceFirewallRules(resourceName, vpcName),
+				Check:  checkResource(resourceName, vpcName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceFirewallRulesUpdate(resourceName),
+				Check:  checkResourceUpdate(resourceName),
 			},
 			{
 				Config: configUpdate2,
-				Check:  checkResourceFirewallRulesUpdate2(resourceName, vpcName),
+				Check:  checkResourceUpdate2(resourceName, vpcName),
 			},
 			{
 				Config: configUpdate3,
-				Check:  checkResourceFirewallRulesUpdate3(resourceName),
+				Check:  checkResourceUpdate3(resourceName),
 			},
 			{
 				Config: configUpdate4,
-				Check:  checkResourceFirewallRulesUpdate4(resourceName),
+				Check:  checkResourceUpdate4(resourceName),
 			},
 			{
 				Config: configUpdate5,
-				Check:  checkResourceFirewallRulesUpdate5(resourceName),
+				Check:  checkResourceUpdate5(resourceName),
 			},
 		},
 	})
@@ -484,21 +484,21 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 	vpcName := sharedtest.NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
-	tplData := resourceFirewallRulesConfig{VPCName: vpcName}
+	tplData := resourceConfig{VPCName: vpcName}
 
-	configV1, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTplV1)
+	configV1, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTplV1)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configV2, err := sharedtest.ParsedAccConfig(tplData, resourceFirewallRulesUpdateConfigTpl5)
+	configV2, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl5)
 	if err != nil {
 		t.Errorf("error parsing update config template data: %e", err)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { sharedtest.PreCheck(t) },
-		CheckDestroy: testAccFirewallRulesDestroy,
+		CheckDestroy: testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			// Initial state with v1 of oxide_vpc_firewall_rules.
 			{
@@ -509,14 +509,14 @@ func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 					},
 				},
 				Config: configV1,
-				Check:  checkResourceFirewallRulesV1(resourceName),
+				Check:  checkResourceV1(resourceName),
 			},
 			// Upgrade provider to use the latest version of oxide_vpc_firewall_rules.
 			{
 				ExternalProviders:        map[string]resource.ExternalProvider{},
 				ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 				Config:                   configV2,
-				Check:                    checkResourceFirewallRulesUpdate5(resourceName),
+				Check:                    checkResourceUpdate5(resourceName),
 			},
 		},
 	})
@@ -531,8 +531,8 @@ func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
 	resourceName := "oxide_vpc_firewall_rules.test"
 
 	config, err := sharedtest.ParsedAccConfig(
-		resourceFirewallRulesConfig{VPCName: vpcName},
-		resourceFirewallRulesIcmpNoFilterConfigTpl,
+		resourceConfig{VPCName: vpcName},
+		resourceIcmpNoFilterConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -541,7 +541,7 @@ func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccFirewallRulesDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -554,7 +554,7 @@ func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
 	})
 }
 
-func checkResourceFirewallRules(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResource(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -630,7 +630,7 @@ func checkResourceFirewallRules(resourceName, vpcName string) resource.TestCheck
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -677,7 +677,7 @@ func checkResourceFirewallRulesUpdate(resourceName string) resource.TestCheckFun
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate2(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResourceUpdate2(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -707,7 +707,7 @@ func checkResourceFirewallRulesUpdate2(resourceName, vpcName string) resource.Te
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate3(resourceName string) resource.TestCheckFunc {
+func checkResourceUpdate3(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -715,7 +715,7 @@ func checkResourceFirewallRulesUpdate3(resourceName string) resource.TestCheckFu
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate4(resourceName string) resource.TestCheckFunc {
+func checkResourceUpdate4(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -761,7 +761,7 @@ func checkResourceFirewallRulesUpdate4(resourceName string) resource.TestCheckFu
 	}...)
 }
 
-func checkResourceFirewallRulesUpdate5(resourceName string) resource.TestCheckFunc {
+func checkResourceUpdate5(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -794,7 +794,7 @@ func checkResourceFirewallRulesUpdate5(resourceName string) resource.TestCheckFu
 	}...)
 }
 
-func checkResourceFirewallRulesV1(resourceName string) resource.TestCheckFunc {
+func checkResourceV1(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -819,7 +819,7 @@ func checkResourceFirewallRulesV1(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccFirewallRulesDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
@@ -898,7 +898,7 @@ func TestFirewallRules_name(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.valid, vpcFirewallRuleNameRegexp.MatchString(tc.value))
+			require.Equal(t, tc.valid, ruleNameRegexp.MatchString(tc.value))
 		})
 	}
 }

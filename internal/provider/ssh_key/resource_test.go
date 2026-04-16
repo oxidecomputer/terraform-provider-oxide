@@ -19,14 +19,14 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceSSHKeyConfig struct {
+type resourceConfig struct {
 	BlockName   string
 	Name        string
 	Description string
 	PublicKey   string
 }
 
-var resourceSSHKeyConfigTpl = `
+var resourceConfigTpl = `
 resource "oxide_ssh_key" "{{.BlockName}}" {
   name        = "{{.Name}}"
   description = "{{.Description}}"
@@ -47,13 +47,13 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("ssh_key")
 	resourceName := fmt.Sprintf("oxide_ssh_key.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceSSHKeyConfig{
+		resourceConfig{
 			BlockName:   blockName,
 			Name:        sshKeyName,
 			Description: description,
 			PublicKey:   publicKey,
 		},
-		resourceSSHKeyConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -62,11 +62,11 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSSHKeyDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceSSHKey(resourceName, sshKeyName),
+				Check:  checkResource(resourceName, sshKeyName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -77,7 +77,7 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	})
 }
 
-func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc {
+func checkResource(resourceName, sshKeyName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", sshKeyName),
@@ -93,7 +93,7 @@ func checkResourceSSHKey(resourceName, sshKeyName string) resource.TestCheckFunc
 	}...)
 }
 
-func testAccSSHKeyDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

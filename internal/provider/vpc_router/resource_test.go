@@ -19,7 +19,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceVPCRouterConfig struct {
+type resourceConfig struct {
 	BlockName        string
 	VPCName          string
 	SupportBlockName string
@@ -27,7 +27,7 @@ type resourceVPCRouterConfig struct {
 	VPCRouterName    string
 }
 
-var resourceVPCRouterConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -52,7 +52,7 @@ resource "oxide_vpc_router" "{{.BlockName}}" {
   }
 `
 
-var resourceVPCRouterUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -79,14 +79,14 @@ func TestAccCloudResourceVPCRouter_full(t *testing.T) {
 	vpcBlockName := sharedtest.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_router.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceVPCRouterConfig{
+		resourceConfig{
 			VPCName:          vpcName,
 			SupportBlockName: supportBlockName,
 			VPCBlockName:     vpcBlockName,
 			BlockName:        blockName,
 			VPCRouterName:    routerName,
 		},
-		resourceVPCRouterConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -94,14 +94,14 @@ func TestAccCloudResourceVPCRouter_full(t *testing.T) {
 
 	routerNameUpdated := routerName + "-updated"
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceVPCRouterConfig{
+		resourceConfig{
 			VPCName:          vpcName,
 			SupportBlockName: supportBlockName,
 			VPCBlockName:     vpcBlockName,
 			BlockName:        blockName,
 			VPCRouterName:    routerNameUpdated,
 		},
-		resourceVPCRouterUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -110,15 +110,15 @@ func TestAccCloudResourceVPCRouter_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccVPCRouterDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceVPCRouter(resourceName, routerName),
+				Check:  checkResource(resourceName, routerName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceVPCRouterUpdate(resourceName, routerNameUpdated),
+				Check:  checkResourceUpdate(resourceName, routerNameUpdated),
 			},
 			{
 				ResourceName:      resourceName,
@@ -129,7 +129,7 @@ func TestAccCloudResourceVPCRouter_full(t *testing.T) {
 	})
 }
 
-func checkResourceVPCRouter(resourceName, routerName string) resource.TestCheckFunc {
+func checkResource(resourceName, routerName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test router"),
@@ -145,7 +145,7 @@ func checkResourceVPCRouter(resourceName, routerName string) resource.TestCheckF
 	}...)
 }
 
-func checkResourceVPCRouterUpdate(resourceName, routerName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName, routerName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
@@ -157,7 +157,7 @@ func checkResourceVPCRouterUpdate(resourceName, routerName string) resource.Test
 	}...)
 }
 
-func testAccVPCRouterDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

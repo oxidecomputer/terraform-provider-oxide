@@ -19,7 +19,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceVPCInternetGatewayConfig struct {
+type resourceConfig struct {
 	BlockName              string
 	VPCName                string
 	SupportBlockName       string
@@ -27,7 +27,7 @@ type resourceVPCInternetGatewayConfig struct {
 	VPCInternetGatewayName string
 }
 
-var resourceVPCInternetGatewayConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -52,7 +52,7 @@ resource "oxide_vpc_internet_gateway" "{{.BlockName}}" {
   }
 `
 
-var resourceVPCInternetGatewayUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -80,28 +80,28 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	vpcBlockName := sharedtest.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_internet_gateway.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceVPCInternetGatewayConfig{
+		resourceConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
 			VPCBlockName:           vpcBlockName,
 			BlockName:              blockName,
 			VPCInternetGatewayName: internetGatewayName,
 		},
-		resourceVPCInternetGatewayConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceVPCInternetGatewayConfig{
+		resourceConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
 			VPCBlockName:           vpcBlockName,
 			BlockName:              blockName,
 			VPCInternetGatewayName: internetGatewayName,
 		},
-		resourceVPCInternetGatewayUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -110,15 +110,15 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccVPCInternetGatewayDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceVPCInternetGateway(resourceName, internetGatewayName),
+				Check:  checkResource(resourceName, internetGatewayName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceVPCInternetGatewayUpdate(resourceName, internetGatewayName),
+				Check:  checkResourceUpdate(resourceName, internetGatewayName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -132,7 +132,7 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	})
 }
 
-func checkResourceVPCInternetGateway(
+func checkResource(
 	resourceName, internetGatewayName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -150,7 +150,7 @@ func checkResourceVPCInternetGateway(
 	}...)
 }
 
-func checkResourceVPCInternetGatewayUpdate(
+func checkResourceUpdate(
 	resourceName, internetGatewayName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -164,7 +164,7 @@ func checkResourceVPCInternetGatewayUpdate(
 	}...)
 }
 
-func testAccVPCInternetGatewayDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

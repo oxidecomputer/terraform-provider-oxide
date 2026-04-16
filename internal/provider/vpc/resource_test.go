@@ -19,13 +19,13 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceVPCConfig struct {
+type resourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 	VPCName          string
 }
 
-var resourceVPCConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -44,7 +44,7 @@ resource "oxide_vpc" "{{.BlockName}}" {
   }
 `
 
-var resourceVPCUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -57,7 +57,7 @@ resource "oxide_vpc" "{{.BlockName}}" {
   }
 `
 
-var resourceVPCIPv6ConfigTpl = `
+var resourceIPv6ConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -77,12 +77,12 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	resourceName := fmt.Sprintf("oxide_vpc.%s", blockName)
 	supportBlockName := sharedtest.NewBlockName("support")
 	config, err := sharedtest.ParsedAccConfig(
-		resourceVPCConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			VPCName:          vpcName,
 			SupportBlockName: supportBlockName,
 		},
-		resourceVPCConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -90,12 +90,12 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 
 	vpcNameUpdated := vpcName + "-updated"
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceVPCConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			VPCName:          vpcNameUpdated,
 			SupportBlockName: supportBlockName,
 		},
-		resourceVPCUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -105,12 +105,12 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	resourceName2 := fmt.Sprintf("oxide_vpc.%s", blockName2)
 	vpcName2 := vpcName + "-2"
 	config2, err := sharedtest.ParsedAccConfig(
-		resourceVPCConfig{
+		resourceConfig{
 			BlockName:        blockName2,
 			VPCName:          vpcName2,
 			SupportBlockName: supportBlockName,
 		},
-		resourceVPCIPv6ConfigTpl,
+		resourceIPv6ConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -119,15 +119,15 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccVPCDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceVPC(resourceName, vpcName),
+				Check:  checkResource(resourceName, vpcName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceVPCUpdate(resourceName, vpcNameUpdated),
+				Check:  checkResourceUpdate(resourceName, vpcNameUpdated),
 			},
 			{
 				ResourceName:      resourceName,
@@ -136,7 +136,7 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 			},
 			{
 				Config: config2,
-				Check:  checkResourceVPCIPv6(resourceName2, vpcName2),
+				Check:  checkResourceIPv6(resourceName2, vpcName2),
 			},
 			{
 				ResourceName:      resourceName2,
@@ -147,7 +147,7 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	})
 }
 
-func checkResourceVPC(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResource(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
@@ -165,7 +165,7 @@ func checkResourceVPC(resourceName, vpcName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceVPCUpdate(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vopac"),
@@ -179,7 +179,7 @@ func checkResourceVPCUpdate(resourceName, vpcName string) resource.TestCheckFunc
 	}...)
 }
 
-func checkResourceVPCIPv6(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResourceIPv6(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
@@ -193,7 +193,7 @@ func checkResourceVPCIPv6(resourceName, vpcName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccVPCDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

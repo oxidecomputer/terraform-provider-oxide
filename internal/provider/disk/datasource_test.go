@@ -12,11 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceDiskConfig struct {
+type dataSourceConfig struct {
 	DiskName string
 }
 
-var dataSourceDiskConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -41,10 +41,10 @@ data "oxide_disk" "test" {
 func TestAccCloudDataSourceDisk_full(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceDiskConfig{
+		dataSourceConfig{
 			DiskName: diskName,
 		},
-		dataSourceDiskConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -56,13 +56,13 @@ func TestAccCloudDataSourceDisk_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkDataSourceDisk("data.oxide_disk.test", diskName),
+				Check:  checkDataSource("data.oxide_disk.test", diskName),
 			},
 		},
 	})
 }
 
-func checkDataSourceDisk(dataName, diskName string) resource.TestCheckFunc {
+func checkDataSource(dataName, diskName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "name", diskName),

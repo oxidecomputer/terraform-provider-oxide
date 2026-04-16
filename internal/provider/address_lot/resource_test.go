@@ -17,12 +17,12 @@ func TestAccAddressLot_full(t *testing.T) {
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceAddressLotConfig(addressLotName),
-				Check:  checkResourceAddressLot(resourceName, addressLotName),
+				Config: testResourceConfig(addressLotName),
+				Check:  checkResource(resourceName, addressLotName),
 			},
 			{
-				Config: testResourceAddressLotUpdateConfig(addressLotName),
-				Check:  checkResourceAddressLotUpdate(resourceName, addressLotName),
+				Config: testResourceUpdateConfig(addressLotName),
+				Check:  checkResourceUpdate(resourceName, addressLotName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -33,7 +33,7 @@ func TestAccAddressLot_full(t *testing.T) {
 	})
 }
 
-func testResourceAddressLotConfig(name string) string {
+func testResourceConfig(name string) string {
 	return fmt.Sprintf(`
 resource "oxide_address_lot" "test" {
 	description       = "a test address lot"
@@ -55,7 +55,7 @@ resource "oxide_address_lot" "test" {
 `, name)
 }
 
-func testResourceAddressLotUpdateConfig(name string) string {
+func testResourceUpdateConfig(name string) string {
 	return fmt.Sprintf(`
 resource "oxide_address_lot" "test" {
 	description       = "a test address lot"
@@ -81,7 +81,7 @@ resource "oxide_address_lot" "test" {
 `, name)
 }
 
-func checkResourceAddressLot(resourceName string, addressLotName string) resource.TestCheckFunc {
+func checkResource(resourceName string, addressLotName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test address lot"),
@@ -99,7 +99,7 @@ func checkResourceAddressLot(resourceName string, addressLotName string) resourc
 	}...)
 }
 
-func checkResourceAddressLotUpdate(
+func checkResourceUpdate(
 	resourceName string,
 	addressLotName string,
 ) resource.TestCheckFunc {

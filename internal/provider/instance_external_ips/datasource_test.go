@@ -13,14 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceInstanceExternalIPConfig struct {
+type dataSourceConfig struct {
 	BlockName         string
 	InstanceName      string
 	InstanceBlockName string
 	SupportBlockName  string
 }
 
-var datasourceInstanceExternalIPsConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -72,13 +72,13 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
 func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-instance-external-ips")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceInstanceExternalIPConfig{
+		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
 			InstanceName:      sharedtest.NewResourceName(),
 			InstanceBlockName: sharedtest.NewBlockName("instance"),
 		},
-		datasourceInstanceExternalIPsConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -90,7 +90,7 @@ func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceInstanceExternalIPs(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_instance_external_ips.%s", blockName),
 				),
 			},
@@ -98,7 +98,7 @@ func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceInstanceExternalIPs(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),

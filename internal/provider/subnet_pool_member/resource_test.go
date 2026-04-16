@@ -29,11 +29,11 @@ func TestAccResourceSubnetPoolMember_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSubnetPoolMemberDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			// Create pool and one member
 			{
-				Config: testResourceSubnetPoolMemberConfig(subnet1),
+				Config: testResourceConfig(subnet1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(poolResourceName, "id"),
 					resource.TestCheckResourceAttrSet(memberResourceName, "id"),
@@ -69,7 +69,7 @@ func TestAccResourceSubnetPoolMember_full(t *testing.T) {
 			},
 			// Add a second member (with computed min_prefix_length)
 			{
-				Config: testResourceSubnetPoolMemberAddSecondConfig(subnet1, subnet2),
+				Config: testResourceAddSecondConfig(subnet1, subnet2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// First member unchanged
 					resource.TestCheckResourceAttr(memberResourceName, "subnet", subnet1),
@@ -90,7 +90,7 @@ func TestAccResourceSubnetPoolMember_full(t *testing.T) {
 	})
 }
 
-func testResourceSubnetPoolMemberConfig(subnet string) string {
+func testResourceConfig(subnet string) string {
 	return fmt.Sprintf(`
 resource "oxide_subnet_pool" "test" {
 	name        = "terraform-acc-subnet-pool-member-test"
@@ -107,7 +107,7 @@ resource "oxide_subnet_pool_member" "test" {
 `, subnet)
 }
 
-func testResourceSubnetPoolMemberAddSecondConfig(subnet1, subnet2 string) string {
+func testResourceAddSecondConfig(subnet1, subnet2 string) string {
 	return fmt.Sprintf(`
 resource "oxide_subnet_pool" "test" {
 	name        = "terraform-acc-subnet-pool-member-test"
@@ -144,11 +144,11 @@ func TestAccResourceSubnetPoolMember_parallel(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSubnetPoolMemberDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			// Create pool and three members in parallel (no depends_on between members)
 			{
-				Config: testResourceSubnetPoolMemberParallelConfig(sub1, sub2, sub3),
+				Config: testResourceParallelConfig(sub1, sub2, sub3),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(poolResourceName, "id"),
 					resource.TestCheckResourceAttrSet(member1ResourceName, "id"),
@@ -163,7 +163,7 @@ func TestAccResourceSubnetPoolMember_parallel(t *testing.T) {
 	})
 }
 
-func testResourceSubnetPoolMemberParallelConfig(sub1, sub2, sub3 string) string {
+func testResourceParallelConfig(sub1, sub2, sub3 string) string {
 	return fmt.Sprintf(`
 resource "oxide_subnet_pool" "test" {
 	name        = "terraform-acc-subnet-pool-parallel-test"
@@ -202,15 +202,15 @@ func TestAccResourceSubnetPoolMember_disappears(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSubnetPoolMemberDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceSubnetPoolMemberDisappearsConfig(subnet),
+				Config: testResourceDisappearsConfig(subnet),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(poolResourceName, "id"),
 					resource.TestCheckResourceAttrSet(memberResourceName, "id"),
 					// Delete the member outside of Terraform
-					testAccSubnetPoolMemberDisappears(memberResourceName),
+					testAccResourceDisappears(memberResourceName),
 				),
 				// Expect Terraform to detect the member is gone and plan to recreate
 				ExpectNonEmptyPlan: true,
@@ -219,9 +219,9 @@ func TestAccResourceSubnetPoolMember_disappears(t *testing.T) {
 	})
 }
 
-// testAccSubnetPoolMemberDisappears deletes the member via the API to simulate
+// testAccResourceDisappears deletes the member via the API to simulate
 // out-of-band deletion, testing that the Read function properly removes it from state.
-func testAccSubnetPoolMemberDisappears(resourceName string) resource.TestCheckFunc {
+func testAccResourceDisappears(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -249,7 +249,7 @@ func testAccSubnetPoolMemberDisappears(resourceName string) resource.TestCheckFu
 	}
 }
 
-func testResourceSubnetPoolMemberDisappearsConfig(subnet string) string {
+func testResourceDisappearsConfig(subnet string) string {
 	return fmt.Sprintf(`
 resource "oxide_subnet_pool" "test" {
 	name        = "terraform-acc-subnet-pool-disappears-test"
@@ -265,7 +265,7 @@ resource "oxide_subnet_pool_member" "test" {
 `, subnet)
 }
 
-func testAccSubnetPoolMemberDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

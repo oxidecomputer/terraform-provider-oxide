@@ -13,14 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceSSHKeyConfig struct {
+type dataSourceConfig struct {
 	BlockName         string
 	Name              string
 	SupportBlockName  string
 	SupportBlockName2 string
 }
 
-var dataSourceSSHKeyConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -43,13 +43,13 @@ func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-ssh-key")
 	resourceName := sharedtest.NewResourceName()
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceSSHKeyConfig{
+		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
 			SupportBlockName2: sharedtest.NewBlockName("support"),
 			Name:              resourceName,
 		},
-		dataSourceSSHKeyConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -61,7 +61,7 @@ func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceSSHKey(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_ssh_key.%s", blockName),
 					resourceName,
 				),
@@ -70,7 +70,7 @@ func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceSSHKey(dataName, keyName string) resource.TestCheckFunc {
+func checkDataSource(dataName, keyName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "name", keyName),
