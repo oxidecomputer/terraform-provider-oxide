@@ -1,0 +1,86 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package vpcrouter_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/oxidecomputer/oxide.go/oxide"
+)
+
+type dataSourceVPCRouterConfig struct {
+	BlockName        string
+	SupportBlockName string
+}
+
+var dataSourceVPCRouterConfigTpl = `
+data "oxide_vpc" "test" {
+  project_name = "tf-acc-test"
+  name         = "default"
+}
+
+resource "oxide_vpc_router" "{{.BlockName}}" {
+  vpc_id      = data.oxide_vpc.test.id
+  name        = "test"
+  description = "test router"
+}
+
+data "oxide_vpc_router" "{{.BlockName}}" {
+  project_name = "tf-acc-test"
+  vpc_name     = "default"
+  name         = oxide_vpc_router.{{.BlockName}}.name
+  timeouts = {
+    read = "1m"
+  }
+}
+`
+
+func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
+	blockName := sharedtest.NewBlockName("datasource-vpc-router")
+	config, err := sharedtest.ParsedAccConfig(
+		dataSourceVPCRouterConfig{
+			BlockName:        blockName,
+			SupportBlockName: sharedtest.NewBlockName("support"),
+		},
+		dataSourceVPCRouterConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: checkDataSourceVPCRouter(
+					fmt.Sprintf("data.oxide_vpc_router.%s", blockName),
+				),
+			},
+		},
+	})
+}
+
+func checkDataSourceVPCRouter(dataName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(dataName, "id"),
+		resource.TestCheckResourceAttr(
+			dataName,
+			"description",
+			"test router",
+		),
+		resource.TestCheckResourceAttr(dataName, "name", "test"),
+		resource.TestCheckResourceAttr(dataName, "kind", string(oxide.VpcRouterKindCustom)),
+		resource.TestCheckResourceAttrSet(dataName, "vpc_id"),
+		resource.TestCheckResourceAttrSet(dataName, "time_created"),
+		resource.TestCheckResourceAttrSet(dataName, "time_modified"),
+		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
+	}...)
+}

@@ -1,0 +1,2096 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package instance_test
+
+import (
+	"context"
+	"fmt"
+	"math/rand/v2"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/instance"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
+)
+
+func TestAccCloudResourceInstance_full(t *testing.T) {
+	type resourceInstanceConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	type resourceInstanceFullConfig struct {
+		BlockName                  string
+		InstanceName               string
+		DiskBlockName              string
+		DiskName                   string
+		SSHKeyName                 string
+		AntiAffinityGroupName      string
+		SupportBlockName           string
+		SupportBlockName2          string
+		SSHBlockName               string
+		AntiAffinityGroupBlockName string
+		AutoRestartPolicy          string
+		FloatingIPName             string
+		NicName                    string
+	}
+
+	resourceInstanceConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+}
+`
+
+	resourceInstanceFullConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+  name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "{{.SupportBlockName2}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+data "oxide_ip_pool" "default_v6" {
+  name = "default-ipv6"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_ssh_key" "{{.SSHBlockName}}" {
+  name        = "{{.SSHKeyName}}"
+  description = "A test key"
+  public_key  = "ssh-ed25519 AAAA"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
+  project_id       	   = data.oxide_project.{{.SupportBlockName}}.id
+  auto_restart_policy  = "{{.AutoRestartPolicy}}"
+  boot_disk_id     	   = oxide_disk.{{.DiskBlockName}}.id
+  description      	   = "a test instance"
+  name             	   = "{{.InstanceName}}"
+  hostname         	   = "terraform-acc-myhost"
+  memory           	   = 1073741824
+  ncpus            	   = 1
+  start_on_create  	   = true
+  ssh_public_keys  	   = [oxide_ssh_key.{{.SSHBlockName}}.id]
+  disk_attachments 	   = [oxide_disk.{{.DiskBlockName}}.id]
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v4" },
+      { pool_id = data.oxide_ip_pool.default_v6.id },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v4.id },
+      { id = oxide_floating_ip.tfacctest_v6.id },
+    ]
+  }
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SupportBlockName2}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SupportBlockName2}}.vpc_id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SupportBlockName2}}.ipv4_block, 42)
+        }
+        v6 = { ip = "auto" }
+      }
+    }
+  ]
+  timeouts = {
+	read   = "1m"
+	create = "3m"
+	delete = "2m"
+  }
+}
+`
+
+	instanceName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance")
+	supportBlockName := sharedtest.NewBlockName("support")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config, err := sharedtest.ParsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	instanceName2 := sharedtest.NewResourceName()
+	instanceDiskName := sharedtest.NewResourceName()
+	instanceNicName := sharedtest.NewResourceName()
+	instanceFloatingIPName := sharedtest.NewResourceName()
+	instanceSshKeyName := sharedtest.NewResourceName()
+	instanceAaGroupName := sharedtest.NewResourceName()
+	blockName2 := sharedtest.NewBlockName("instance")
+	diskBlockName := sharedtest.NewBlockName("disk")
+	supportBlockName3 := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support")
+	supportBlockNameSSHKeys := sharedtest.NewBlockName("support-instance-ssh-keys")
+	supportBlockNameAaGroup := sharedtest.NewBlockName("support-instance-anti-affinity-group")
+	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
+	autoRestartPolicy := "best_effort"
+	config2, err := sharedtest.ParsedAccConfig(
+		resourceInstanceFullConfig{
+			BlockName:                  blockName2,
+			InstanceName:               instanceName2,
+			DiskBlockName:              diskBlockName,
+			DiskName:                   instanceDiskName,
+			SSHKeyName:                 instanceSshKeyName,
+			SupportBlockName:           supportBlockName3,
+			SupportBlockName2:          supportBlockName2,
+			FloatingIPName:             instanceFloatingIPName,
+			NicName:                    instanceNicName,
+			SSHBlockName:               supportBlockNameSSHKeys,
+			AntiAffinityGroupBlockName: supportBlockNameAaGroup,
+			AntiAffinityGroupName:      instanceAaGroupName,
+			AutoRestartPolicy:          autoRestartPolicy,
+		},
+		resourceInstanceFullConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstance(resourceName, instanceName),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+			{
+				Config: config2,
+				Check:  checkResourceInstanceFull(resourceName2, instanceName2, instanceNicName),
+			},
+			{
+				ResourceName:      resourceName2,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// External IPs cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"external_ips",
+					"network_interfaces.0.ip_config",
+				},
+			},
+		},
+	})
+}
+
+// TestAccCloudResourceInstance_extIPs tests whether Terraform can create
+// `oxide_instance` resources with the `external_ips` attribute populated. It
+// assumes an IP pool named `default` already exists in the silo the test is
+// running against. The `OXIDE_TEST_IP_POOL_NAME` environment variable can be
+// used to override the IP pool if necessary.
+//
+// This test is also meant to catch regressions of the following issue.
+// https://github.com/oxidecomputer/terraform-provider-oxide/issues/459.
+func TestAccCloudResourceInstance_extIPs(t *testing.T) {
+	type resourceInstanceConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+		IPPoolBlockName  string
+		IPPoolName       string
+		FloatingIPName   string
+	}
+
+	resourceInstanceExternalIPConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+data "oxide_ip_pool" "{{.IPPoolBlockName}}" {
+	name = "{{.IPPoolName}}"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+
+  external_ips = {
+    ephemeral = [
+      { pool_id = data.oxide_ip_pool.{{.IPPoolBlockName}}.id },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v4.id },
+    ]
+  }
+
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config   = {
+        v4 = { ip = "auto" }
+        v6 = { ip = "auto" }
+      }
+    }
+  ]
+}
+`
+
+	resourceInstanceExternalIPConfigUpdate1Tpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v4" },
+      { ip_version = "v6" },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v4.id },
+      { id = oxide_floating_ip.tfacctest_v6.id },
+    ]
+  }
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = { ip = "auto" }
+        v6 = { ip = "auto" }
+      }
+    }
+  ]
+}
+`
+	resourceInstanceExternalIPConfigUpdate1SingleStackTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v6" },
+    ]
+
+    floating = [
+      { id = oxide_floating_ip.tfacctest_v6.id },
+    ]
+  }
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = { ip = "auto" }
+        v6 = { ip = "auto" }
+      }
+    }
+  ]
+}
+`
+
+	resourceInstanceExternalIPConfigUpdate2Tpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_floating_ip" "tfacctest_v4" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v4"
+  description = "Terraform acceptance test"
+  ip_version  = "v4"
+}
+
+resource "oxide_floating_ip" "tfacctest_v6" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  name        = "{{.FloatingIPName}}-v6"
+  description = "Terraform acceptance test"
+  ip_version  = "v6"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+}
+`
+
+	// Some test environments may not have an IP pool named `default`. This allows a
+	// user to override the IP pool name used for this test.
+	ipPoolName, ok := os.LookupEnv("OXIDE_TEST_IP_POOL_NAME")
+	if !ok || ipPoolName == "" {
+		ipPoolName = "default"
+	}
+
+	instanceName := sharedtest.NewResourceName()
+	floatingIPName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance")
+	supportBlockName := sharedtest.NewBlockName("support")
+	ipPoolBlockName := sharedtest.NewBlockName("ip-pool")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	initialConfig, err := sharedtest.ParsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			IPPoolBlockName:  ipPoolBlockName,
+			IPPoolName:       ipPoolName,
+			FloatingIPName:   floatingIPName,
+		},
+		resourceInstanceExternalIPConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing initial config template data: %e", err)
+	}
+
+	updateConfig1, err := sharedtest.ParsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			FloatingIPName:   floatingIPName,
+		},
+		resourceInstanceExternalIPConfigUpdate1Tpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing first update config template data: %e", err)
+	}
+
+	updateConfig1SingleStack, err := sharedtest.ParsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			FloatingIPName:   floatingIPName,
+		},
+		resourceInstanceExternalIPConfigUpdate1SingleStackTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing first update single stack config template data: %e", err)
+	}
+
+	updateConfig2, err := sharedtest.ParsedAccConfig(
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			FloatingIPName:   floatingIPName,
+		},
+		resourceInstanceExternalIPConfigUpdate2Tpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing second update config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			// Ephemeral external IP with specified IP pool ID.
+			{
+				Config: initialConfig,
+				Check:  checkResourceInstanceIP(resourceName, instanceName),
+			},
+			// Ephemeral external IP with default silo IP pool ID.
+			{
+				Config: updateConfig1,
+				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
+			},
+			// Detach ephemeral IPv4.
+			{
+				Config: updateConfig1SingleStack,
+				Check:  checkResourceInstanceIPUpdate1SingleStack(resourceName, instanceName),
+			},
+			// Ephemeral external IP with specified IP pool ID.
+			{
+				Config: initialConfig,
+				Check:  checkResourceInstanceIP(resourceName, instanceName),
+			},
+			// Detach all external IPs.
+			{
+				Config: updateConfig2,
+				Check:  checkResourceInstanceIPUpdate2(resourceName, instanceName),
+			},
+			// Attach all external IPs.
+			{
+				Config: updateConfig1,
+				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"external_ips",
+					"network_interfaces.0.ip_config",
+				},
+			},
+		},
+	})
+}
+
+func TestAccCloudResourceInstance_sshKeys(t *testing.T) {
+	type resourceInstanceSshKeyConfig struct {
+		BlockName         string
+		SshKeyName        string
+		InstanceName      string
+		SupportBlockName  string
+		SupportBlockName2 string
+	}
+
+	resourceInstanceSSHKeysConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_ssh_key" "{{.SupportBlockName2}}" {
+  name        = "{{.SshKeyName}}"
+  description = "A test key"
+  public_key  = "ssh-ed25519 AAAA"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  ssh_public_keys = [oxide_ssh_key.{{.SupportBlockName2}}.id]
+  start_on_create = false
+}
+`
+
+	instanceSshKeysName := sharedtest.NewResourceName()
+	instanceSshKeysName2 := sharedtest.NewResourceName()
+	blockNameSshKeys := sharedtest.NewBlockName("instance-ssh-keys")
+	supportBlockNameSshKeys := sharedtest.NewBlockName("support-instance-ssh-keys")
+	supportBlockNameSshKeys2 := sharedtest.NewBlockName("support-instance-ssh-keys-2")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameSshKeys)
+	configSshKeys, err := sharedtest.ParsedAccConfig(
+		resourceInstanceSshKeyConfig{
+			BlockName:         blockNameSshKeys,
+			SshKeyName:        instanceSshKeysName2,
+			InstanceName:      instanceSshKeysName,
+			SupportBlockName:  supportBlockNameSshKeys,
+			SupportBlockName2: supportBlockNameSshKeys2,
+		},
+		resourceInstanceSSHKeysConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configSshKeys,
+				Check:  checkResourceInstanceSSHKeys(resourceName, instanceSshKeysName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// SSH Keys cannot be imported as they are only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func TestAccCloudResourceInstance_nic(t *testing.T) {
+	type resourceInstanceNicConfig struct {
+		BlockName                  string
+		SubnetBlockName            string
+		NonDefaultSubnetName       string
+		NonDefaultSubnetIPv4Block  string
+		NonDefaultSubnetIPv6NetNum int
+		NicName                    string
+		InstanceName               string
+		SupportBlockName           string
+	}
+
+	resourceInstanceNicConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  hostname         = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+        v6 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SubnetBlockName}}.ipv6_block, 128)
+        }
+      }
+    },
+  ]
+}
+`
+
+	resourceInstanceNicConfigTwoNICsTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  hostname         = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+      ip_config = {
+        v4 = {
+          ip = "auto"
+        }
+        v6 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SubnetBlockName}}.ipv6_block, 128)
+        }
+      }
+    },
+    {
+      subnet_id   = oxide_vpc_subnet.other.id
+      vpc_id      = oxide_vpc_subnet.other.vpc_id
+      description = "a second nic"
+      name        = "{{.NicName}}-2"
+      ip_config = {
+        v4 = {
+          ip = cidrhost(oxide_vpc_subnet.other.ipv4_block, 42)
+        }
+        v6 = {
+          ip = "auto"
+        }
+      }
+    }
+  ]
+}
+`
+
+	resourceInstanceNicConfigTwoNICsSingleStackTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
+data "oxide_vpc_subnet" "{{.SubnetBlockName}}" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  hostname         = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+  network_interfaces = [
+    {
+      subnet_id   = data.oxide_vpc_subnet.{{.SubnetBlockName}}.id
+      vpc_id      = data.oxide_vpc_subnet.{{.SubnetBlockName}}.vpc_id
+      description = "a sample nic"
+      name        = "{{.NicName}}"
+      ip_config = {
+        v6 = {
+          ip = cidrhost(data.oxide_vpc_subnet.{{.SubnetBlockName}}.ipv6_block, 128)
+        }
+      }
+    },
+    {
+      subnet_id   = oxide_vpc_subnet.other.id
+      vpc_id      = oxide_vpc_subnet.other.vpc_id
+      description = "a second nic"
+      name        = "{{.NicName}}-2"
+      ip_config = {
+        v4 = {
+          ip = cidrhost(oxide_vpc_subnet.other.ipv4_block, 42)
+        }
+      }
+    }
+  ]
+}
+`
+
+	resourceInstanceNicConfigDeleteNicsTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  name         = "default"
+}
+
+resource "oxide_vpc_subnet" "other" {
+  vpc_id      = data.oxide_vpc.default.id
+  name        = "{{.NonDefaultSubnetName}}"
+  description = "non-default subnet"
+  ipv4_block  = "{{.NonDefaultSubnetIPv4Block}}"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, {{.NonDefaultSubnetIPv6NetNum}})
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id       = data.oxide_project.{{.SupportBlockName}}.id
+  description      = "a test instance"
+  name             = "{{.InstanceName}}"
+  hostname         = "terraform-acc-myhost"
+  memory           = 1073741824
+  ncpus            = 1
+  start_on_create  = false
+}
+`
+
+	instanceNicName := sharedtest.NewResourceName()
+	nicName := sharedtest.NewResourceName()
+	blockNameSubnet := sharedtest.NewBlockName("instance-nic-subnet")
+	blockNameInstanceNic := sharedtest.NewBlockName("instance-nic")
+	supportBlockName := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support")
+	resourceNameInstanceNic := fmt.Sprintf("oxide_instance.%s", blockNameInstanceNic)
+	nonDefaultSubnetName := sharedtest.NewResourceName()
+	nonDefaultSubnetIPv4Block := fmt.Sprintf("10.%d.%d.0/24", rand.IntN(255), rand.IntN(255))
+	nonDefaultSubnetIPv6NetNum := rand.IntN(200)
+	configNic, err := sharedtest.ParsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName,
+		},
+		resourceInstanceNicConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configNicAdd, err := sharedtest.ParsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName,
+		},
+		resourceInstanceNicConfigTwoNICsTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configNicUpdateSingleStack, err := sharedtest.ParsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName,
+		},
+		resourceInstanceNicConfigTwoNICsSingleStackTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configNicDelete, err := sharedtest.ParsedAccConfig(
+		resourceInstanceNicConfig{
+			BlockName:                  blockNameInstanceNic,
+			SubnetBlockName:            blockNameSubnet,
+			NonDefaultSubnetName:       nonDefaultSubnetName,
+			NonDefaultSubnetIPv4Block:  nonDefaultSubnetIPv4Block,
+			NonDefaultSubnetIPv6NetNum: nonDefaultSubnetIPv6NetNum,
+			InstanceName:               instanceNicName,
+			NicName:                    nicName,
+			SupportBlockName:           supportBlockName2,
+		},
+		resourceInstanceNicConfigDeleteNicsTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configNic,
+				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+			},
+			{
+				// Add a nic
+				Config: configNicAdd,
+				Check: checkResourceInstanceTwoNics(
+					resourceNameInstanceNic,
+					instanceNicName,
+					nicName,
+				),
+			},
+			{
+				// Make nics single stack
+				Config: configNicUpdateSingleStack,
+				Check: checkResourceInstanceTwoNicsSingleStack(
+					resourceNameInstanceNic,
+					instanceNicName,
+					nicName,
+				),
+			},
+			{
+				// Delete a nic
+				Config: configNic,
+				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+			},
+			{
+				// Delete all nics
+				Config: configNicDelete,
+				Check:  checkResourceInstanceNicUpdate(resourceNameInstanceNic, instanceNicName),
+			},
+			{
+				// Recreate a nic
+				Config: configNic,
+				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+			},
+			{
+				ResourceName:      resourceNameInstanceNic,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"network_interfaces.0.ip_config",
+					"network_interfaces.1.ip_config",
+				},
+			},
+		},
+	})
+}
+
+func TestAccCloudResourceInstance_disk(t *testing.T) {
+	type resourceInstanceDiskConfig struct {
+		BlockName        string
+		DiskBlockName    string
+		DiskBlockName2   string
+		DiskName         string
+		DiskName2        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceDiskConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_disk" "{{.DiskBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName2}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  boot_disk_id    = oxide_disk.{{.DiskBlockName2}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = true
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id, oxide_disk.{{.DiskBlockName2}}.id]
+}
+`
+
+	resourceInstanceDiskConfigUpdateTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_disk" "{{.DiskBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName2}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  boot_disk_id    = oxide_disk.{{.DiskBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = true
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+}
+`
+	instanceDiskName := sharedtest.NewResourceName()
+	diskName := sharedtest.NewResourceName()
+	diskName2 := sharedtest.NewResourceName()
+	supportBlockName := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support-update")
+	blockNameInstance := sharedtest.NewBlockName("instance")
+	blockNameInstanceDisk := sharedtest.NewBlockName("instance-disk")
+	blockNameInstanceDisk2 := sharedtest.NewBlockName("instance-disk-2")
+	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
+	configDisk, err := sharedtest.ParsedAccConfig(
+		resourceInstanceDiskConfig{
+			BlockName:        blockNameInstance,
+			DiskBlockName:    blockNameInstanceDisk,
+			DiskBlockName2:   blockNameInstanceDisk2,
+			DiskName:         diskName,
+			DiskName2:        diskName2,
+			InstanceName:     instanceDiskName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceDiskConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+	configDiskUpdate, err := sharedtest.ParsedAccConfig(
+		resourceInstanceDiskConfig{
+			BlockName:        blockNameInstance,
+			DiskBlockName:    blockNameInstanceDisk,
+			DiskBlockName2:   blockNameInstanceDisk2,
+			DiskName:         diskName,
+			DiskName2:        diskName2,
+			InstanceName:     instanceDiskName,
+			SupportBlockName: supportBlockName2,
+		},
+		resourceInstanceDiskConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configDisk,
+				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				// Detach a disk
+				Config: configDiskUpdate,
+				Check:  checkResourceInstanceDiskUpdate(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				// Reattach disk
+				Config: configDisk,
+				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+			},
+			{
+				ResourceName:      resourceNameInstanceDisk,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func TestAccCloudResourceInstance_update(t *testing.T) {
+	type resourceInstanceUpdateConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = true
+}
+`
+
+	resourceInstanceConfigUpdateTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 2
+  start_on_create = true
+}
+`
+
+	resourceInstanceConfigUpdate2Tpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 2147483648
+  ncpus           = 2
+  start_on_create = true
+}
+`
+	instanceName := sharedtest.NewResourceName()
+	supportBlockName := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support-update")
+	blockNameInstance := sharedtest.NewBlockName("instance")
+	resourceNameInstance := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
+	config, err := sharedtest.ParsedAccConfig(
+		resourceInstanceUpdateConfig{
+			BlockName:        blockNameInstance,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configUpdate, err := sharedtest.ParsedAccConfig(
+		resourceInstanceUpdateConfig{
+			BlockName:        blockNameInstance,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName2,
+		},
+		resourceInstanceConfigUpdateTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configUpdate2, err := sharedtest.ParsedAccConfig(
+		resourceInstanceUpdateConfig{
+			BlockName:        blockNameInstance,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName2,
+		},
+		resourceInstanceConfigUpdate2Tpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstanceUpdate(resourceNameInstance, instanceName),
+			},
+			{
+				// Update NCPUs
+				Config: configUpdate,
+				Check:  checkResourceInstanceUpdate2(resourceNameInstance, instanceName),
+			},
+			{
+				// Update memory
+				Config: configUpdate2,
+				Check:  checkResourceInstanceUpdate3(resourceNameInstance, instanceName),
+			},
+			{
+				// Update all
+				Config: config,
+				Check:  checkResourceInstanceUpdate(resourceNameInstance, instanceName),
+			},
+			{
+				ResourceName:      resourceNameInstance,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func TestAccCloudResourceInstance_no_boot_disk(t *testing.T) {
+	type resourceInstanceNoBootDiskConfig struct {
+		BlockName        string
+		InstanceName     string
+		DiskBlockName    string
+		DiskName         string
+		SupportBlockName string
+	}
+
+	resourceInstanceNoBootDiskConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_disk" "{{.DiskBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test disk"
+  name        = "{{.DiskName}}"
+  size        = 1073741824
+  block_size  = 512
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
+}
+`
+
+	instanceName := sharedtest.NewResourceName()
+	diskName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance-no-boot-disk")
+	diskBlockName := sharedtest.NewBlockName("disk")
+	supportBlockName := sharedtest.NewBlockName("support")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config, err := sharedtest.ParsedAccConfig(
+		resourceInstanceNoBootDiskConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			DiskBlockName:    diskBlockName,
+			DiskName:         diskName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceNoBootDiskConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  checkResourceInstanceNoBootDisk(resourceName, instanceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This option is only relevant for create, this means that it will
+				// never be imported
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func TestAccCloudResourceInstance_antiAffinityGroups(t *testing.T) {
+	type resourceInstanceAntiAffinityGroupsConfig struct {
+		BlockName                   string
+		InstanceName                string
+		AntiAffinityGroupName       string
+		AntiAffinityGroupName2      string
+		SupportBlockName            string
+		AntiAffinityGroupBlockName  string
+		AntiAffinityGroupBlockName2 string
+	}
+
+	resourceInstanceAntiAffinityGroupsConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
+  project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
+  description     	   = "a test instance"
+  name            	   = "{{.InstanceName}}"
+  hostname        	   = "terraform-acc-myhost"
+  memory          	   = 1073741824
+  ncpus           	   = 1
+  start_on_create 	   = false
+}
+`
+
+	resourceInstanceAntiAffinityGroupsConfigTplUpdate := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName2}}"
+  policy      = "allow"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id, oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName2}}.id]
+  project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
+  description     	   = "a test instance"
+  name            	   = "{{.InstanceName}}"
+  hostname        	   = "terraform-acc-myhost"
+  memory          	   = 1073741824
+  ncpus           	   = 1
+  start_on_create 	   = false
+}
+`
+
+	resourceInstanceAntiAffinityGroupsConfigTplUpdate2 := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName}}"
+  policy      = "allow"
+}
+
+resource "oxide_anti_affinity_group" "{{.AntiAffinityGroupBlockName2}}" {
+  project_id  = data.oxide_project.{{.SupportBlockName}}.id
+  description = "a test anti-affinity group"
+  name        = "{{.AntiAffinityGroupName2}}"
+  policy      = "allow"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
+  project_id      	   = data.oxide_project.{{.SupportBlockName}}.id
+  description     	   = "a test instance"
+  name            	   = "{{.InstanceName}}"
+  hostname        	   = "terraform-acc-myhost"
+  memory          	   = 1073741824
+  ncpus           	   = 1
+  start_on_create 	   = false
+}
+`
+
+	instanceAntiAffinityGroupsName := sharedtest.NewResourceName()
+	antiAffinityGroupName1 := sharedtest.NewResourceName()
+	antiAffinityGroupName2 := sharedtest.NewResourceName()
+	blockNameAntiAffinityGroups := sharedtest.NewBlockName("instance-anti-affinity-groups")
+	supportBlockNameAntiAffinityGroups := sharedtest.NewBlockName(
+		"support-instance-anti-affinity-groups",
+	)
+	supportBlockNameAntiAffinityGroup1 := sharedtest.NewBlockName(
+		"support-instance-anti-affinity-group",
+	)
+	supportBlockNameAntiAffinityGroup2 := sharedtest.NewBlockName(
+		"support-instance-anti-affinity-group",
+	)
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameAntiAffinityGroups)
+	configAntiAffinityGroups, err := sharedtest.ParsedAccConfig(
+		resourceInstanceAntiAffinityGroupsConfig{
+			BlockName:                  blockNameAntiAffinityGroups,
+			InstanceName:               instanceAntiAffinityGroupsName,
+			SupportBlockName:           supportBlockNameAntiAffinityGroups,
+			AntiAffinityGroupName:      antiAffinityGroupName1,
+			AntiAffinityGroupBlockName: supportBlockNameAntiAffinityGroup1,
+		},
+		resourceInstanceAntiAffinityGroupsConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configAntiAffinityGroupsUpdate, err := sharedtest.ParsedAccConfig(
+		resourceInstanceAntiAffinityGroupsConfig{
+			BlockName:                   blockNameAntiAffinityGroups,
+			InstanceName:                instanceAntiAffinityGroupsName,
+			SupportBlockName:            supportBlockNameAntiAffinityGroups,
+			AntiAffinityGroupName:       antiAffinityGroupName1,
+			AntiAffinityGroupBlockName:  supportBlockNameAntiAffinityGroup1,
+			AntiAffinityGroupName2:      antiAffinityGroupName2,
+			AntiAffinityGroupBlockName2: supportBlockNameAntiAffinityGroup2,
+		},
+		resourceInstanceAntiAffinityGroupsConfigTplUpdate,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configAntiAffinityGroupsUpdate2, err := sharedtest.ParsedAccConfig(
+		resourceInstanceAntiAffinityGroupsConfig{
+			BlockName:                   blockNameAntiAffinityGroups,
+			InstanceName:                instanceAntiAffinityGroupsName,
+			SupportBlockName:            supportBlockNameAntiAffinityGroups,
+			AntiAffinityGroupName:       antiAffinityGroupName1,
+			AntiAffinityGroupBlockName:  supportBlockNameAntiAffinityGroup1,
+			AntiAffinityGroupName2:      antiAffinityGroupName2,
+			AntiAffinityGroupBlockName2: supportBlockNameAntiAffinityGroup2,
+		},
+		resourceInstanceAntiAffinityGroupsConfigTplUpdate2,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configAntiAffinityGroups,
+				Check: checkResourceInstanceAntiAffinityGroups(
+					resourceName,
+					instanceAntiAffinityGroupsName,
+				),
+			},
+			// Add another anti-affinity group
+			{
+				Config: configAntiAffinityGroupsUpdate,
+				Check: checkResourceInstanceAntiAffinityGroupsUpdate(
+					resourceName,
+					instanceAntiAffinityGroupsName,
+				),
+			},
+			// Remove an anti-affinity group
+			{
+				Config: configAntiAffinityGroupsUpdate2,
+				Check: checkResourceInstanceAntiAffinityGroups(
+					resourceName,
+					instanceAntiAffinityGroupsName,
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// start-on-create cannot be imported as it is only present at create time
+				ImportStateVerifyIgnore: []string{"start_on_create"},
+			},
+		},
+	})
+}
+
+func checkResourceInstance(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "ssh_public_keys"),
+	}...)
+}
+
+func checkResourceInstanceFull(resourceName, instanceName, nicName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.ephemeral.0.ip_version", "v4"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.1.pool_id"),
+		resource.TestCheckResourceAttr(resourceName, "external_ips.ephemeral.1.ip_version", "v6"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.0.id"),
+		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "auto_restart_policy"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
+		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
+	}...)
+}
+
+func checkResourceInstanceIP(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v4"},
+		),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.1.pool_id"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v4"},
+		),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v6"},
+		),
+	}...)
+}
+
+func checkResourceInstanceIPUpdate1SingleStack(
+	resourceName, instanceName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.0.pool_id"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"external_ips.ephemeral.*",
+			map[string]string{"ip_version": "v6"},
+		),
+	}...)
+}
+
+func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "external_ips"),
+	}...)
+}
+
+func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceNic(resourceName, instanceName, nicName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceTwoNics(
+	resourceName, instanceName, nicName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
+		testResourceInstanceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1, "dual"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceTwoNicsSingleStack(
+	resourceName, instanceName, nicName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "v6"),
+		testResourceInstanceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1, "v4"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "network_interfaces.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "2147483648"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceAntiAffinityGroups(
+	resourceName, instanceName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceAntiAffinityGroupsUpdate(
+	resourceName, instanceName string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.1"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "boot_disk_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "disk_attachments.0"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func testResourceInstanceNetworkInterface(
+	resourceName string,
+	nicName string,
+	nicDescription string,
+	nicIndex int,
+	stackType string,
+) resource.TestCheckFunc {
+	funcs := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.name", nicIndex),
+			nicName,
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.description", nicIndex),
+			nicDescription,
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.subnet_id", nicIndex),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("network_interfaces.%d.vpc_id", nicIndex),
+		),
+
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.id", nicName),
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.name", nicName),
+			nicName,
+		),
+		resource.TestCheckResourceAttr(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.description", nicName),
+			nicDescription,
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.subnet_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.vpc_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.instance_id", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.primary", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.mac_address", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.time_created", nicName),
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.time_modified", nicName),
+		),
+	}
+
+	if stackType == "v4" || stackType == "dual" {
+		funcs = append(funcs, []resource.TestCheckFunc{
+			resource.TestCheckResourceAttrSet(
+				resourceName,
+				fmt.Sprintf("attached_network_interfaces.%s.ip_stack.v4.ip", nicName),
+			),
+		}...)
+	}
+
+	if stackType == "v6" || stackType == "dual" {
+		funcs = append(funcs, resource.TestCheckResourceAttrSet(
+			resourceName,
+			fmt.Sprintf("attached_network_interfaces.%s.ip_stack.v6.ip", nicName),
+		))
+	}
+
+	return resource.ComposeAggregateTestCheckFunc(funcs...)
+}
+
+func testAccInstanceDestroy(s *terraform.State) error {
+	client, err := sharedtest.NewTestClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "oxide_instance" {
+			continue
+		}
+
+		// TODO: check for block name
+
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		params := oxide.InstanceViewParams{
+			Instance: oxide.NameOrId(rs.Primary.Attributes["id"]),
+		}
+		res, err := client.InstanceView(ctx, params)
+		if err != nil && shared.Is404(err) {
+			continue
+		}
+
+		return fmt.Errorf("instance (%v) still exists", &res.Name)
+	}
+
+	return nil
+}
+
+func TestFilterBootDiskFromDisks(t *testing.T) {
+	bootDisk := oxide.InstanceDiskAttachment{
+		Value: &oxide.InstanceDiskAttachmentAttach{Name: "testboot01"},
+	}
+
+	tests := []struct {
+		bootDisk oxide.InstanceDiskAttachment
+		disks    []oxide.InstanceDiskAttachment
+		want     []oxide.InstanceDiskAttachment
+	}{
+		{
+			bootDisk: bootDisk,
+			disks: []oxide.InstanceDiskAttachment{
+				bootDisk,
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+			},
+			want: []oxide.InstanceDiskAttachment{
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+			},
+		},
+		{
+			bootDisk: oxide.InstanceDiskAttachment{},
+			disks: []oxide.InstanceDiskAttachment{
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testboot01"},
+				},
+			},
+			want: []oxide.InstanceDiskAttachment{
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testdisk01"},
+				},
+				{
+					Value: &oxide.InstanceDiskAttachmentAttach{Name: "testboot01"},
+				},
+			},
+		},
+		{
+			bootDisk: oxide.InstanceDiskAttachment{},
+			disks:    []oxide.InstanceDiskAttachment{},
+			want:     []oxide.InstanceDiskAttachment{},
+		},
+	}
+	for _, tt := range tests {
+		disks := instance.FilterBootDiskFromDisks(tt.disks, tt.bootDisk)
+		if !reflect.DeepEqual(disks, tt.want) {
+			t.Errorf("want: %+v, got: %+v", tt.want, disks)
+		}
+	}
+}

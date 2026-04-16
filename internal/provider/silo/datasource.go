@@ -1,0 +1,160 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package silo
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+)
+
+var _ datasource.DataSource = (*DataSource)(nil)
+var _ datasource.DataSourceWithConfigure = (*DataSource)(nil)
+
+type DataSource struct {
+	client *oxide.Client
+}
+
+type DataSourceModel struct {
+	Description  types.String   `tfsdk:"description"`
+	Discoverable types.Bool     `tfsdk:"discoverable"`
+	ID           types.String   `tfsdk:"id"`
+	IdentityMode types.String   `tfsdk:"identity_mode"`
+	Name         types.String   `tfsdk:"name"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+}
+
+// NewDataSource initialises a silo datasource
+func NewDataSource() datasource.DataSource {
+	return &DataSource{}
+}
+
+// Metadata returns the data source type name.
+func (d *DataSource) Metadata(
+	ctx context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
+	resp.TypeName = "oxide_silo"
+}
+
+// Configure adds the provider configured client to the data source.
+func (d *DataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	_ *datasource.ConfigureResponse,
+) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	d.client = req.ProviderData.(*oxide.Client)
+}
+
+// Schema defines the schema for the data source.
+func (d *DataSource) Schema(
+	ctx context.Context,
+	req datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: `
+Retrieve information about a specified silo.
+`,
+		Attributes: map[string]schema.Attribute{
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Name of the silo.",
+			},
+			"description": schema.StringAttribute{
+				Computed:    true,
+				Description: "Description for the silo.",
+			},
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the silo.",
+			},
+			"identity_mode": schema.StringAttribute{
+				Computed:    true,
+				Description: "How users and groups are managed in this silo.",
+			},
+			"discoverable": schema.BoolAttribute{
+				Computed:    true,
+				Description: "A silo where discoverable is false can be retrieved only by its ID - it will not be part of the 'list all silos' output.",
+			},
+			"time_created": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this silo was created.",
+			},
+			"time_modified": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp of when this silo was last modified.",
+			},
+			"timeouts": timeouts.Attributes(ctx),
+		},
+	}
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (d *DataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
+	var state DataSourceModel
+
+	// Read Terraform configuration data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	params := oxide.SiloViewParams{
+		Silo: oxide.NameOrId(state.Name.ValueString()),
+	}
+	silo, err := d.client.SiloView(ctx, params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read Silo:",
+			err.Error(),
+		)
+		return
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("read Silo with ID: %v", silo.Id), map[string]any{"success": true})
+
+	// Map response body to model
+	state.Description = types.StringValue(silo.Description)
+	state.ID = types.StringValue(silo.Id)
+	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
+	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
+	state.Name = types.StringValue(string(silo.Name))
+	state.TimeCreated = types.StringValue(silo.TimeCreated.String())
+	state.TimeModified = types.StringValue(silo.TimeModified.String())
+
+	// Save state into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
