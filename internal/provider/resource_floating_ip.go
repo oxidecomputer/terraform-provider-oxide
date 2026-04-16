@@ -21,6 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // floatingIPResourceModel represents the Terraform configuration and state for
@@ -201,7 +203,7 @@ func (f *floatingIPResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -289,7 +291,7 @@ func (f *floatingIPResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -304,7 +306,7 @@ func (f *floatingIPResource) Read(
 
 	floatingIP, err := f.client.FloatingIpView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -358,7 +360,7 @@ func (f *floatingIPResource) Update(
 		return
 	}
 
-	updateTimeout, diags := state.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := state.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -419,7 +421,7 @@ func (f *floatingIPResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -433,7 +435,7 @@ func (f *floatingIPResource) Delete(
 	}
 
 	if err := f.client.FloatingIpDelete(ctx, params); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to delete floating IP:",
 				"API error: "+err.Error(),

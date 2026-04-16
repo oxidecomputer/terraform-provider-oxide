@@ -7,4 +7,4 @@ package provider
 import "embed"
 
 //go:embed test-fixtures
-var testFixtures embed.FS
+var TestFixtures embed.FS

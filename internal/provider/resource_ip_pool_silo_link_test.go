@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -14,6 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceIPPoolSiloLinkConfig struct {
@@ -96,13 +99,13 @@ resource "oxide_ip_pool_silo_link" "{{.BlockName2}}" {
 func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 	t.Skip("skipping test until there is a silo datasource to retrieve the ID.")
 
-	ipPoolName := newResourceName()
-	blockName := newBlockName("ip_pool")
-	blockName2 := newBlockName("ip_pool")
-	supportBlockName := newBlockName("support")
+	ipPoolName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("ip_pool")
+	blockName2 := sharedtest.NewBlockName("ip_pool")
+	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
 	resourceName2 := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceIPPoolSiloLinkConfig{
 			BlockName:        blockName,
 			SupportBlockName: supportBlockName,
@@ -114,14 +117,14 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := sharedtest.ParsedAccConfig(
 		resourceIPPoolSiloLinkConfigUpdate{
 			BlockName:         blockName,
 			IPPoolName:        ipPoolName,
 			BlockName2:        blockName2,
-			IPPoolName2:       newResourceName(),
+			IPPoolName2:       sharedtest.NewResourceName(),
 			SupportBlockName:  supportBlockName,
-			SupportBlockName2: newBlockName("support"),
+			SupportBlockName2: sharedtest.NewBlockName("support"),
 		},
 		resourceIPPoolSiloLinkUpdateConfigTpl,
 	)
@@ -130,8 +133,8 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccIPPoolSiloLinkDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -178,7 +181,7 @@ func checkResourceIPPoolSiloLinkUpdate(resourceName, resourceName2 string) resou
 }
 
 func testAccIPPoolSiloLinkDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -201,7 +204,7 @@ func testAccIPPoolSiloLinkDestroy(s *terraform.State) error {
 		}
 
 		links, err := client.SystemIpPoolSiloList(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

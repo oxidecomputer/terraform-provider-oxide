@@ -33,6 +33,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -227,7 +229,7 @@ func (r *instanceResource) Schema(
 ) {
 	resp.Schema = schema.Schema{
 		Version: 2,
-		MarkdownDescription: replaceBackticks(`
+		MarkdownDescription: shared.ReplaceBackticks(`
 This resource manages instances.
 
 !> Updates will stop and start the instance.
@@ -341,7 +343,7 @@ This resource manages instances.
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -351,7 +353,7 @@ This resource manages instances.
 							// TODO: Remove once update is implemented
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -360,7 +362,7 @@ This resource manages instances.
 							Description: "ID of the VPC subnet in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -369,7 +371,7 @@ This resource manages instances.
 							Description: "ID of the VPC in which to create the instance network interface.",
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
-									RequiresReplaceUnlessEmptyStringOrNull(), "", "",
+									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
 								),
 							},
 						},
@@ -785,7 +787,7 @@ func (r *instanceResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -856,14 +858,14 @@ func (r *instanceResource) Create(
 		}
 	}
 
-	sshKeys, diags := newNameOrIdList(plan.SSHPublicKeys)
+	sshKeys, diags := shared.NewNameOrIdList(plan.SSHPublicKeys)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	params.Body.SshPublicKeys = sshKeys
 
-	antiAffinityGroupIDs, diags := newNameOrIdList(plan.AntiAffinityGroups)
+	antiAffinityGroupIDs, diags := shared.NewNameOrIdList(plan.AntiAffinityGroups)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -879,7 +881,7 @@ func (r *instanceResource) Create(
 	// The control plane API counts the BootDisk and the Disk attachments when it calculates the
 	// limit on disk attachments. If bootdisk is set explicitly, we don't want it to be in the API
 	// call, but we need it in the state entry.
-	params.Body.Disks = filterBootDiskFromDisks(disks, params.Body.BootDisk)
+	params.Body.Disks = FilterBootDiskFromDisks(disks, params.Body.BootDisk)
 
 	externalIPs := newExternalIPsOnCreate(plan.ExternalIPs)
 	params.Body.ExternalIps = externalIPs
@@ -960,7 +962,7 @@ func (r *instanceResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -973,7 +975,7 @@ func (r *instanceResource) Read(
 	}
 	instance, err := r.client.InstanceView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -1099,7 +1101,7 @@ func (r *instanceResource) Update(
 		return
 	}
 
-	updateTimeout, diags := state.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := state.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1113,7 +1115,7 @@ func (r *instanceResource) Update(
 	}
 	_, err := r.client.InstanceStop(ctx, stopParams)
 	if err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to stop instance:",
 				"API error: "+err.Error(),
@@ -1141,7 +1143,7 @@ func (r *instanceResource) Update(
 	stateDisks := state.DiskAttachments.Elements()
 
 	// Check plan and if it has an ID that the state doesn't then attach it
-	disksToAttach := sliceDiff(planDisks, stateDisks)
+	disksToAttach := shared.SliceDiff(planDisks, stateDisks)
 	resp.Diagnostics.Append(attachDisks(ctx, r.client, disksToAttach, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1191,7 +1193,7 @@ func (r *instanceResource) Update(
 	//
 	// We only detach disks once we have made changes to the boot disk (if any)
 	// in case we need to remove the previous boot disk
-	disksToDetach := sliceDiff(stateDisks, planDisks)
+	disksToDetach := shared.SliceDiff(stateDisks, planDisks)
 	resp.Diagnostics.Append(detachDisks(ctx, r.client, disksToDetach, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1221,7 +1223,7 @@ func (r *instanceResource) Update(
 	// For example, each network interface needs to be in a separate subnet, so
 	// we must first make room for new network interface if it is replacing one
 	// in the same subnet.
-	nicsToDelete := sliceDiffByID(
+	nicsToDelete := shared.SliceDiffByID(
 		state.NetworkInterfaces,
 		plan.NetworkInterfaces,
 		func(e instanceResourceNICModel) any {
@@ -1249,7 +1251,7 @@ func (r *instanceResource) Update(
 	}
 
 	// Add new network interfaces.
-	nicsToCreate := sliceDiffByID(
+	nicsToCreate := shared.SliceDiffByID(
 		plan.NetworkInterfaces,
 		state.NetworkInterfaces,
 		func(e instanceResourceNICModel) any {
@@ -1279,7 +1281,7 @@ func (r *instanceResource) Update(
 	stateAntiAffinityGroups := state.AntiAffinityGroups.Elements()
 
 	// Check plan and if it has an ID that the state doesn't then add it
-	antiAffinityGroupsToAdd := sliceDiff(planAntiAffinityGroups, stateAntiAffinityGroups)
+	antiAffinityGroupsToAdd := shared.SliceDiff(planAntiAffinityGroups, stateAntiAffinityGroups)
 	resp.Diagnostics.Append(
 		addAntiAffinityGroups(ctx, r.client, antiAffinityGroupsToAdd, state.ID.ValueString())...)
 	if resp.Diagnostics.HasError() {
@@ -1287,7 +1289,7 @@ func (r *instanceResource) Update(
 	}
 
 	// Check state and if it has an ID that the plan doesn't then remove it
-	antiAffinityGroupsToRemove := sliceDiff(stateAntiAffinityGroups, planAntiAffinityGroups)
+	antiAffinityGroupsToRemove := shared.SliceDiff(stateAntiAffinityGroups, planAntiAffinityGroups)
 	resp.Diagnostics.Append(
 		removeAntiAffinityGroups(
 			ctx,
@@ -1302,7 +1304,7 @@ func (r *instanceResource) Update(
 	startParams := oxide.InstanceStartParams{Instance: oxide.NameOrId(state.ID.ValueString())}
 	_, err = r.client.InstanceStart(ctx, startParams)
 	if err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to start instance:",
 				"API error: "+err.Error(),
@@ -1400,7 +1402,7 @@ func (r *instanceResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1413,7 +1415,7 @@ func (r *instanceResource) Delete(
 	}
 	_, err := r.client.InstanceStop(ctx, params)
 	if err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to stop instance:",
 				"API error: "+err.Error(),
@@ -1437,7 +1439,7 @@ func (r *instanceResource) Delete(
 		Instance: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.InstanceDelete(ctx, params2); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to delete instance:",
 				"API error: "+err.Error(),
@@ -1481,7 +1483,7 @@ func waitForInstanceStop(
 			}
 			instance, err := client.InstanceView(ctx, params)
 			if err != nil {
-				if !is404(err) {
+				if !shared.Is404(err) {
 					return nil, "nil", fmt.Errorf(
 						"while polling for the status of instance %v: %v",
 						instanceID,
@@ -1499,7 +1501,7 @@ func waitForInstanceStop(
 		},
 	}
 	if _, err := stateConfig.WaitForStateContext(ctx); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			diags.AddError(
 				"Error stopping instance",
 				"API error: "+err.Error(),
@@ -1796,9 +1798,9 @@ func newAttachedExternalIPModel(
 			// the IP address so it is always present in state, even if the
 			// user does not provide it.
 			var ipVersion string
-			if isIPv4(v.Ip) {
+			if shared.IsIPv4(v.Ip) {
 				ipVersion = string(oxide.IpVersionV4)
-			} else if isIPv6(v.Ip) {
+			} else if shared.IsIPv6(v.Ip) {
 				ipVersion = string(oxide.IpVersionV6)
 			}
 
@@ -1920,7 +1922,7 @@ func diskAttachmentName(d oxide.InstanceDiskAttachment) oxide.Name {
 	}
 }
 
-func filterBootDiskFromDisks(
+func FilterBootDiskFromDisks(
 	disks []oxide.InstanceDiskAttachment,
 	bootDisk oxide.InstanceDiskAttachment,
 ) []oxide.InstanceDiskAttachment {
@@ -2112,7 +2114,7 @@ func deleteNICs(
 			Interface: oxide.NameOrId(model.ID.ValueString()),
 		}
 		if err := client.InstanceNetworkInterfaceDelete(ctx, params); err != nil {
-			if !is404(err) {
+			if !shared.Is404(err) {
 				diags.AddError(
 					"Error deleting instance network interface:",
 					"API error: "+err.Error(),
@@ -2165,7 +2167,7 @@ func attachEphemeralIPs(
 	if state == nil {
 		ipsToAttach = plan.Ephemeral
 	} else {
-		ipsToAttach = sliceDiff(plan.Ephemeral, state.Ephemeral)
+		ipsToAttach = shared.SliceDiff(plan.Ephemeral, state.Ephemeral)
 	}
 
 	var diags diag.Diagnostics
@@ -2230,7 +2232,7 @@ func attachFloatingIPs(
 	if state == nil {
 		ipsToAttach = plan.Floating
 	} else {
-		ipsToAttach = sliceDiff(plan.Floating, state.Floating)
+		ipsToAttach = shared.SliceDiff(plan.Floating, state.Floating)
 	}
 
 	var diags diag.Diagnostics
@@ -2300,7 +2302,7 @@ func detachEphemeralIPs(
 	if plan == nil {
 		ipsToDetach = state.Ephemeral
 	} else {
-		ipsToDetach = sliceDiff(state.Ephemeral, plan.Ephemeral)
+		ipsToDetach = shared.SliceDiff(state.Ephemeral, plan.Ephemeral)
 	}
 
 	var diags diag.Diagnostics
@@ -2353,7 +2355,7 @@ func detachFloatingIPs(
 	if plan == nil {
 		ipsToDetach = state.Floating
 	} else {
-		ipsToDetach = sliceDiff(state.Floating, plan.Floating)
+		ipsToDetach = shared.SliceDiff(state.Floating, plan.Floating)
 	}
 
 	var diags diag.Diagnostics
@@ -2540,7 +2542,7 @@ func removeAntiAffinityGroups(
 		if err != nil {
 			// If the anti-affinity group doesn't exist anymore, it means
 			// the instance isn't part of it. We can just return.
-			if is404(err) {
+			if shared.Is404(err) {
 				return nil
 			}
 			diags.AddError(
@@ -2606,11 +2608,11 @@ func (v ipConfigValidator) ValidateString(
 	switch v.ipVersion {
 	case oxide.IpVersionV4:
 		valid = (value == string(oxide.Ipv4AssignmentTypeAuto) ||
-			isIPv4(req.ConfigValue.ValueString()))
+			shared.IsIPv4(req.ConfigValue.ValueString()))
 
 	case oxide.IpVersionV6:
 		valid = (value == string(oxide.Ipv6AssignmentTypeAuto) ||
-			isIPv6(req.ConfigValue.ValueString()))
+			shared.IsIPv6(req.ConfigValue.ValueString()))
 	}
 
 	if !valid {

@@ -17,6 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -133,7 +135,7 @@ func (r *projectResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -187,7 +189,7 @@ func (r *projectResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -200,7 +202,7 @@ func (r *projectResource) Read(
 	}
 	project, err := r.client.ProjectView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -252,7 +254,7 @@ func (r *projectResource) Update(
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -307,7 +309,7 @@ func (r *projectResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -322,7 +324,7 @@ func (r *projectResource) Delete(
 		Subnet:  oxide.NameOrId("default"),
 	}
 	if err := r.client.VpcSubnetDelete(ctx, paramsSubnet); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting default subnet:",
 				"API error: "+err.Error(),
@@ -341,7 +343,7 @@ func (r *projectResource) Delete(
 		Vpc:     oxide.NameOrId("default"),
 	}
 	if err := r.client.VpcDelete(ctx, paramsVPC); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting default VPC:",
 				"API error: "+err.Error(),
@@ -359,7 +361,7 @@ func (r *projectResource) Delete(
 		Project: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.ProjectDelete(ctx, params); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting project:",
 				"API error: "+err.Error(),

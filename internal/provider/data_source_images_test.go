@@ -2,13 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type dataSourceProjectImagesConfig struct {
@@ -39,11 +41,11 @@ data "oxide_images" "{{.BlockName}}" {}
 
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImages_project(t *testing.T) {
-	blockName := newBlockName("datasource-images")
-	config, err := parsedAccConfig(
+	blockName := sharedtest.NewBlockName("datasource-images")
+	config, err := sharedtest.ParsedAccConfig(
 		dataSourceProjectImagesConfig{
 			BlockName:        blockName,
-			SupportBlockName: newBlockName("support"),
+			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
 		dataSourceProjectImagesConfigTpl,
 	)
@@ -52,8 +54,8 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -67,8 +69,8 @@ func TestAccCloudDataSourceImages_project(t *testing.T) {
 
 // NB: The silo must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImages_silo(t *testing.T) {
-	blockName := newBlockName("datasource-images")
-	config, err := parsedAccConfig(
+	blockName := sharedtest.NewBlockName("datasource-images")
+	config, err := sharedtest.ParsedAccConfig(
 		dataSourceSiloImagesConfig{
 			BlockName: blockName,
 		},
@@ -79,8 +81,8 @@ func TestAccCloudDataSourceImages_silo(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,

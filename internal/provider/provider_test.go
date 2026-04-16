@@ -1,4 +1,4 @@
-package provider
+package provider_test
 
 import (
 	"fmt"
@@ -12,6 +12,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/require"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 // lintignore:AT004
@@ -156,7 +158,7 @@ provider "oxide" {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resource.UnitTest(t, resource.TestCase{
-				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+				ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 				Steps: []resource.TestStep{
 					{
 						PreConfig: func() {

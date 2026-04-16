@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -16,6 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 func TestAccCloudResourceInstance_full(t *testing.T) {
@@ -153,11 +157,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceName := newResourceName()
-	blockName := newBlockName("instance")
-	supportBlockName := newBlockName("support")
+	instanceName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance")
+	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -169,21 +173,21 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	instanceName2 := newResourceName()
-	instanceDiskName := newResourceName()
-	instanceNicName := newResourceName()
-	instanceFloatingIPName := newResourceName()
-	instanceSshKeyName := newResourceName()
-	instanceAaGroupName := newResourceName()
-	blockName2 := newBlockName("instance")
-	diskBlockName := newBlockName("disk")
-	supportBlockName3 := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
-	supportBlockNameSSHKeys := newBlockName("support-instance-ssh-keys")
-	supportBlockNameAaGroup := newBlockName("support-instance-anti-affinity-group")
+	instanceName2 := sharedtest.NewResourceName()
+	instanceDiskName := sharedtest.NewResourceName()
+	instanceNicName := sharedtest.NewResourceName()
+	instanceFloatingIPName := sharedtest.NewResourceName()
+	instanceSshKeyName := sharedtest.NewResourceName()
+	instanceAaGroupName := sharedtest.NewResourceName()
+	blockName2 := sharedtest.NewBlockName("instance")
+	diskBlockName := sharedtest.NewBlockName("disk")
+	supportBlockName3 := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support")
+	supportBlockNameSSHKeys := sharedtest.NewBlockName("support-instance-ssh-keys")
+	supportBlockNameAaGroup := sharedtest.NewBlockName("support-instance-anti-affinity-group")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	autoRestartPolicy := "best_effort"
-	config2, err := parsedAccConfig(
+	config2, err := sharedtest.ParsedAccConfig(
 		resourceInstanceFullConfig{
 			BlockName:                  blockName2,
 			InstanceName:               instanceName2,
@@ -206,8 +210,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -472,13 +476,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 		ipPoolName = "default"
 	}
 
-	instanceName := newResourceName()
-	floatingIPName := newResourceName()
-	blockName := newBlockName("instance")
-	supportBlockName := newBlockName("support")
-	ipPoolBlockName := newBlockName("ip-pool")
+	instanceName := sharedtest.NewResourceName()
+	floatingIPName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance")
+	supportBlockName := sharedtest.NewBlockName("support")
+	ipPoolBlockName := sharedtest.NewBlockName("ip-pool")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	initialConfig, err := parsedAccConfig(
+	initialConfig, err := sharedtest.ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -493,7 +497,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing initial config template data: %e", err)
 	}
 
-	updateConfig1, err := parsedAccConfig(
+	updateConfig1, err := sharedtest.ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -506,7 +510,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing first update config template data: %e", err)
 	}
 
-	updateConfig1SingleStack, err := parsedAccConfig(
+	updateConfig1SingleStack, err := sharedtest.ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -519,7 +523,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing first update single stack config template data: %e", err)
 	}
 
-	updateConfig2, err := parsedAccConfig(
+	updateConfig2, err := sharedtest.ParsedAccConfig(
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -533,8 +537,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			// Ephemeral external IP with specified IP pool ID.
@@ -613,13 +617,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceSshKeysName := newResourceName()
-	instanceSshKeysName2 := newResourceName()
-	blockNameSshKeys := newBlockName("instance-ssh-keys")
-	supportBlockNameSshKeys := newBlockName("support-instance-ssh-keys")
-	supportBlockNameSshKeys2 := newBlockName("support-instance-ssh-keys-2")
+	instanceSshKeysName := sharedtest.NewResourceName()
+	instanceSshKeysName2 := sharedtest.NewResourceName()
+	blockNameSshKeys := sharedtest.NewBlockName("instance-ssh-keys")
+	supportBlockNameSshKeys := sharedtest.NewBlockName("support-instance-ssh-keys")
+	supportBlockNameSshKeys2 := sharedtest.NewBlockName("support-instance-ssh-keys-2")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameSshKeys)
-	configSshKeys, err := parsedAccConfig(
+	configSshKeys, err := sharedtest.ParsedAccConfig(
 		resourceInstanceSshKeyConfig{
 			BlockName:         blockNameSshKeys,
 			SshKeyName:        instanceSshKeysName2,
@@ -634,8 +638,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -869,17 +873,17 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceNicName := newResourceName()
-	nicName := newResourceName()
-	blockNameSubnet := newBlockName("instance-nic-subnet")
-	blockNameInstanceNic := newBlockName("instance-nic")
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support")
+	instanceNicName := sharedtest.NewResourceName()
+	nicName := sharedtest.NewResourceName()
+	blockNameSubnet := sharedtest.NewBlockName("instance-nic-subnet")
+	blockNameInstanceNic := sharedtest.NewBlockName("instance-nic")
+	supportBlockName := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support")
 	resourceNameInstanceNic := fmt.Sprintf("oxide_instance.%s", blockNameInstanceNic)
-	nonDefaultSubnetName := newResourceName()
+	nonDefaultSubnetName := sharedtest.NewResourceName()
 	nonDefaultSubnetIPv4Block := fmt.Sprintf("10.%d.%d.0/24", rand.IntN(255), rand.IntN(255))
 	nonDefaultSubnetIPv6NetNum := rand.IntN(200)
-	configNic, err := parsedAccConfig(
+	configNic, err := sharedtest.ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -895,7 +899,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicAdd, err := parsedAccConfig(
+	configNicAdd, err := sharedtest.ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -911,7 +915,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicUpdateSingleStack, err := parsedAccConfig(
+	configNicUpdateSingleStack, err := sharedtest.ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -927,7 +931,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configNicDelete, err := parsedAccConfig(
+	configNicDelete, err := sharedtest.ParsedAccConfig(
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -945,8 +949,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1080,16 +1084,16 @@ resource "oxide_instance" "{{.BlockName}}" {
   disk_attachments = [oxide_disk.{{.DiskBlockName}}.id]
 }
 `
-	instanceDiskName := newResourceName()
-	diskName := newResourceName()
-	diskName2 := newResourceName()
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support-update")
-	blockNameInstance := newBlockName("instance")
-	blockNameInstanceDisk := newBlockName("instance-disk")
-	blockNameInstanceDisk2 := newBlockName("instance-disk-2")
+	instanceDiskName := sharedtest.NewResourceName()
+	diskName := sharedtest.NewResourceName()
+	diskName2 := sharedtest.NewResourceName()
+	supportBlockName := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support-update")
+	blockNameInstance := sharedtest.NewBlockName("instance")
+	blockNameInstanceDisk := sharedtest.NewBlockName("instance-disk")
+	blockNameInstanceDisk2 := sharedtest.NewBlockName("instance-disk-2")
 	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	configDisk, err := parsedAccConfig(
+	configDisk, err := sharedtest.ParsedAccConfig(
 		resourceInstanceDiskConfig{
 			BlockName:        blockNameInstance,
 			DiskBlockName:    blockNameInstanceDisk,
@@ -1104,7 +1108,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
-	configDiskUpdate, err := parsedAccConfig(
+	configDiskUpdate, err := sharedtest.ParsedAccConfig(
 		resourceInstanceDiskConfig{
 			BlockName:        blockNameInstance,
 			DiskBlockName:    blockNameInstanceDisk,
@@ -1121,8 +1125,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1205,12 +1209,12 @@ resource "oxide_instance" "{{.BlockName}}" {
   start_on_create = true
 }
 `
-	instanceName := newResourceName()
-	supportBlockName := newBlockName("support")
-	supportBlockName2 := newBlockName("support-update")
-	blockNameInstance := newBlockName("instance")
+	instanceName := sharedtest.NewResourceName()
+	supportBlockName := sharedtest.NewBlockName("support")
+	supportBlockName2 := sharedtest.NewBlockName("support-update")
+	blockNameInstance := sharedtest.NewBlockName("instance")
 	resourceNameInstance := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	config, err := parsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1222,7 +1226,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := sharedtest.ParsedAccConfig(
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1234,7 +1238,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate2, err := parsedAccConfig(
+	configUpdate2, err := sharedtest.ParsedAccConfig(
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1247,8 +1251,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1316,13 +1320,13 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceName := newResourceName()
-	diskName := newResourceName()
-	blockName := newBlockName("instance-no-boot-disk")
-	diskBlockName := newBlockName("disk")
-	supportBlockName := newBlockName("support")
+	instanceName := sharedtest.NewResourceName()
+	diskName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance-no-boot-disk")
+	diskBlockName := sharedtest.NewBlockName("disk")
+	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := parsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceInstanceNoBootDiskConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -1337,8 +1341,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1454,15 +1458,21 @@ resource "oxide_instance" "{{.BlockName}}" {
 }
 `
 
-	instanceAntiAffinityGroupsName := newResourceName()
-	antiAffinityGroupName1 := newResourceName()
-	antiAffinityGroupName2 := newResourceName()
-	blockNameAntiAffinityGroups := newBlockName("instance-anti-affinity-groups")
-	supportBlockNameAntiAffinityGroups := newBlockName("support-instance-anti-affinity-groups")
-	supportBlockNameAntiAffinityGroup1 := newBlockName("support-instance-anti-affinity-group")
-	supportBlockNameAntiAffinityGroup2 := newBlockName("support-instance-anti-affinity-group")
+	instanceAntiAffinityGroupsName := sharedtest.NewResourceName()
+	antiAffinityGroupName1 := sharedtest.NewResourceName()
+	antiAffinityGroupName2 := sharedtest.NewResourceName()
+	blockNameAntiAffinityGroups := sharedtest.NewBlockName("instance-anti-affinity-groups")
+	supportBlockNameAntiAffinityGroups := sharedtest.NewBlockName(
+		"support-instance-anti-affinity-groups",
+	)
+	supportBlockNameAntiAffinityGroup1 := sharedtest.NewBlockName(
+		"support-instance-anti-affinity-group",
+	)
+	supportBlockNameAntiAffinityGroup2 := sharedtest.NewBlockName(
+		"support-instance-anti-affinity-group",
+	)
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameAntiAffinityGroups)
-	configAntiAffinityGroups, err := parsedAccConfig(
+	configAntiAffinityGroups, err := sharedtest.ParsedAccConfig(
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                  blockNameAntiAffinityGroups,
 			InstanceName:               instanceAntiAffinityGroupsName,
@@ -1476,7 +1486,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configAntiAffinityGroupsUpdate, err := parsedAccConfig(
+	configAntiAffinityGroupsUpdate, err := sharedtest.ParsedAccConfig(
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                   blockNameAntiAffinityGroups,
 			InstanceName:                instanceAntiAffinityGroupsName,
@@ -1492,7 +1502,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configAntiAffinityGroupsUpdate2, err := parsedAccConfig(
+	configAntiAffinityGroupsUpdate2, err := sharedtest.ParsedAccConfig(
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                   blockNameAntiAffinityGroups,
 			InstanceName:                instanceAntiAffinityGroupsName,
@@ -1509,8 +1519,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1986,7 +1996,7 @@ func testResourceInstanceNetworkInterface(
 }
 
 func testAccInstanceDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -2006,7 +2016,7 @@ func testAccInstanceDestroy(s *terraform.State) error {
 			Instance: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.InstanceView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 
@@ -2078,7 +2088,7 @@ func TestFilterBootDiskFromDisks(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		disks := filterBootDiskFromDisks(tt.disks, tt.bootDisk)
+		disks := provider.FilterBootDiskFromDisks(tt.disks, tt.bootDisk)
 		if !reflect.DeepEqual(disks, tt.want) {
 			t.Errorf("want: %+v, got: %+v", tt.want, disks)
 		}

@@ -18,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -122,7 +124,7 @@ This resource manages images.
 			},
 			"os": schema.StringAttribute{
 				Required: true,
-				MarkdownDescription: replaceBackticks(
+				MarkdownDescription: shared.ReplaceBackticks(
 					`OS image distribution. Example: ''"alpine"''.`,
 				),
 				PlanModifiers: []planmodifier.String{
@@ -130,8 +132,10 @@ This resource manages images.
 				},
 			},
 			"version": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: replaceBackticks(`OS image version. Example: ''"3.16"''.`),
+				Required: true,
+				MarkdownDescription: shared.ReplaceBackticks(
+					`OS image version. Example: ''"3.16"''.`,
+				),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -200,7 +204,7 @@ func (r *imageResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -297,7 +301,7 @@ func (r *imageResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -310,7 +314,7 @@ func (r *imageResource) Read(
 	}
 	image, err := r.client.ImageView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -407,7 +411,7 @@ func (r *imageResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -418,7 +422,7 @@ func (r *imageResource) Delete(
 	if err := r.client.ImageDelete(ctx, oxide.ImageDeleteParams{
 		Image: oxide.NameOrId(state.ID.ValueString()),
 	}); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to read image:",
 				"API error: "+err.Error(),

@@ -19,6 +19,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -127,7 +129,7 @@ This resource manages VPC router routes.
 						},
 					},
 					"value": schema.StringAttribute{
-						MarkdownDescription: replaceBackticks(`
+						MarkdownDescription: shared.ReplaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
   - ''subnet'': Name of the VPC subnet.
@@ -157,7 +159,7 @@ Depending on the type, it will be one of the following:
 						},
 					},
 					"value": schema.StringAttribute{
-						Description: replaceBackticks(`
+						Description: shared.ReplaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
   - ''subnet'': Name of the VPC subnet.
@@ -218,7 +220,7 @@ func (r *vpcRouterRouteResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -302,7 +304,7 @@ func (r *vpcRouterRouteResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -315,7 +317,7 @@ func (r *vpcRouterRouteResource) Read(
 	}
 	vpcRouterRoute, err := r.client.VpcRouterRouteView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -385,7 +387,7 @@ func (r *vpcRouterRouteResource) Update(
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -468,7 +470,7 @@ func (r *vpcRouterRouteResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -480,7 +482,7 @@ func (r *vpcRouterRouteResource) Delete(
 		Route: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.VpcRouterRouteDelete(ctx, params); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Unable to delete VPC router route:",
 				"API error: "+err.Error(),

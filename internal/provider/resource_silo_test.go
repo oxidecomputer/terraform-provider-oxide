@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -13,6 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceSiloConfig struct {
@@ -135,13 +138,13 @@ resource "oxide_silo" "{{.BlockName}}" {
 `
 
 func TestAccSiloResourceSilo_full(t *testing.T) {
-	siloName := newResourceName()
-	blockName := newBlockName("silo")
+	siloName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("silo")
 	resourceName := fmt.Sprintf("oxide_silo.%s", blockName)
 
-	dnsName := testAccSiloDNSName()
+	dnsName := sharedtest.SiloDNSName()
 
-	config, err := parsedAccConfig(
+	config, err := sharedtest.ParsedAccConfig(
 		resourceSiloConfig{
 			BlockName:   blockName,
 			SiloName:    siloName,
@@ -153,7 +156,7 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := sharedtest.ParsedAccConfig(
 		resourceSiloConfig{
 			BlockName:   blockName,
 			SiloName:    siloName,
@@ -169,8 +172,8 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 	// so run all related tests in series:
 	// https://github.com/oxidecomputer/omicron/issues/9851
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"tls": {
 				Source: "hashicorp/tls",
@@ -234,7 +237,7 @@ func checkResourceSiloUpdate(resourceName string, siloName string) resource.Test
 }
 
 func testAccSiloDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -253,7 +256,7 @@ func testAccSiloDestroy(s *terraform.State) error {
 		}
 
 		res, err := client.SiloView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 

@@ -2,23 +2,25 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 func TestAccDataSourceSubnetPool_full(t *testing.T) {
 	dataSourceName := "data.oxide_subnet_pool.test"
 
-	subnet := nextSubnetCIDR(t)
+	subnet := sharedtest.NextSubnetCIDR(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccSubnetPoolDestroy,
 		Steps: []resource.TestStep{
 			{

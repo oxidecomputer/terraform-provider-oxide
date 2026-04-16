@@ -20,6 +20,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -182,7 +184,7 @@ func (r *addressLotResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -256,7 +258,7 @@ func (r *addressLotResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -334,7 +336,7 @@ func (r *addressLotResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -347,7 +349,7 @@ func (r *addressLotResource) Delete(
 		oxide.NetworkingAddressLotDeleteParams{
 			AddressLot: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting Address Lot:",
 				"API error: "+err.Error(),

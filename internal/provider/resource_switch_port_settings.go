@@ -20,6 +20,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 var (
@@ -552,7 +554,7 @@ func (r *switchPortSettingsResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -607,7 +609,7 @@ func (r *switchPortSettingsResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -687,7 +689,7 @@ func (r *switchPortSettingsResource) Update(
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -742,7 +744,7 @@ func (r *switchPortSettingsResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -756,7 +758,7 @@ func (r *switchPortSettingsResource) Delete(
 		oxide.NetworkingSwitchPortSettingsDeleteParams{
 			PortSettings: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
-		if !is404(err) {
+		if !shared.Is404(err) {
 			resp.Diagnostics.AddError(
 				"Error deleting Switch Port Settings:",
 				"API error: "+err.Error(),

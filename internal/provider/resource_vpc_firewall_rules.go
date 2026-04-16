@@ -27,6 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -37,7 +39,7 @@ var (
 )
 
 var (
-	vpcFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
+	VPCFirewallRuleNameRegexp = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$`)
 )
 
 // NewVPCFirewallRulesResource is a helper function to simplify the provider implementation.
@@ -157,7 +159,7 @@ func (r *vpcFirewallRulesResource) Schema(
 	// TODO: Make sure users can define a single block per VPC ID, not many, is this even possible?
 	resp.Schema = schema.Schema{
 		Version: 2,
-		MarkdownDescription: replaceBackticks(`
+		MarkdownDescription: shared.ReplaceBackticks(`
 This resource manages VPC firewall rules.
 
 !> Firewall rules defined by this resource are considered exhaustive and will
@@ -186,7 +188,7 @@ rules when updating this resource.
 				Validators: []validator.Map{
 					mapvalidator.KeysAre(
 						stringvalidator.RegexMatches(
-							vpcFirewallRuleNameRegexp,
+							VPCFirewallRuleNameRegexp,
 							`Names must begin with a lower case ASCII letter, be composed exclusively of lowercase ASCII, uppercase ASCII, numbers, and '-', and may not end with a '-'. They can be at most 63 characters long.`,
 						),
 					),
@@ -252,7 +254,7 @@ rules when updating this resource.
 											"value": schema.StringAttribute{
 												// Important, if the name of the associated instance
 												// is changed Terraform will not be able to sync
-												MarkdownDescription: replaceBackticks(`
+												MarkdownDescription: shared.ReplaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
   - ''subnet'': Name of the VPC subnet.
@@ -366,7 +368,7 @@ Depending on the type, it will be one of the following:
 									"value": schema.StringAttribute{
 										// Important, if the name of the associated instance is
 										// changed Terraform will not be able to sync
-										MarkdownDescription: replaceBackticks(`
+										MarkdownDescription: shared.ReplaceBackticks(`
 Depending on the type, it will be one of the following:
   - ''vpc'': Name of the VPC.
   - ''subnet'': Name of the VPC subnet.
@@ -420,7 +422,7 @@ func (r *vpcFirewallRulesResource) Create(
 		return
 	}
 
-	createTimeout, diags := plan.Timeouts.Create(ctx, defaultTimeout())
+	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -502,7 +504,7 @@ func (r *vpcFirewallRulesResource) Read(
 		return
 	}
 
-	readTimeout, diags := state.Timeouts.Read(ctx, defaultTimeout())
+	readTimeout, diags := state.Timeouts.Read(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -515,7 +517,7 @@ func (r *vpcFirewallRulesResource) Read(
 	}
 	firewallRules, err := r.client.VpcFirewallRulesView(ctx, params)
 	if err != nil {
-		if is404(err) {
+		if shared.Is404(err) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -585,7 +587,7 @@ func (r *vpcFirewallRulesResource) Update(
 		return
 	}
 
-	updateTimeout, diags := plan.Timeouts.Update(ctx, defaultTimeout())
+	updateTimeout, diags := plan.Timeouts.Update(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -667,7 +669,7 @@ func (r *vpcFirewallRulesResource) Delete(
 		return
 	}
 
-	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultTimeout())
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

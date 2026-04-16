@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package provider
+package provider_test
 
 import (
 	"context"
@@ -13,6 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceAntiAffinityGroupConfig struct {
@@ -54,11 +57,11 @@ resource "oxide_anti_affinity_group" "{{.BlockName}}" {
 `
 
 func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
-	antiAffinityGroupName := newResourceName()
-	blockName := newBlockName("anti_affinity_group")
+	antiAffinityGroupName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("anti_affinity_group")
 	resourceName := fmt.Sprintf("oxide_anti_affinity_group.%s", blockName)
-	supportBlockName := newBlockName("support")
-	config, err := parsedAccConfig(
+	supportBlockName := sharedtest.NewBlockName("support")
+	config, err := sharedtest.ParsedAccConfig(
 		resourceAntiAffinityGroupConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupName,
@@ -71,7 +74,7 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	antiAffinityGroupNameUpdated := antiAffinityGroupName + "-updated"
-	configUpdate, err := parsedAccConfig(
+	configUpdate, err := sharedtest.ParsedAccConfig(
 		resourceAntiAffinityGroupConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupNameUpdated,
@@ -84,8 +87,8 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		CheckDestroy:             testAccAntiAffinityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -143,7 +146,7 @@ func checkResourceAntiAffinityGroupUpdate(
 }
 
 func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
-	client, err := newTestClient()
+	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err
 	}
@@ -162,7 +165,7 @@ func testAccAntiAffinityGroupDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.AntiAffinityGroupView(ctx, params)
-		if err != nil && is404(err) {
+		if err != nil && shared.Is404(err) {
 			continue
 		}
 
