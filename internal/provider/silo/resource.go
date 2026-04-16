@@ -53,33 +53,33 @@ type Resource struct {
 	client *oxide.Client
 }
 
-// Model represents the Terraform configuration and state for the
+// ResourceModel represents the Terraform configuration and state for the
 // Oxide silo resource.
-type Model struct {
-	ID               types.String          `tfsdk:"id"`
-	Name             types.String          `tfsdk:"name"`
-	Description      types.String          `tfsdk:"description"`
-	Quotas           *QuotasModel          `tfsdk:"quotas"`
-	TlsCertificates  []TlsCertificateModel `tfsdk:"tls_certificates"`
-	Discoverable     types.Bool            `tfsdk:"discoverable"`
-	IdentityMode     types.String          `tfsdk:"identity_mode"`
-	AdminGroupName   types.String          `tfsdk:"admin_group_name"`
-	MappedFleetRoles map[string][]string   `tfsdk:"mapped_fleet_roles"`
-	TimeCreated      types.String          `tfsdk:"time_created"`
-	TimeModified     types.String          `tfsdk:"time_modified"`
-	Timeouts         timeouts.Value        `tfsdk:"timeouts"`
+type ResourceModel struct {
+	ID               types.String                  `tfsdk:"id"`
+	Name             types.String                  `tfsdk:"name"`
+	Description      types.String                  `tfsdk:"description"`
+	Quotas           *QuotasResourceModel          `tfsdk:"quotas"`
+	TlsCertificates  []TlsCertificateResourceModel `tfsdk:"tls_certificates"`
+	Discoverable     types.Bool                    `tfsdk:"discoverable"`
+	IdentityMode     types.String                  `tfsdk:"identity_mode"`
+	AdminGroupName   types.String                  `tfsdk:"admin_group_name"`
+	MappedFleetRoles map[string][]string           `tfsdk:"mapped_fleet_roles"`
+	TimeCreated      types.String                  `tfsdk:"time_created"`
+	TimeModified     types.String                  `tfsdk:"time_modified"`
+	Timeouts         timeouts.Value                `tfsdk:"timeouts"`
 }
 
-// QuotasModel represents quotas for an Oxide silo.
-type QuotasModel struct {
+// QuotasResourceModel represents quotas for an Oxide silo.
+type QuotasResourceModel struct {
 	Cpus    types.Int64 `tfsdk:"cpus"`
 	Memory  types.Int64 `tfsdk:"memory"`
 	Storage types.Int64 `tfsdk:"storage"`
 }
 
-// TlsCertificateModel represents a TLS certificate for an Oxide
+// TlsCertificateResourceModel represents a TLS certificate for an Oxide
 // silo.
-type TlsCertificateModel struct {
+type TlsCertificateResourceModel struct {
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Cert        types.String `tfsdk:"cert"`
@@ -302,7 +302,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -379,7 +379,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -428,7 +428,7 @@ func (r *Resource) Read(
 	state.ID = types.StringValue(silo.Id)
 	state.Name = types.StringValue(string(silo.Name))
 	state.Description = types.StringValue(silo.Description)
-	state.Quotas = &QuotasModel{
+	state.Quotas = &QuotasResourceModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
@@ -453,8 +453,8 @@ func (r *Resource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan Model
-	var state Model
+	var plan ResourceModel
+	var state ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -512,7 +512,7 @@ func (r *Resource) Update(
 	}
 
 	plan.ID = types.StringValue(siloQuotas.SiloId)
-	plan.Quotas = &QuotasModel{
+	plan.Quotas = &QuotasResourceModel{
 		Cpus:    types.Int64Value(int64(*siloQuotas.Cpus)),
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
@@ -532,7 +532,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -583,7 +583,7 @@ func stringMapToFleetRoleMap(mappedFleetRoles map[string][]string) map[string][]
 }
 
 func tlsCertsModelToCertificateCreateSlice(
-	tlsCertificates []TlsCertificateModel,
+	tlsCertificates []TlsCertificateResourceModel,
 ) []oxide.CertificateCreate {
 	var model []oxide.CertificateCreate
 

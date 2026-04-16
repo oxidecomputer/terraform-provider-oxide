@@ -34,13 +34,13 @@ type DataSource struct {
 }
 
 type DataSourceModel struct {
-	ID          types.String      `tfsdk:"id"`
-	InstanceID  types.String      `tfsdk:"instance_id"`
-	Timeouts    timeouts.Value    `tfsdk:"timeouts"`
-	ExternalIPs []ExternalIPModel `tfsdk:"external_ips"`
+	ID          types.String                `tfsdk:"id"`
+	InstanceID  types.String                `tfsdk:"instance_id"`
+	Timeouts    timeouts.Value              `tfsdk:"timeouts"`
+	ExternalIPs []ExternalIPDataSourceModel `tfsdk:"external_ips"`
 }
 
-type ExternalIPModel struct {
+type ExternalIPDataSourceModel struct {
 	IP   types.String `tfsdk:"ip"`
 	Kind types.String `tfsdk:"kind"`
 }
@@ -162,7 +162,7 @@ func (d *DataSource) Read(
 			)
 			return
 		}
-		externalIPState := ExternalIPModel{
+		externalIPState := ExternalIPDataSourceModel{
 			IP:   types.StringValue(ipAddr),
 			Kind: types.StringValue(string(ip.Kind())),
 		}

@@ -303,7 +303,7 @@ This resource manages instances.
 			},
 			// Changes to network_interfaces need to be tracked manually.
 			// When adding a new attribute, check if they also need to be
-			// added to instanceResourceNICModel.Hash() and
+			// added to NICResourceModel.Hash() and
 			// instanceNetworkInterfacesPlanModifier.PlanModifySet().
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,

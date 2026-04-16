@@ -39,17 +39,17 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Ranges       []RangeModel   `tfsdk:"ranges"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+type ResourceModel struct {
+	Description  types.String         `tfsdk:"description"`
+	ID           types.String         `tfsdk:"id"`
+	Name         types.String         `tfsdk:"name"`
+	Ranges       []RangeResourceModel `tfsdk:"ranges"`
+	TimeCreated  types.String         `tfsdk:"time_created"`
+	TimeModified types.String         `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
 }
 
-type RangeModel struct {
+type RangeResourceModel struct {
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
 }
@@ -149,7 +149,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -208,7 +208,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -267,11 +267,11 @@ func (r *Resource) Read(
 
 	// Set the size of the slice to avoid a panic when importing
 	if len(state.Ranges) == 0 && len(ipPoolRanges.Items) != 0 {
-		state.Ranges = make([]RangeModel, len(ipPoolRanges.Items))
+		state.Ranges = make([]RangeResourceModel, len(ipPoolRanges.Items))
 	}
 
 	for index, item := range ipPoolRanges.Items {
-		ipPoolRange := RangeModel{}
+		ipPoolRange := RangeResourceModel{}
 
 		// Extract first/last addresses from the IpRange variant
 		switch v := item.Range.Value.(type) {
@@ -308,8 +308,8 @@ func (r *Resource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan Model
-	var state Model
+	var plan ResourceModel
+	var state ResourceModel
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -390,7 +390,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -474,7 +474,7 @@ func (r *Resource) Delete(
 func addRanges(
 	ctx context.Context,
 	client *oxide.Client,
-	ranges []RangeModel,
+	ranges []RangeResourceModel,
 	poolID string,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -523,7 +523,7 @@ func addRanges(
 func removeRanges(
 	ctx context.Context,
 	client *oxide.Client,
-	ranges []RangeModel,
+	ranges []RangeResourceModel,
 	poolID string,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics

@@ -30,13 +30,13 @@ type DataSourceModel struct {
 	ID           types.String            `tfsdk:"id"`
 	IpVersion    types.String            `tfsdk:"ip_version"`
 	Name         types.String            `tfsdk:"name"`
-	Members      []DataSourceMemberModel `tfsdk:"members"`
+	Members      []MemberDataSourceModel `tfsdk:"members"`
 	Timeouts     timeouts.Value          `tfsdk:"timeouts"`
 	TimeCreated  types.String            `tfsdk:"time_created"`
 	TimeModified types.String            `tfsdk:"time_modified"`
 }
 
-type DataSourceMemberModel struct {
+type MemberDataSourceModel struct {
 	Subnet          types.String `tfsdk:"subnet"`
 	MinPrefixLength types.Int64  `tfsdk:"min_prefix_length"`
 	MaxPrefixLength types.Int64  `tfsdk:"max_prefix_length"`
@@ -196,9 +196,9 @@ func (d *DataSource) Read(
 		map[string]any{"success": true},
 	)
 
-	state.Members = make([]DataSourceMemberModel, len(members))
+	state.Members = make([]MemberDataSourceModel, len(members))
 	for i, member := range members {
-		state.Members[i] = DataSourceMemberModel{
+		state.Members[i] = MemberDataSourceModel{
 			Subnet:          types.StringValue(member.Subnet.String()),
 			MinPrefixLength: types.Int64Value(int64(*member.MinPrefixLength)),
 			MaxPrefixLength: types.Int64Value(int64(*member.MaxPrefixLength)),

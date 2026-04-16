@@ -307,7 +307,7 @@ type modelV00 struct {
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
 	VPCID    types.String   `tfsdk:"vpc_id"`
 
-	// Populated from the same fields within [RuleModel].
+	// Populated from the same fields within [RuleResourceModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 }
@@ -352,7 +352,7 @@ type ruleModelV00 struct {
 	Targets     []ruleTargetModelV00 `tfsdk:"targets"`
 
 	// Used to retrieve the timestamps from the API and populate the same fields
-	// within [Model]. The `tfsdk:"-"` struct field tag is used
+	// within [ResourceModel]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
 	TimeCreated  types.String `tfsdk:"-"`
 	TimeModified types.String `tfsdk:"-"`
@@ -667,18 +667,18 @@ type modelV01 struct {
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
 	VPCID    types.String   `tfsdk:"vpc_id"`
 
-	// Populated from the same fields within [RuleModel].
+	// Populated from the same fields within [RuleResourceModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-func (m modelV01) upgrade() Model {
-	rules := make(map[string]RuleModel, len(m.Rules))
+func (m modelV01) upgrade() ResourceModel {
+	rules := make(map[string]RuleResourceModel, len(m.Rules))
 	for _, r := range m.Rules {
 		rules[r.Name.ValueString()] = r.upgrade()
 	}
 
-	return Model{
+	return ResourceModel{
 		ID:           m.ID,
 		Rules:        rules,
 		Timeouts:     m.Timeouts,
@@ -699,19 +699,19 @@ type ruleModelV01 struct {
 	Targets     []ruleTargetModelV01 `tfsdk:"targets"`
 
 	// Used to retrieve the timestamps from the API and populate the same fields
-	// within [Model]. The `tfsdk:"-"` struct field tag is used
+	// within [ResourceModel]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
 	TimeCreated  types.String `tfsdk:"-"`
 	TimeModified types.String `tfsdk:"-"`
 }
 
-func (r ruleModelV01) upgrade() RuleModel {
-	targets := make([]RuleTargetModel, len(r.Targets))
+func (r ruleModelV01) upgrade() RuleResourceModel {
+	targets := make([]RuleTargetResourceModel, len(r.Targets))
 	for i, t := range r.Targets {
-		targets[i] = RuleTargetModel(t)
+		targets[i] = RuleTargetResourceModel(t)
 	}
 
-	return RuleModel{
+	return RuleResourceModel{
 		Action:       r.Action,
 		Description:  r.Description,
 		Direction:    r.Direction,
@@ -731,22 +731,22 @@ type ruleFiltersModelV01 struct {
 	Protocols []protocolFilterModelV01 `tfsdk:"protocols"`
 }
 
-func (f *ruleFiltersModelV01) upgrade() *RuleFiltersModel {
+func (f *ruleFiltersModelV01) upgrade() *RuleFiltersResourceModel {
 	if f == nil {
 		return nil
 	}
 
-	hosts := make([]HostFilterModel, len(f.Hosts))
+	hosts := make([]HostFilterResourceModel, len(f.Hosts))
 	for i, h := range f.Hosts {
-		hosts[i] = HostFilterModel(h)
+		hosts[i] = HostFilterResourceModel(h)
 	}
 
-	protocols := make([]ProtocolFilterModel, len(f.Protocols))
+	protocols := make([]ProtocolFilterResourceModel, len(f.Protocols))
 	for i, p := range f.Protocols {
-		protocols[i] = ProtocolFilterModel(p)
+		protocols[i] = ProtocolFilterResourceModel(p)
 	}
 
-	return &RuleFiltersModel{
+	return &RuleFiltersResourceModel{
 		Hosts:     hosts,
 		Ports:     f.Ports,
 		Protocols: protocols,

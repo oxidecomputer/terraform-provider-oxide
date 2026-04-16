@@ -52,52 +52,52 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
+type ResourceModel struct {
 	// This ID is specific to Terraform only
-	ID       types.String         `tfsdk:"id"`
-	Rules    map[string]RuleModel `tfsdk:"rules"`
-	Timeouts timeouts.Value       `tfsdk:"timeouts"`
-	VPCID    types.String         `tfsdk:"vpc_id"`
+	ID       types.String                 `tfsdk:"id"`
+	Rules    map[string]RuleResourceModel `tfsdk:"rules"`
+	Timeouts timeouts.Value               `tfsdk:"timeouts"`
+	VPCID    types.String                 `tfsdk:"vpc_id"`
 
-	// Populated from the same fields within [RuleModel].
+	// Populated from the same fields within [RuleResourceModel].
 	TimeCreated  types.String `tfsdk:"time_created"`
 	TimeModified types.String `tfsdk:"time_modified"`
 }
 
-type RuleModel struct {
-	Action      types.String      `tfsdk:"action"`
-	Description types.String      `tfsdk:"description"`
-	Direction   types.String      `tfsdk:"direction"`
-	Filters     *RuleFiltersModel `tfsdk:"filters"`
-	Name        types.String      `tfsdk:"name"`
-	Priority    types.Int64       `tfsdk:"priority"`
-	Status      types.String      `tfsdk:"status"`
-	Targets     []RuleTargetModel `tfsdk:"targets"`
+type RuleResourceModel struct {
+	Action      types.String              `tfsdk:"action"`
+	Description types.String              `tfsdk:"description"`
+	Direction   types.String              `tfsdk:"direction"`
+	Filters     *RuleFiltersResourceModel `tfsdk:"filters"`
+	Name        types.String              `tfsdk:"name"`
+	Priority    types.Int64               `tfsdk:"priority"`
+	Status      types.String              `tfsdk:"status"`
+	Targets     []RuleTargetResourceModel `tfsdk:"targets"`
 
 	// Used to retrieve the timestamps from the API and populate the same fields
-	// within [Model]. The `tfsdk:"-"` struct field tag is used
+	// within [ResourceModel]. The `tfsdk:"-"` struct field tag is used
 	// to tell Terraform not to populate these values in the schema.
 	TimeCreated  types.String `tfsdk:"-"`
 	TimeModified types.String `tfsdk:"-"`
 }
 
-type RuleTargetModel struct {
+type RuleTargetResourceModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type RuleFiltersModel struct {
-	Hosts     []HostFilterModel     `tfsdk:"hosts"`
-	Ports     types.Set             `tfsdk:"ports"`
-	Protocols []ProtocolFilterModel `tfsdk:"protocols"`
+type RuleFiltersResourceModel struct {
+	Hosts     []HostFilterResourceModel     `tfsdk:"hosts"`
+	Ports     types.Set                     `tfsdk:"ports"`
+	Protocols []ProtocolFilterResourceModel `tfsdk:"protocols"`
 }
 
-type HostFilterModel struct {
+type HostFilterResourceModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type ProtocolFilterModel struct {
+type ProtocolFilterResourceModel struct {
 	Type     types.String `tfsdk:"type"`
 	IcmpType types.Int32  `tfsdk:"icmp_type"`
 	IcmpCode types.String `tfsdk:"icmp_code"`
@@ -414,7 +414,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -495,7 +495,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -570,8 +570,8 @@ func (r *Resource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan Model
-	var state Model
+	var plan ResourceModel
+	var state ResourceModel
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -660,7 +660,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -702,7 +702,7 @@ func (r *Resource) Delete(
 // newUpdateBody builds the parameters required by the Oxide
 // vpc_firewall_rules_update API using the specified rules.
 func newUpdateBody(
-	rules map[string]RuleModel,
+	rules map[string]RuleResourceModel,
 ) (*oxide.VpcFirewallRuleUpdateParams, error) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
@@ -743,17 +743,17 @@ func newUpdateBody(
 }
 
 // newModel translates a slice of [oxide.VpcFirewallRule] into a
-// slice of [RuleModel].
+// slice of [RuleResourceModel].
 func newModel(
 	rules []oxide.VpcFirewallRule,
-) (map[string]RuleModel, diag.Diagnostics) {
+) (map[string]RuleResourceModel, diag.Diagnostics) {
 	// The make builtin is used to explicitly get an empty slice rather than a zero
 	// value slice for the use case of removing all the firewall rules from a VPC.
 	// See the comment within [newUpdateBody] for more information.
-	model := make(map[string]RuleModel)
+	model := make(map[string]RuleResourceModel)
 
 	for _, rule := range rules {
-		m := RuleModel{
+		m := RuleResourceModel{
 			Action:      types.StringValue(string(rule.Action)),
 			Description: types.StringValue(rule.Description),
 			Direction:   types.StringValue(string(rule.Direction)),
@@ -780,12 +780,12 @@ func newModel(
 
 func newFiltersModel(
 	filter oxide.VpcFirewallRuleFilter,
-) (*RuleFiltersModel, diag.Diagnostics) {
+) (*RuleFiltersResourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var hostsModel = []HostFilterModel{}
+	var hostsModel = []HostFilterResourceModel{}
 	for _, h := range filter.Hosts {
-		m := HostFilterModel{
+		m := HostFilterResourceModel{
 			Type:  types.StringValue(string(h.Type())),
 			Value: types.StringValue(h.String()),
 		}
@@ -803,9 +803,9 @@ func newFiltersModel(
 		return nil, diags
 	}
 
-	var protocolModels = []ProtocolFilterModel{}
+	var protocolModels = []ProtocolFilterResourceModel{}
 	for _, protocol := range filter.Protocols {
-		protocolModel := ProtocolFilterModel{
+		protocolModel := ProtocolFilterResourceModel{
 			Type:     types.StringValue(string(protocol.Type())),
 			IcmpCode: types.StringNull(),
 			IcmpType: types.Int32Null(),
@@ -843,7 +843,7 @@ func newFiltersModel(
 		protocolModels = append(protocolModels, protocolModel)
 	}
 
-	model := RuleFiltersModel{}
+	model := RuleFiltersResourceModel{}
 
 	if len(hostsModel) > 0 {
 		model.Hosts = hostsModel
@@ -866,11 +866,11 @@ func newFiltersModel(
 
 func newTargetsModelFromResponse(
 	target []oxide.VpcFirewallRuleTarget,
-) []RuleTargetModel {
-	var model []RuleTargetModel
+) []RuleTargetResourceModel {
+	var model []RuleTargetResourceModel
 
 	for _, t := range target {
-		m := RuleTargetModel{
+		m := RuleTargetResourceModel{
 			Type:  types.StringValue(string(t.Type())),
 			Value: types.StringValue(t.String()),
 		}
@@ -882,7 +882,7 @@ func newTargetsModelFromResponse(
 }
 
 func newFilterTypeFromModel(
-	model *RuleFiltersModel,
+	model *RuleFiltersResourceModel,
 ) (oxide.VpcFirewallRuleFilter, error) {
 	var hosts []oxide.VpcFirewallRuleHostFilter
 	for _, host := range model.Hosts {
@@ -964,7 +964,7 @@ func newFilterTypeFromModel(
 }
 
 func newTargetTypeFromModel(
-	model []RuleTargetModel,
+	model []RuleTargetResourceModel,
 ) ([]oxide.VpcFirewallRuleTarget, error) {
 	var target []oxide.VpcFirewallRuleTarget
 

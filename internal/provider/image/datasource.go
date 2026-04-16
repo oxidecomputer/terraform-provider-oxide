@@ -33,22 +33,22 @@ type DataSource struct {
 }
 
 type DataSourceModel struct {
-	ID           types.String                `tfsdk:"id"`
-	ProjectName  types.String                `tfsdk:"project_name"`
-	ProjectID    types.String                `tfsdk:"project_id"`
-	Timeouts     timeouts.Value              `tfsdk:"timeouts"`
-	BlockSize    types.Int64                 `tfsdk:"block_size"`
-	Description  types.String                `tfsdk:"description"`
-	Digest       *imageDataSourceDigestModel `tfsdk:"digest"`
-	Name         types.String                `tfsdk:"name"`
-	OS           types.String                `tfsdk:"os"`
-	Size         types.Int64                 `tfsdk:"size"`
-	TimeCreated  types.String                `tfsdk:"time_created"`
-	TimeModified types.String                `tfsdk:"time_modified"`
-	Version      types.String                `tfsdk:"version"`
+	ID           types.String           `tfsdk:"id"`
+	ProjectName  types.String           `tfsdk:"project_name"`
+	ProjectID    types.String           `tfsdk:"project_id"`
+	Timeouts     timeouts.Value         `tfsdk:"timeouts"`
+	BlockSize    types.Int64            `tfsdk:"block_size"`
+	Description  types.String           `tfsdk:"description"`
+	Digest       *DigestDataSourceModel `tfsdk:"digest"`
+	Name         types.String           `tfsdk:"name"`
+	OS           types.String           `tfsdk:"os"`
+	Size         types.Int64            `tfsdk:"size"`
+	TimeCreated  types.String           `tfsdk:"time_created"`
+	TimeModified types.String           `tfsdk:"time_modified"`
+	Version      types.String           `tfsdk:"version"`
 }
 
-type imageDataSourceDigestModel struct {
+type DigestDataSourceModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
@@ -207,7 +207,7 @@ func (d *DataSource) Read(
 			)
 			return
 		}
-		digestState := imageDataSourceDigestModel{
+		digestState := DigestDataSourceModel{
 			Type:  types.StringValue(string(image.Digest.Type())),
 			Value: types.StringValue(sha256.Value),
 		}

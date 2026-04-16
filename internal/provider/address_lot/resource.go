@@ -40,18 +40,18 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
-	Blocks       []BlockModel   `tfsdk:"blocks"`
-	Description  types.String   `tfsdk:"description"`
-	Kind         types.String   `tfsdk:"kind"`
-	Name         types.String   `tfsdk:"name"`
-	ID           types.String   `tfsdk:"id"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+type ResourceModel struct {
+	Blocks       []BlockResourceModel `tfsdk:"blocks"`
+	Description  types.String         `tfsdk:"description"`
+	Kind         types.String         `tfsdk:"kind"`
+	Name         types.String         `tfsdk:"name"`
+	ID           types.String         `tfsdk:"id"`
+	TimeCreated  types.String         `tfsdk:"time_created"`
+	TimeModified types.String         `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
 }
 
-type BlockModel struct {
+type BlockResourceModel struct {
 	ID           types.String `tfsdk:"id"`
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
@@ -176,7 +176,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -227,9 +227,9 @@ func (r *Resource) Create(
 	plan.TimeModified = types.StringValue(lot.Lot.TimeModified.String())
 
 	// Populate blocks with computed values.
-	blockModels := make([]BlockModel, len(lot.Blocks))
+	blockModels := make([]BlockResourceModel, len(lot.Blocks))
 	for index, item := range lot.Blocks {
-		blockModels[index] = BlockModel{
+		blockModels[index] = BlockResourceModel{
 			ID:           types.StringValue(item.Id),
 			FirstAddress: types.StringValue(item.FirstAddress),
 			LastAddress:  types.StringValue(item.LastAddress),
@@ -250,7 +250,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -290,9 +290,9 @@ func (r *Resource) Read(
 	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
 	state.TimeModified = types.StringValue(lot.TimeModified.String())
 
-	blockModels := make([]BlockModel, len(addressLot.Blocks))
+	blockModels := make([]BlockResourceModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {
-		blockModels[index] = BlockModel{
+		blockModels[index] = BlockResourceModel{
 			ID:           types.StringValue(item.Id),
 			FirstAddress: types.StringValue(item.FirstAddress),
 			LastAddress:  types.StringValue(item.LastAddress),
@@ -328,7 +328,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

@@ -33,78 +33,78 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
-	ID           types.String     `tfsdk:"id"`
-	Name         types.String     `tfsdk:"name"`
-	Description  types.String     `tfsdk:"description"`
-	Addresses    []AddressModel   `tfsdk:"addresses"`
-	BGPPeers     []BGPPeerModel   `tfsdk:"bgp_peers"`
-	Links        []LinkModel      `tfsdk:"links"`
-	PortConfig   *PortConfigModel `tfsdk:"port_config"`
-	Routes       []RouteModel     `tfsdk:"routes"`
-	TimeCreated  types.String     `tfsdk:"time_created"`
-	TimeModified types.String     `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value   `tfsdk:"timeouts"`
+type ResourceModel struct {
+	ID           types.String             `tfsdk:"id"`
+	Name         types.String             `tfsdk:"name"`
+	Description  types.String             `tfsdk:"description"`
+	Addresses    []AddressResourceModel   `tfsdk:"addresses"`
+	BGPPeers     []BGPPeerResourceModel   `tfsdk:"bgp_peers"`
+	Links        []LinkResourceModel      `tfsdk:"links"`
+	PortConfig   *PortConfigResourceModel `tfsdk:"port_config"`
+	Routes       []RouteResourceModel     `tfsdk:"routes"`
+	TimeCreated  types.String             `tfsdk:"time_created"`
+	TimeModified types.String             `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value           `tfsdk:"timeouts"`
 }
 
-type AddressModel struct {
-	Addresses []AddressAddressModel `tfsdk:"addresses"`
-	LinkName  types.String          `tfsdk:"link_name"`
+type AddressResourceModel struct {
+	Addresses []AddressAddressResourceModel `tfsdk:"addresses"`
+	LinkName  types.String                  `tfsdk:"link_name"`
 }
 
-type AddressAddressModel struct {
+type AddressAddressResourceModel struct {
 	Address      cidrtypes.IPPrefix `tfsdk:"address"`
 	AddressLotID types.String       `tfsdk:"address_lot_id"`
 	VlanID       types.Int32        `tfsdk:"vlan_id"`
 }
 
-type BGPPeerModel struct {
-	LinkName types.String       `tfsdk:"link_name"`
-	Peers    []BGPPeerPeerModel `tfsdk:"peers"`
+type BGPPeerResourceModel struct {
+	LinkName types.String               `tfsdk:"link_name"`
+	Peers    []BGPPeerPeerResourceModel `tfsdk:"peers"`
 }
 
-type BGPPeerPeerModel struct {
-	Address                iptypes.IPAddress              `tfsdk:"address"`
-	AllowedExport          *BGPPeerPeerAllowedExportModel `tfsdk:"allowed_export"`
-	AllowedImport          *BGPPeerPeerAllowedImportModel `tfsdk:"allowed_import"`
-	BGPConfig              types.String                   `tfsdk:"bgp_config"`
-	Communities            []types.Int64                  `tfsdk:"communities"`
-	ConnectRetry           types.Int64                    `tfsdk:"connect_retry"`
-	DelayOpen              types.Int64                    `tfsdk:"delay_open"`
-	EnforceFirstAs         types.Bool                     `tfsdk:"enforce_first_as"`
-	HoldTime               types.Int64                    `tfsdk:"hold_time"`
-	IdleHoldTime           types.Int64                    `tfsdk:"idle_hold_time"`
-	InterfaceName          types.String                   `tfsdk:"interface_name"`
-	Keepalive              types.Int64                    `tfsdk:"keepalive"`
-	LocalPref              types.Int64                    `tfsdk:"local_pref"`
-	MD5AuthKey             types.String                   `tfsdk:"md5_auth_key"`
-	MinTTL                 types.Int32                    `tfsdk:"min_ttl"`
-	MultiExitDiscriminator types.Int64                    `tfsdk:"multi_exit_discriminator"`
-	RemoteASN              types.Int64                    `tfsdk:"remote_asn"`
-	VlanID                 types.Int32                    `tfsdk:"vlan_id"`
+type BGPPeerPeerResourceModel struct {
+	Address                iptypes.IPAddress                      `tfsdk:"address"`
+	AllowedExport          *BGPPeerPeerAllowedExportResourceModel `tfsdk:"allowed_export"`
+	AllowedImport          *BGPPeerPeerAllowedImportResourceModel `tfsdk:"allowed_import"`
+	BGPConfig              types.String                           `tfsdk:"bgp_config"`
+	Communities            []types.Int64                          `tfsdk:"communities"`
+	ConnectRetry           types.Int64                            `tfsdk:"connect_retry"`
+	DelayOpen              types.Int64                            `tfsdk:"delay_open"`
+	EnforceFirstAs         types.Bool                             `tfsdk:"enforce_first_as"`
+	HoldTime               types.Int64                            `tfsdk:"hold_time"`
+	IdleHoldTime           types.Int64                            `tfsdk:"idle_hold_time"`
+	InterfaceName          types.String                           `tfsdk:"interface_name"`
+	Keepalive              types.Int64                            `tfsdk:"keepalive"`
+	LocalPref              types.Int64                            `tfsdk:"local_pref"`
+	MD5AuthKey             types.String                           `tfsdk:"md5_auth_key"`
+	MinTTL                 types.Int32                            `tfsdk:"min_ttl"`
+	MultiExitDiscriminator types.Int64                            `tfsdk:"multi_exit_discriminator"`
+	RemoteASN              types.Int64                            `tfsdk:"remote_asn"`
+	VlanID                 types.Int32                            `tfsdk:"vlan_id"`
 }
 
-type BGPPeerPeerAllowedExportModel struct {
+type BGPPeerPeerAllowedExportResourceModel struct {
 	Type  types.String   `tfsdk:"type"`
 	Value []types.String `tfsdk:"value"`
 }
 
-type BGPPeerPeerAllowedImportModel struct {
+type BGPPeerPeerAllowedImportResourceModel struct {
 	Type  types.String   `tfsdk:"type"`
 	Value []types.String `tfsdk:"value"`
 }
 
-type LinkModel struct {
-	Autoneg  types.Bool                       `tfsdk:"autoneg"`
-	FEC      types.String                     `tfsdk:"fec"`
-	LinkName types.String                     `tfsdk:"link_name"`
-	LLDP     *LinkLLDPModel                   `tfsdk:"lldp"`
-	MTU      types.Int32                      `tfsdk:"mtu"`
-	Speed    types.String                     `tfsdk:"speed"`
-	TxEq     *switchPortSettingsLinkTxEqModel `tfsdk:"tx_eq"`
+type LinkResourceModel struct {
+	Autoneg  types.Bool             `tfsdk:"autoneg"`
+	FEC      types.String           `tfsdk:"fec"`
+	LinkName types.String           `tfsdk:"link_name"`
+	LLDP     *LinkLLDPResourceModel `tfsdk:"lldp"`
+	MTU      types.Int32            `tfsdk:"mtu"`
+	Speed    types.String           `tfsdk:"speed"`
+	TxEq     *LinkTxEqResourceModel `tfsdk:"tx_eq"`
 }
 
-type LinkLLDPModel struct {
+type LinkLLDPResourceModel struct {
 	ChassisID         types.String      `tfsdk:"chassis_id"`
 	Enabled           types.Bool        `tfsdk:"enabled"`
 	LinkDescription   types.String      `tfsdk:"link_description"`
@@ -114,7 +114,7 @@ type LinkLLDPModel struct {
 	SystemName        types.String      `tfsdk:"system_name"`
 }
 
-type switchPortSettingsLinkTxEqModel struct {
+type LinkTxEqResourceModel struct {
 	Main  types.Int32 `tfsdk:"main"`
 	Post1 types.Int32 `tfsdk:"post1"`
 	Post2 types.Int32 `tfsdk:"post2"`
@@ -122,16 +122,16 @@ type switchPortSettingsLinkTxEqModel struct {
 	Pre2  types.Int32 `tfsdk:"pre2"`
 }
 
-type PortConfigModel struct {
+type PortConfigResourceModel struct {
 	Geometry types.String `tfsdk:"geometry"`
 }
 
-type RouteModel struct {
-	LinkName types.String                        `tfsdk:"link_name"`
-	Routes   []switchPortSettingsRouteRouteModel `tfsdk:"routes"`
+type RouteResourceModel struct {
+	LinkName types.String              `tfsdk:"link_name"`
+	Routes   []RouteEntryResourceModel `tfsdk:"routes"`
 }
 
-type switchPortSettingsRouteRouteModel struct {
+type RouteEntryResourceModel struct {
 	Dst         types.String      `tfsdk:"dst"`
 	GW          iptypes.IPAddress `tfsdk:"gw"`
 	RIBPriority types.Int32       `tfsdk:"rib_priority"`
@@ -546,7 +546,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	// Read Terraform plan data into the model.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -601,7 +601,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -676,14 +676,14 @@ func (r *Resource) Update(
 	resp *resource.UpdateResponse,
 ) { // plan is the resource data model for the update request.
 	// Read the Terraform plan data.
-	var plan Model
+	var plan ResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the Terraform state data to retreive compute attributes.
-	var state Model
+	var state ResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -738,7 +738,7 @@ func (r *Resource) Delete(
 	resp *resource.DeleteResponse,
 ) {
 	// Read the Terraform state.
-	var state Model
+	var state ResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -803,14 +803,14 @@ func (r *Resource) Delete(
 // from Oxide.
 func toSwitchPortSettingsModel(
 	settings *oxide.SwitchPortSettings,
-) (Model, diag.Diagnostics) {
+) (ResourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	model := Model{
+	model := ResourceModel{
 		ID:          types.StringValue(settings.Id),
 		Name:        types.StringValue(string(settings.Name)),
 		Description: types.StringValue(settings.Description),
-		PortConfig: &PortConfigModel{
+		PortConfig: &PortConfigResourceModel{
 			Geometry: types.StringValue(string(settings.Port.Geometry)),
 		},
 		TimeCreated:  types.StringValue(settings.TimeCreated.String()),
@@ -826,15 +826,15 @@ func toSwitchPortSettingsModel(
 			"The API returned an empty array for this required attribute.",
 		)
 	} else {
-		linkToAddrs := make(map[string][]AddressAddressModel)
+		linkToAddrs := make(map[string][]AddressAddressResourceModel)
 		for _, address := range settings.Addresses {
 			link := string(address.InterfaceName)
 
 			if _, ok := linkToAddrs[link]; !ok {
-				linkToAddrs[link] = make([]AddressAddressModel, 0)
+				linkToAddrs[link] = make([]AddressAddressResourceModel, 0)
 			}
 
-			addressModel := AddressAddressModel{
+			addressModel := AddressAddressResourceModel{
 				Address:      cidrtypes.NewIPPrefixValue(address.Address.String()),
 				AddressLotID: types.StringValue(string(address.AddressLotId)),
 				VlanID: func() types.Int32 {
@@ -848,9 +848,9 @@ func toSwitchPortSettingsModel(
 			linkToAddrs[link] = append(linkToAddrs[link], addressModel)
 		}
 
-		addressModels := make([]AddressModel, 0)
+		addressModels := make([]AddressResourceModel, 0)
 		for linkName, addrModels := range linkToAddrs {
-			addressModel := AddressModel{
+			addressModel := AddressResourceModel{
 				Addresses: addrModels,
 				LinkName:  types.StringValue(linkName),
 			}
@@ -864,15 +864,15 @@ func toSwitchPortSettingsModel(
 	// BGP Peers
 	//
 	if len(settings.BgpPeers) > 0 {
-		linkToBGPPeer := make(map[string][]BGPPeerPeerModel)
+		linkToBGPPeer := make(map[string][]BGPPeerPeerResourceModel)
 		for _, bgpPeer := range settings.BgpPeers {
 			link := string(bgpPeer.InterfaceName)
 
 			if _, ok := linkToBGPPeer[link]; !ok {
-				linkToBGPPeer[link] = make([]BGPPeerPeerModel, 0)
+				linkToBGPPeer[link] = make([]BGPPeerPeerResourceModel, 0)
 			}
 
-			bgpPeerModel := BGPPeerPeerModel{
+			bgpPeerModel := BGPPeerPeerResourceModel{
 				Address: func() iptypes.IPAddress {
 					if bgpPeer.Addr == "" {
 						return iptypes.NewIPAddressNull()
@@ -927,7 +927,7 @@ func toSwitchPortSettingsModel(
 				}(),
 			}
 
-			bgpPeerModel.AllowedExport = &BGPPeerPeerAllowedExportModel{
+			bgpPeerModel.AllowedExport = &BGPPeerPeerAllowedExportResourceModel{
 				Type: types.StringValue(string(bgpPeer.AllowedExport.Type())),
 				Value: func() []types.String {
 					if allow, ok := bgpPeer.AllowedExport.AsAllow(); ok {
@@ -944,7 +944,7 @@ func toSwitchPortSettingsModel(
 				}(),
 			}
 
-			bgpPeerModel.AllowedImport = &BGPPeerPeerAllowedImportModel{
+			bgpPeerModel.AllowedImport = &BGPPeerPeerAllowedImportResourceModel{
 				Type: types.StringValue(string(bgpPeer.AllowedImport.Type())),
 				Value: func() []types.String {
 					if allow, ok := bgpPeer.AllowedImport.AsAllow(); ok {
@@ -972,9 +972,9 @@ func toSwitchPortSettingsModel(
 			linkToBGPPeer[link] = append(linkToBGPPeer[link], bgpPeerModel)
 		}
 
-		bgpPeersModels := make([]BGPPeerModel, 0)
+		bgpPeersModels := make([]BGPPeerResourceModel, 0)
 		for linkName, bgpPeers := range linkToBGPPeer {
-			bgpPeerModel := BGPPeerModel{
+			bgpPeerModel := BGPPeerResourceModel{
 				Peers:    bgpPeers,
 				LinkName: types.StringValue(linkName),
 			}
@@ -993,9 +993,9 @@ func toSwitchPortSettingsModel(
 			"The API returned an empty array for this required attribute.",
 		)
 	} else {
-		linkModels := make([]LinkModel, 0)
+		linkModels := make([]LinkResourceModel, 0)
 		for _, link := range settings.Links {
-			linkModel := LinkModel{
+			linkModel := LinkResourceModel{
 				Autoneg: func() types.Bool {
 					if link.Autoneg == nil {
 						return types.BoolNull()
@@ -1019,7 +1019,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			if link.LldpLinkConfig != nil {
-				linkModel.LLDP = &LinkLLDPModel{
+				linkModel.LLDP = &LinkLLDPResourceModel{
 					Enabled: types.BoolPointerValue(link.LldpLinkConfig.Enabled),
 				}
 
@@ -1064,7 +1064,7 @@ func toSwitchPortSettingsModel(
 			}
 
 			if link.TxEqConfig != nil {
-				linkModel.TxEq = &switchPortSettingsLinkTxEqModel{
+				linkModel.TxEq = &LinkTxEqResourceModel{
 					Main: func() types.Int32 {
 						if link.TxEqConfig.Main == nil {
 							return types.Int32Null()
@@ -1108,15 +1108,15 @@ func toSwitchPortSettingsModel(
 	// Routes
 	//
 	if len(settings.Routes) > 0 {
-		linkToRoutes := make(map[string][]switchPortSettingsRouteRouteModel)
+		linkToRoutes := make(map[string][]RouteEntryResourceModel)
 		for _, route := range settings.Routes {
 			link := string(route.InterfaceName)
 
 			if _, ok := linkToRoutes[link]; !ok {
-				linkToRoutes[link] = make([]switchPortSettingsRouteRouteModel, 0)
+				linkToRoutes[link] = make([]RouteEntryResourceModel, 0)
 			}
 
-			routeModel := switchPortSettingsRouteRouteModel{
+			routeModel := RouteEntryResourceModel{
 				Dst: types.StringValue(route.Dst.String()),
 				GW:  iptypes.NewIPAddressValue(route.Gw),
 				RIBPriority: func() types.Int32 {
@@ -1136,9 +1136,9 @@ func toSwitchPortSettingsModel(
 			linkToRoutes[link] = append(linkToRoutes[link], routeModel)
 		}
 
-		routeModels := make([]RouteModel, 0)
+		routeModels := make([]RouteResourceModel, 0)
 		for linkName, rts := range linkToRoutes {
-			routeModel := RouteModel{
+			routeModel := RouteResourceModel{
 				Routes:   rts,
 				LinkName: types.StringValue(linkName),
 			}
@@ -1156,7 +1156,7 @@ func toSwitchPortSettingsModel(
 // [toSwitchPortSettingsModel] since the Oxide `switch_port_settings_create` API
 // request body matches the Terraform schema.
 func toNetworkingSwitchPortSettingsCreateParams(
-	model Model,
+	model ResourceModel,
 ) (oxide.NetworkingSwitchPortSettingsCreateParams, diag.Diagnostics) {
 	params := oxide.NetworkingSwitchPortSettingsCreateParams{
 		Body: &oxide.SwitchPortSettingsCreate{

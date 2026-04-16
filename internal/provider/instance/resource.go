@@ -54,38 +54,38 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
-	AntiAffinityGroups        types.Set        `tfsdk:"anti_affinity_groups"`
-	AutoRestartPolicy         types.String     `tfsdk:"auto_restart_policy"`
-	BootDiskID                types.String     `tfsdk:"boot_disk_id"`
-	Description               types.String     `tfsdk:"description"`
-	DiskAttachments           types.Set        `tfsdk:"disk_attachments"`
-	ExternalIPs               *ExternalIPModel `tfsdk:"external_ips"`
-	Hostname                  types.String     `tfsdk:"hostname"`
-	ID                        types.String     `tfsdk:"id"`
-	Memory                    types.Int64      `tfsdk:"memory"`
-	Name                      types.String     `tfsdk:"name"`
-	NetworkInterfaces         []NICModel       `tfsdk:"network_interfaces"`
-	AttachedNetworkInterfaces types.Map        `tfsdk:"attached_network_interfaces"`
-	NCPUs                     types.Int64      `tfsdk:"ncpus"`
-	ProjectID                 types.String     `tfsdk:"project_id"`
-	SSHPublicKeys             types.Set        `tfsdk:"ssh_public_keys"`
-	StartOnCreate             types.Bool       `tfsdk:"start_on_create"`
-	TimeCreated               types.String     `tfsdk:"time_created"`
-	TimeModified              types.String     `tfsdk:"time_modified"`
-	Timeouts                  timeouts.Value   `tfsdk:"timeouts"`
-	UserData                  types.String     `tfsdk:"user_data"`
+type ResourceModel struct {
+	AntiAffinityGroups        types.Set                `tfsdk:"anti_affinity_groups"`
+	AutoRestartPolicy         types.String             `tfsdk:"auto_restart_policy"`
+	BootDiskID                types.String             `tfsdk:"boot_disk_id"`
+	Description               types.String             `tfsdk:"description"`
+	DiskAttachments           types.Set                `tfsdk:"disk_attachments"`
+	ExternalIPs               *ExternalIPResourceModel `tfsdk:"external_ips"`
+	Hostname                  types.String             `tfsdk:"hostname"`
+	ID                        types.String             `tfsdk:"id"`
+	Memory                    types.Int64              `tfsdk:"memory"`
+	Name                      types.String             `tfsdk:"name"`
+	NetworkInterfaces         []NICResourceModel       `tfsdk:"network_interfaces"`
+	AttachedNetworkInterfaces types.Map                `tfsdk:"attached_network_interfaces"`
+	NCPUs                     types.Int64              `tfsdk:"ncpus"`
+	ProjectID                 types.String             `tfsdk:"project_id"`
+	SSHPublicKeys             types.Set                `tfsdk:"ssh_public_keys"`
+	StartOnCreate             types.Bool               `tfsdk:"start_on_create"`
+	TimeCreated               types.String             `tfsdk:"time_created"`
+	TimeModified              types.String             `tfsdk:"time_modified"`
+	Timeouts                  timeouts.Value           `tfsdk:"timeouts"`
+	UserData                  types.String             `tfsdk:"user_data"`
 }
 
-type NICModel struct {
-	Name        types.String  `tfsdk:"name"`
-	Description types.String  `tfsdk:"description"`
-	SubnetID    types.String  `tfsdk:"subnet_id"`
-	VPCID       types.String  `tfsdk:"vpc_id"`
-	IPConfig    IPConfigModel `tfsdk:"ip_config"`
+type NICResourceModel struct {
+	Name        types.String          `tfsdk:"name"`
+	Description types.String          `tfsdk:"description"`
+	SubnetID    types.String          `tfsdk:"subnet_id"`
+	VPCID       types.String          `tfsdk:"vpc_id"`
+	IPConfig    IPConfigResourceModel `tfsdk:"ip_config"`
 }
 
-func (nic NICModel) Hash() string {
+func (nic NICResourceModel) Hash() string {
 	h := md5.New()
 
 	// Hash user-provided values to detect changes to the configuration.
@@ -103,65 +103,65 @@ func (nic NICModel) Hash() string {
 	return string(h.Sum(nil))
 }
 
-type IPConfigModel struct {
-	V4 *IPConfigV4Model `tfsdk:"v4"`
-	V6 *IPConfigV6Model `tfsdk:"v6"`
+type IPConfigResourceModel struct {
+	V4 *IPConfigV4ResourceModel `tfsdk:"v4"`
+	V6 *IPConfigV6ResourceModel `tfsdk:"v6"`
 }
 
-type IPConfigV4Model struct {
+type IPConfigV4ResourceModel struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-type IPConfigV6Model struct {
+type IPConfigV6ResourceModel struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-type instanceResourceAttachedNICModel struct {
-	ID           types.String                 `tfsdk:"id"`
-	Name         types.String                 `tfsdk:"name"`
-	Description  types.String                 `tfsdk:"description"`
-	SubnetID     types.String                 `tfsdk:"subnet_id"`
-	VPCID        types.String                 `tfsdk:"vpc_id"`
-	InstanceID   types.String                 `tfsdk:"instance_id"`
-	Primary      types.Bool                   `tfsdk:"primary"`
-	MAC          types.String                 `tfsdk:"mac_address"`
-	IPStack      instanceResourceIPStackModel `tfsdk:"ip_stack"`
-	TimeCreated  types.String                 `tfsdk:"time_created"`
-	TimeModified types.String                 `tfsdk:"time_modified"`
+type AttachedNICResourceModel struct {
+	ID           types.String         `tfsdk:"id"`
+	Name         types.String         `tfsdk:"name"`
+	Description  types.String         `tfsdk:"description"`
+	SubnetID     types.String         `tfsdk:"subnet_id"`
+	VPCID        types.String         `tfsdk:"vpc_id"`
+	InstanceID   types.String         `tfsdk:"instance_id"`
+	Primary      types.Bool           `tfsdk:"primary"`
+	MAC          types.String         `tfsdk:"mac_address"`
+	IPStack      IPStackResourceModel `tfsdk:"ip_stack"`
+	TimeCreated  types.String         `tfsdk:"time_created"`
+	TimeModified types.String         `tfsdk:"time_modified"`
 }
 
-type instanceResourceIPStackModel struct {
-	V4 *instanceResourceIPStackV4Model `tfsdk:"v4"`
-	V6 *instanceResourceIPStackV6Model `tfsdk:"v6"`
+type IPStackResourceModel struct {
+	V4 *IPStackV4ResourceModel `tfsdk:"v4"`
+	V6 *IPStackV6ResourceModel `tfsdk:"v6"`
 }
 
-type instanceResourceIPStackV4Model struct {
+type IPStackV4ResourceModel struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-type instanceResourceIPStackV6Model struct {
+type IPStackV6ResourceModel struct {
 	IP types.String `tfsdk:"ip"`
 }
 
-type ExternalIPModel struct {
-	Ephemeral []EphemeralIPModel `tfsdk:"ephemeral"`
-	Floating  []FloatingIPModel  `tfsdk:"floating"`
+type ExternalIPResourceModel struct {
+	Ephemeral []EphemeralIPResourceModel `tfsdk:"ephemeral"`
+	Floating  []FloatingIPResourceModel  `tfsdk:"floating"`
 }
 
-func (ip *ExternalIPModel) Empty() bool {
+func (ip *ExternalIPResourceModel) Empty() bool {
 	return ip == nil || len(ip.Ephemeral) == 0 && len(ip.Floating) == 0
 }
 
-type EphemeralIPModel struct {
+type EphemeralIPResourceModel struct {
 	PoolID    types.String `tfsdk:"pool_id"`
 	IPVersion types.String `tfsdk:"ip_version"`
 }
 
-type FloatingIPModel struct {
+type FloatingIPResourceModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-var instanceResourceAttachedNICType = types.ObjectType{}.WithAttributeTypes(
+var AttachedNICType = types.ObjectType{}.WithAttributeTypes(
 	map[string]attr.Type{
 		"id":          types.StringType,
 		"name":        types.StringType,
@@ -330,7 +330,7 @@ This resource manages instances.
 			},
 			// Changes to network_interfaces need to be tracked manually.
 			// When adding a new attribute, check if they also need to be
-			// added to NICModel.Hash() and
+			// added to NICResourceModel.Hash() and
 			// instanceNetworkInterfacesPlanModifier.PlanModifySet().
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,
@@ -594,9 +594,9 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 				}
 
 				// Migrate network interfaces.
-				var newNICs []NICModel
+				var newNICs []NICResourceModel
 				for _, oldNIC := range oldState.NetworkInterfaces {
-					newNIC := NICModel{
+					newNIC := NICResourceModel{
 						Description: oldNIC.Description,
 						Name:        oldNIC.Name,
 						SubnetID:    oldNIC.SubnetID,
@@ -611,22 +611,22 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 						// have access to it during state migration, so assume
 						// the user has not changed their config and use the
 						// default value from previous versions.
-						newNIC.IPConfig = IPConfigModel{
-							V4: &IPConfigV4Model{
+						newNIC.IPConfig = IPConfigResourceModel{
+							V4: &IPConfigV4ResourceModel{
 								IP: types.StringValue(string(oxide.Ipv4AssignmentTypeAuto)),
 							},
 						}
 					} else {
-						newNIC.IPConfig = IPConfigModel{}
+						newNIC.IPConfig = IPConfigResourceModel{}
 
 						if oldNIC.IPConfig.V4 != nil {
-							newNIC.IPConfig.V4 = &IPConfigV4Model{
+							newNIC.IPConfig.V4 = &IPConfigV4ResourceModel{
 								IP: oldNIC.IPConfig.V4.IP,
 							}
 						}
 
 						if oldNIC.IPConfig.V6 != nil {
-							newNIC.IPConfig.V6 = &IPConfigV6Model{
+							newNIC.IPConfig.V6 = &IPConfigV6ResourceModel{
 								IP: oldNIC.IPConfig.V6.IP,
 							}
 						}
@@ -636,24 +636,24 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 				}
 
 				// Migrate external IPs.
-				var newExtIPs *ExternalIPModel
+				var newExtIPs *ExternalIPResourceModel
 				if oldState.ExternalIPs != nil {
-					newExtIPs = &ExternalIPModel{}
+					newExtIPs = &ExternalIPResourceModel{}
 					for _, ip := range oldState.ExternalIPs.Ephemeral {
 						newExtIPs.Ephemeral = append(
 							newExtIPs.Ephemeral,
-							EphemeralIPModel(ip),
+							EphemeralIPResourceModel(ip),
 						)
 					}
 					for _, ip := range oldState.ExternalIPs.Floating {
 						newExtIPs.Floating = append(
 							newExtIPs.Floating,
-							FloatingIPModel(ip),
+							FloatingIPResourceModel(ip),
 						)
 					}
 				}
 
-				newState := Model{
+				newState := ResourceModel{
 					AntiAffinityGroups:        oldState.AntiAffinityGroups,
 					AutoRestartPolicy:         oldState.AutoRestartPolicy,
 					BootDiskID:                oldState.BootDiskID,
@@ -690,9 +690,9 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 				}
 
 				// Migrate network interfaces.
-				var newNICs []NICModel
+				var newNICs []NICResourceModel
 				for _, oldNIC := range oldState.NetworkInterfaces {
-					newNIC := NICModel{
+					newNIC := NICResourceModel{
 						Description: oldNIC.Description,
 						Name:        oldNIC.Name,
 						SubnetID:    oldNIC.SubnetID,
@@ -705,8 +705,8 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 						// have access to it during state migration, so assume
 						// the user has not changed their config and use the
 						// default value from previous versions.
-						IPConfig: IPConfigModel{
-							V4: &IPConfigV4Model{
+						IPConfig: IPConfigResourceModel{
+							V4: &IPConfigV4ResourceModel{
 								IP: types.StringValue(string(oxide.Ipv4AssignmentTypeAuto)),
 							},
 						},
@@ -715,15 +715,15 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 				}
 
 				// Migrate external IPs.
-				var newExtIPs *ExternalIPModel
+				var newExtIPs *ExternalIPResourceModel
 				if len(oldState.ExternalIPs) > 0 {
-					newExtIPs = &ExternalIPModel{}
+					newExtIPs = &ExternalIPResourceModel{}
 					for _, oldExtIP := range oldState.ExternalIPs {
 						switch oxide.ExternalIpKind(oldExtIP.Type.ValueString()) {
 						case oxide.ExternalIpKindEphemeral:
 							newExtIPs.Ephemeral = append(
 								newExtIPs.Ephemeral,
-								EphemeralIPModel{
+								EphemeralIPResourceModel{
 									PoolID: oldExtIP.ID,
 								},
 							)
@@ -731,7 +731,7 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 						case oxide.ExternalIpKindFloating:
 							newExtIPs.Floating = append(
 								newExtIPs.Floating,
-								FloatingIPModel{
+								FloatingIPResourceModel{
 									ID: oldExtIP.ID,
 								},
 							)
@@ -739,7 +739,7 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 					}
 				}
 
-				newState := Model{
+				newState := ResourceModel{
 					AntiAffinityGroups: oldState.AntiAffinityGroups,
 					AutoRestartPolicy:  oldState.AutoRestartPolicy,
 					BootDiskID:         oldState.BootDiskID,
@@ -765,7 +765,7 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 					// This is a computed attribute, so leave it as a null map
 					// that is going to be populated when the state is
 					// refreshed.
-					AttachedNetworkInterfaces: types.MapNull(instanceResourceAttachedNICType),
+					AttachedNetworkInterfaces: types.MapNull(AttachedNICType),
 				}
 
 				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
@@ -780,7 +780,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -915,7 +915,7 @@ func (r *Resource) Create(
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// Populate Computed attribute values about external IPs.
-	instExternalIPs, diags := newAttachedExternalIPModel(ctx, r.client, plan)
+	instExternalIPs, diags := newAttachedExternalIPResourceModel(ctx, r.client, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -934,7 +934,7 @@ func (r *Resource) Create(
 	}
 
 	plan.AttachedNetworkInterfaces, diags = types.MapValueFrom(
-		ctx, instanceResourceAttachedNICType, attachedNICs,
+		ctx, AttachedNICType, attachedNICs,
 	)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
@@ -954,7 +954,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -1009,7 +1009,7 @@ func (r *Resource) Read(
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, state)
+	externalIPs, diags := newAttachedExternalIPResourceModel(ctx, r.client, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1060,7 +1060,7 @@ func (r *Resource) Read(
 	}
 
 	state.AttachedNetworkInterfaces, diags = types.MapValueFrom(
-		ctx, instanceResourceAttachedNICType, attachedNICs,
+		ctx, AttachedNICType, attachedNICs,
 	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -1085,8 +1085,8 @@ func (r *Resource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan Model
-	var state Model
+	var plan ResourceModel
+	var state ResourceModel
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -1226,12 +1226,12 @@ func (r *Resource) Update(
 	nicsToDelete := shared.SliceDiffByID(
 		state.NetworkInterfaces,
 		plan.NetworkInterfaces,
-		func(e NICModel) any {
+		func(e NICResourceModel) any {
 			return e.Hash()
 		},
 	)
 
-	var attachedNICs map[string]instanceResourceAttachedNICModel
+	var attachedNICs map[string]AttachedNICResourceModel
 	resp.Diagnostics.Append(
 		state.AttachedNetworkInterfaces.ElementsAs(ctx, &attachedNICs, false)...,
 	)
@@ -1239,7 +1239,7 @@ func (r *Resource) Update(
 		return
 	}
 
-	attachedNICToDelete := []instanceResourceAttachedNICModel{}
+	attachedNICToDelete := []AttachedNICResourceModel{}
 	for _, n := range nicsToDelete {
 		if attachedNIC, ok := attachedNICs[n.Name.ValueString()]; ok {
 			attachedNICToDelete = append(attachedNICToDelete, attachedNIC)
@@ -1254,7 +1254,7 @@ func (r *Resource) Update(
 	nicsToCreate := shared.SliceDiffByID(
 		plan.NetworkInterfaces,
 		state.NetworkInterfaces,
-		func(e NICModel) any {
+		func(e NICResourceModel) any {
 			return e.Hash()
 		},
 	)
@@ -1341,7 +1341,7 @@ func (r *Resource) Update(
 
 	// We use the plan here instead of the state to capture the desired IP pool ID
 	// value for the ephemeral external IP rather than the previous value.
-	externalIPs, diags := newAttachedExternalIPModel(ctx, r.client, plan)
+	externalIPs, diags := newAttachedExternalIPResourceModel(ctx, r.client, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1369,7 +1369,7 @@ func (r *Resource) Update(
 	}
 
 	plan.AttachedNetworkInterfaces, diags = types.MapValueFrom(
-		ctx, instanceResourceAttachedNICType, attachedNICs,
+		ctx, AttachedNICType, attachedNICs,
 	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -1394,7 +1394,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -1618,7 +1618,7 @@ func newAssociatedAntiAffinityGroupsOnCreateSet(
 func newNetworkInterfaceAttachment(
 	ctx context.Context,
 	client *oxide.Client,
-	model []NICModel,
+	model []NICResourceModel,
 ) (
 	oxide.InstanceNetworkInterfaceAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -1659,15 +1659,15 @@ func newNetworkInterfaceAttachment(
 func newAttachedNetworkInterfacesModel(
 	ctx context.Context,
 	client *oxide.Client,
-	state Model,
+	state ResourceModel,
 ) (
-	[]NICModel, map[string]instanceResourceAttachedNICModel, diag.Diagnostics) {
+	[]NICResourceModel, map[string]AttachedNICResourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Store network interfaces from state or plan in a map for quick retrieval
 	// of write-only attribute values that are preserved from the state or plan
 	// instead of read from the API.
-	stateIPConfigs := make(map[string]IPConfigModel)
+	stateIPConfigs := make(map[string]IPConfigResourceModel)
 	for _, nic := range state.NetworkInterfaces {
 		stateIPConfigs[nic.Name.ValueString()] = nic.IPConfig
 	}
@@ -1682,22 +1682,22 @@ func newAttachedNetworkInterfacesModel(
 			"Unable to read instance network interfaces:",
 			"API error: "+err.Error(),
 		)
-		return []NICModel{}, nil, diags
+		return []NICResourceModel{}, nil, diags
 	}
 
-	nicSet := []NICModel{}
-	attachedNICs := make(map[string]instanceResourceAttachedNICModel)
+	nicSet := []NICResourceModel{}
+	attachedNICs := make(map[string]AttachedNICResourceModel)
 	for _, nic := range nics.Items {
-		ipStack, err := newAttachedNetworkInterfacesIPStackModel(nic.IpStack)
+		ipStack, err := newAttachedNetworkInterfacesIPStackResourceModel(nic.IpStack)
 		if err != nil {
 			diags.AddError(
 				"Unable to read instance network interfaces:",
 				"API error: "+err.Error(),
 			)
-			return []NICModel{}, nil, diags
+			return []NICResourceModel{}, nil, diags
 		}
 
-		nicSet = append(nicSet, NICModel{
+		nicSet = append(nicSet, NICResourceModel{
 			Description: types.StringValue(nic.Description),
 			IPConfig:    stateIPConfigs[string(nic.Name)],
 			Name:        types.StringValue(string(nic.Name)),
@@ -1705,7 +1705,7 @@ func newAttachedNetworkInterfacesModel(
 			VPCID:       types.StringValue(nic.VpcId),
 		})
 
-		attachedNICs[string(nic.Name)] = instanceResourceAttachedNICModel{
+		attachedNICs[string(nic.Name)] = AttachedNICResourceModel{
 			ID:           types.StringValue(nic.Id),
 			Name:         types.StringValue(string(nic.Name)),
 			Description:  types.StringValue(nic.Description),
@@ -1720,59 +1720,59 @@ func newAttachedNetworkInterfacesModel(
 		}
 	}
 	if diags.HasError() {
-		return []NICModel{}, nil, diags
+		return []NICResourceModel{}, nil, diags
 	}
 
 	return nicSet, attachedNICs, nil
 }
 
-// newAttachedNetworkInterfacesIPStackModel parses a network interface IP stack
+// newAttachedNetworkInterfacesIPStackResourceModel parses a network interface IP stack
 // from the API to a resource model.
-func newAttachedNetworkInterfacesIPStackModel(
+func newAttachedNetworkInterfacesIPStackResourceModel(
 	stack oxide.PrivateIpStack,
-) (instanceResourceIPStackModel, error) {
+) (IPStackResourceModel, error) {
 	switch s := stack.Value.(type) {
 	case *oxide.PrivateIpStackV4:
-		return instanceResourceIPStackModel{
-			V4: &instanceResourceIPStackV4Model{
+		return IPStackResourceModel{
+			V4: &IPStackV4ResourceModel{
 				IP: types.StringValue(s.Value.Ip),
 			},
 		}, nil
 
 	case *oxide.PrivateIpStackV6:
-		return instanceResourceIPStackModel{
-			V6: &instanceResourceIPStackV6Model{
+		return IPStackResourceModel{
+			V6: &IPStackV6ResourceModel{
 				IP: types.StringValue(s.Value.Ip),
 			},
 		}, nil
 
 	case *oxide.PrivateIpStackDualStack:
-		return instanceResourceIPStackModel{
-			V4: &instanceResourceIPStackV4Model{
+		return IPStackResourceModel{
+			V4: &IPStackV4ResourceModel{
 				IP: types.StringValue(s.Value.V4.Ip),
 			},
-			V6: &instanceResourceIPStackV6Model{
+			V6: &IPStackV6ResourceModel{
 				IP: types.StringValue(s.Value.V6.Ip),
 			},
 		}, nil
 
 	default:
-		return instanceResourceIPStackModel{}, fmt.Errorf(
+		return IPStackResourceModel{}, fmt.Errorf(
 			"unexpected IP stack type %T",
 			stack.Value,
 		)
 	}
 }
 
-// newAttachedExternalIPModel fetches the external IP addresses for the instance
+// newAttachedExternalIPResourceModel fetches the external IP addresses for the instance
 // specified by model, keeping the IP pool ID from the ephemeral external IP
 // from the model if one is present.
-func newAttachedExternalIPModel(
+func newAttachedExternalIPResourceModel(
 	ctx context.Context,
 	client *oxide.Client,
-	model Model,
+	model ResourceModel,
 ) (
-	*ExternalIPModel, diag.Diagnostics) {
+	*ExternalIPResourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	externalIPResponse, err := client.InstanceExternalIpList(
@@ -1789,7 +1789,7 @@ func newAttachedExternalIPModel(
 		return nil, diags
 	}
 
-	externalIPs := &ExternalIPModel{}
+	externalIPs := &ExternalIPResourceModel{}
 	for _, ip := range externalIPResponse.Items {
 		switch v := ip.Value.(type) {
 		case *oxide.ExternalIpEphemeral:
@@ -1804,13 +1804,13 @@ func newAttachedExternalIPModel(
 				ipVersion = string(oxide.IpVersionV6)
 			}
 
-			externalIPs.Ephemeral = append(externalIPs.Ephemeral, EphemeralIPModel{
+			externalIPs.Ephemeral = append(externalIPs.Ephemeral, EphemeralIPResourceModel{
 				PoolID:    types.StringValue(v.IpPoolId),
 				IPVersion: types.StringValue(ipVersion),
 			})
 
 		case *oxide.ExternalIpFloating:
-			externalIPs.Floating = append(externalIPs.Floating, FloatingIPModel{
+			externalIPs.Floating = append(externalIPs.Floating, FloatingIPResourceModel{
 				ID: types.StringValue(v.Id),
 			})
 		// Skipped until the schema is updated to support SNAT external IPs.
@@ -1941,7 +1941,7 @@ func FilterBootDiskFromDisks(
 	return filteredDisks
 }
 
-func newExternalIPsOnCreate(externalIPs *ExternalIPModel) []oxide.ExternalIpCreate {
+func newExternalIPsOnCreate(externalIPs *ExternalIPResourceModel) []oxide.ExternalIpCreate {
 	if externalIPs == nil {
 		return nil
 	}
@@ -1981,7 +1981,7 @@ func newExternalIPsOnCreate(externalIPs *ExternalIPModel) []oxide.ExternalIpCrea
 	return ips
 }
 
-func newIPStackCreate(model NICModel) oxide.PrivateIpStackCreate {
+func newIPStackCreate(model NICResourceModel) oxide.PrivateIpStackCreate {
 	if model.IPConfig.V4 != nil && model.IPConfig.V6 != nil {
 		return oxide.PrivateIpStackCreate{
 			Value: &oxide.PrivateIpStackCreateDualStack{
@@ -2005,7 +2005,7 @@ func newIPStackCreate(model NICModel) oxide.PrivateIpStackCreate {
 	}
 }
 
-func newIPStackCreateV4(stack *IPConfigV4Model) oxide.PrivateIpv4StackCreate {
+func newIPStackCreateV4(stack *IPConfigV4ResourceModel) oxide.PrivateIpv4StackCreate {
 	ip := stack.IP.ValueString()
 
 	if ip == string(oxide.Ipv4AssignmentTypeAuto) {
@@ -2023,7 +2023,7 @@ func newIPStackCreateV4(stack *IPConfigV4Model) oxide.PrivateIpv4StackCreate {
 	}
 }
 
-func newIPStackCreateV6(stack *IPConfigV6Model) oxide.PrivateIpv6StackCreate {
+func newIPStackCreateV6(stack *IPConfigV6ResourceModel) oxide.PrivateIpv6StackCreate {
 	ip := stack.IP.ValueString()
 
 	if ip == string(oxide.Ipv6AssignmentTypeAuto) {
@@ -2042,8 +2042,8 @@ func newIPStackCreateV6(stack *IPConfigV6Model) oxide.PrivateIpv6StackCreate {
 }
 
 func newIPStackCreateDualStack(
-	stackV4 *IPConfigV4Model,
-	stackV6 *IPConfigV6Model,
+	stackV4 *IPConfigV4ResourceModel,
+	stackV6 *IPConfigV6ResourceModel,
 ) oxide.PrivateIpStackCreateDualStackValue {
 	return oxide.PrivateIpStackCreateDualStackValue{
 		V4: newIPStackCreateV4(stackV4),
@@ -2054,7 +2054,7 @@ func newIPStackCreateDualStack(
 func createNICs(
 	ctx context.Context,
 	client *oxide.Client,
-	models []NICModel,
+	models []NICResourceModel,
 	instanceID string,
 ) diag.Diagnostics {
 	for _, model := range models {
@@ -2094,13 +2094,13 @@ func createNICs(
 func deleteNICs(
 	ctx context.Context,
 	client *oxide.Client,
-	models []instanceResourceAttachedNICModel,
+	models []AttachedNICResourceModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// The API doesn't allow deleting the primary network interface
 	// while other interfaces are still attached, so leave it for last.
-	slices.SortStableFunc(models, func(a, b instanceResourceAttachedNICModel) int {
+	slices.SortStableFunc(models, func(a, b AttachedNICResourceModel) int {
 		if a.Primary.ValueBool() && !b.Primary.ValueBool() {
 			return 1
 		} else if !a.Primary.ValueBool() && b.Primary.ValueBool() {
@@ -2139,8 +2139,8 @@ func attachExternalIPs(
 	ctx context.Context,
 	client *oxide.Client,
 	instanceID string,
-	state *ExternalIPModel,
-	plan *ExternalIPModel,
+	state *ExternalIPResourceModel,
+	plan *ExternalIPResourceModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -2156,14 +2156,14 @@ func attachEphemeralIPs(
 	ctx context.Context,
 	client *oxide.Client,
 	instanceID string,
-	state, plan *ExternalIPModel,
+	state, plan *ExternalIPResourceModel,
 ) diag.Diagnostics {
 	// No need to attach ephemeral IPs if the plan doesn't have any external IP.
 	if plan == nil {
 		return nil
 	}
 
-	var ipsToAttach []EphemeralIPModel
+	var ipsToAttach []EphemeralIPResourceModel
 	if state == nil {
 		ipsToAttach = plan.Ephemeral
 	} else {
@@ -2221,14 +2221,14 @@ func attachFloatingIPs(
 	ctx context.Context,
 	client *oxide.Client,
 	instanceID string,
-	state, plan *ExternalIPModel,
+	state, plan *ExternalIPResourceModel,
 ) diag.Diagnostics {
 	// No need to attach floating IPs if the plan doesn't have any external IP.
 	if plan == nil {
 		return nil
 	}
 
-	var ipsToAttach []FloatingIPModel
+	var ipsToAttach []FloatingIPResourceModel
 	if state == nil {
 		ipsToAttach = plan.Floating
 	} else {
@@ -2274,8 +2274,8 @@ func detachExternalIPs(
 	ctx context.Context,
 	client *oxide.Client,
 	instanceID string,
-	state *ExternalIPModel,
-	plan *ExternalIPModel,
+	state *ExternalIPResourceModel,
+	plan *ExternalIPResourceModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -2291,14 +2291,14 @@ func detachEphemeralIPs(
 	ctx context.Context,
 	client *oxide.Client,
 	instanceID string,
-	state, plan *ExternalIPModel,
+	state, plan *ExternalIPResourceModel,
 ) diag.Diagnostics {
 	// No need to detach ephemeral IPs if the state doesn't have any external IP.
 	if state == nil {
 		return nil
 	}
 
-	var ipsToDetach []EphemeralIPModel
+	var ipsToDetach []EphemeralIPResourceModel
 	if plan == nil {
 		ipsToDetach = state.Ephemeral
 	} else {
@@ -2344,14 +2344,14 @@ func detachEphemeralIPs(
 func detachFloatingIPs(
 	ctx context.Context,
 	client *oxide.Client,
-	state, plan *ExternalIPModel,
+	state, plan *ExternalIPResourceModel,
 ) diag.Diagnostics {
 	// No need to detach floating IPs if the state doesn't have any external IP.
 	if state == nil {
 		return nil
 	}
 
-	var ipsToDetach []FloatingIPModel
+	var ipsToDetach []FloatingIPResourceModel
 	if plan == nil {
 		ipsToDetach = state.Floating
 	} else {
@@ -2647,7 +2647,7 @@ func (f instanceIPConfigValidator) ValidateObject(
 		return
 	}
 
-	var ipConfig *IPConfigModel
+	var ipConfig *IPConfigResourceModel
 	diags := req.ConfigValue.As(ctx, &ipConfig, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty:    true,
 		UnhandledUnknownAsEmpty: true,
@@ -2693,7 +2693,7 @@ func (f instanceExternalIPValidator) ValidateObject(
 		return
 	}
 
-	var externalIPs *ExternalIPModel
+	var externalIPs *ExternalIPResourceModel
 	diags := req.ConfigValue.As(ctx, &externalIPs, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty:    true,
 		UnhandledUnknownAsEmpty: true,

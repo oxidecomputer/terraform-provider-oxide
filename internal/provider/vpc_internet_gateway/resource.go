@@ -38,7 +38,7 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
+type ResourceModel struct {
 	CascadeDelete types.Bool     `tfsdk:"cascade_delete"`
 	Description   types.String   `tfsdk:"description"`
 	ID            types.String   `tfsdk:"id"`
@@ -147,7 +147,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -203,7 +203,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -267,8 +267,8 @@ func (r *Resource) Update(
 	// parameter which you only use during delete. This means we only want
 	// to save it as part of the state.
 
-	var plan Model
-	var state Model
+	var plan ResourceModel
+	var state ResourceModel
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -326,7 +326,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
