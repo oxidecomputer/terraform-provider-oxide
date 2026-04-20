@@ -17,19 +17,67 @@ env:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tf-binary:
+          - terraform
+          - tofu
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+      - uses: hashicorp/setup-terraform@v4
+        if: matrix.tf-binary == 'terraform'
+        with:
+          terraform_wrapper: false
+      - uses: opentofu/setup-opentofu@v2
+        if: matrix.tf-binary == 'tofu'
+        with:
+          tofu_wrapper: false
+      - uses: astral-sh/setup-uv@v7
+        with:
+          # We don't have any Python dependencies to cache.
+          enable-cache: false
+      - name: set env
+        run: |
+          echo "CHECKPOINT_DISABLE=1" >> "$GITHUB_ENV"
+          echo "TF_ACC_TERRAFORM_PATH=$(which ${{ matrix.tf-binary }})" >> "$GITHUB_ENV"
       - name: build
         run: make build
       - name: test
-        run: make test
+        run: |
+          mkdir ./unittest
+          make test
         env:
           CHECKPOINT_DISABLE: "1"
+          TEST_GOTESTSUM_ARGS: "--rerun-fails-report=./unittest/unit-test-rerun.txt --junitfile=./unittest/unit-tests.xml"
+          # Explicitly skip TestAcc* test to avoid polluting TestRail results
+          # with unnecessary Skipped results.
+          TEST_NAME: "^Test($|[^A]|A$|A[^c]|Ac$|Ac[^c])"
+          TF_ACC_PROVIDER_NAMESPACE: oxidecomputer
       - name: lint
+        if: matrix.tf-binary == 'terraform' # Linting tools require Terraform to be installed.
         run: make lint
+      - name: upload test results to TestRail
+        if: always()
+        continue-on-error: true
+        env:
+          TR_CLI_HOST: ${{ secrets.TESTRAIL_HOST }}
+          TR_CLI_USERNAME: ${{ secrets.TESTRAIL_USERNAME }}
+          TR_CLI_KEY: ${{ secrets.TESTRAIL_API_KEY }}
+          TR_CLI_PROJECT: ${{ secrets.TESTRAIL_PROJECT }}
+        run: |
+          uvx trcli \
+            --yes `# Auto-create new test cases.` \
+            parse_junit \
+              --file './unittest/unit-tests.xml' \
+              --title 'Unit Tests (${{ matrix.tf-binary }}) - ${{ github.run_id }} - ${{ job.check_run_id }}' \
+              --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}' \
+              --update-existing-cases 'yes' \
+              --case-matcher 'auto' \
+              --close-run
 
   # Choose the appropriate omicron version for acceptance tests. For cron jobs, use `main`, since
   # our goal is to detect breaking changes in omicron. Otherwise, look up the omicron version from

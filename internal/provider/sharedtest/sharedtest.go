@@ -7,6 +7,7 @@ package sharedtest
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"os"
 	"sync/atomic"
@@ -133,11 +134,14 @@ func SiloDNSName() string {
 var subnetCounter uint32
 
 // NextSubnetCIDR returns sequential /24 subnet CIDRs from
-// the 10.128.0.0/16 range.
+// the 10.k.0.0/16 range, where k is a hash of the test name.
 // TODO: extend if we ever need more than 256 subnets in
 // tests.
 func NextSubnetCIDR(t *testing.T) string {
 	t.Helper()
+	h := fnv.New32a()
+	h.Write([]byte(t.Name()))
+	k := h.Sum32() % 256
 	n := atomic.AddUint32(&subnetCounter, 1) - 1
 	if n > 255 {
 		t.Fatal(
@@ -145,5 +149,5 @@ func NextSubnetCIDR(t *testing.T) string {
 				" subnets in 10.128.0.0/16",
 		)
 	}
-	return fmt.Sprintf("10.128.%d.0/24", n)
+	return fmt.Sprintf("10.%d.%d.0/24", k, n)
 }

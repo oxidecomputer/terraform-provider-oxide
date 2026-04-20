@@ -18,7 +18,7 @@ endif
 
 # Acceptance test variables
 TEST_ACC_COUNT ?= 1
-TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/provider
+TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/...
 TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
 TEST_ACC_OMICRON_BRANCH ?=
@@ -50,7 +50,9 @@ install:
 .PHONY: test
 test:
 	@ echo "-> Running unit tests for $(BINARY)"
-	@ $(GO_TOOL) gotestsum --format=testname --hide-summary=skipped -- $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS)
+	@ $(GO_TOOL) gotestsum \
+	    --format=testname --hide-summary=skipped --rerun-fails=3 --packages=$(TEST_PACKAGE) $(TEST_GOTESTSUM_ARGS) \
+	    -- $(TEST_PACKAGE) $(TEST_ARGS) $(TESTUNITARGS) -run '$(TEST_NAME)'
 
 .PHONY: docs
 docs:
@@ -143,7 +145,7 @@ testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
 testacc:
 	@ echo "-> Running terraform acceptance tests"
 	@ TF_ACC=1 $(GO_TOOL) gotestsum \
-	    --format=testname --rerun-fails=3 --packages=$(TEST_ACC)/... $(TEST_ACC_GOTESTSUM_ARGS) \
+	    --format=testname --rerun-fails=3 --packages=$(TEST_ACC) $(TEST_ACC_GOTESTSUM_ARGS) \
 	    -- $(TEST_ACC) -v -count $(TEST_ACC_COUNT) -parallel $(TEST_ACC_PARALLEL) $(TEST_ACC_ARGS) -timeout 20m -run $(TEST_ACC_NAME)
 
 .PHONY: testacc-local

@@ -14,6 +14,7 @@ tf/
 acctest/oxide-token
 alpine.qcow2
 alpine.raw
+terraform.log
 
 # Go.
 go.work
