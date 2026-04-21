@@ -40,6 +40,9 @@ jobs:
           go-version-file: 'go.mod'
       - uses: docker/setup-compose-action@v2
       - uses: astral-sh/setup-uv@v7
+        with:
+          # We don't have any Python dependencies to cache.
+          enable-cache: false
       # Look up the version of oxide.rs corresponding to the requested omicron version. We'll cache
       # the resulting binary, so that we only build the CLI for a given oxide.rs commit once, and
       # always use the latest oxide.rs version corresponding to the relevant omicron version.
@@ -115,7 +118,7 @@ jobs:
           docker compose exec -T omicron-dev sh -c 'tar -cf - /tmp/omicron-dev*.log' | tar -xf -
           docker compose exec -T mitmproxy sh -c 'tar -cf - /tmp/mitmproxy.log' | tar -xf -
           docker compose logs omicron-dev > ./tmp/omicron-dev.log
-          mv ../internal/provider/terraform.log ./tmp
+          find .. -name terraform.log -exec cat {} \; > ./tmp/terraform.log
           cp ./acc-tests.xml ./tmp
       - name: rerun warn
         if: always()
@@ -129,20 +132,16 @@ jobs:
         if: always()
         continue-on-error: true
         env:
-          TESTRAIL_HOST: ${{ secrets.testrail-host }}
-          TESTRAIL_USERNAME: ${{ secrets.testrail-username }}
-          TESTRAIL_API_KEY: ${{ secrets.testrail-api-key }}
-          TESTRAIL_PROJECT: ${{ secrets.testrail-project }}
+          TR_CLI_HOST: ${{ secrets.testrail-host }}
+          TR_CLI_USERNAME: ${{ secrets.testrail-username }}
+          TR_CLI_KEY: ${{ secrets.testrail-api-key }}
+          TR_CLI_PROJECT: ${{ secrets.testrail-project }}
         run: |
           uvx trcli \
-            --host "${TESTRAIL_HOST}" \
-            --username "${TESTRAIL_USERNAME}" \
-            --key "${TESTRAIL_API_KEY}" \
-            --project "${TESTRAIL_PROJECT}" \
             --yes `# Auto-create new test cases.` \
             parse_junit \
               --file './acctest/acc-tests.xml' \
-              --title '${{ matrix.tf-binary }} - ${{ github.run_id }} - ${{ job.check_run_id }}' \
+              --title 'Acceptance Tests (${{ matrix.tf-binary }}) - ${{ github.run_id }} - ${{ job.check_run_id }}' \
               --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}' \
               --update-existing-cases 'yes' \
               --case-matcher 'auto' \
