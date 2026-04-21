@@ -35,30 +35,30 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
-	ID                    types.String         `tfsdk:"id"`
-	Name                  types.String         `tfsdk:"name"`
-	Description           types.String         `tfsdk:"description"`
-	Silo                  types.String         `tfsdk:"silo"`
-	AcsUrl                types.String         `tfsdk:"acs_url"`
-	IdpEntityId           types.String         `tfsdk:"idp_entity_id"`
-	SloUrl                types.String         `tfsdk:"slo_url"`
-	SpClientId            types.String         `tfsdk:"sp_client_id"`
-	TechnicalContactEmail types.String         `tfsdk:"technical_contact_email"`
-	IdpMetadataSource     *MetadataSourceModel `tfsdk:"idp_metadata_source"`
-	GroupAttributeName    types.String         `tfsdk:"group_attribute_name"`
-	SigningKeypair        *SigningKeypairModel `tfsdk:"signing_keypair"`
-	TimeCreated           types.String         `tfsdk:"time_created"`
-	TimeModified          types.String         `tfsdk:"time_modified"`
-	Timeouts              timeouts.Value       `tfsdk:"timeouts"`
+type ResourceModel struct {
+	ID                    types.String                 `tfsdk:"id"`
+	Name                  types.String                 `tfsdk:"name"`
+	Description           types.String                 `tfsdk:"description"`
+	Silo                  types.String                 `tfsdk:"silo"`
+	AcsUrl                types.String                 `tfsdk:"acs_url"`
+	IdpEntityId           types.String                 `tfsdk:"idp_entity_id"`
+	SloUrl                types.String                 `tfsdk:"slo_url"`
+	SpClientId            types.String                 `tfsdk:"sp_client_id"`
+	TechnicalContactEmail types.String                 `tfsdk:"technical_contact_email"`
+	IdpMetadataSource     *MetadataSourceResourceModel `tfsdk:"idp_metadata_source"`
+	GroupAttributeName    types.String                 `tfsdk:"group_attribute_name"`
+	SigningKeypair        *SigningKeypairResourceModel `tfsdk:"signing_keypair"`
+	TimeCreated           types.String                 `tfsdk:"time_created"`
+	TimeModified          types.String                 `tfsdk:"time_modified"`
+	Timeouts              timeouts.Value               `tfsdk:"timeouts"`
 }
 
-type SigningKeypairModel struct {
+type SigningKeypairResourceModel struct {
 	PrivateKey types.String `tfsdk:"private_key"`
 	PublicCert types.String `tfsdk:"public_cert"`
 }
 
-type MetadataSourceModel struct {
+type MetadataSourceResourceModel struct {
 	Type types.String `tfsdk:"type"`
 	Url  types.String `tfsdk:"url"`
 	Data types.String `tfsdk:"data"`
@@ -213,7 +213,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -306,7 +306,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

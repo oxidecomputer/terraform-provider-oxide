@@ -37,8 +37,8 @@ type Resource struct {
 	client *oxide.Client
 }
 
-// Model are the attributes that are supported on this resource.
-type Model struct {
+// ResourceModel are the attributes that are supported on this resource.
+type ResourceModel struct {
 	ID           types.String   `tfsdk:"id"`
 	Name         types.String   `tfsdk:"name"`
 	Description  types.String   `tfsdk:"description"`
@@ -148,7 +148,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	// Read Terraform plan data into the model.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -205,7 +205,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -280,7 +280,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

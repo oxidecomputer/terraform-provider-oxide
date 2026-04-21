@@ -35,26 +35,26 @@ type DataSource struct {
 
 // DataSourceModel are the attributes that are supported on this data source.
 type DataSourceModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Description  types.String   `tfsdk:"description"`
-	BlockSize    types.Int64    `tfsdk:"block_size"`
-	DevicePath   types.String   `tfsdk:"device_path"`
-	ProjectName  types.String   `tfsdk:"project_name"`
-	ProjectID    types.String   `tfsdk:"project_id"`
-	Size         types.Int64    `tfsdk:"size"`
-	State        *StateModel    `tfsdk:"state"`
-	ImageID      types.String   `tfsdk:"image_id"`
-	SnapshotID   types.String   `tfsdk:"snapshot_id"`
-	DiskType     types.String   `tfsdk:"disk_type"`
-	ReadOnly     types.Bool     `tfsdk:"read_only"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	ID           types.String          `tfsdk:"id"`
+	Name         types.String          `tfsdk:"name"`
+	Description  types.String          `tfsdk:"description"`
+	BlockSize    types.Int64           `tfsdk:"block_size"`
+	DevicePath   types.String          `tfsdk:"device_path"`
+	ProjectName  types.String          `tfsdk:"project_name"`
+	ProjectID    types.String          `tfsdk:"project_id"`
+	Size         types.Int64           `tfsdk:"size"`
+	State        *StateDataSourceModel `tfsdk:"state"`
+	ImageID      types.String          `tfsdk:"image_id"`
+	SnapshotID   types.String          `tfsdk:"snapshot_id"`
+	DiskType     types.String          `tfsdk:"disk_type"`
+	ReadOnly     types.Bool            `tfsdk:"read_only"`
+	TimeCreated  types.String          `tfsdk:"time_created"`
+	TimeModified types.String          `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value        `tfsdk:"timeouts"`
 }
 
-// StateModel are the attributes for the disk state.
-type StateModel struct {
+// StateDataSourceModel are the attributes for the disk state.
+type StateDataSourceModel struct {
 	State    types.String `tfsdk:"state"`
 	Instance types.String `tfsdk:"instance"`
 }
@@ -224,7 +224,7 @@ func (d *DataSource) Read(
 	}
 
 	// Set disk state
-	state.State = &StateModel{
+	state.State = &StateDataSourceModel{
 		State: types.StringValue(string(disk.State.State())),
 	}
 	switch v := disk.State.Value.(type) {

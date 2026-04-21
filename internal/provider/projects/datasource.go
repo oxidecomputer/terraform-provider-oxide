@@ -26,12 +26,12 @@ type DataSource struct {
 }
 
 type DataSourceModel struct {
-	ID       types.String   `tfsdk:"id"`
-	Timeouts timeouts.Value `tfsdk:"timeouts"`
-	Projects []ProjectModel `tfsdk:"projects"`
+	ID       types.String             `tfsdk:"id"`
+	Timeouts timeouts.Value           `tfsdk:"timeouts"`
+	Projects []ProjectDataSourceModel `tfsdk:"projects"`
 }
 
-type ProjectModel struct {
+type ProjectDataSourceModel struct {
 	Description  types.String `tfsdk:"description"`
 	ID           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
@@ -159,7 +159,7 @@ func (d *DataSource) Read(
 
 	// Map response body to model
 	for _, project := range projects.Items {
-		projectState := ProjectModel{
+		projectState := ProjectDataSourceModel{
 			Description:  types.StringValue(project.Description),
 			ID:           types.StringValue(project.Id),
 			Name:         types.StringValue(string(project.Name)),

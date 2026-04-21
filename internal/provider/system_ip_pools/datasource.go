@@ -26,12 +26,12 @@ type DataSource struct {
 }
 
 type DataSourceModel struct {
-	ID       types.String   `tfsdk:"id"`
-	Timeouts timeouts.Value `tfsdk:"timeouts"`
-	IpPools  []IpPoolModel  `tfsdk:"ip_pools"`
+	ID       types.String            `tfsdk:"id"`
+	Timeouts timeouts.Value          `tfsdk:"timeouts"`
+	IpPools  []IpPoolDataSourceModel `tfsdk:"ip_pools"`
 }
 
-type IpPoolModel struct {
+type IpPoolDataSourceModel struct {
 	Description  types.String `tfsdk:"description"`
 	ID           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
@@ -149,7 +149,7 @@ func (d *DataSource) Read(
 	state.ID = types.StringValue(uuid.New().String())
 
 	for _, ipPool := range ipPools {
-		poolState := IpPoolModel{
+		poolState := IpPoolDataSourceModel{
 			Description:  types.StringValue(ipPool.Description),
 			ID:           types.StringValue(ipPool.Id),
 			Name:         types.StringValue(string(ipPool.Name)),

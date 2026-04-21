@@ -38,7 +38,7 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
+type ResourceModel struct {
 	BlockSize        types.Int64    `tfsdk:"block_size"`
 	Description      types.String   `tfsdk:"description"`
 	Digest           types.Object   `tfsdk:"digest"`
@@ -54,7 +54,7 @@ type Model struct {
 	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
-type imageResourceDigestModel struct {
+type DigestResourceModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
@@ -197,7 +197,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -252,7 +252,7 @@ func (r *Resource) Create(
 		plan.BlockSize = types.Int64Value(int64(image.BlockSize))
 	}
 
-	// Parse imageResourceDigestModel into types.Object
+	// Parse DigestResourceModel into types.Object
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
@@ -268,7 +268,7 @@ func (r *Resource) Create(
 			)
 			return
 		}
-		dm := imageResourceDigestModel{
+		dm := DigestResourceModel{
 			Type:  types.StringValue(string(image.Digest.Type())),
 			Value: types.StringValue(sha256.Value),
 		}
@@ -293,7 +293,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -351,7 +351,7 @@ func (r *Resource) Read(
 		state.ProjectID = types.StringValue(image.ProjectId)
 	}
 
-	// Parse imageResourceDigestModel into types.Object
+	// Parse DigestResourceModel into types.Object
 	attributeTypes := map[string]attr.Type{
 		"type":  types.StringType,
 		"value": types.StringType,
@@ -367,7 +367,7 @@ func (r *Resource) Read(
 			)
 			return
 		}
-		dm := imageResourceDigestModel{
+		dm := DigestResourceModel{
 			Type:  types.StringValue(string(image.Digest.Type())),
 			Value: types.StringValue(sha256.Value),
 		}
@@ -403,7 +403,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

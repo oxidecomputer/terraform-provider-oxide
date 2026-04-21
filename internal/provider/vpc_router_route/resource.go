@@ -39,25 +39,25 @@ type Resource struct {
 	client *oxide.Client
 }
 
-type Model struct {
-	Description  types.String      `tfsdk:"description"`
-	Destination  *DestinationModel `tfsdk:"destination"`
-	ID           types.String      `tfsdk:"id"`
-	Kind         types.String      `tfsdk:"kind"`
-	Name         types.String      `tfsdk:"name"`
-	Target       *TargetModel      `tfsdk:"target"`
-	TimeCreated  types.String      `tfsdk:"time_created"`
-	TimeModified types.String      `tfsdk:"time_modified"`
-	VPCRouterID  types.String      `tfsdk:"vpc_router_id"`
-	Timeouts     timeouts.Value    `tfsdk:"timeouts"`
+type ResourceModel struct {
+	Description  types.String              `tfsdk:"description"`
+	Destination  *DestinationResourceModel `tfsdk:"destination"`
+	ID           types.String              `tfsdk:"id"`
+	Kind         types.String              `tfsdk:"kind"`
+	Name         types.String              `tfsdk:"name"`
+	Target       *TargetResourceModel      `tfsdk:"target"`
+	TimeCreated  types.String              `tfsdk:"time_created"`
+	TimeModified types.String              `tfsdk:"time_modified"`
+	VPCRouterID  types.String              `tfsdk:"vpc_router_id"`
+	Timeouts     timeouts.Value            `tfsdk:"timeouts"`
 }
 
-type DestinationModel struct {
+type DestinationResourceModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type TargetModel struct {
+type TargetResourceModel struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
@@ -213,7 +213,7 @@ func (r *Resource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan Model
+	var plan ResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -296,7 +296,7 @@ func (r *Resource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -334,12 +334,12 @@ func (r *Resource) Read(
 		map[string]any{"success": true},
 	)
 
-	dm := DestinationModel{
+	dm := DestinationResourceModel{
 		Type:  types.StringValue(string(vpcRouterRoute.Destination.Type())),
 		Value: types.StringValue(vpcRouterRoute.Destination.String()),
 	}
 
-	tm := TargetModel{
+	tm := TargetResourceModel{
 		Type: types.StringValue(string(vpcRouterRoute.Target.Type())),
 	}
 
@@ -371,8 +371,8 @@ func (r *Resource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan Model
-	var state Model
+	var plan ResourceModel
+	var state ResourceModel
 
 	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -462,7 +462,7 @@ func (r *Resource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state Model
+	var state ResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

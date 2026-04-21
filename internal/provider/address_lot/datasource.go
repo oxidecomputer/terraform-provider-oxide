@@ -26,7 +26,7 @@ type DataSource struct {
 }
 
 type DataSourceModel struct {
-	Blocks       []DataSourceBlockModel `tfsdk:"blocks"`
+	Blocks       []BlockDataSourceModel `tfsdk:"blocks"`
 	Description  types.String           `tfsdk:"description"`
 	Kind         types.String           `tfsdk:"kind"`
 	Name         types.String           `tfsdk:"name"`
@@ -36,7 +36,7 @@ type DataSourceModel struct {
 	Timeouts     timeouts.Value         `tfsdk:"timeouts"`
 }
 
-type DataSourceBlockModel struct {
+type BlockDataSourceModel struct {
 	ID           types.String `tfsdk:"id"`
 	FirstAddress types.String `tfsdk:"first_address"`
 	LastAddress  types.String `tfsdk:"last_address"`
@@ -168,9 +168,9 @@ func (d *DataSource) Read(
 	state.TimeCreated = types.StringValue(lot.TimeCreated.String())
 	state.TimeModified = types.StringValue(lot.TimeModified.String())
 
-	blockModels := make([]DataSourceBlockModel, len(addressLot.Blocks))
+	blockModels := make([]BlockDataSourceModel, len(addressLot.Blocks))
 	for index, item := range addressLot.Blocks {
-		blockModels[index] = DataSourceBlockModel{
+		blockModels[index] = BlockDataSourceModel{
 			ID:           types.StringValue(item.Id),
 			FirstAddress: types.StringValue(item.FirstAddress),
 			LastAddress:  types.StringValue(item.LastAddress),
