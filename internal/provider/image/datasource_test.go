@@ -13,13 +13,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceImageConfig struct {
+type dataSourceConfig struct {
 	BlockName         string
 	SupportBlockName  string
 	SupportBlockName2 string
 }
 
-var dataSourceImageConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -41,12 +41,12 @@ data "oxide_image" "{{.BlockName}}" {
 func TestAccCloudDataSourceImage_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-image")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceImageConfig{
+		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
 			SupportBlockName2: sharedtest.NewBlockName("support"),
 		},
-		dataSourceImageConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -58,7 +58,7 @@ func TestAccCloudDataSourceImage_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceImage(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_image.%s", blockName),
 				),
 			},
@@ -66,7 +66,7 @@ func TestAccCloudDataSourceImage_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceImage(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),

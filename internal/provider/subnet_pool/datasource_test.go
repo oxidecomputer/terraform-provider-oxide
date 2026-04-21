@@ -21,17 +21,17 @@ func TestAccDataSourceSubnetPool_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSubnetPoolDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testDataSourceSubnetPoolConfig(subnet),
-				Check:  checkDataSourceSubnetPool(dataSourceName, subnet),
+				Config: testDataSourceConfig(subnet),
+				Check:  checkDataSource(dataSourceName, subnet),
 			},
 		},
 	})
 }
 
-func testDataSourceSubnetPoolConfig(subnet string) string {
+func testDataSourceConfig(subnet string) string {
 	return fmt.Sprintf(`
 resource "oxide_subnet_pool" "test" {
 	name        = "terraform-acc-ds-subnet-pool"
@@ -56,7 +56,7 @@ data "oxide_subnet_pool" "test" {
 `, subnet)
 }
 
-func checkDataSourceSubnetPool(dataName, subnet string) resource.TestCheckFunc {
+func checkDataSource(dataName, subnet string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(dataName, "name", "terraform-acc-ds-subnet-pool"),
 		resource.TestCheckResourceAttr(

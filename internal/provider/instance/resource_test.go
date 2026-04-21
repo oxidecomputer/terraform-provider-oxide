@@ -212,11 +212,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceInstance(resourceName, instanceName),
+				Check:  checkResource(resourceName, instanceName),
 			},
 			{
 				ResourceName:            resourceName,
@@ -226,7 +226,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			},
 			{
 				Config: config2,
-				Check:  checkResourceInstanceFull(resourceName2, instanceName2, instanceNicName),
+				Check:  checkResourceFull(resourceName2, instanceName2, instanceNicName),
 			},
 			{
 				ResourceName:      resourceName2,
@@ -539,37 +539,37 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			// Ephemeral external IP with specified IP pool ID.
 			{
 				Config: initialConfig,
-				Check:  checkResourceInstanceIP(resourceName, instanceName),
+				Check:  checkResourceIP(resourceName, instanceName),
 			},
 			// Ephemeral external IP with default silo IP pool ID.
 			{
 				Config: updateConfig1,
-				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
+				Check:  checkResourceIPUpdate1(resourceName, instanceName),
 			},
 			// Detach ephemeral IPv4.
 			{
 				Config: updateConfig1SingleStack,
-				Check:  checkResourceInstanceIPUpdate1SingleStack(resourceName, instanceName),
+				Check:  checkResourceIPUpdate1SingleStack(resourceName, instanceName),
 			},
 			// Ephemeral external IP with specified IP pool ID.
 			{
 				Config: initialConfig,
-				Check:  checkResourceInstanceIP(resourceName, instanceName),
+				Check:  checkResourceIP(resourceName, instanceName),
 			},
 			// Detach all external IPs.
 			{
 				Config: updateConfig2,
-				Check:  checkResourceInstanceIPUpdate2(resourceName, instanceName),
+				Check:  checkResourceIPUpdate2(resourceName, instanceName),
 			},
 			// Attach all external IPs.
 			{
 				Config: updateConfig1,
-				Check:  checkResourceInstanceIPUpdate1(resourceName, instanceName),
+				Check:  checkResourceIPUpdate1(resourceName, instanceName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -640,11 +640,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configSshKeys,
-				Check:  checkResourceInstanceSSHKeys(resourceName, instanceSshKeysName),
+				Check:  checkResourceSSHKeys(resourceName, instanceSshKeysName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -951,16 +951,16 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configNic,
-				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+				Check:  checkResourceNic(resourceNameInstanceNic, instanceNicName, nicName),
 			},
 			{
 				// Add a nic
 				Config: configNicAdd,
-				Check: checkResourceInstanceTwoNics(
+				Check: checkResourceTwoNics(
 					resourceNameInstanceNic,
 					instanceNicName,
 					nicName,
@@ -969,7 +969,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			{
 				// Make nics single stack
 				Config: configNicUpdateSingleStack,
-				Check: checkResourceInstanceTwoNicsSingleStack(
+				Check: checkResourceTwoNicsSingleStack(
 					resourceNameInstanceNic,
 					instanceNicName,
 					nicName,
@@ -978,17 +978,17 @@ resource "oxide_instance" "{{.BlockName}}" {
 			{
 				// Delete a nic
 				Config: configNic,
-				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+				Check:  checkResourceNic(resourceNameInstanceNic, instanceNicName, nicName),
 			},
 			{
 				// Delete all nics
 				Config: configNicDelete,
-				Check:  checkResourceInstanceNicUpdate(resourceNameInstanceNic, instanceNicName),
+				Check:  checkResourceNicUpdate(resourceNameInstanceNic, instanceNicName),
 			},
 			{
 				// Recreate a nic
 				Config: configNic,
-				Check:  checkResourceInstanceNic(resourceNameInstanceNic, instanceNicName, nicName),
+				Check:  checkResourceNic(resourceNameInstanceNic, instanceNicName, nicName),
 			},
 			{
 				ResourceName:      resourceNameInstanceNic,
@@ -1127,21 +1127,21 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configDisk,
-				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+				Check:  checkResourceDisk(resourceNameInstanceDisk, instanceDiskName),
 			},
 			{
 				// Detach a disk
 				Config: configDiskUpdate,
-				Check:  checkResourceInstanceDiskUpdate(resourceNameInstanceDisk, instanceDiskName),
+				Check:  checkResourceDiskUpdate(resourceNameInstanceDisk, instanceDiskName),
 			},
 			{
 				// Reattach disk
 				Config: configDisk,
-				Check:  checkResourceInstanceDisk(resourceNameInstanceDisk, instanceDiskName),
+				Check:  checkResourceDisk(resourceNameInstanceDisk, instanceDiskName),
 			},
 			{
 				ResourceName:      resourceNameInstanceDisk,
@@ -1253,26 +1253,26 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceInstanceUpdate(resourceNameInstance, instanceName),
+				Check:  checkResourceUpdate(resourceNameInstance, instanceName),
 			},
 			{
 				// Update NCPUs
 				Config: configUpdate,
-				Check:  checkResourceInstanceUpdate2(resourceNameInstance, instanceName),
+				Check:  checkResourceUpdate2(resourceNameInstance, instanceName),
 			},
 			{
 				// Update memory
 				Config: configUpdate2,
-				Check:  checkResourceInstanceUpdate3(resourceNameInstance, instanceName),
+				Check:  checkResourceUpdate3(resourceNameInstance, instanceName),
 			},
 			{
 				// Update all
 				Config: config,
-				Check:  checkResourceInstanceUpdate(resourceNameInstance, instanceName),
+				Check:  checkResourceUpdate(resourceNameInstance, instanceName),
 			},
 			{
 				ResourceName:      resourceNameInstance,
@@ -1343,11 +1343,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceInstanceNoBootDisk(resourceName, instanceName),
+				Check:  checkResourceNoBootDisk(resourceName, instanceName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -1521,11 +1521,11 @@ resource "oxide_instance" "{{.BlockName}}" {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccInstanceDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configAntiAffinityGroups,
-				Check: checkResourceInstanceAntiAffinityGroups(
+				Check: checkResourceAntiAffinityGroups(
 					resourceName,
 					instanceAntiAffinityGroupsName,
 				),
@@ -1533,7 +1533,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			// Add another anti-affinity group
 			{
 				Config: configAntiAffinityGroupsUpdate,
-				Check: checkResourceInstanceAntiAffinityGroupsUpdate(
+				Check: checkResourceAntiAffinityGroupsUpdate(
 					resourceName,
 					instanceAntiAffinityGroupsName,
 				),
@@ -1541,7 +1541,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 			// Remove an anti-affinity group
 			{
 				Config: configAntiAffinityGroupsUpdate2,
-				Check: checkResourceInstanceAntiAffinityGroups(
+				Check: checkResourceAntiAffinityGroups(
 					resourceName,
 					instanceAntiAffinityGroupsName,
 				),
@@ -1557,7 +1557,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
-func checkResourceInstance(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResource(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1573,7 +1573,7 @@ func checkResourceInstance(resourceName, instanceName string) resource.TestCheck
 	}...)
 }
 
-func checkResourceInstanceFull(resourceName, instanceName, nicName string) resource.TestCheckFunc {
+func checkResourceFull(resourceName, instanceName, nicName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
@@ -1588,7 +1588,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.1.pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.ephemeral.1.ip_version", "v6"),
 		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.0.id"),
-		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
+		testResourceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
 		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "auto_restart_policy"),
@@ -1600,7 +1600,7 @@ func checkResourceInstanceFull(resourceName, instanceName, nicName string) resou
 	}...)
 }
 
-func checkResourceInstanceIP(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceIP(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1621,7 +1621,7 @@ func checkResourceInstanceIP(resourceName, instanceName string) resource.TestChe
 	}...)
 }
 
-func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceIPUpdate1(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1648,7 +1648,7 @@ func checkResourceInstanceIPUpdate1(resourceName, instanceName string) resource.
 	}...)
 }
 
-func checkResourceInstanceIPUpdate1SingleStack(
+func checkResourceIPUpdate1SingleStack(
 	resourceName, instanceName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -1671,7 +1671,7 @@ func checkResourceInstanceIPUpdate1SingleStack(
 	}...)
 }
 
-func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceIPUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1687,7 +1687,7 @@ func checkResourceInstanceIPUpdate2(resourceName, instanceName string) resource.
 	}...)
 }
 
-func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceDisk(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
@@ -1704,7 +1704,7 @@ func checkResourceInstanceDisk(resourceName, instanceName string) resource.TestC
 	}...)
 }
 
-func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceDiskUpdate(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "boot_disk_id"),
@@ -1720,7 +1720,7 @@ func checkResourceInstanceDiskUpdate(resourceName, instanceName string) resource
 	}...)
 }
 
-func checkResourceInstanceNic(resourceName, instanceName, nicName string) resource.TestCheckFunc {
+func checkResourceNic(resourceName, instanceName, nicName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1729,14 +1729,14 @@ func checkResourceInstanceNic(resourceName, instanceName, nicName string) resour
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
+		testResourceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
 }
 
-func checkResourceInstanceTwoNics(
+func checkResourceTwoNics(
 	resourceName, instanceName, nicName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -1747,15 +1747,15 @@ func checkResourceInstanceTwoNics(
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
-		testResourceInstanceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1, "dual"),
+		testResourceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
+		testResourceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1, "dual"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
 }
 
-func checkResourceInstanceTwoNicsSingleStack(
+func checkResourceTwoNicsSingleStack(
 	resourceName, instanceName, nicName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -1766,15 +1766,15 @@ func checkResourceInstanceTwoNicsSingleStack(
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
-		testResourceInstanceNetworkInterface(resourceName, nicName, "a sample nic", 0, "v6"),
-		testResourceInstanceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1, "v4"),
+		testResourceNetworkInterface(resourceName, nicName, "a sample nic", 0, "v6"),
+		testResourceNetworkInterface(resourceName, nicName+"-2", "a second nic", 1, "v4"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 	}...)
 }
 
-func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceNicUpdate(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1790,7 +1790,7 @@ func checkResourceInstanceNicUpdate(resourceName, instanceName string) resource.
 	}...)
 }
 
-func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceSSHKeys(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1806,7 +1806,7 @@ func checkResourceInstanceSSHKeys(resourceName, instanceName string) resource.Te
 	}...)
 }
 
-func checkResourceInstanceUpdate(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1821,7 +1821,7 @@ func checkResourceInstanceUpdate(resourceName, instanceName string) resource.Tes
 	}...)
 }
 
-func checkResourceInstanceUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceUpdate2(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1836,7 +1836,7 @@ func checkResourceInstanceUpdate2(resourceName, instanceName string) resource.Te
 	}...)
 }
 
-func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceUpdate3(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1851,7 +1851,7 @@ func checkResourceInstanceUpdate3(resourceName, instanceName string) resource.Te
 	}...)
 }
 
-func checkResourceInstanceAntiAffinityGroups(
+func checkResourceAntiAffinityGroups(
 	resourceName, instanceName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -1869,7 +1869,7 @@ func checkResourceInstanceAntiAffinityGroups(
 	}...)
 }
 
-func checkResourceInstanceAntiAffinityGroupsUpdate(
+func checkResourceAntiAffinityGroupsUpdate(
 	resourceName, instanceName string,
 ) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
@@ -1888,7 +1888,7 @@ func checkResourceInstanceAntiAffinityGroupsUpdate(
 	}...)
 }
 
-func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource.TestCheckFunc {
+func checkResourceNoBootDisk(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
@@ -1905,7 +1905,7 @@ func checkResourceInstanceNoBootDisk(resourceName, instanceName string) resource
 	}...)
 }
 
-func testResourceInstanceNetworkInterface(
+func testResourceNetworkInterface(
 	resourceName string,
 	nicName string,
 	nicDescription string,
@@ -1995,7 +1995,7 @@ func testResourceInstanceNetworkInterface(
 	return resource.ComposeAggregateTestCheckFunc(funcs...)
 }
 
-func testAccInstanceDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

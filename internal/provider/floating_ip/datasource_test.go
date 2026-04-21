@@ -13,14 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceFloatingIPConfig struct {
+type dataSourceConfig struct {
 	BlockName         string
 	Name              string
 	SupportBlockName  string
 	SupportBlockName2 string
 }
 
-var dataSourceFloatingIPConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -45,13 +45,13 @@ func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-floating-ip")
 	resourceName := sharedtest.NewResourceName()
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceFloatingIPConfig{
+		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
 			SupportBlockName2: sharedtest.NewBlockName("support"),
 			Name:              resourceName,
 		},
-		dataSourceFloatingIPConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -63,7 +63,7 @@ func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceFloatingIP(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_floating_ip.%s", blockName),
 					resourceName,
 				),
@@ -72,7 +72,7 @@ func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceFloatingIP(dataName, keyName string) resource.TestCheckFunc {
+func checkDataSource(dataName, keyName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "name", keyName),

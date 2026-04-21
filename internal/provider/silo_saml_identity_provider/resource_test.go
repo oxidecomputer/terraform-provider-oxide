@@ -23,7 +23,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceSiloIdentifyProviderConfig struct {
+type resourceConfig struct {
 	SiloBlockName                     string
 	SiloDNSName                       string
 	SiloName                          string
@@ -31,7 +31,7 @@ type resourceSiloIdentifyProviderConfig struct {
 	SiloSamlIdentityProviderName      string
 }
 
-var resourceSiloIdentityProviderConfigTpl = `
+var resourceConfigTpl = `
 resource "tls_private_key" "self-signed" {
   algorithm = "RSA"
   rsa_bits  = 2048
@@ -116,14 +116,14 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 	siloDNSName := sharedtest.SiloDNSName()
 
 	config, err := sharedtest.ParsedAccConfig(
-		resourceSiloIdentifyProviderConfig{
+		resourceConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
 			SiloName:                          siloName,
 			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
 			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
 		},
-		resourceSiloIdentityProviderConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -140,11 +140,11 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 				Source: "hashicorp/tls",
 			},
 		},
-		CheckDestroy: testAccSiloSamlIdentityProviderDestroy,
+		CheckDestroy: testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkResourceSiloSamlIdentityProvider(
+				Check: checkResource(
 					siloSamlIdentityProviderResourceID,
 					siloSamlIdentityProviderName,
 				),
@@ -153,7 +153,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 	})
 }
 
-func checkResourceSiloSamlIdentityProvider(
+func checkResource(
 	resourceID string,
 	nameAttr string,
 ) resource.TestCheckFunc {
@@ -181,7 +181,7 @@ func checkResourceSiloSamlIdentityProvider(
 	}...)
 }
 
-func testAccSiloSamlIdentityProviderDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

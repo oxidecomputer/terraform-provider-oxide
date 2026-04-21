@@ -25,24 +25,15 @@ func TestAccSiloResourceIpPool_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccIPPoolDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceIPPoolConfig,
-				Check:  checkResourceIPPool(resourceName),
+				Config: testResourceConfig,
+				Check:  checkResource(resourceName),
 			},
 			{
-				Config: testResourceIPPoolUpdateConfig,
-				Check:  checkResourceIPPoolUpdate(resourceName),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testResourceIPPoolRemoveUpdateConfig,
-				Check:  checkResourceIPPoolRemoveUpdate(resourceName),
+				Config: testResourceUpdateConfig,
+				Check:  checkResourceUpdate(resourceName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -50,8 +41,17 @@ func TestAccSiloResourceIpPool_full(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testResourceIPPoolRangesConfig,
-				Check:  checkResourceIPPoolRanges(resourceName2),
+				Config: testResourceRemoveUpdateConfig,
+				Check:  checkResourceRemoveUpdate(resourceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testResourceRangesConfig,
+				Check:  checkResourceRanges(resourceName2),
 			},
 			{
 				ResourceName:      resourceName2,
@@ -62,7 +62,7 @@ func TestAccSiloResourceIpPool_full(t *testing.T) {
 	})
 }
 
-var testResourceIPPoolConfig = `
+var testResourceConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool"
@@ -75,7 +75,7 @@ resource "oxide_ip_pool" "test" {
 }
 `
 
-func checkResourceIPPool(resourceName string) resource.TestCheckFunc {
+func checkResource(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test ip_pool"),
@@ -89,7 +89,7 @@ func checkResourceIPPool(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceIPPoolUpdateConfig = `
+var testResourceUpdateConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
 	name              = "terraform-acc-myippool-new"
@@ -106,7 +106,7 @@ resource "oxide_ip_pool" "test" {
 }
 `
 
-func checkResourceIPPoolUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(
@@ -124,7 +124,7 @@ func checkResourceIPPoolUpdate(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-var testResourceIPPoolRemoveUpdateConfig = `
+var testResourceRemoveUpdateConfig = `
 resource "oxide_ip_pool" "test" {
 	description       = "a new description for ip_pool"
 	name              = "terraform-acc-myippool-new"
@@ -137,7 +137,7 @@ resource "oxide_ip_pool" "test" {
 }
 `
 
-func checkResourceIPPoolRemoveUpdate(resourceName string) resource.TestCheckFunc {
+func checkResourceRemoveUpdate(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(
@@ -153,7 +153,7 @@ func checkResourceIPPoolRemoveUpdate(resourceName string) resource.TestCheckFunc
 	}...)
 }
 
-var testResourceIPPoolRangesConfig = `
+var testResourceRangesConfig = `
 resource "oxide_ip_pool" "test2" {
 	description       = "a test ip_pool"
 	name              = "terraform-acc-myippool2"
@@ -166,7 +166,7 @@ resource "oxide_ip_pool" "test2" {
 }
 `
 
-func checkResourceIPPoolRanges(resourceName string) resource.TestCheckFunc {
+func checkResourceRanges(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test ip_pool"),
@@ -178,7 +178,7 @@ func checkResourceIPPoolRanges(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccIPPoolDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

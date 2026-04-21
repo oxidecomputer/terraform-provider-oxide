@@ -21,11 +21,11 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceDiskConfig struct {
+type resourceConfig struct {
 	DiskName string
 }
 
-var resourceDiskConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -47,10 +47,10 @@ resource "oxide_disk" "test" {
 func TestAccCloudResourceDisk_full(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
 	config, err := sharedtest.ParsedAccConfig(
-		resourceDiskConfig{
+		resourceConfig{
 			DiskName: diskName,
 		},
-		resourceDiskConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -59,11 +59,11 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccDiskDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceDisk("oxide_disk.test", diskName),
+				Check:  checkResource("oxide_disk.test", diskName),
 			},
 			{
 				ResourceName:      "oxide_disk.test",
@@ -74,7 +74,7 @@ func TestAccCloudResourceDisk_full(t *testing.T) {
 	})
 }
 
-var resourceDiskLocalConfigTpl = `
+var resourceLocalConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -92,10 +92,10 @@ func TestAccCloudResourceDisk_local(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
 
 	config, err := sharedtest.ParsedAccConfig(
-		resourceDiskConfig{
+		resourceConfig{
 			DiskName: diskName,
 		},
-		resourceDiskLocalConfigTpl,
+		resourceLocalConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -104,7 +104,7 @@ func TestAccCloudResourceDisk_local(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccDiskDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -117,7 +117,7 @@ func TestAccCloudResourceDisk_local(t *testing.T) {
 	})
 }
 
-var resourceDiskLocalInvalidConfigTpl = `
+var resourceLocalInvalidConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -135,10 +135,10 @@ resource "oxide_disk" "test" {
 
 func TestAccCloudResourceDisk_localSourceValidation(t *testing.T) {
 	config, err := sharedtest.ParsedAccConfig(
-		resourceDiskConfig{
+		resourceConfig{
 			DiskName: sharedtest.NewResourceName(),
 		},
-		resourceDiskLocalInvalidConfigTpl,
+		resourceLocalInvalidConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -156,12 +156,12 @@ func TestAccCloudResourceDisk_localSourceValidation(t *testing.T) {
 	})
 }
 
-type resourceDiskReadOnlyConfig struct {
+type resourceReadOnlyConfig struct {
 	DiskName string
 	ReadOnly bool
 }
 
-var resourceDiskReadOnlyConfigTpl = `
+var resourceReadOnlyConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -184,22 +184,22 @@ func TestAccCloudResourceDisk_readOnly(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
 
 	configReadOnly, err := sharedtest.ParsedAccConfig(
-		resourceDiskReadOnlyConfig{
+		resourceReadOnlyConfig{
 			DiskName: diskName,
 			ReadOnly: true,
 		},
-		resourceDiskReadOnlyConfigTpl,
+		resourceReadOnlyConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	configReadWrite, err := sharedtest.ParsedAccConfig(
-		resourceDiskReadOnlyConfig{
+		resourceReadOnlyConfig{
 			DiskName: diskName,
 			ReadOnly: false,
 		},
-		resourceDiskReadOnlyConfigTpl,
+		resourceReadOnlyConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -208,7 +208,7 @@ func TestAccCloudResourceDisk_readOnly(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccDiskDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configReadOnly,
@@ -241,7 +241,7 @@ func TestAccCloudResourceDisk_readOnly(t *testing.T) {
 	})
 }
 
-func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
+func checkResource(resourceName, diskName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test disk"),
@@ -261,7 +261,7 @@ func checkResourceDisk(resourceName, diskName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccDiskDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

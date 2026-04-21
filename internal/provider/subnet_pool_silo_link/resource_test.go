@@ -28,7 +28,7 @@ func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create pool and link.
 			{
-				Config: testResourceSubnetPoolSiloLinkConfig,
+				Config: testResourceConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(poolResourceName, "id"),
 					resource.TestCheckResourceAttrSet(linkResourceName, "id"),
@@ -47,7 +47,7 @@ func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
 			},
 			// Update in place.
 			{
-				Config: testResourceSubnetPoolSiloLinkUpdateConfig,
+				Config: testResourceUpdateConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(linkResourceName, "id"),
 					resource.TestCheckResourceAttr(linkResourceName, "is_default", "false"),
@@ -55,14 +55,14 @@ func TestAccResourceSubnetPoolSiloLink_full(t *testing.T) {
 			},
 			// Remove the link, keeping the pool so we can verify deletion.
 			{
-				Config: testResourceSubnetPoolSiloLinkPoolOnlyConfig,
-				Check:  testAccLinksDestroyed(poolResourceName),
+				Config: testResourcePoolOnlyConfig,
+				Check:  testAccResourceDestroy(poolResourceName),
 			},
 		},
 	})
 }
 
-var testResourceSubnetPoolSiloLinkConfig = `
+var testResourceConfig = `
 data "oxide_silo" "test" {
 	name = "test-suite-silo"
 }
@@ -86,7 +86,7 @@ resource "oxide_subnet_pool_silo_link" "test" {
 }
 `
 
-var testResourceSubnetPoolSiloLinkUpdateConfig = `
+var testResourceUpdateConfig = `
 data "oxide_silo" "test" {
 	name = "test-suite-silo"
 }
@@ -104,7 +104,7 @@ resource "oxide_subnet_pool_silo_link" "test" {
 }
 `
 
-var testResourceSubnetPoolSiloLinkPoolOnlyConfig = `
+var testResourcePoolOnlyConfig = `
 resource "oxide_subnet_pool" "test" {
 	name        = "terraform-acc-subnet-pool-silo-link-test"
 	description = "a test subnet pool for silo link tests"
@@ -124,12 +124,12 @@ func TestAccResourceSubnetPoolSiloLink_disappears(t *testing.T) {
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceSubnetPoolSiloLinkDisappearsConfig,
+				Config: testResourceDisappearsConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(poolResourceName, "id"),
 					resource.TestCheckResourceAttrSet(linkResourceName, "id"),
 					// Delete the link out of band.
-					testAccSubnetPoolSiloLinkDisappears(linkResourceName),
+					testAccResourceDisappears(linkResourceName),
 				),
 				// Detect the link is gone.
 				ExpectNonEmptyPlan: true,
@@ -138,7 +138,7 @@ func TestAccResourceSubnetPoolSiloLink_disappears(t *testing.T) {
 	})
 }
 
-func testAccSubnetPoolSiloLinkDisappears(resourceName string) resource.TestCheckFunc {
+func testAccResourceDisappears(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -159,7 +159,7 @@ func testAccSubnetPoolSiloLinkDisappears(resourceName string) resource.TestCheck
 	}
 }
 
-var testResourceSubnetPoolSiloLinkDisappearsConfig = `
+var testResourceDisappearsConfig = `
 data "oxide_silo" "test" {
 	name = "test-suite-silo"
 }
@@ -197,7 +197,7 @@ func TestAccResourceSubnetPoolSiloLink_multiSiloImport(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create pool linked to two silos.
 			{
-				Config: testResourceSubnetPoolSiloLinkMultiSiloConfig(siloDNSName),
+				Config: testResourceMultiSiloConfig(siloDNSName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(link1ResourceName, "id"),
 					resource.TestCheckResourceAttrSet(link2ResourceName, "id"),
@@ -245,7 +245,7 @@ func TestAccResourceSubnetPoolSiloLink_multiSiloImport(t *testing.T) {
 	})
 }
 
-func testResourceSubnetPoolSiloLinkMultiSiloConfig(siloDNSName string) string {
+func testResourceMultiSiloConfig(siloDNSName string) string {
 	return fmt.Sprintf(`
 resource "tls_private_key" "self_signed" {
 	algorithm = "RSA"
@@ -315,7 +315,7 @@ resource "oxide_subnet_pool_silo_link" "link2" {
 `, siloDNSName, siloDNSName)
 }
 
-func testAccLinksDestroyed(poolResourceName string) resource.TestCheckFunc {
+func testAccResourceDestroy(poolResourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[poolResourceName]
 		if !ok {

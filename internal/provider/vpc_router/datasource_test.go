@@ -14,12 +14,12 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
-type dataSourceVPCRouterConfig struct {
+type dataSourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-var dataSourceVPCRouterConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_vpc" "test" {
   project_name = "tf-acc-test"
   name         = "default"
@@ -44,11 +44,11 @@ data "oxide_vpc_router" "{{.BlockName}}" {
 func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-vpc-router")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceVPCRouterConfig{
+		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
-		dataSourceVPCRouterConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -60,7 +60,7 @@ func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceVPCRouter(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_vpc_router.%s", blockName),
 				),
 			},
@@ -68,7 +68,7 @@ func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceVPCRouter(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(

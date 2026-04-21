@@ -18,10 +18,10 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-// externalSubnetTestConfig holds parameters for generating test configurations.
+// resourceConfig holds parameters for generating test configurations.
 // Note that subnet pools cannot overlap, and tests run in parallel, so we need
 // to use non-overlapping pools across tests.
-type externalSubnetTestConfig struct {
+type resourceConfig struct {
 	PoolName         string
 	PoolDescription  string
 	PoolIPVersion    string
@@ -37,7 +37,7 @@ type externalSubnetTestConfig struct {
 	SubnetIPVersion   string
 }
 
-var externalSubnetConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
@@ -89,9 +89,9 @@ resource "oxide_external_subnet" "test" {
 }
 `
 
-func buildExternalSubnetConfig(t *testing.T, cfg externalSubnetTestConfig) string {
+func buildResourceConfig(t *testing.T, cfg resourceConfig) string {
 	t.Helper()
-	config, err := sharedtest.ParsedAccConfig(cfg, externalSubnetConfigTpl)
+	config, err := sharedtest.ParsedAccConfig(cfg, resourceConfigTpl)
 	if err != nil {
 		t.Fatalf("error parsing config template: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 
 	poolMemberSubnet := sharedtest.NextSubnetCIDR(t)
 
-	baseConfig := externalSubnetTestConfig{
+	baseConfig := resourceConfig{
 		PoolName:         "terraform-acc-ext-subnet-pool",
 		PoolDescription:  "a subnet pool for external subnet tests",
 		PoolIPVersion:    "v4",
@@ -138,10 +138,10 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccExternalSubnetDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: buildExternalSubnetConfig(t, createConfig),
+				Config: buildResourceConfig(t, createConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(
@@ -166,7 +166,7 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 			},
 			// Update in place.
 			{
-				Config: buildExternalSubnetConfig(t, updateConfig),
+				Config: buildResourceConfig(t, updateConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrPtr(resourceName, "id", &originalID),
 					resource.TestCheckResourceAttr(
@@ -183,7 +183,7 @@ func TestAccResourceExternalSubnet_full(t *testing.T) {
 			},
 			// Replace.
 			{
-				Config: buildExternalSubnetConfig(t, replaceConfig),
+				Config: buildResourceConfig(t, replaceConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					sharedtest.VerifyResourceIDChanged(resourceName, &originalID),
 					resource.TestCheckResourceAttr(resourceName, "prefix_len", "29"),
@@ -209,7 +209,7 @@ func TestAccResourceExternalSubnet_explicit(t *testing.T) {
 
 	subnet := sharedtest.NextSubnetCIDR(t)
 
-	config := buildExternalSubnetConfig(t, externalSubnetTestConfig{
+	config := buildResourceConfig(t, resourceConfig{
 		PoolName:          "terraform-acc-ext-subnet-pool-explicit",
 		PoolDescription:   "a subnet pool for explicit external subnet tests",
 		PoolIPVersion:     "v4",
@@ -224,7 +224,7 @@ func TestAccResourceExternalSubnet_explicit(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccExternalSubnetDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -247,7 +247,7 @@ func TestAccResourceExternalSubnet_explicit(t *testing.T) {
 func TestAccResourceExternalSubnet_withPool(t *testing.T) {
 	resourceName := "oxide_external_subnet.test"
 
-	config := buildExternalSubnetConfig(t, externalSubnetTestConfig{
+	config := buildResourceConfig(t, resourceConfig{
 		PoolName:          "terraform-acc-ext-subnet-pool-with-pool",
 		PoolDescription:   "a subnet pool for pool selection tests",
 		PoolIPVersion:     "v4",
@@ -263,7 +263,7 @@ func TestAccResourceExternalSubnet_withPool(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccExternalSubnetDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -290,7 +290,7 @@ func TestAccResourceExternalSubnet_withPool(t *testing.T) {
 func TestAccResourceExternalSubnet_disappears(t *testing.T) {
 	resourceName := "oxide_external_subnet.test"
 
-	config := buildExternalSubnetConfig(t, externalSubnetTestConfig{
+	config := buildResourceConfig(t, resourceConfig{
 		PoolName:          "terraform-acc-ext-subnet-pool-disappears",
 		PoolDescription:   "a subnet pool for disappears test",
 		PoolIPVersion:     "v4",
@@ -306,13 +306,13 @@ func TestAccResourceExternalSubnet_disappears(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccExternalSubnetDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					testAccExternalSubnetDisappears(resourceName),
+					testAccResourceDisappears(resourceName),
 				),
 				ExpectNonEmptyPlan: true,
 			},
@@ -320,7 +320,7 @@ func TestAccResourceExternalSubnet_disappears(t *testing.T) {
 	})
 }
 
-func testAccExternalSubnetDisappears(resourceName string) resource.TestCheckFunc {
+func testAccResourceDisappears(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -342,7 +342,7 @@ func testAccExternalSubnetDisappears(resourceName string) resource.TestCheckFunc
 func TestAccResourceExternalSubnet_v6(t *testing.T) {
 	resourceName := "oxide_external_subnet.test"
 
-	config := buildExternalSubnetConfig(t, externalSubnetTestConfig{
+	config := buildResourceConfig(t, resourceConfig{
 		PoolName:          "terraform-acc-ext-subnet-pool-v6",
 		PoolDescription:   "a subnet pool for IPv6 external subnet tests",
 		PoolIPVersion:     "v6",
@@ -359,7 +359,7 @@ func TestAccResourceExternalSubnet_v6(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccExternalSubnetDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -380,7 +380,7 @@ func TestAccResourceExternalSubnet_v6(t *testing.T) {
 	})
 }
 
-func testAccExternalSubnetDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

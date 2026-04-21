@@ -20,7 +20,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceSnapshotConfig struct {
+type resourceConfig struct {
 	BlockName        string
 	SnapshotName     string
 	DiskBlockName    string
@@ -28,7 +28,7 @@ type resourceSnapshotConfig struct {
 	SupportBlockName string
 }
 
-var resourceSnapshotConfigTpl = `
+var resourceConfigTpl = `
 data "oxide_project" "{{.SupportBlockName}}" {
 	name = "tf-acc-test"
 }
@@ -65,14 +65,14 @@ func TestAccCloudResourceSnapshot_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("snapshot")
 	resourceName := fmt.Sprintf("oxide_snapshot.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceSnapshotConfig{
+		resourceConfig{
 			BlockName:        blockName,
 			SnapshotName:     snapshotName,
 			DiskName:         diskName,
 			SupportBlockName: fmt.Sprintf("acc-support-%s", uuid.New()),
 			DiskBlockName:    fmt.Sprintf("acc-resource-disk-%s", uuid.New()),
 		},
-		resourceSnapshotConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -81,11 +81,11 @@ func TestAccCloudResourceSnapshot_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccSnapshotDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceSnapshot(resourceName, snapshotName),
+				Check:  checkResource(resourceName, snapshotName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -96,7 +96,7 @@ func TestAccCloudResourceSnapshot_full(t *testing.T) {
 	})
 }
 
-func checkResourceSnapshot(resourceName, snapshotName string) resource.TestCheckFunc {
+func checkResource(resourceName, snapshotName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test snapshot"),
@@ -113,7 +113,7 @@ func checkResourceSnapshot(resourceName, snapshotName string) resource.TestCheck
 	}...)
 }
 
-func testAccSnapshotDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

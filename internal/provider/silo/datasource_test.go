@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceSiloConfig struct {
+type dataSourceConfig struct {
 	BlockName   string
 	SiloDNSName string
 }
 
-var dataSourceSiloConfigTpl = `
+var dataSourceConfigTpl = `
 resource "tls_private_key" "self-signed" {
   algorithm = "RSA"
   rsa_bits  = 2048
@@ -91,11 +91,11 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	dnsName := sharedtest.SiloDNSName()
 
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceSiloConfig{
+		dataSourceConfig{
 			BlockName:   blockName,
 			SiloDNSName: dnsName,
 		},
-		dataSourceSiloConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -115,7 +115,7 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceSilo(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_silo.%s", blockName),
 				),
 			},
@@ -123,7 +123,7 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceSilo(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "name"),
 		resource.TestCheckResourceAttr(dataName, "name", "tf-acc-test"),

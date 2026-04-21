@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-type dataSourceIPPoolConfig struct {
+type dataSourceConfig struct {
 	BlockName        string
 	SupportBlockName string
 }
 
-var dataSourceIPPoolConfigTpl = `
+var dataSourceConfigTpl = `
 data "oxide_ip_pool" "{{.BlockName}}" {
   name = "default"
   timeouts = {
@@ -30,11 +30,11 @@ data "oxide_ip_pool" "{{.BlockName}}" {
 func TestAccSiloDataSourceIPPool_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-ip-pool")
 	config, err := sharedtest.ParsedAccConfig(
-		dataSourceIPPoolConfig{
+		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
-		dataSourceIPPoolConfigTpl,
+		dataSourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -46,7 +46,7 @@ func TestAccSiloDataSourceIPPool_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkDataSourceIPPool(
+				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_ip_pool.%s", blockName),
 				),
 			},
@@ -54,7 +54,7 @@ func TestAccSiloDataSourceIPPool_full(t *testing.T) {
 	})
 }
 
-func checkDataSourceIPPool(dataName string) resource.TestCheckFunc {
+func checkDataSource(dataName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "name"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),

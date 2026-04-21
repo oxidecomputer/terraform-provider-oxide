@@ -19,13 +19,13 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceSiloConfig struct {
+type resourceConfig struct {
 	BlockName   string
 	SiloName    string
 	SiloDNSName string
 }
 
-var resourceSiloConfigTpl = `
+var resourceConfigTpl = `
 resource "tls_private_key" "self-signed" {
   algorithm = "RSA"
   rsa_bits  = 2048
@@ -85,7 +85,7 @@ resource "oxide_silo" "{{.BlockName}}" {
 }
 `
 
-var resourceSiloUpdateConfigTpl = `
+var resourceUpdateConfigTpl = `
 resource "tls_private_key" "self-signed" {
   algorithm = "RSA"
   rsa_bits  = 2048
@@ -146,24 +146,24 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 	dnsName := sharedtest.SiloDNSName()
 
 	config, err := sharedtest.ParsedAccConfig(
-		resourceSiloConfig{
+		resourceConfig{
 			BlockName:   blockName,
 			SiloName:    siloName,
 			SiloDNSName: dnsName,
 		},
-		resourceSiloConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
 	}
 
 	configUpdate, err := sharedtest.ParsedAccConfig(
-		resourceSiloConfig{
+		resourceConfig{
 			BlockName:   blockName,
 			SiloName:    siloName,
 			SiloDNSName: dnsName,
 		},
-		resourceSiloUpdateConfigTpl,
+		resourceUpdateConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -180,15 +180,15 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 				Source: "hashicorp/tls",
 			},
 		},
-		CheckDestroy: testAccSiloDestroy,
+		CheckDestroy: testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceSilo(resourceName, siloName),
+				Check:  checkResource(resourceName, siloName),
 			},
 			{
 				Config: configUpdate,
-				Check:  checkResourceSiloUpdate(resourceName, siloName),
+				Check:  checkResourceUpdate(resourceName, siloName),
 			},
 			{
 				ResourceName:      resourceName,
@@ -199,7 +199,7 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 	})
 }
 
-func checkResourceSilo(resourceName string, siloName string) resource.TestCheckFunc {
+func checkResource(resourceName string, siloName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", siloName),
@@ -220,7 +220,7 @@ func checkResourceSilo(resourceName string, siloName string) resource.TestCheckF
 	}...)
 }
 
-func checkResourceSiloUpdate(resourceName string, siloName string) resource.TestCheckFunc {
+func checkResourceUpdate(resourceName string, siloName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", siloName),
@@ -237,7 +237,7 @@ func checkResourceSiloUpdate(resourceName string, siloName string) resource.Test
 	}...)
 }
 
-func testAccSiloDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

@@ -19,7 +19,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceImageConfig struct {
+type resourceConfig struct {
 	BlockName         string
 	ImageName         string
 	DiskName          string
@@ -30,7 +30,7 @@ type resourceImageConfig struct {
 }
 
 // TODO: Use a fetched snapshot ID when the snapshot data source is implemented
-var resourceImageConfigTpl = `
+var resourceConfigTpl = `
  data "oxide_project" "{{.SupportBlockName}}" {
  	name = "tf-acc-test"
  }
@@ -80,7 +80,7 @@ func TestAccCloudResourceImage_full(t *testing.T) {
 	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_image.%s", blockName)
 	config, err := sharedtest.ParsedAccConfig(
-		resourceImageConfig{
+		resourceConfig{
 			BlockName:         blockName,
 			ImageName:         imageName,
 			DiskName:          sharedtest.NewResourceName(),
@@ -89,7 +89,7 @@ func TestAccCloudResourceImage_full(t *testing.T) {
 			DiskBlockName:     sharedtest.NewBlockName("support"),
 			SnapshotBlockName: sharedtest.NewBlockName("support"),
 		},
-		resourceImageConfigTpl,
+		resourceConfigTpl,
 	)
 	if err != nil {
 		t.Errorf("error parsing config template data: %e", err)
@@ -98,11 +98,11 @@ func TestAccCloudResourceImage_full(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccImageDestroy,
+		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResourceImage(resourceName, imageName),
+				Check:  checkResource(resourceName, imageName),
 			},
 			{
 				ResourceName:            resourceName,
@@ -114,7 +114,7 @@ func TestAccCloudResourceImage_full(t *testing.T) {
 	})
 }
 
-func checkResourceImage(resourceName, imageName string) resource.TestCheckFunc {
+func checkResource(resourceName, imageName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -130,7 +130,7 @@ func checkResourceImage(resourceName, imageName string) resource.TestCheckFunc {
 	}...)
 }
 
-func testAccImageDestroy(s *terraform.State) error {
+func testAccResourceDestroy(s *terraform.State) error {
 	client, err := sharedtest.NewTestClient()
 	if err != nil {
 		return err

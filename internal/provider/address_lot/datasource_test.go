@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func testDataSourceAddressLotConfig(name string) string {
+func testDataSourceConfig(name string) string {
 	return fmt.Sprintf(`
 resource "oxide_address_lot" "test" {
 	description       = "a test address lot"
@@ -41,14 +41,14 @@ func TestAccDataSourceAddressLot_full(t *testing.T) {
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testDataSourceAddressLotConfig(addressLotName),
-				Check:  checkDataSourceAddressLot(resourceName, addressLotName),
+				Config: testDataSourceConfig(addressLotName),
+				Check:  checkDataSource(resourceName, addressLotName),
 			},
 		},
 	})
 }
 
-func checkDataSourceAddressLot(dataName string, addressLotName string) resource.TestCheckFunc {
+func checkDataSource(dataName string, addressLotName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttr(dataName, "description", "a test address lot"),
