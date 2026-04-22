@@ -140,23 +140,23 @@ resource "oxide_instance" "example" {
 
 ### Required
 
-- `description` (String) Description for the instance.
-- `memory` (Number) Instance memory in bytes.
+- `description` (String) Human-readable free-form text about the instance.
+- `memory` (Number) The amount of RAM (in bytes) to be allocated to the instance.
 - `name` (String) Name of the instance.
-- `ncpus` (Number) Number of CPUs allocated for this instance.
-- `project_id` (String) ID of the project that will contain the instance.
+- `ncpus` (Number) The number of vCPUs to be allocated to the instance.
+- `project_id` (String) ID for the project containing this instance.
 
 ### Optional
 
-- `anti_affinity_groups` (Set of String) IDs of the anti-affinity groups this instance should belong to.
-- `auto_restart_policy` (String) The auto-restart policy for this instance.
-- `boot_disk_id` (String) ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.
-- `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.
-- `external_ips` (Attributes) External IP addresses provided to this instance. (see [below for nested schema](#nestedatt--external_ips))
-- `hostname` (String) Hostname of the instance.
-- `network_interfaces` (Attributes Set) Network interface devices attached to the instance. (see [below for nested schema](#nestedatt--network_interfaces))
-- `ssh_public_keys` (Set of String) An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.
-- `start_on_create` (Boolean) Whether to start the instance on creation.
+- `anti_affinity_groups` (Set of String) IDs of the anti-affinity groups to which this instance should be added.
+- `auto_restart_policy` (String) The auto-restart policy for this instance. This policy determines whether the instance should be automatically restarted by the control plane on failure. Must be one of `best_effort` or `never`.
+- `boot_disk_id` (String) ID of the disk the instance should be booted from. Specifying a boot disk is optional but recommended to ensure predictable boot behavior. When provided, this ID must also be present in `disk_attachments`.
+- `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. The order of this list does not guarantee a boot order for the instance.
+- `external_ips` (Attributes) External IP addresses provided to this instance. By default, all instances have outbound connectivity, but no inbound connectivity. These external addresses can be used to provide a fixed, known IP address for making inbound connections to the instance. (see [below for nested schema](#nestedatt--external_ips))
+- `hostname` (String) RFC1035-compliant hostname for the instance.
+- `network_interfaces` (Attributes Set) The network interfaces to be created for this instance. (see [below for nested schema](#nestedatt--network_interfaces))
+- `ssh_public_keys` (Set of String) An allowlist of SSH public keys to be transferred to the instance via cloud-init during instance creation. If an empty list is provided, no public keys will be transmitted to the instance.
+- `start_on_create` (Boolean) Whether to start this instance upon creation.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `user_data` (String) User data for instance initialization systems (such as cloud-init).
 Must be a Base64-encoded string, as specified in [RFC 4648 § 4](https://datatracker.ietf.org/doc/html/rfc4648#section-4).
@@ -182,7 +182,7 @@ Optional:
 
 Optional:
 
-- `ip_version` (String) IP version to use when multiple default pools exist. Conflicts with `pool_id`.
+- `ip_version` (String) IP version to use when multiple default pools exist. Must be one of `v4` or `v6`. Conflicts with `pool_id`.
 - `pool_id` (String) ID of the IP pool to allocate from. Conflicts with `ip_version`.
 
 
@@ -201,7 +201,7 @@ Required:
 Required:
 
 - `description` (String) Description for the instance network interface.
-- `ip_config` (Attributes) IP stack to create for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config))
+- `ip_config` (Attributes) The IP stack configuration for this interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config))
 - `name` (String) Name of the instance network interface.
 - `subnet_id` (String) ID of the VPC subnet in which to create the instance network interface.
 - `vpc_id` (String) ID of the VPC in which to create the instance network interface.
@@ -211,8 +211,8 @@ Required:
 
 Optional:
 
-- `v4` (Attributes) Creates an IPv4 stack for the instance network interface. (see [below for nested schema](#nestedatt--network_interfaces--ip_config--v4))
-- `v6` (Attributes) (see [below for nested schema](#nestedatt--network_interfaces--ip_config--v6))
+- `v4` (Attributes) Configuration for the instance network interface's IPv4 addressing. (see [below for nested schema](#nestedatt--network_interfaces--ip_config--v4))
+- `v6` (Attributes) Configuration for the instance network interface's IPv6 addressing. (see [below for nested schema](#nestedatt--network_interfaces--ip_config--v6))
 
 <a id="nestedatt--network_interfaces--ip_config--v4"></a>
 ### Nested Schema for `network_interfaces.ip_config.v4`
@@ -250,30 +250,30 @@ Read-Only:
 
 - `description` (String) Description of the instance network interface.
 - `id` (String) Unique, immutable, system-controlled identifier of the instance network interface.
-- `instance_id` (String) Instance ID of the network interface.
-- `ip_stack` (Attributes) IP stack of the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack))
-- `mac_address` (String) MAC address of the instance network interface.
+- `instance_id` (String) ID of the instance to which the network interface belongs.
+- `ip_stack` (Attributes) The VPC-private IP stack for this interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack))
+- `mac_address` (String) MAC address assigned to the instance network interface.
 - `name` (String) Name of the instance network interface.
-- `primary` (Boolean) True if this is the primary network interface for the instance to which it's attached to.
-- `subnet_id` (String) VPC subnet ID of the instance network interface.
+- `primary` (Boolean) True if this interface is the primary for the instance to which it's attached.
+- `subnet_id` (String) ID of the VPC subnet to which the instance network interface belongs.
 - `time_created` (String) Timestamp of when this instance network interface was created.
 - `time_modified` (String) Timestamp of when this instance network interface was last modified.
-- `vpc_id` (String) VPC ID of the instance network interface.
+- `vpc_id` (String) ID of the VPC to which the instance network interface belongs.
 
 <a id="nestedatt--attached_network_interfaces--ip_stack"></a>
 ### Nested Schema for `attached_network_interfaces.ip_stack`
 
 Read-Only:
 
-- `v4` (Attributes) IPv4 stack of the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack--v4))
-- `v6` (Attributes) IPv6 stack of the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack--v6))
+- `v4` (Attributes) VPC-private IPv4 stack for the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack--v4))
+- `v6` (Attributes) VPC-private IPv6 stack for the instance network interface. (see [below for nested schema](#nestedatt--attached_network_interfaces--ip_stack--v6))
 
 <a id="nestedatt--attached_network_interfaces--ip_stack--v4"></a>
 ### Nested Schema for `attached_network_interfaces.ip_stack.v4`
 
 Read-Only:
 
-- `ip` (String) IPv4 address of the instance network interface.
+- `ip` (String) VPC-private IPv4 address for the instance network interface.
 
 
 <a id="nestedatt--attached_network_interfaces--ip_stack--v6"></a>
@@ -281,7 +281,7 @@ Read-Only:
 
 Read-Only:
 
-- `ip` (String) IPv6 address of the instance network interface.
+- `ip` (String) VPC-private IPv6 address for the instance network interface.
 
 ## Import
 
