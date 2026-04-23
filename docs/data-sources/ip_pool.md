@@ -36,7 +36,9 @@ data "oxide_ip_pool" "example" {
 
 - `description` (String) Description for the IP pool.
 - `id` (String) Unique, immutable, system-controlled identifier of the IP pool.
+- `ip_version` (String) IP version for the pool.
 - `is_default` (Boolean) If a pool is the default for a silo, floating IPs and instance ephemeral IPs will come from that pool when no other pool is specified. There can be at most one default for a given silo.
+- `pool_type` (String) Pool type for the IP pool.
 - `time_created` (String) Timestamp of when this IP pool was created.
 - `time_modified` (String) Timestamp of when this IP pool was last modified.
 

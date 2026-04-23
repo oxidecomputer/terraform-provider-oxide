@@ -14,7 +14,7 @@ Retrieve information about a specified project.
 
 ```terraform
 data "oxide_project" "example" {
-  name = "test"
+  name = "my-project"
   timeouts = {
     read = "1m"
   }

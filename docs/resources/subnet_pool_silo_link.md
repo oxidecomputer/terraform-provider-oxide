@@ -14,9 +14,9 @@ This resource manages subnet pool to silo links.
 
 ```terraform
 resource "oxide_subnet_pool_silo_link" "example" {
-  silo_id    = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
-  ip_pool_id = "081a331d-5ee4-4a23-ac8b-328af5e15cdc"
-  is_default = true
+  silo_id        = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
+  subnet_pool_id = "081a331d-5ee4-4a23-ac8b-328af5e15cdc"
+  is_default     = true
 }
 ```
 
