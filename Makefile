@@ -139,6 +139,7 @@ testacc-sim-oxide-cli:
 ## Configures the simulated acceptance test suite environment.
 testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
 	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
+	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/example-test-setup.sh
 
 .PHONY: testacc
 ## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_GOTESTSUM_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.

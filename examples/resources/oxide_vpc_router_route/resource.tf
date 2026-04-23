@@ -1,5 +1,5 @@
 resource "oxide_vpc_router_route" "example" {
-  vpc_router_id = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  vpc_router_id = data.oxide_vpc_router.system.id
   description   = "a sample VPC router route"
   name          = "myroute"
   destination = {
@@ -16,4 +16,11 @@ resource "oxide_vpc_router_route" "example" {
     delete = "2m"
     update = "2m"
   }
+}
+
+# Prerequisites for the example.
+data "oxide_vpc_router" "system" {
+  project_name = "my-project"
+  vpc_name     = "default"
+  name         = "system"
 }

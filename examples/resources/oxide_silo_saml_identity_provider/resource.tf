@@ -1,5 +1,5 @@
 # With URL metadata source.
-resource "oxide_silo_saml_identity_provider" "example" {
+resource "oxide_silo_saml_identity_provider" "example_url" {
   silo                    = oxide_silo.example.id
   name                    = "keycloak"
   description             = "Managed by Terraform."
@@ -17,7 +17,7 @@ resource "oxide_silo_saml_identity_provider" "example" {
 }
 
 # With base64-encoded XML metadata.
-resource "oxide_silo_saml_identity_provider" "example" {
+resource "oxide_silo_saml_identity_provider" "example_xml" {
   silo                    = oxide_silo.example.id
   name                    = "custom-idp"
   description             = "Custom SAML identity provider"
