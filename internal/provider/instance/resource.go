@@ -239,7 +239,7 @@ This resource manages instances.
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,
-				Description: "ID of the project that will contain the instance.",
+				Description: "ID for the project containing this instance.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -253,7 +253,7 @@ This resource manages instances.
 			},
 			"description": schema.StringAttribute{
 				Required:    true,
-				Description: "Description for the instance.",
+				Description: "Human-readable free-form text about the instance.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -261,7 +261,7 @@ This resource manages instances.
 			"hostname": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Hostname of the instance.",
+				Description: "RFC1035-compliant hostname for the instance.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(
 						ModifyPlanForHostnameDeprecation, "", "",
@@ -270,15 +270,15 @@ This resource manages instances.
 			},
 			"memory": schema.Int64Attribute{
 				Required:    true,
-				Description: "Instance memory in bytes.",
+				Description: "The amount of RAM (in bytes) to be allocated to the instance.",
 			},
 			"ncpus": schema.Int64Attribute{
 				Required:    true,
-				Description: "Number of CPUs allocated for this instance.",
+				Description: "The number of vCPUs to be allocated to the instance.",
 			},
 			"auto_restart_policy": schema.StringAttribute{
-				Optional:    true,
-				Description: "The auto-restart policy for this instance.",
+				Optional:            true,
+				MarkdownDescription: "The auto-restart policy for this instance. This policy determines whether the instance should be automatically restarted by the control plane on failure. Must be one of `best_effort` or `never`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						string(oxide.InstanceAutoRestartPolicyBestEffort),
@@ -288,12 +288,12 @@ This resource manages instances.
 			},
 			"anti_affinity_groups": schema.SetAttribute{
 				Optional:    true,
-				Description: "IDs of the anti-affinity groups this instance should belong to.",
+				Description: "IDs of the anti-affinity groups to which this instance should be added.",
 				ElementType: types.StringType,
 			},
 			"boot_disk_id": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "ID of the disk the instance should be booted from. When provided, this ID must also be present in `disk_attachments`.",
+				MarkdownDescription: "ID of the disk the instance should be booted from. Specifying a boot disk is optional but recommended to ensure predictable boot behavior. When provided, this ID must also be present in `disk_attachments`.",
 				Validators: []validator.String{
 					stringvalidator.AlsoRequires(
 						path.MatchRoot("disk_attachments"),
@@ -304,19 +304,19 @@ This resource manages instances.
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
-				Description: "Whether to start the instance on creation.",
+				Description: "Whether to start this instance upon creation.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"disk_attachments": schema.SetAttribute{
 				Optional:            true,
-				MarkdownDescription: "IDs of the disks to be attached to the instance. When multiple disk IDs are provided, set `boot_disk_id` to specify the boot disk for the instance. Otherwise, a boot disk will be chosen randomly.",
+				MarkdownDescription: "IDs of the disks to be attached to the instance. The order of this list does not guarantee a boot order for the instance.",
 				ElementType:         types.StringType,
 			},
 			"ssh_public_keys": schema.SetAttribute{
 				Optional:    true,
-				Description: "An allowlist of IDs of the SSH public keys to be transferred to the instance via cloud-init during instance creation.",
+				Description: "An allowlist of SSH public keys to be transferred to the instance via cloud-init during instance creation. If an empty list is provided, no public keys will be transmitted to the instance.",
 				ElementType: types.StringType,
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.RequiresReplace(),
@@ -334,7 +334,7 @@ This resource manages instances.
 			// instanceNetworkInterfacesPlanModifier.PlanModifySet().
 			"network_interfaces": schema.SetNestedAttribute{
 				Optional:    true,
-				Description: "Network interface devices attached to the instance.",
+				Description: "The network interfaces to be created for this instance.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
@@ -377,14 +377,14 @@ This resource manages instances.
 						},
 						"ip_config": schema.SingleNestedAttribute{
 							Required:    true,
-							Description: "IP stack to create for the instance network interface.",
+							Description: "The IP stack configuration for this interface.",
 							Validators: []validator.Object{
 								instanceIPConfigValidator{},
 							},
 							Attributes: map[string]schema.Attribute{
 								"v4": schema.SingleNestedAttribute{
 									Optional:    true,
-									Description: "Creates an IPv4 stack for the instance network interface.",
+									Description: "Configuration for the instance network interface's IPv4 addressing.",
 									Attributes: map[string]schema.Attribute{
 										"ip": schema.StringAttribute{
 											Required: true,
@@ -396,7 +396,8 @@ This resource manages instances.
 									},
 								},
 								"v6": schema.SingleNestedAttribute{
-									Optional: true,
+									Optional:    true,
+									Description: "Configuration for the instance network interface's IPv6 addressing.",
 									Attributes: map[string]schema.Attribute{
 										"ip": schema.StringAttribute{
 											Required: true,
@@ -431,45 +432,45 @@ This resource manages instances.
 						},
 						"subnet_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "VPC subnet ID of the instance network interface.",
+							Description: "ID of the VPC subnet to which the instance network interface belongs.",
 						},
 						"vpc_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "VPC ID of the instance network interface.",
+							Description: "ID of the VPC to which the instance network interface belongs.",
 						},
 						"instance_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "Instance ID of the network interface.",
+							Description: "ID of the instance to which the network interface belongs.",
 						},
 						"primary": schema.BoolAttribute{
 							Computed:    true,
-							Description: "True if this is the primary network interface for the instance to which it's attached to.",
+							Description: "True if this interface is the primary for the instance to which it's attached.",
 						},
 						"mac_address": schema.StringAttribute{
 							Computed:    true,
-							Description: "MAC address of the instance network interface.",
+							Description: "MAC address assigned to the instance network interface.",
 						},
 						"ip_stack": schema.SingleNestedAttribute{
 							Computed:    true,
-							Description: "IP stack of the instance network interface.",
+							Description: "The VPC-private IP stack for this interface.",
 							Attributes: map[string]schema.Attribute{
 								"v4": schema.SingleNestedAttribute{
 									Computed:    true,
-									Description: "IPv4 stack of the instance network interface.",
+									Description: "VPC-private IPv4 stack for the instance network interface.",
 									Attributes: map[string]schema.Attribute{
 										"ip": schema.StringAttribute{
 											Computed:    true,
-											Description: "IPv4 address of the instance network interface.",
+											Description: "VPC-private IPv4 address for the instance network interface.",
 										},
 									},
 								},
 								"v6": schema.SingleNestedAttribute{
 									Computed:    true,
-									Description: "IPv6 stack of the instance network interface.",
+									Description: "VPC-private IPv6 stack for the instance network interface.",
 									Attributes: map[string]schema.Attribute{
 										"ip": schema.StringAttribute{
 											Computed:    true,
-											Description: "IPv6 address of the instance network interface.",
+											Description: "VPC-private IPv6 address for the instance network interface.",
 										},
 									},
 								},
@@ -488,7 +489,7 @@ This resource manages instances.
 			},
 			"external_ips": schema.SingleNestedAttribute{
 				Optional:    true,
-				Description: "External IP addresses provided to this instance.",
+				Description: "External IP addresses provided to this instance. By default, all instances have outbound connectivity, but no inbound connectivity. These external addresses can be used to provide a fixed, known IP address for making inbound connections to the instance.",
 				Validators: []validator.Object{
 					instanceExternalIPValidator{},
 					objectvalidator.AlsoRequires(path.MatchRoot("network_interfaces")),
@@ -515,7 +516,7 @@ This resource manages instances.
 								"ip_version": schema.StringAttribute{
 									Optional:            true,
 									Computed:            true,
-									MarkdownDescription: "IP version to use when multiple default pools exist. Conflicts with `pool_id`.",
+									MarkdownDescription: "IP version to use when multiple default pools exist. Must be one of `v4` or `v6`. Conflicts with `pool_id`.",
 									Validators: []validator.String{
 										stringvalidator.ConflictsWith(
 											path.MatchRelative().AtParent().AtName("pool_id"),
