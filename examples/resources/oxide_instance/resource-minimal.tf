@@ -1,9 +1,19 @@
 resource "oxide_instance" "example" {
-  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id       = data.oxide_project.my_project.id
   description      = "Example instance."
   name             = "myinstance"
   hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
-  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  disk_attachments = [data.oxide_disk.my_disk.id]
+}
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
+}
+
+data "oxide_disk" "my_disk" {
+  project_name = "my-project"
+  name         = "my-disk"
 }

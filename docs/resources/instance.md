@@ -22,13 +22,23 @@ This resource manages instances.
 
 ```terraform
 resource "oxide_instance" "example" {
-  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id       = data.oxide_project.my_project.id
   description      = "Example instance."
   name             = "myinstance"
   hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
-  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  disk_attachments = [data.oxide_disk.my_disk.id]
+}
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
+}
+
+data "oxide_disk" "my_disk" {
+  project_name = "my-project"
+  name         = "my-disk"
 }
 ```
 
@@ -36,16 +46,35 @@ resource "oxide_instance" "example" {
 
 ```terraform
 resource "oxide_instance" "example" {
-  project_id           = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id           = data.oxide_project.my_project.id
   description          = "Example instance."
   name                 = "myinstance"
   hostname             = "myhostname"
   memory               = 10737418240
   ncpus                = 1
-  anti_affinity_groups = ["9b9f9be1-96bf-44ad-864a-0dedae3b3999"]
-  disk_attachments     = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
-  ssh_public_keys      = ["066cab1b-c550-4aea-8a80-8422fd3bfc40"]
-  user_data            = filebase64("path/to/init.sh")
+  anti_affinity_groups = [data.oxide_anti_affinity_group.my_group.id]
+  disk_attachments     = [data.oxide_disk.my_disk.id]
+  ssh_public_keys      = [data.oxide_ssh_key.example.id]
+  user_data            = base64encode("#!/bin/sh\necho hello from cloud-init\n")
+}
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
+}
+
+data "oxide_disk" "my_disk" {
+  project_name = "my-project"
+  name         = "my-disk"
+}
+
+data "oxide_anti_affinity_group" "my_group" {
+  project_name = "my-project"
+  name         = "my-group"
+}
+
+data "oxide_ssh_key" "example" {
+  name = "example"
 }
 ```
 
@@ -53,18 +82,18 @@ resource "oxide_instance" "example" {
 
 ```terraform
 resource "oxide_instance" "example" {
-  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id       = data.oxide_project.my_project.id
   description      = "Example instance."
   name             = "myinstance"
   hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
-  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  disk_attachments = [data.oxide_disk.my_disk.id]
 
   network_interfaces = [
     {
-      subnet_id   = "066cab1b-c550-4aea-8a80-8422fd3bfc40"
-      vpc_id      = "9b9f9be1-96bf-44ad-864a-0dedae3b3999"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc.default.id
       description = "Example network interface."
       name        = "mynic"
 
@@ -86,19 +115,40 @@ resource "oxide_instance" "example" {
     delete = "2m"
   }
 }
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
+}
+
+data "oxide_disk" "my_disk" {
+  project_name = "my-project"
+  name         = "my-disk"
+}
+
+data "oxide_vpc" "default" {
+  project_name = "my-project"
+  name         = "default"
+}
+
+data "oxide_vpc_subnet" "default" {
+  project_name = "my-project"
+  vpc_name     = "default"
+  name         = "default"
+}
 ```
 
 ### Instance with external IPs that does not start when created
 
 ```terraform
 resource "oxide_instance" "example" {
-  project_id       = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id       = data.oxide_project.my_project.id
   description      = "Example instance."
   name             = "myinstance"
   hostname         = "myhostname"
   memory           = 10737418240
   ncpus            = 1
-  disk_attachments = ["611bb17d-6883-45be-b3aa-8a186fdeafe8"]
+  disk_attachments = [data.oxide_disk.my_disk.id]
   start_on_create  = false
 
   external_ips = {
@@ -107,7 +157,7 @@ resource "oxide_instance" "example" {
         ip_version = "v4"
       },
       {
-        pool_id = "f6f65759-2510-45f5-a3b8-e5090ac56993"
+        pool_id = data.oxide_ip_pool.default.id
       },
     ]
 
@@ -132,6 +182,20 @@ resource "oxide_instance" "example" {
       }
     },
   ]
+}
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
+}
+
+data "oxide_ip_pool" "default" {
+  name = "default"
+}
+
+data "oxide_disk" "my_disk" {
+  project_name = "my-project"
+  name         = "my-disk"
 }
 ```
 

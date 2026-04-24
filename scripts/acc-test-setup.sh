@@ -44,26 +44,34 @@ fi
 # The acceptance tests expect both at least a single project-scoped image and a
 # silo-scoped image. Import the same image twice, then promote one copy to the
 # silo. Use alpine because it's small.
-oxide disk import \
-    --project $PROJECT_NAME \
-    --path $IMAGE_PATH \
-    --disk alpine-project \
-    --description "alpine image" \
-    --snapshot alpine-snapshot-project \
-    --image alpine-project \
-    --image-description "alpine image" \
-    --image-os alpine \
-    --image-version "3.22.1"
+if ! oxide disk view --project $PROJECT_NAME --disk alpine-project > /dev/null 2>&1; then
+    oxide disk import \
+        --project $PROJECT_NAME \
+        --path $IMAGE_PATH \
+        --disk alpine-project \
+        --description "alpine image" \
+        --snapshot alpine-snapshot-project \
+        --image alpine-project \
+        --image-description "alpine image" \
+        --image-os alpine \
+        --image-version "3.22.1"
+fi
 
-oxide image promote --image alpine-project --project $PROJECT_NAME
+# Promote the project-scoped image to the silo. If it's already promoted,
+# `oxide image view --image <name>` (no --project) will find it at silo scope.
+if ! oxide image view --image alpine-project > /dev/null 2>&1; then
+    oxide image promote --image alpine-project --project $PROJECT_NAME
+fi
 
-oxide disk import \
-    --project $PROJECT_NAME \
-    --path $IMAGE_PATH \
-    --disk alpine-silo \
-    --description "alpine image" \
-    --snapshot alpine-snapshot-silo \
-    --image alpine-silo \
-    --image-description "alpine image" \
-    --image-os alpine \
-    --image-version "3.22.1"
+if ! oxide disk view --project $PROJECT_NAME --disk alpine-silo > /dev/null 2>&1; then
+    oxide disk import \
+        --project $PROJECT_NAME \
+        --path $IMAGE_PATH \
+        --disk alpine-silo \
+        --description "alpine image" \
+        --snapshot alpine-snapshot-silo \
+        --image alpine-silo \
+        --image-description "alpine image" \
+        --image-os alpine \
+        --image-version "3.22.1"
+fi

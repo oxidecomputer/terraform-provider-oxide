@@ -1,5 +1,5 @@
 # Basic Example
-resource "oxide_vpc_firewall_rules" "example" {
+resource "oxide_vpc_firewall_rules" "example_https" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
   rules = {
     allow-https = {
@@ -29,7 +29,7 @@ resource "oxide_vpc_firewall_rules" "example" {
 }
 
 # ICMP Example
-resource "oxide_vpc_firewall_rules" "example" {
+resource "oxide_vpc_firewall_rules" "example_icmp" {
   vpc_id = "6556fc6a-63c0-420b-bb23-c3205410f5cc"
   rules = {
     allow-icmp = {
