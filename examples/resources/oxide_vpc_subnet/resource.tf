@@ -1,13 +1,19 @@
 resource "oxide_vpc_subnet" "example" {
-  vpc_id      = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  vpc_id      = data.oxide_vpc.default.id
   description = "a sample vpc subnet"
   name        = "mysubnet"
-  ipv4_block  = "192.168.0.0/16"
-  ipv6_block  = "fdfe:f6a5:5f06:a643::/64"
+  ipv4_block  = "172.30.4.0/22"
+  ipv6_block  = cidrsubnet(data.oxide_vpc.default.ipv6_prefix, 16, 1)
   timeouts = {
     read   = "1m"
     create = "3m"
     delete = "2m"
     update = "2m"
   }
+}
+
+# Prerequisites for the example.
+data "oxide_vpc" "default" {
+  project_name = "my-project"
+  name         = "default"
 }

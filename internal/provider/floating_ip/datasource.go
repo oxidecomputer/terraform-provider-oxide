@@ -164,10 +164,6 @@ func (f *DataSource) Read(
 
 	floatingIP, err := f.client.FloatingIpView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
-			resp.State.RemoveResource(ctx)
-			return
-		}
 		resp.Diagnostics.AddError(
 			"Unable to read floating IP:",
 			"API error: "+err.Error(),

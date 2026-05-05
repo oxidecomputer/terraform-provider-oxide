@@ -14,7 +14,7 @@ This resource manages images.
 
 ```terraform
 resource "oxide_image" "example2" {
-  project_id         = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id         = data.oxide_project.my_project.id
   description        = "a test image"
   name               = "myimage2"
   source_snapshot_id = "eb65d5cb-d8c5-4eae-bcf3-a0e89a633042"
@@ -24,6 +24,11 @@ resource "oxide_image" "example2" {
     read   = "1m"
     create = "3m"
   }
+}
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
 }
 ```
 

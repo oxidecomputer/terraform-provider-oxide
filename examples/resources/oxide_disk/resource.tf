@@ -1,5 +1,5 @@
 resource "oxide_disk" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id  = data.oxide_project.my_project.id
   description = "a test disk"
   name        = "mydisk"
   size        = 1073741824
@@ -7,7 +7,7 @@ resource "oxide_disk" "example" {
 }
 
 resource "oxide_disk" "example2" {
-  project_id      = "c1dee930-a8e4-11ed-afa1-0242ac120002"
+  project_id      = data.oxide_project.my_project.id
   description     = "a test disk"
   name            = "mydisk2"
   size            = 1073741824
@@ -17,4 +17,9 @@ resource "oxide_disk" "example2" {
     create = "3m"
     delete = "2m"
   }
+}
+
+# Prerequisites for the example.
+data "oxide_project" "my_project" {
+  name = "my-project"
 }
