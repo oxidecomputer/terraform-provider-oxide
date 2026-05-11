@@ -151,10 +151,14 @@ where the patch version is (`vX.Y.0`).
     }
   }
   ```
+- [ ] Document any breaking change or deprecation in `templates/guides/upgrade.md.tmpl` and regenerate docs.
+  ```
+  make docs
+  ```
 - [ ] `.0 ->` Update the `Build status` table in `README.md` to point to the new release line branch.
 - [ ] Commit changes and open a PR.
   ```
-  git add CHANGELOG.md README.md internal/provider/version.go
+  git add CHANGELOG.md README.md internal/provider/version.go templates/ docs/
   git commit -m 'release vX.Y.Z'
   git push origin release-vX.Y.Z
   ```
