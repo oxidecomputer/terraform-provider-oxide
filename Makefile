@@ -22,6 +22,7 @@ TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/...
 TEST_ACC_NAME ?= TestAcc
 TEST_ACC_PARALLEL = 6
 TEST_ACC_OMICRON_BRANCH ?=
+TEST_ACC_SIM_HOST ?= http://localhost:12220
 TEST_ACC_DOCKER_COMPOSE_FLAGS = --project-directory ./acctest --file ./acctest/docker-compose.yaml
 
 # Unit test variables
@@ -128,7 +129,7 @@ testacc-sim-docker:
 .PHONY: testacc-sim-token
 ## Generates an auth token for the simulated acceptance test suite environment.
 testacc-sim-token:
-	@ uv run ./acctest/auth.py > ./acctest/oxide-token
+	@ uv run ./acctest/auth.py --host $(TEST_ACC_SIM_HOST) > ./acctest/oxide-token
 
 .PHONY: testacc-sim-oxide-cli
 ## Installs the version of the oxide CLI matching the current omicron version.
@@ -138,7 +139,7 @@ testacc-sim-oxide-cli:
 .PHONY: testacc-sim-setup
 ## Configures the simulated acceptance test suite environment.
 testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
-	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=http://localhost:12220 ./scripts/acc-test-setup.sh
+	@ PATH=$(GOBIN):$$PATH OXIDE_TOKEN=$(shell cat ./acctest/oxide-token) OXIDE_HOST=$(TEST_ACC_SIM_HOST) ./scripts/acc-test-setup.sh
 
 .PHONY: testacc
 ## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_GOTESTSUM_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
@@ -151,7 +152,7 @@ testacc:
 .PHONY: testacc-local
 ## Runs the Terraform acceptance tests locally using the simulated acceptance test suite environment.
 ## Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
-testacc-local: export OXIDE_HOST=http://localhost:12220
+testacc-local: export OXIDE_HOST=$(TEST_ACC_SIM_HOST)
 testacc-local: export OXIDE_TOKEN=$(shell cat ./acctest/oxide-token)
 testacc-local: testacc
 
