@@ -9,6 +9,10 @@ on:
   schedule:
     # Cron jobs test against omicron main to catch breaking changes early.
     - cron: "25 7 * * *"
+  workflow_dispatch:
+    inputs:
+      omicron_version:
+        description: 'Git object to use for Omicron (commit SHA, tag, branch etc.). If not specified, the VERSION_OMICRON from oxide.go is used.'
 
 env:
   REGISTRY: ghcr.io
@@ -95,12 +99,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           IS_SCHEDULE: ${{ github.event_name == 'schedule' }}
+          OMICRON_VERSION: ${{ inputs.omicron_version }}
         run: |
           if [[ "${IS_SCHEDULE}" == "true" ]]; then
-            OMICRON_SHA=$(./acctest/omicron-version.sh main)
-          else
-            OMICRON_SHA=$(./acctest/omicron-version.sh)
+            OMICRON_VERSION='main'
           fi
+          OMICRON_SHA=$(./acctest/omicron-version.sh "${OMICRON_VERSION}")
+
+          echo "**Omicron version:** \`${OMICRON_VERSION:--}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Omicron SHA:** [\`${OMICRON_SHA}\`](https://github.com/oxidecomputer/omicron/commit/${OMICRON_SHA})" >> $GITHUB_STEP_SUMMARY
+
           echo "sha=${OMICRON_SHA}" >> $GITHUB_OUTPUT
 
   # Build and push the acctest docker image before running acceptance tests.
