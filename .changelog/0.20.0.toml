@@ -1,0 +1,3 @@
+[[enhancements]]
+title = "support adoption for the silo_saml_identity_provider"
+description = "the silo_saml_identity_provider (create-only resource) can now be removed from tf state and added back without issue [#766](https://github.com/oxidecomputer/terraform-provider-oxide/pull/766)."
