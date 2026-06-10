@@ -6,6 +6,7 @@ package silosamlidp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -277,7 +278,35 @@ func (r *Resource) Create(
 	}
 
 	idpConfig, err := r.client.SamlIdentityProviderCreate(ctx, params)
-	if err != nil {
+	// if the IDP already exists, then try to adopt it
+	if errors.Is(err, oxide.ErrObjectAlreadyExists) {
+		var viewErr error
+		idpConfig, viewErr = r.client.SamlIdentityProviderView(
+			ctx,
+			oxide.SamlIdentityProviderViewParams{
+				Silo:     oxide.NameOrId(plan.Silo.ValueString()),
+				Provider: oxide.NameOrId(plan.Name.ValueString()),
+			},
+		)
+		if viewErr != nil {
+			resp.Diagnostics.AddError(
+				"Error adopting SAML identity provider",
+				fmt.Sprintf("Create API error: %s, View API error: %s", err, viewErr),
+			)
+			return
+		}
+		plan.AcsUrl = types.StringValue(idpConfig.AcsUrl)
+		plan.Description = types.StringValue(idpConfig.Description)
+		plan.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
+		plan.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
+		plan.Name = types.StringValue(string(idpConfig.Name))
+		if plan.SigningKeypair != nil {
+			plan.SigningKeypair.PublicCert = types.StringValue(idpConfig.PublicCert)
+		}
+		plan.SloUrl = types.StringValue(idpConfig.SloUrl)
+		plan.SpClientId = types.StringValue(idpConfig.SpClientId)
+		plan.TechnicalContactEmail = types.StringValue(idpConfig.TechnicalContactEmail)
+	} else if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating SAML identity provider",
 			"API error: "+err.Error(),

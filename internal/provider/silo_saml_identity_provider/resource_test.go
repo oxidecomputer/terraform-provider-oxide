@@ -29,6 +29,7 @@ type resourceConfig struct {
 	SiloName                          string
 	SiloSamlIdentityProviderBlockName string
 	SiloSamlIdentityProviderName      string
+	RemoveSamlIdentityProvider        bool
 }
 
 var resourceConfigTpl = `
@@ -83,7 +84,7 @@ resource "oxide_silo" "{{.SiloBlockName}}" {
     },
   ]
 }
-
+{{ if not .RemoveSamlIdentityProvider }}
 resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockName}}" {
   silo                    = oxide_silo.{{.SiloBlockName}}.id
   name                    = "{{.SiloSamlIdentityProviderName}}"
@@ -100,6 +101,7 @@ resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockNa
     data = "PG1kOkVudGl0eURlc2NyaXB0b3IKCXhtbG5zPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6bWV0YWRhdGEiCgl4bWxuczptZD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm1ldGFkYXRhIgoJeG1sbnM6c2FtbD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmFzc2VydGlvbiIKCXhtbG5zOmRzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwLzA5L3htbGRzaWcjIiBlbnRpdHlJRD0iaHR0cHM6Ly9leGFtcGxlLmNvbSI+Cgk8bWQ6SURQU1NPRGVzY3JpcHRvciBXYW50QXV0aG5SZXF1ZXN0c1NpZ25lZD0idHJ1ZSIgcHJvdG9jb2xTdXBwb3J0RW51bWVyYXRpb249InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpwcm90b2NvbCI+CgkJPG1kOktleURlc2NyaXB0b3IgdXNlPSJzaWduaW5nIj4KCQkJPGRzOktleUluZm8+CgkJCQk8ZHM6S2V5TmFtZT5xWlc3N3I2Vy1NQVhCQURPWkdfb0lVeGlWSmhzWHJGa2tEUlFlQWREYzhjPC9kczpLZXlOYW1lPgoJCQkJPGRzOlg1MDlEYXRhPgoJCQkJCTxkczpYNTA5Q2VydGlmaWNhdGU+TUlJQ3VUQ0NBYUVDQmdHVUdOYUluekFOQmdrcWhraUc5dzBCQVFzRkFEQWdNUjR3SEFZRFZRUUREQlZrWlcxdkxUQXdaakF6WWpoaFpEUmpaVFExT0RJd0hoY05NalF4TWpNd01UZ3pNREF3V2hjTk16UXhNak13TVRnek1UUXdXakFnTVI0d0hBWURWUVFEREJWa1pXMXZMVEF3WmpBellqaGhaRFJqWlRRMU9ESXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDc04yR2Y4Z040b0hHSVI3NXZTaDBZakc0ejFyNytLSGx2cG84QnZmRm9hVk5QR255NHNOMVJGdlI5V25pOVMvM0lXRHNjaDV3NTZnMnk3MFNYcmloUWVKZUptUHhucVd1cUFuSDVLeUgxcjFZeVNqK3pHRGJpRHJyM3pBNlYvdFErUHlJZ0R1cUEvaGg1cmxoRndwOEdQRndnZFBCNTEyK2x5MmR5bTkzQ1BrdDdTdk1KQXhlOHFWYWZPTU9nVEIzcUdiT25jSDdYd1BMMnlhTUhKYUlsTFMwSHh5Ti81S1RrUk5aZERwb25JTFYvajlZT2hZSDdJRDl3c3Y2dlR2NnM3Y3BST0dPMmdFOUVPM1pzTTlwUWlxMjN0RGlTUjloY3BvT2piOElyc0VzMXYxZDlkUGRTV2xybSt4L0U1THlZb1VVT1RUdnlpWDdrU0dPVVFMbS9BZ01CQUFFd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFHTGhBSXlITURVSk9QNkttNzRIYjhUSncxdVh4bVJXRjBRcDBza1BtcUxFSEdRYVpic0R4YVBNYzR0ZDI2TUY0R2dMZ2FNZXVnQlkwZk12d0ErMGJDR0EwY2hLVWpJQUwybEg0UGpzVG15cGliVWMySDFlU1BsOTNoYlBzaTFPSm85bTRvblVHcmg3Z3hHWWJ5Tm85R0tBemgvMmZyZVNRbE82K1pmZkdmSlhabEtTT3pnangzcUVYOTc1N2t1Q3VYWVdtQ3hGbmROd0h2ZjdOTVJENUlQOHRYeEN4a09sbUFBZjRKbUlBbnNsNVp1KzR6K0NuZE1vNkYxMjFsT0t4Tkt2Y0ZYaHFQaHJyd1krZlFreEpXdWprVGp2dTRTN1FsM0dOMzVDWURZdDg5a2drL212VmVCaHVRd1pBR3dWRzE3RnlsN3BNRlFyTGtUQ2ErQmJyY1U9PC9kczpYNTA5Q2VydGlmaWNhdGU+CgkJCQk8L2RzOlg1MDlEYXRhPgoJCQk8L2RzOktleUluZm8+CgkJPC9tZDpLZXlEZXNjcmlwdG9yPgoJCTxtZDpBcnRpZmFjdFJlc29sdXRpb25TZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpTT0FQIiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIgaW5kZXg9IjAiLz4KCQk8bWQ6U2luZ2xlTG9nb3V0U2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1QT1NUIiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpTaW5nbGVMb2dvdXRTZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpIVFRQLVJlZGlyZWN0IiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpTaW5nbGVMb2dvdXRTZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpIVFRQLUFydGlmYWN0IiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpTaW5nbGVMb2dvdXRTZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpTT0FQIiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpOYW1lSURGb3JtYXQ+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6cGVyc2lzdGVudDwvbWQ6TmFtZUlERm9ybWF0PgoJCTxtZDpOYW1lSURGb3JtYXQ+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6dHJhbnNpZW50PC9tZDpOYW1lSURGb3JtYXQ+CgkJPG1kOk5hbWVJREZvcm1hdD51cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjE6bmFtZWlkLWZvcm1hdDp1bnNwZWNpZmllZDwvbWQ6TmFtZUlERm9ybWF0PgoJCTxtZDpOYW1lSURGb3JtYXQ+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4xOm5hbWVpZC1mb3JtYXQ6ZW1haWxBZGRyZXNzPC9tZDpOYW1lSURGb3JtYXQ+CgkJPG1kOlNpbmdsZVNpZ25PblNlcnZpY2UgQmluZGluZz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmJpbmRpbmdzOkhUVFAtUE9TVCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCQk8bWQ6U2luZ2xlU2lnbk9uU2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1SZWRpcmVjdCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCQk8bWQ6U2luZ2xlU2lnbk9uU2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6U09BUCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCQk8bWQ6U2luZ2xlU2lnbk9uU2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1BcnRpZmFjdCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCTwvbWQ6SURQU1NPRGVzY3JpcHRvcj4KPC9tZDpFbnRpdHlEZXNjcmlwdG9yPgo="
   }
 }
+{{ end }}
 `
 
 func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
@@ -144,6 +146,85 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
+				Check: checkResource(
+					siloSamlIdentityProviderResourceID,
+					siloSamlIdentityProviderName,
+				),
+			},
+		},
+	})
+}
+
+func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
+	siloBlockName := sharedtest.NewBlockName("silo")
+	siloName := sharedtest.NewResourceName()
+	siloSamlIdentityProviderBlockName := sharedtest.NewBlockName("silo-idp")
+	siloSamlIdentityProviderName := sharedtest.NewResourceName()
+
+	siloSamlIdentityProviderResourceID := fmt.Sprintf(
+		"oxide_silo_saml_identity_provider.%s",
+		siloSamlIdentityProviderBlockName,
+	)
+
+	siloDNSName := sharedtest.SiloDNSName()
+
+	initialConfig, err := sharedtest.ParsedAccConfig(
+		resourceConfig{
+			SiloBlockName:                     siloBlockName,
+			SiloDNSName:                       siloDNSName,
+			SiloName:                          siloName,
+			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
+			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
+		},
+		resourceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %v", err)
+	}
+
+	noSAMLConfig, err := sharedtest.ParsedAccConfig(
+		resourceConfig{
+			SiloBlockName:                     siloBlockName,
+			SiloDNSName:                       siloDNSName,
+			SiloName:                          siloName,
+			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
+			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
+			RemoveSamlIdentityProvider:        true,
+		},
+		resourceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing no SAML config template data: %v", err)
+	}
+
+	// Silo creation and deletion can cause database contention in nexus,
+	// so run all related tests in series:
+	// https://github.com/oxidecomputer/omicron/issues/9851
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"tls": {
+				Source: "hashicorp/tls",
+			},
+		},
+		CheckDestroy: testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: initialConfig,
+				Check: checkResource(
+					siloSamlIdentityProviderResourceID,
+					siloSamlIdentityProviderName,
+				),
+			},
+			// remove SAML IDP
+			{
+				Config: noSAMLConfig,
+				Check:  testAccResourceDestroy,
+			},
+			// adopt existing SAML IDP
+			{
+				Config: initialConfig,
 				Check: checkResource(
 					siloSamlIdentityProviderResourceID,
 					siloSamlIdentityProviderName,
