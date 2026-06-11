@@ -101,7 +101,15 @@ Run `make testacc`.
 
 To run tests against an empty simulated omicron environment, first provision
 the Docker containers with `make testacc-sim` and run the test suite with `make
-testacc-local`.
+testacc-local`. 
+
+To run the simulated omicron environment on Apple Silicon (arm64), use [colima](https://colima.run/).
+
+```
+colima start --vm-type=vz --vz-rosetta --runtime docker --cpu 8 --memory 16 --disk 100
+docker context use colima
+make testacc-sim
+```
 
 To run specific test cases, set the test name pattern as the variable
 `TEST_ACC_NAME` .

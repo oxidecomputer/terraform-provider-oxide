@@ -13,7 +13,7 @@ OMICRON_SHA="${1:?usage: ensure-image.sh <omicron-sha>}"
 REMOTE_IMAGE="ghcr.io/oxidecomputer/terraform-provider-oxide/acctest-omicron-dev:${OMICRON_SHA}"
 LOCAL_IMAGE="acctest-omicron-dev:${OMICRON_SHA}"
 
-if docker pull "${REMOTE_IMAGE}" 2>/dev/null; then
+if docker pull --platform linux/amd64 "${REMOTE_IMAGE}" 2>/dev/null; then
     docker tag "${REMOTE_IMAGE}" "${LOCAL_IMAGE}"
 else
     echo "-> Image not found in GHCR, building locally"
