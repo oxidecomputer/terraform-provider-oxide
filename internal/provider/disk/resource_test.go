@@ -166,8 +166,8 @@ data "oxide_project" "test" {
 	name = "tf-acc-test"
 }
 
-data "oxide_images" "test" {
-  project_id = data.oxide_project.test.id
+data "oxide_image" "test" {
+  name = "alpine-project"
 }
 
 resource "oxide_disk" "test" {
@@ -175,7 +175,7 @@ resource "oxide_disk" "test" {
   description     = "a test read-only disk"
   name            = "{{.DiskName}}"
   size            = 1073741824
-  source_image_id = element(tolist(data.oxide_images.test.images[*].id), 0)
+  source_image_id = data.oxide_image.test.id
   read_only       = {{.ReadOnly}}
 }
 `
