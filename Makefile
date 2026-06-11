@@ -7,7 +7,7 @@ OS ?= $(shell go env GOOS)
 ARCH ?= $(shell go env GOARCH)
 OS_ARCH ?= $(OS)_$(ARCH)
 RELEASE_VERSION ?= $(shell cat $(CURDIR)/VERSION | sed s/-dev//g)
-export GOBIN = $(shell pwd)/bin
+export GOBIN ?= $(shell pwd)/bin
 
 # Terraform currently does not have a binary for Illumos.
 # The one for Solaris works fine with Illumos, so we'll need
@@ -143,6 +143,9 @@ testacc-sim-setup: testacc-sim-token testacc-sim-oxide-cli
 
 .PHONY: testacc
 ## Runs the Terraform acceptance tests. Use TEST_ACC_NAME, TEST_ACC_ARGS, TEST_ACC_GOTESTSUM_ARGS, TEST_ACC_COUNT and TEST_ACC_PARALLEL for acceptance testing settings.
+# acctest/terraformrc neutralizes any dev_overrides in ~/.terraformrc so the
+# ExternalProviders pins used by state-upgrade tests resolve from the registry.
+testacc: export TF_CLI_CONFIG_FILE = $(CURDIR)/acctest/terraformrc
 testacc:
 	@ echo "-> Running terraform acceptance tests"
 	@ TF_ACC=1 $(GO_TOOL) gotestsum \
