@@ -271,7 +271,10 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 				// no group_attribute_name
 				{
 					Config: noGroupAttributeNameConfig,
-					Check:  resource.TestCheckNoResourceAttr(siloSamlIdentityProviderResourceID, "group_attribute_name"),
+					Check: resource.TestCheckNoResourceAttr(
+						siloSamlIdentityProviderResourceID,
+						"group_attribute_name",
+					),
 				},
 				// remove SAML IDP
 				{

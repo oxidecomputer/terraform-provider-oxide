@@ -309,7 +309,11 @@ func (r *Resource) Create(
 			resp.Diagnostics.AddAttributeError(
 				path.Root("group_attribute_name"),
 				"Error adopting SAML identity provider",
-				fmt.Sprintf("group_attribute_name configuration does not match the state (server=%q configuration=%q)", idpConfig.GroupAttributeName, plan.GroupAttributeName.ValueString()),
+				fmt.Sprintf(
+					"group_attribute_name configuration does not match the state (server=%q configuration=%q)",
+					idpConfig.GroupAttributeName,
+					plan.GroupAttributeName.ValueString(),
+				),
 			)
 			return
 		} else {
