@@ -38,7 +38,10 @@ resource "oxide_switch_port_settings" "example" {
       link_name = "phy0"
       peers = [
         {
-          address = "192.168.1.1"
+          addr = {
+            type = "numbered"
+            ip   = "192.168.1.1"
+          }
           allowed_export = {
             type = "no_filtering"
           }
@@ -52,7 +55,6 @@ resource "oxide_switch_port_settings" "example" {
           enforce_first_as = false
           hold_time        = 10
           idle_hold_time   = 10
-          interface_name   = "phy0"
           keepalive        = 10
         }
       ]
@@ -206,6 +208,7 @@ Required:
 
 Required:
 
+- `addr` (Attributes) How the BGP peer is addressed. A `numbered` peer is established with the host at `ip`. An `unnumbered` peer is established over the interface specified by the parent `link_name` using `router_lifetime`. (see [below for nested schema](#nestedatt--bgp_peers--peers--addr))
 - `allowed_export` (Attributes) Export policy for the peer. (see [below for nested schema](#nestedatt--bgp_peers--peers--allowed_export))
 - `allowed_import` (Attributes) Import policy for the peer. (see [below for nested schema](#nestedatt--bgp_peers--peers--allowed_import))
 - `bgp_config` (String) Name or ID of the global BGP configuration used for establishing a session with this peer.
@@ -215,18 +218,29 @@ Required:
 - `enforce_first_as` (Boolean) Whether to enforce that the first autonomous system in paths received from this peer is the peer's autonomous system.
 - `hold_time` (Number) Number of seconds to hold peer connections between keepalives.
 - `idle_hold_time` (Number) Number of seconds to hold a peer in idle before attempting a new session.
-- `interface_name` (String) Name of the interface to use for this BGP peer session.
 - `keepalive` (Number) Number of seconds between sending BGP keepalive requests.
 
 Optional:
 
-- `address` (String) Address of the host to peer with. If not provided, this is an unnumbered BGP session that will be established over the interface specified by `interface_name`.
 - `local_pref` (Number) BGP local preference value for routes received from this peer.
 - `md5_auth_key` (String) MD5 authentication key for this BGP session.
 - `min_ttl` (Number) Minimum acceptable TTL for BGP packets from this peer.
 - `multi_exit_discriminator` (Number) Multi-exit discriminator (MED) to advertise to this peer.
 - `remote_asn` (Number) Remote autonomous system number for this BGP peer.
 - `vlan_id` (Number) VLAN ID for this BGP peer session.
+
+<a id="nestedatt--bgp_peers--peers--addr"></a>
+### Nested Schema for `bgp_peers.peers.addr`
+
+Required:
+
+- `type` (String) Type of BGP peer addressing.
+
+Optional:
+
+- `ip` (String) Address of the host to peer with. Required when `type` is `numbered`.
+- `router_lifetime` (Number) Router lifetime in seconds. Required when `type` is `unnumbered`.
+
 
 <a id="nestedatt--bgp_peers--peers--allowed_export"></a>
 ### Nested Schema for `bgp_peers.peers.allowed_export`
