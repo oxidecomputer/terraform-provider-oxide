@@ -1,0 +1,23 @@
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "The `bgp_peers` attribute is no longer tracked in Terraform state. It is considered, but not enforced, to be write only. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."
+
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "The `bgp_peers[].peers[].address` attribute has been removed in favor of `bgp_peers[].peers[].addr`, which uses a new schema. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."
+
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "The `bgp_peers[].peers[].interface_name` attribute has been removed. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."
+
+[[features]]
+title = "`oxide_instance`"
+description = "Added support for the `enable_jumbo_frames` attribute. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."
+
+[[features]]
+title = "`oxide_instance`"
+description = "Added support for the `cpu_platform` attribute. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."
+
+[[enhancements]]
+title = "`oxide_disk`"
+description = "The `block_size` attribute now validates its value is one of `512`, `2048`, or `4096`. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."

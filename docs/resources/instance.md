@@ -151,7 +151,9 @@ resource "oxide_instance" "example" {
 - `anti_affinity_groups` (Set of String) IDs of the anti-affinity groups to which this instance should be added.
 - `auto_restart_policy` (String) The auto-restart policy for this instance. This policy determines whether the instance should be automatically restarted by the control plane on failure. Must be one of `best_effort` or `never`.
 - `boot_disk_id` (String) ID of the disk the instance should be booted from. Specifying a boot disk is optional but recommended to ensure predictable boot behavior. When provided, this ID must also be present in `disk_attachments`.
+- `cpu_platform` (String) The CPU platform to be used for this instance. If unset, the instance requires no particular CPU platform and will use the most general CPU platform supported by the sled it is placed on. Must be one of `amd_milan`, `amd_turin`, or `amd_turin_v2`.
 - `disk_attachments` (Set of String) IDs of the disks to be attached to the instance. The order of this list does not guarantee a boot order for the instance.
+- `enable_jumbo_frames` (Boolean) Whether to enable jumbo frames (8500 byte MTU) on the instance's primary network interface. Enabling this requires the fleet-wide jumbo-frames opt-in to be enabled. Changes only take effect on the next instance restart.
 - `external_ips` (Attributes) External IP addresses provided to this instance. By default, all instances have outbound connectivity, but no inbound connectivity. These external addresses can be used to provide a fixed, known IP address for making inbound connections to the instance. (see [below for nested schema](#nestedatt--external_ips))
 - `hostname` (String) RFC1035-compliant hostname for the instance.
 - `network_interfaces` (Attributes Set) The network interfaces to be created for this instance. (see [below for nested schema](#nestedatt--network_interfaces))

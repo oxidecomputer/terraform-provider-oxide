@@ -195,7 +195,7 @@ deprecated and will be removed in a future release. Use the new
 `attached_network_interfaces` attribute to access these values.
 
 Network interfaces in the new `attached_network_interfaces` attribute can be
-reference by name instead of having to iterate over a set.
+referenced by name instead of having to iterate over a set.
 
 Before:
 
