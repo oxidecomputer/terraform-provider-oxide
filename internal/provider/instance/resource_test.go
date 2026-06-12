@@ -115,6 +115,7 @@ resource "oxide_instance" "{{.BlockName}}" {
   anti_affinity_groups = [oxide_anti_affinity_group.{{.AntiAffinityGroupBlockName}}.id]
   project_id       	   = data.oxide_project.{{.SupportBlockName}}.id
   auto_restart_policy  = "{{.AutoRestartPolicy}}"
+  cpu_platform         = "amd_milan"
   boot_disk_id     	   = oxide_disk.{{.DiskBlockName}}.id
   description      	   = "a test instance"
   name             	   = "{{.InstanceName}}"
@@ -1200,13 +1201,14 @@ data "oxide_project" "{{.SupportBlockName}}" {
 }
 
 resource "oxide_instance" "{{.BlockName}}" {
-  project_id      = data.oxide_project.{{.SupportBlockName}}.id
-  description     = "a test instance"
-  name            = "{{.InstanceName}}"
-  hostname        = "terraform-acc-myhost"
-  memory          = 2147483648
-  ncpus           = 2
-  start_on_create = true
+  project_id          = data.oxide_project.{{.SupportBlockName}}.id
+  description         = "a test instance"
+  name                = "{{.InstanceName}}"
+  hostname            = "terraform-acc-myhost"
+  memory              = 2147483648
+  ncpus               = 2
+  start_on_create     = true
+  cpu_platform        = "amd_milan"
 }
 `
 	instanceName := sharedtest.NewResourceName()
@@ -1569,6 +1571,8 @@ func checkResource(resourceName, instanceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckResourceAttr(resourceName, "enable_jumbo_frames", "false"),
+		resource.TestCheckNoResourceAttr(resourceName, "cpu_platform"),
 		resource.TestCheckNoResourceAttr(resourceName, "ssh_public_keys"),
 	}...)
 }
@@ -1597,6 +1601,8 @@ func checkResourceFull(resourceName, instanceName, nicName string) resource.Test
 		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
 		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
+		resource.TestCheckResourceAttr(resourceName, "cpu_platform", "amd_milan"),
+		resource.TestCheckResourceAttr(resourceName, "enable_jumbo_frames", "false"),
 	}...)
 }
 
@@ -1815,9 +1821,11 @@ func checkResourceUpdate(resourceName, instanceName string) resource.TestCheckFu
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttr(resourceName, "enable_jumbo_frames", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "cpu_platform"),
 	}...)
 }
 
@@ -1830,9 +1838,11 @@ func checkResourceUpdate2(resourceName, instanceName string) resource.TestCheckF
 		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttr(resourceName, "enable_jumbo_frames", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+		resource.TestCheckNoResourceAttr(resourceName, "cpu_platform"),
 	}...)
 }
 
@@ -1845,6 +1855,8 @@ func checkResourceUpdate3(resourceName, instanceName string) resource.TestCheckF
 		resource.TestCheckResourceAttr(resourceName, "memory", "2147483648"),
 		resource.TestCheckResourceAttr(resourceName, "ncpus", "2"),
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "true"),
+		resource.TestCheckResourceAttr(resourceName, "cpu_platform", "amd_milan"),
+		resource.TestCheckResourceAttr(resourceName, "enable_jumbo_frames", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),

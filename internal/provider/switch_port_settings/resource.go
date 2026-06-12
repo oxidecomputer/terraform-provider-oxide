@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -25,8 +26,9 @@ import (
 )
 
 var (
-	_ resource.Resource              = (*Resource)(nil)
-	_ resource.ResourceWithConfigure = (*Resource)(nil)
+	_ resource.Resource                 = (*Resource)(nil)
+	_ resource.ResourceWithConfigure    = (*Resource)(nil)
+	_ resource.ResourceWithUpgradeState = (*Resource)(nil)
 )
 
 type Resource struct {
@@ -64,7 +66,7 @@ type BGPPeerResourceModel struct {
 }
 
 type BGPPeerPeerResourceModel struct {
-	Address                iptypes.IPAddress                      `tfsdk:"address"`
+	Addr                   *BGPPeerAddrResourceModel              `tfsdk:"addr"`
 	AllowedExport          *BGPPeerPeerAllowedExportResourceModel `tfsdk:"allowed_export"`
 	AllowedImport          *BGPPeerPeerAllowedImportResourceModel `tfsdk:"allowed_import"`
 	BGPConfig              types.String                           `tfsdk:"bgp_config"`
@@ -74,7 +76,6 @@ type BGPPeerPeerResourceModel struct {
 	EnforceFirstAs         types.Bool                             `tfsdk:"enforce_first_as"`
 	HoldTime               types.Int64                            `tfsdk:"hold_time"`
 	IdleHoldTime           types.Int64                            `tfsdk:"idle_hold_time"`
-	InterfaceName          types.String                           `tfsdk:"interface_name"`
 	Keepalive              types.Int64                            `tfsdk:"keepalive"`
 	LocalPref              types.Int64                            `tfsdk:"local_pref"`
 	MD5AuthKey             types.String                           `tfsdk:"md5_auth_key"`
@@ -82,6 +83,15 @@ type BGPPeerPeerResourceModel struct {
 	MultiExitDiscriminator types.Int64                            `tfsdk:"multi_exit_discriminator"`
 	RemoteASN              types.Int64                            `tfsdk:"remote_asn"`
 	VlanID                 types.Int32                            `tfsdk:"vlan_id"`
+}
+
+// BGPPeerAddrResourceModel represents the [oxide.RouterPeerType] tagged union
+// describing how a BGP peer is addressed. When Type is "numbered" the peer uses
+// IP; when Type is "unnumbered" the peer uses RouterLifetime.
+type BGPPeerAddrResourceModel struct {
+	Type           types.String      `tfsdk:"type"`
+	IP             iptypes.IPAddress `tfsdk:"ip"`
+	RouterLifetime types.Int64       `tfsdk:"router_lifetime"`
 }
 
 type BGPPeerPeerAllowedExportResourceModel struct {
@@ -174,6 +184,21 @@ func (r *Resource) ImportState(
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+// UpgradeState upgrades the Terraform state for the oxide_switch_port_settings
+// resource from a previous schema version to the current version.
+//
+// Schema upgrades are not expected to be applied sequentially, since users are
+// allowed to jump to whatever new version they choose. When adding a new
+// version, you must ensure that each of the existing StateUpgrader functions
+// are also updated to handle the new schema.
+func (r *Resource) UpgradeState(
+	_ context.Context,
+) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {StateUpgrader: r.stateUpgraderV1},
+	}
+}
+
 // Schema defines the Terraform configuration for this resource.
 func (r *Resource) Schema(
 	ctx context.Context,
@@ -181,6 +206,13 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
+		Version:            1,
+		DeprecationMessage: "This resource is deprecated and will be removed in version v0.22.0 of the provider.",
+		MarkdownDescription: shared.ReplaceBackticks(`
+This resource manages switch port settings.
+
+!> This resource is deprecated and will be removed in version v0.22.0 of the provider.
+`),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -233,10 +265,33 @@ func (r *Resource) Schema(
 							Description: "Set of BGP peers configuration to assign to the link.",
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"address": schema.StringAttribute{
-										Optional:    true,
-										CustomType:  iptypes.IPAddressType{},
-										Description: "Address of the host to peer with. If not provided, this is an unnumbered BGP session that will be established over the interface specified by `interface_name`.",
+									"addr": schema.SingleNestedAttribute{
+										Required:    true,
+										Description: "How the BGP peer is addressed. A `numbered` peer is established with the host at `ip`. An `unnumbered` peer is established over the interface specified by the parent `link_name` using `router_lifetime`.",
+										Attributes: map[string]schema.Attribute{
+											"type": schema.StringAttribute{
+												Required:    true,
+												Description: "Type of BGP peer addressing.",
+												Validators: []validator.String{
+													stringvalidator.OneOf(
+														string(oxide.RouterPeerTypeTypeNumbered),
+														string(oxide.RouterPeerTypeTypeUnnumbered),
+													),
+												},
+											},
+											"ip": schema.StringAttribute{
+												Optional:    true,
+												CustomType:  iptypes.IPAddressType{},
+												Description: "Address of the host to peer with. Required when `type` is `numbered`.",
+											},
+											"router_lifetime": schema.Int64Attribute{
+												Optional:    true,
+												Description: "Router lifetime in seconds. Required when `type` is `unnumbered`.",
+												Validators: []validator.Int64{
+													int64validator.Between(0, 9000),
+												},
+											},
+										},
 									},
 									"allowed_export": schema.SingleNestedAttribute{
 										Required:    true,
@@ -312,10 +367,6 @@ func (r *Resource) Schema(
 									"idle_hold_time": schema.Int64Attribute{
 										Required:    true,
 										Description: "Number of seconds to hold a peer in idle before attempting a new session.",
-									},
-									"interface_name": schema.StringAttribute{
-										Required:    true,
-										Description: "Name of the interface to use for this BGP peer session.",
 									},
 									"keepalive": schema.Int64Attribute{
 										Required:    true,
@@ -655,10 +706,14 @@ func (r *Resource) Read(
 	// asymmetry of the API and edge cases with mapping Oxide API types to Terraform
 	// types.
 	state.Addresses = model.Addresses
-	state.BGPPeers = model.BGPPeers
 	state.Links = model.Links
 	state.PortConfig = model.PortConfig
 	state.Routes = model.Routes
+
+	// NOTE: state.BGPPeers is intentionally left untouched. The
+	// `switch_port_settings_view` API returns BGP peers as a flat list without
+	// the `link_name` grouping, so the value cannot be faithfully reconstructed
+	// on Read. See the BGP Peers note in toSwitchPortSettingsModel.
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -863,126 +918,14 @@ func toSwitchPortSettingsModel(
 	//
 	// BGP Peers
 	//
-	if len(settings.BgpPeers) > 0 {
-		linkToBGPPeer := make(map[string][]BGPPeerPeerResourceModel)
-		for _, bgpPeer := range settings.BgpPeers {
-			link := string(bgpPeer.InterfaceName)
-
-			if _, ok := linkToBGPPeer[link]; !ok {
-				linkToBGPPeer[link] = make([]BGPPeerPeerResourceModel, 0)
-			}
-
-			bgpPeerModel := BGPPeerPeerResourceModel{
-				Address: func() iptypes.IPAddress {
-					if bgpPeer.Addr == "" {
-						return iptypes.NewIPAddressNull()
-					}
-					return iptypes.NewIPAddressValue(bgpPeer.Addr)
-				}(),
-				BGPConfig:      types.StringValue(string(bgpPeer.BgpConfig)),
-				ConnectRetry:   types.Int64Value(int64(*bgpPeer.ConnectRetry)),
-				DelayOpen:      types.Int64Value(int64(*bgpPeer.DelayOpen)),
-				EnforceFirstAs: types.BoolPointerValue(bgpPeer.EnforceFirstAs),
-				HoldTime:       types.Int64Value(int64(*bgpPeer.HoldTime)),
-				IdleHoldTime:   types.Int64Value(int64(*bgpPeer.IdleHoldTime)),
-				InterfaceName:  types.StringValue(string(bgpPeer.InterfaceName)),
-				Keepalive:      types.Int64Value(int64(*bgpPeer.Keepalive)),
-
-				// The fields below are nullable so we handle them specially.
-				LocalPref: func() types.Int64 {
-					if bgpPeer.LocalPref == nil {
-						return types.Int64Null()
-					}
-					return types.Int64Value(int64(*bgpPeer.LocalPref))
-				}(),
-				MD5AuthKey: func() types.String {
-					if bgpPeer.Md5AuthKey == "" {
-						return types.StringNull()
-					}
-					return types.StringValue(bgpPeer.Md5AuthKey)
-				}(),
-				MinTTL: func() types.Int32 {
-					if bgpPeer.MinTtl == nil {
-						return types.Int32Null()
-					}
-					return types.Int32Value(int32(*bgpPeer.MinTtl))
-				}(),
-				MultiExitDiscriminator: func() types.Int64 {
-					if bgpPeer.MultiExitDiscriminator == nil {
-						return types.Int64Null()
-					}
-					return types.Int64Value(int64(*bgpPeer.MultiExitDiscriminator))
-				}(),
-				RemoteASN: func() types.Int64 {
-					if bgpPeer.RemoteAsn == nil {
-						return types.Int64Null()
-					}
-					return types.Int64Value(int64(*bgpPeer.RemoteAsn))
-				}(),
-				VlanID: func() types.Int32 {
-					if bgpPeer.VlanId == nil {
-						return types.Int32Null()
-					}
-					return types.Int32Value(int32(*bgpPeer.VlanId))
-				}(),
-			}
-
-			bgpPeerModel.AllowedExport = &BGPPeerPeerAllowedExportResourceModel{
-				Type: types.StringValue(string(bgpPeer.AllowedExport.Type())),
-				Value: func() []types.String {
-					if allow, ok := bgpPeer.AllowedExport.AsAllow(); ok {
-						if len(allow.Value) == 0 {
-							return nil
-						}
-						res := make([]types.String, 0)
-						for _, elem := range allow.Value {
-							res = append(res, types.StringValue(elem.String()))
-						}
-						return res
-					}
-					return nil
-				}(),
-			}
-
-			bgpPeerModel.AllowedImport = &BGPPeerPeerAllowedImportResourceModel{
-				Type: types.StringValue(string(bgpPeer.AllowedImport.Type())),
-				Value: func() []types.String {
-					if allow, ok := bgpPeer.AllowedImport.AsAllow(); ok {
-						if len(allow.Value) == 0 {
-							return nil
-						}
-						res := make([]types.String, 0)
-						for _, elem := range allow.Value {
-							res = append(res, types.StringValue(elem.String()))
-						}
-						return res
-					}
-					return nil
-				}(),
-			}
-
-			bgpPeerModel.Communities = func() []types.Int64 {
-				communities := make([]types.Int64, 0)
-				for _, community := range bgpPeer.Communities {
-					communities = append(communities, types.Int64Value(int64(community)))
-				}
-				return communities
-			}()
-
-			linkToBGPPeer[link] = append(linkToBGPPeer[link], bgpPeerModel)
-		}
-
-		bgpPeersModels := make([]BGPPeerResourceModel, 0)
-		for linkName, bgpPeers := range linkToBGPPeer {
-			bgpPeerModel := BGPPeerResourceModel{
-				Peers:    bgpPeers,
-				LinkName: types.StringValue(linkName),
-			}
-			bgpPeersModels = append(bgpPeersModels, bgpPeerModel)
-		}
-
-		model.BGPPeers = bgpPeersModels
-	}
+	// The `switch_port_settings_view` API returns BGP peers as a flat list that
+	// no longer carries the `link_name` each peer belongs to, so it is impossible
+	// to faithfully reconstruct the `bgp_peers` link grouping from the API
+	// response alone. Because Create and Update persist the configuration
+	// directly from the plan, the prior state already holds the correct value.
+	// We therefore intentionally do not populate `model.BGPPeers` here and leave
+	// the prior state untouched in Read. The trade-off is that out-of-band drift
+	// to BGP peers is not detected and `bgp_peers` is not populated on import.
 
 	//
 	// Links
@@ -1218,14 +1161,28 @@ func toNetworkingSwitchPortSettingsCreateParams(
 		bgpPeers := make([]oxide.BgpPeer, 0)
 		for _, bgpModelNested := range bgpPeerModel.Peers {
 			bgpPeer := oxide.BgpPeer{
-				Addr:           bgpModelNested.Address.ValueString(),
+				Addr: func() oxide.RouterPeerType {
+					var res oxide.RouterPeerType
+					switch bgpModelNested.Addr.Type.ValueString() {
+					case string(oxide.RouterPeerTypeTypeNumbered):
+						res.Value = oxide.RouterPeerTypeNumbered{
+							Ip: bgpModelNested.Addr.IP.ValueString(),
+						}
+					case string(oxide.RouterPeerTypeTypeUnnumbered):
+						res.Value = oxide.RouterPeerTypeUnnumbered{
+							RouterLifetime: oxide.RouterLifetimeConfig(
+								bgpModelNested.Addr.RouterLifetime.ValueInt64(),
+							),
+						}
+					}
+					return res
+				}(),
 				BgpConfig:      oxide.NameOrId(bgpModelNested.BGPConfig.ValueString()),
 				ConnectRetry:   oxide.NewPointer(int(bgpModelNested.ConnectRetry.ValueInt64())),
 				DelayOpen:      oxide.NewPointer(int(bgpModelNested.DelayOpen.ValueInt64())),
 				EnforceFirstAs: oxide.NewPointer(bgpModelNested.EnforceFirstAs.ValueBool()),
 				HoldTime:       oxide.NewPointer(int(bgpModelNested.HoldTime.ValueInt64())),
 				IdleHoldTime:   oxide.NewPointer(int(bgpModelNested.IdleHoldTime.ValueInt64())),
-				InterfaceName:  oxide.Name(bgpModelNested.InterfaceName.ValueString()),
 				Keepalive:      oxide.NewPointer(int(bgpModelNested.Keepalive.ValueInt64())),
 				LocalPref: func() *int {
 					if bgpModelNested.LocalPref.IsNull() {
