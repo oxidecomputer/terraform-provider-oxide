@@ -280,24 +280,41 @@ func (r *Resource) Create(
 	idpConfig, err := r.client.SamlIdentityProviderCreate(ctx, params)
 	// if the IDP already exists, then try to adopt it
 	if errors.Is(err, oxide.ErrObjectAlreadyExists) {
-		var viewErr error
-		idpConfig, viewErr = r.client.SamlIdentityProviderView(
+		idpConfig, err = r.client.SamlIdentityProviderView(
 			ctx,
 			oxide.SamlIdentityProviderViewParams{
 				Silo:     oxide.NameOrId(plan.Silo.ValueString()),
 				Provider: oxide.NameOrId(plan.Name.ValueString()),
 			},
 		)
-		if viewErr != nil {
+		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error adopting SAML identity provider",
-				fmt.Sprintf("Create API error: %s, View API error: %s", err, viewErr),
+				fmt.Sprintf("View API error: %s", err),
 			)
 			return
 		}
+
+		// The idp_metadata_source and the signing_keypair.private_key attributes are not returned
+		// from the API on a read. In those cases, the plan includes the user-provided values from
+		// the configuration.
 		plan.AcsUrl = types.StringValue(idpConfig.AcsUrl)
 		plan.Description = types.StringValue(idpConfig.Description)
-		plan.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
+		// When the server returns a non-empty group_attribute_name, use it. Otherwise the
+		// configuration must agree (null or empty string); a configured non-empty value is a
+		// mismatch we can't reconcile since the resource is immutable.
+		if idpConfig.GroupAttributeName != "" {
+			plan.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
+		} else if plan.GroupAttributeName.ValueString() != "" {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("group_attribute_name"),
+				"Error adopting SAML identity provider",
+				fmt.Sprintf("group_attribute_name configuration does not match the state (server=%q configuration=%q)", idpConfig.GroupAttributeName, plan.GroupAttributeName.ValueString()),
+			)
+			return
+		} else {
+			plan.GroupAttributeName = types.StringNull()
+		}
 		plan.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
 		plan.Name = types.StringValue(string(idpConfig.Name))
 		if plan.SigningKeypair != nil {
@@ -379,7 +396,9 @@ func (r *Resource) Read(
 	state.TimeModified = types.StringValue(idpConfig.TimeModified.String())
 	state.AcsUrl = types.StringValue(idpConfig.AcsUrl)
 	state.Description = types.StringValue(idpConfig.Description)
-	state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
+	if idpConfig.GroupAttributeName != "" {
+		state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
+	}
 	state.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
 	state.Name = types.StringValue(string(idpConfig.Name))
 	state.SloUrl = types.StringValue(idpConfig.SloUrl)
@@ -421,6 +440,7 @@ func (r *Resource) Delete(
 ) {
 	resp.Diagnostics.AddWarning(
 		"The oxide_silo_saml_identity_provider resource does not support deletion.",
-		"This resource represents immutable silo SAML identity provider configuration. The resource will be removed from Terraform state but not from Oxide.",
+		"This resource represents immutable silo SAML identity provider configuration. The resource will be removed from Terraform state but not from Oxide. "+
+			"You can add the resource to your Terraform configuration later by matching the resource attributes from Oxide.",
 	)
 }

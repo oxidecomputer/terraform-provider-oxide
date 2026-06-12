@@ -11,6 +11,7 @@ package silosamlidp_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -24,12 +25,13 @@ import (
 )
 
 type resourceConfig struct {
-	SiloBlockName                     string
-	SiloDNSName                       string
-	SiloName                          string
-	SiloSamlIdentityProviderBlockName string
-	SiloSamlIdentityProviderName      string
-	RemoveSamlIdentityProvider        bool
+	SiloBlockName                              string
+	SiloDNSName                                string
+	SiloName                                   string
+	SiloSamlIdentityProviderBlockName          string
+	SiloSamlIdentityProviderName               string
+	SkipSamlIdentityProviderGroupAttributeName bool
+	SkipSamlIdentityProvider                   bool
 }
 
 var resourceConfigTpl = `
@@ -84,12 +86,14 @@ resource "oxide_silo" "{{.SiloBlockName}}" {
     },
   ]
 }
-{{ if not .RemoveSamlIdentityProvider }}
+{{ if not .SkipSamlIdentityProvider }}
 resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockName}}" {
   silo                    = oxide_silo.{{.SiloBlockName}}.id
   name                    = "{{.SiloSamlIdentityProviderName}}"
   description             = "Managed by Terraform."
+  {{ if not .SkipSamlIdentityProviderGroupAttributeName }}
   group_attribute_name    = "example"
+  {{ end }}
   idp_entity_id           = "example"
   acs_url                 = "https://example.com"
   slo_url                 = "https://example.com"
@@ -128,7 +132,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		resourceConfigTpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
+		t.Errorf("error parsing config template data: %v", err)
 	}
 
 	// Silo creation and deletion can cause database contention in nexus,
@@ -189,7 +193,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 			SiloName:                          siloName,
 			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
 			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
-			RemoveSamlIdentityProvider:        true,
+			SkipSamlIdentityProvider:          true,
 		},
 		resourceConfigTpl,
 	)
@@ -197,41 +201,92 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 		t.Errorf("error parsing no SAML config template data: %v", err)
 	}
 
-	// Silo creation and deletion can cause database contention in nexus,
-	// so run all related tests in series:
-	// https://github.com/oxidecomputer/omicron/issues/9851
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { sharedtest.PreCheck(t) },
-		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"tls": {
-				Source: "hashicorp/tls",
-			},
+	noGroupAttributeNameConfig, err := sharedtest.ParsedAccConfig(
+		resourceConfig{
+			SiloBlockName:                     siloBlockName,
+			SiloDNSName:                       siloDNSName,
+			SiloName:                          siloName,
+			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
+			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
+			SkipSamlIdentityProviderGroupAttributeName: true,
 		},
-		CheckDestroy: testAccResourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: initialConfig,
-				Check: checkResource(
-					siloSamlIdentityProviderResourceID,
-					siloSamlIdentityProviderName,
-				),
+		resourceConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing different group_attribute_name config template data: %v", err)
+	}
+
+	t.Run("simple-adoption", func(t *testing.T) {
+		// Silo creation and deletion can cause database contention in nexus,
+		// so run all related tests in series:
+		// https://github.com/oxidecomputer/omicron/issues/9851
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { sharedtest.PreCheck(t) },
+			ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+			ExternalProviders: map[string]resource.ExternalProvider{
+				"tls": {
+					Source: "hashicorp/tls",
+				},
 			},
-			// remove SAML IDP
-			{
-				Config: noSAMLConfig,
-				Check:  testAccResourceDestroy,
+			CheckDestroy: testAccResourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					Config: initialConfig,
+					Check: checkResource(
+						siloSamlIdentityProviderResourceID,
+						siloSamlIdentityProviderName,
+					),
+				},
+				// remove SAML IDP
+				{
+					Config: noSAMLConfig,
+					Check:  testAccResourceDestroy,
+				},
+				// adopt existing SAML IDP
+				{
+					Config: initialConfig,
+					Check: checkResource(
+						siloSamlIdentityProviderResourceID,
+						siloSamlIdentityProviderName,
+					),
+				},
 			},
-			// adopt existing SAML IDP
-			{
-				Config: initialConfig,
-				Check: checkResource(
-					siloSamlIdentityProviderResourceID,
-					siloSamlIdentityProviderName,
-				),
-			},
-		},
+		})
 	})
+
+	t.Run("adopt-mismatched-group-attribute-name", func(t *testing.T) {
+		// Silo creation and deletion can cause database contention in nexus,
+		// so run all related tests in series:
+		// https://github.com/oxidecomputer/omicron/issues/9851
+		resource.Test(t, resource.TestCase{
+			PreCheck:                 func() { sharedtest.PreCheck(t) },
+			ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+			ExternalProviders: map[string]resource.ExternalProvider{
+				"tls": {
+					Source: "hashicorp/tls",
+				},
+			},
+			CheckDestroy: testAccResourceDestroy,
+			Steps: []resource.TestStep{
+				// no group_attribute_name
+				{
+					Config: noGroupAttributeNameConfig,
+					Check:  resource.TestCheckNoResourceAttr(siloSamlIdentityProviderResourceID, "group_attribute_name"),
+				},
+				// remove SAML IDP
+				{
+					Config: noSAMLConfig,
+					Check:  testAccResourceDestroy,
+				},
+				// try to adopt existing SAML IDP and fill in the optional group_attribute_name
+				{
+					Config:      initialConfig,
+					ExpectError: regexp.MustCompile(`group_attribute_name`),
+				},
+			},
+		})
+	})
+
 }
 
 func checkResource(
