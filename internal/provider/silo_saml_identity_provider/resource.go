@@ -391,7 +391,8 @@ func (r *Resource) Read(
 	)
 
 	// GroupAttributeName is Optional so we need to handle the case where it is not set in the
-	// remote Oxide control plane and take whatever value the configuration has (Null or empty string)
+	// remote Oxide control plane and take whatever value the configuration has (Null or empty
+	// string)
 	if idpConfig.GroupAttributeName != "" {
 		state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
 	}
@@ -469,13 +470,21 @@ func (m ResourceModel) Diff(remote *oxide.SamlIdentityProvider) diag.Diagnostics
 	}{
 		{path.Root("acs_url"), m.AcsUrl.ValueString(), remote.AcsUrl},
 		{path.Root("description"), m.Description.ValueString(), remote.Description},
-		{path.Root("group_attribute_name"), m.GroupAttributeName.ValueString(), remote.GroupAttributeName},
+		{
+			path.Root("group_attribute_name"),
+			m.GroupAttributeName.ValueString(),
+			remote.GroupAttributeName,
+		},
 		{path.Root("idp_entity_id"), m.IdpEntityId.ValueString(), remote.IdpEntityId},
 		{path.Root("name"), m.Name.ValueString(), string(remote.Name)},
 		{path.Root("signing_keypair").AtName("public_cert"), signingPublicCert, remote.PublicCert},
 		{path.Root("slo_url"), m.SloUrl.ValueString(), remote.SloUrl},
 		{path.Root("sp_client_id"), m.SpClientId.ValueString(), remote.SpClientId},
-		{path.Root("technical_contact_email"), m.TechnicalContactEmail.ValueString(), remote.TechnicalContactEmail},
+		{
+			path.Root("technical_contact_email"),
+			m.TechnicalContactEmail.ValueString(),
+			remote.TechnicalContactEmail,
+		},
 	}
 
 	var diagnostics diag.Diagnostics
