@@ -204,44 +204,41 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 		t.Fatalf("error parsing no SAML config template data: %v", err)
 	}
 
-	t.Run("simple-adoption", func(t *testing.T) {
-		// Silo creation and deletion can cause database contention in nexus,
-		// so run all related tests in series:
-		// https://github.com/oxidecomputer/omicron/issues/9851
-		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { sharedtest.PreCheck(t) },
-			ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-			ExternalProviders: map[string]resource.ExternalProvider{
-				"tls": {
-					Source: "hashicorp/tls",
-				},
+	// Silo creation and deletion can cause database contention in nexus,
+	// so run all related tests in series:
+	// https://github.com/oxidecomputer/omicron/issues/9851
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"tls": {
+				Source: "hashicorp/tls",
 			},
-			CheckDestroy: testAccResourceDestroy,
-			Steps: []resource.TestStep{
-				{
-					Config: initialConfig,
-					Check: checkResource(
-						siloSamlIdentityProviderResourceID,
-						siloSamlIdentityProviderName,
-					),
-				},
-				// remove SAML IDP
-				{
-					Config: noSAMLConfig,
-					Check:  testAccResourceDestroy,
-				},
-				// adopt existing SAML IDP
-				{
-					Config: initialConfig,
-					Check: checkResource(
-						siloSamlIdentityProviderResourceID,
-						siloSamlIdentityProviderName,
-					),
-				},
+		},
+		CheckDestroy: testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: initialConfig,
+				Check: checkResource(
+					siloSamlIdentityProviderResourceID,
+					siloSamlIdentityProviderName,
+				),
 			},
-		})
+			// remove SAML IDP
+			{
+				Config: noSAMLConfig,
+				Check:  testAccResourceDestroy,
+			},
+			// adopt existing SAML IDP
+			{
+				Config: initialConfig,
+				Check: checkResource(
+					siloSamlIdentityProviderResourceID,
+					siloSamlIdentityProviderName,
+				),
+			},
+		},
 	})
-
 }
 
 func TestAccSiloResourceSiloSamlIdentityProvider_adoptMismatch(t *testing.T) {

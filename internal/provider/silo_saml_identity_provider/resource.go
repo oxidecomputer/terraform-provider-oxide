@@ -304,37 +304,38 @@ func (r *Resource) Create(
 		// Diff the remote state with the configuration before adopting the resource
 		// If any parameters differ, diagnostics are returned and we should abort to display
 		// errors to the user.
-		diagnostics := plan.Diff(idpConfig)
-		if diagnostics.HasError() {
+		if diagnostics := plan.Diff(idpConfig); diagnostics.HasError() {
 			resp.Diagnostics.Append(diagnostics...)
 			return
 		}
 
 		// group_attribute_name is Optional. Diff treats null and "" as
-		// equivalent, but state must match the canonical representation
-		// Terraform's plan layer uses for an Optional StringAttribute —
-		// otherwise the next refresh-plan reports a phantom drift between
-		// state ("") and config (null). When the remote is empty, force the
-		// plan field to StringNull() regardless of which empty form the user
-		// wrote in config.
+		// equivalent, but state must match between the remote state and configuration.
+		// Otherwise the next refresh-plan reports a phantom drift between
+		// state ("") and config (null). When the remote is empty, take whatever
+		// empty value the configuration has ("" or null).
 		if idpConfig.GroupAttributeName != "" {
 			plan.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
-		} else {
-			plan.GroupAttributeName = types.StringNull()
 		}
+
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("adopted SAML identity provider with ID: %v", idpConfig.Id),
+			map[string]any{"success": true},
+		)
 	} else if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating SAML identity provider",
 			"API error: "+err.Error(),
 		)
 		return
+	} else {
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf("created SAML identity provider with ID: %v", idpConfig.Id),
+			map[string]any{"success": true},
+		)
 	}
-
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("created SAML identity provider with ID: %v", idpConfig.Id),
-		map[string]any{"success": true},
-	)
 
 	plan.ID = types.StringValue(idpConfig.Id)
 	plan.TimeCreated = types.StringValue(idpConfig.TimeCreated.String())
@@ -392,7 +393,7 @@ func (r *Resource) Read(
 
 	// GroupAttributeName is Optional so we need to handle the case where it is not set in the
 	// remote Oxide control plane and take whatever value the configuration has (Null or empty
-	// string)
+	// string). So we only set state with the remote value if the remote value is not empty.
 	if idpConfig.GroupAttributeName != "" {
 		state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
 	}
@@ -461,8 +462,6 @@ func (m ResourceModel) Diff(remote *oxide.SamlIdentityProvider) diag.Diagnostics
 		signingPublicCert = m.SigningKeypair.PublicCert.ValueString()
 	}
 
-	// group_attribute_name is optional; ValueString() collapses null and ""
-	// so a remote-empty value matches an unset configuration.
 	checks := []struct {
 		path      path.Path
 		configVal string
@@ -470,6 +469,8 @@ func (m ResourceModel) Diff(remote *oxide.SamlIdentityProvider) diag.Diagnostics
 	}{
 		{path.Root("acs_url"), m.AcsUrl.ValueString(), remote.AcsUrl},
 		{path.Root("description"), m.Description.ValueString(), remote.Description},
+		// group_attribute_name is optional; ValueString() collapses null and ""
+		// so a remote-empty value matches an unset configuration.
 		{
 			path.Root("group_attribute_name"),
 			m.GroupAttributeName.ValueString(),
