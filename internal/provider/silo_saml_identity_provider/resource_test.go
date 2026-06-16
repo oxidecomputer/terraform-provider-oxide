@@ -2,16 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
 package silosamlidp_test
 
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,13 +21,20 @@ import (
 )
 
 type resourceConfig struct {
-	SiloBlockName                              string
-	SiloDNSName                                string
-	SiloName                                   string
-	SiloSamlIdentityProviderBlockName          string
-	SiloSamlIdentityProviderName               string
-	SkipSamlIdentityProviderGroupAttributeName bool
-	SkipSamlIdentityProvider                   bool
+	SiloBlockName                                  string
+	SiloDNSName                                    string
+	SiloName                                       string
+	SiloSamlIdentityProviderBlockName              string
+	SiloSamlIdentityProviderName                   string
+	SiloSamlIdentityProviderDescription            string
+	SiloSamlIdentityProviderGroupAttributeName     string
+	SiloSamlIdentityProviderIDPEntityID            string
+	SiloSamlIdentityProviderACSURL                 string
+	SiloSamlIdentityProviderSLOURL                 string
+	SiloSamlIdentityProviderSPClientID             string
+	SiloSamlIdentityProviderTechnicalContactEmail  string
+	SkipSiloSamlIdentityProviderGroupAttributeName bool
+	SkipSiloSamlIdentityProvider                   bool
 }
 
 var resourceConfigTpl = `
@@ -86,19 +89,19 @@ resource "oxide_silo" "{{.SiloBlockName}}" {
     },
   ]
 }
-{{ if not .SkipSamlIdentityProvider }}
+{{ if not .SkipSiloSamlIdentityProvider }}
 resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockName}}" {
   silo                    = oxide_silo.{{.SiloBlockName}}.id
   name                    = "{{.SiloSamlIdentityProviderName}}"
-  description             = "Managed by Terraform."
-  {{ if not .SkipSamlIdentityProviderGroupAttributeName }}
-  group_attribute_name    = "example"
+  description             = "{{or .SiloSamlIdentityProviderDescription "Managed by Terraform."}}"
+  {{ if not .SkipSiloSamlIdentityProviderGroupAttributeName }}
+  group_attribute_name    = "{{or .SiloSamlIdentityProviderGroupAttributeName "example"}}"
   {{ end }}
-  idp_entity_id           = "example"
-  acs_url                 = "https://example.com"
-  slo_url                 = "https://example.com"
-  sp_client_id            = "example"
-  technical_contact_email = "example@example.com"
+  idp_entity_id           = "{{or .SiloSamlIdentityProviderIDPEntityID "example"}}"
+  acs_url                 = "{{or .SiloSamlIdentityProviderACSURL "https://example.com"}}"
+  slo_url                 = "{{or .SiloSamlIdentityProviderSLOURL "https://example.com"}}"
+  sp_client_id            = "{{or .SiloSamlIdentityProviderSPClientID "example"}}"
+  technical_contact_email = "{{or .SiloSamlIdentityProviderTechnicalContactEmail "example@example.com"}}"
 
   idp_metadata_source = {
     type = "base64_encoded_xml"
@@ -132,7 +135,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		resourceConfigTpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing config template data: %v", err)
+		t.Fatalf("error parsing config template data: %v", err)
 	}
 
 	// Silo creation and deletion can cause database contention in nexus,
@@ -183,7 +186,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 		resourceConfigTpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing config template data: %v", err)
+		t.Fatalf("error parsing config template data: %v", err)
 	}
 
 	noSAMLConfig, err := sharedtest.ParsedAccConfig(
@@ -193,27 +196,12 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 			SiloName:                          siloName,
 			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
 			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
-			SkipSamlIdentityProvider:          true,
+			SkipSiloSamlIdentityProvider:      true,
 		},
 		resourceConfigTpl,
 	)
 	if err != nil {
-		t.Errorf("error parsing no SAML config template data: %v", err)
-	}
-
-	noGroupAttributeNameConfig, err := sharedtest.ParsedAccConfig(
-		resourceConfig{
-			SiloBlockName:                     siloBlockName,
-			SiloDNSName:                       siloDNSName,
-			SiloName:                          siloName,
-			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
-			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
-			SkipSamlIdentityProviderGroupAttributeName: true,
-		},
-		resourceConfigTpl,
-	)
-	if err != nil {
-		t.Errorf("error parsing different group_attribute_name config template data: %v", err)
+		t.Fatalf("error parsing no SAML config template data: %v", err)
 	}
 
 	t.Run("simple-adoption", func(t *testing.T) {
@@ -254,42 +242,119 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 		})
 	})
 
-	t.Run("adopt-mismatched-group-attribute-name", func(t *testing.T) {
-		// Silo creation and deletion can cause database contention in nexus,
-		// so run all related tests in series:
-		// https://github.com/oxidecomputer/omicron/issues/9851
-		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { sharedtest.PreCheck(t) },
-			ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-			ExternalProviders: map[string]resource.ExternalProvider{
-				"tls": {
-					Source: "hashicorp/tls",
-				},
-			},
-			CheckDestroy: testAccResourceDestroy,
-			Steps: []resource.TestStep{
-				// no group_attribute_name
-				{
-					Config: noGroupAttributeNameConfig,
-					Check: resource.TestCheckNoResourceAttr(
-						siloSamlIdentityProviderResourceID,
-						"group_attribute_name",
-					),
-				},
-				// remove SAML IDP
-				{
-					Config: noSAMLConfig,
-					Check:  testAccResourceDestroy,
-				},
-				// try to adopt existing SAML IDP and fill in the optional group_attribute_name
-				{
-					Config:      initialConfig,
-					ExpectError: regexp.MustCompile(`group_attribute_name`),
-				},
-			},
-		})
-	})
+}
 
+func TestAccSiloResourceSiloSamlIdentityProvider_adoptMismatch(t *testing.T) {
+	siloBlockName := sharedtest.NewBlockName("silo")
+	siloName := sharedtest.NewResourceName()
+	siloSamlIdentityProviderBlockName := sharedtest.NewBlockName("silo-idp")
+	siloSamlIdentityProviderName := sharedtest.NewResourceName()
+	siloDNSName := sharedtest.SiloDNSName()
+
+	baseConfig := resourceConfig{
+		SiloBlockName:                     siloBlockName,
+		SiloDNSName:                       siloDNSName,
+		SiloName:                          siloName,
+		SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
+		SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
+	}
+
+	initialConfig, err := sharedtest.ParsedAccConfig(baseConfig, resourceConfigTpl)
+	if err != nil {
+		t.Fatalf("error parsing initial config: %v", err)
+	}
+
+	noSAMLBase := baseConfig
+	noSAMLBase.SkipSiloSamlIdentityProvider = true
+	noSAMLConfig, err := sharedtest.ParsedAccConfig(noSAMLBase, resourceConfigTpl)
+	if err != nil {
+		t.Fatalf("error parsing no-SAML config: %v", err)
+	}
+
+	mutatedBase := baseConfig
+	mutatedBase.SiloSamlIdentityProviderACSURL = "https://mismatched-acs.example.com"
+	mutatedBase.SiloSamlIdentityProviderDescription = "mismatched description"
+	mutatedBase.SiloSamlIdentityProviderGroupAttributeName = "mismatched-group-attribute"
+	mutatedBase.SiloSamlIdentityProviderIDPEntityID = "mismatched-entity-id"
+	mutatedBase.SiloSamlIdentityProviderSLOURL = "https://mismatched-slo.example.com"
+	mutatedBase.SiloSamlIdentityProviderSPClientID = "mismatched-client-id"
+	mutatedBase.SiloSamlIdentityProviderTechnicalContactEmail = "mismatched@example.com"
+	mutatedConfig, err := sharedtest.ParsedAccConfig(mutatedBase, resourceConfigTpl)
+	if err != nil {
+		t.Fatalf("error parsing mutated config: %v", err)
+	}
+
+	// Records that the ErrorCheck callback ran; verified after resource.Test
+	// returns to enforce that the re-adoption step actually errored.
+	var errorChecked bool
+
+	// Each attribute Diff is expected to flag. Add to this list (and to the
+	// mutation block above) when extending Diff.
+	expectedAttrs := []string{
+		"acs_url",
+		"description",
+		"group_attribute_name",
+		"idp_entity_id",
+		"slo_url",
+		"sp_client_id",
+		"technical_contact_email",
+	}
+
+	// Silo creation and deletion can cause database contention in nexus,
+	// so run all related tests in series:
+	// https://github.com/oxidecomputer/omicron/issues/9851
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"tls": {
+				Source: "hashicorp/tls",
+			},
+		},
+		CheckDestroy: testAccResourceDestroy,
+		// ExpectError and ErrorCheck are mutually exclusive per step in the
+		// testing framework — when ExpectError is set the framework skips
+		// ErrorCheck. We want the must-error enforcement of the former and
+		// the substring loop of the latter, so we wire both via ErrorCheck
+		// alone: the flag records that ErrorCheck fired, and the assertion
+		// after resource.Test verifies the re-adoption step actually
+		// errored.
+		ErrorCheck: func(err error) error {
+			errorChecked = true
+			msg := err.Error()
+			for _, attr := range expectedAttrs {
+				if !strings.Contains(msg, attr) {
+					return fmt.Errorf(
+						"expected adoption diagnostic to mention %q; got: %s",
+						attr,
+						msg,
+					)
+				}
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{
+			// Create the IdP with the original values.
+			{
+				Config: initialConfig,
+			},
+			// Remove the IdP from Terraform state; it remains in Oxide.
+			{
+				Config: noSAMLConfig,
+				Check:  testAccResourceDestroy,
+			},
+			// Re-adopt with every API-returned attribute mutated; ErrorCheck
+			// above verifies each attribute is mentioned.
+			{
+				Config: mutatedConfig,
+			},
+		},
+	})
+	if !errorChecked {
+		t.Fatal(
+			"expected the re-adoption step to fail with mismatch diagnostics, but no error occurred",
+		)
+	}
 }
 
 func checkResource(
@@ -344,7 +409,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		return fmt.Errorf("silo saml identity provider (%v) still exists", &res.Name)
+		return fmt.Errorf("silo saml identity provider (%v) still exists", res.Name)
 	}
 
 	return nil

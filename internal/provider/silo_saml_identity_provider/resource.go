@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -280,6 +281,11 @@ func (r *Resource) Create(
 	idpConfig, err := r.client.SamlIdentityProviderCreate(ctx, params)
 	// if the IDP already exists, then try to adopt it
 	if errors.Is(err, oxide.ErrObjectAlreadyExists) {
+		// Read the remote state from the Oxide Control Plane.
+		// The response does not include all parameters from the Create.
+		// The idp_metadata_source and the signing_keypair.private_key attributes are not returned
+		// from the API on a read. In those cases, the plan includes the user-provided values from
+		// the configuration.
 		idpConfig, err = r.client.SamlIdentityProviderView(
 			ctx,
 			oxide.SamlIdentityProviderViewParams{
@@ -295,38 +301,27 @@ func (r *Resource) Create(
 			return
 		}
 
-		// The idp_metadata_source and the signing_keypair.private_key attributes are not returned
-		// from the API on a read. In those cases, the plan includes the user-provided values from
-		// the configuration.
-		plan.AcsUrl = types.StringValue(idpConfig.AcsUrl)
-		plan.Description = types.StringValue(idpConfig.Description)
-		// When the server returns a non-empty group_attribute_name, use it. Otherwise the
-		// configuration must agree (null or empty string); a configured non-empty value is a
-		// mismatch we can't reconcile since the resource is immutable.
+		// Diff the remote state with the configuration before adopting the resource
+		// If any parameters differ, diagnostics are returned and we should abort to display
+		// errors to the user.
+		diagnostics := plan.Diff(idpConfig)
+		if diagnostics.HasError() {
+			resp.Diagnostics.Append(diagnostics...)
+			return
+		}
+
+		// group_attribute_name is Optional. Diff treats null and "" as
+		// equivalent, but state must match the canonical representation
+		// Terraform's plan layer uses for an Optional StringAttribute —
+		// otherwise the next refresh-plan reports a phantom drift between
+		// state ("") and config (null). When the remote is empty, force the
+		// plan field to StringNull() regardless of which empty form the user
+		// wrote in config.
 		if idpConfig.GroupAttributeName != "" {
 			plan.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
-		} else if plan.GroupAttributeName.ValueString() != "" {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("group_attribute_name"),
-				"Error adopting SAML identity provider",
-				fmt.Sprintf(
-					"group_attribute_name configuration does not match the state (server=%q configuration=%q)",
-					idpConfig.GroupAttributeName,
-					plan.GroupAttributeName.ValueString(),
-				),
-			)
-			return
 		} else {
 			plan.GroupAttributeName = types.StringNull()
 		}
-		plan.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
-		plan.Name = types.StringValue(string(idpConfig.Name))
-		if plan.SigningKeypair != nil {
-			plan.SigningKeypair.PublicCert = types.StringValue(idpConfig.PublicCert)
-		}
-		plan.SloUrl = types.StringValue(idpConfig.SloUrl)
-		plan.SpClientId = types.StringValue(idpConfig.SpClientId)
-		plan.TechnicalContactEmail = types.StringValue(idpConfig.TechnicalContactEmail)
 	} else if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating SAML identity provider",
@@ -395,14 +390,17 @@ func (r *Resource) Read(
 		map[string]any{"success": true},
 	)
 
+	// GroupAttributeName is Optional so we need to handle the case where it is not set in the
+	// remote Oxide control plane and take whatever value the configuration has (Null or empty string)
+	if idpConfig.GroupAttributeName != "" {
+		state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
+	}
+
 	state.ID = types.StringValue(idpConfig.Id)
 	state.TimeCreated = types.StringValue(idpConfig.TimeCreated.String())
 	state.TimeModified = types.StringValue(idpConfig.TimeModified.String())
 	state.AcsUrl = types.StringValue(idpConfig.AcsUrl)
 	state.Description = types.StringValue(idpConfig.Description)
-	if idpConfig.GroupAttributeName != "" {
-		state.GroupAttributeName = types.StringValue(idpConfig.GroupAttributeName)
-	}
 	state.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
 	state.Name = types.StringValue(string(idpConfig.Name))
 	state.SloUrl = types.StringValue(idpConfig.SloUrl)
@@ -447,4 +445,52 @@ func (r *Resource) Delete(
 		"This resource represents immutable silo SAML identity provider configuration. The resource will be removed from Terraform state but not from Oxide. "+
 			"You can add the resource to your Terraform configuration later by matching the resource attributes from Oxide.",
 	)
+}
+
+// Diff returns diagnostics for any attributes that differ between the
+// configuration (m) and the remote IdP state. It only compares
+// attributes the Oxide API returns on read; idp_metadata_source and
+// signing_keypair.private_key are not returned and therefore cannot be diffed.
+func (m ResourceModel) Diff(remote *oxide.SamlIdentityProvider) diag.Diagnostics {
+	// signing_keypair is optional; when the block is absent, treat the
+	// public_cert as the empty string so the comparison flags a mismatch
+	// when the remote IdP has a cert configured.
+	var signingPublicCert string
+	if m.SigningKeypair != nil {
+		signingPublicCert = m.SigningKeypair.PublicCert.ValueString()
+	}
+
+	// group_attribute_name is optional; ValueString() collapses null and ""
+	// so a remote-empty value matches an unset configuration.
+	checks := []struct {
+		path      path.Path
+		configVal string
+		remoteVal string
+	}{
+		{path.Root("acs_url"), m.AcsUrl.ValueString(), remote.AcsUrl},
+		{path.Root("description"), m.Description.ValueString(), remote.Description},
+		{path.Root("group_attribute_name"), m.GroupAttributeName.ValueString(), remote.GroupAttributeName},
+		{path.Root("idp_entity_id"), m.IdpEntityId.ValueString(), remote.IdpEntityId},
+		{path.Root("name"), m.Name.ValueString(), string(remote.Name)},
+		{path.Root("signing_keypair").AtName("public_cert"), signingPublicCert, remote.PublicCert},
+		{path.Root("slo_url"), m.SloUrl.ValueString(), remote.SloUrl},
+		{path.Root("sp_client_id"), m.SpClientId.ValueString(), remote.SpClientId},
+		{path.Root("technical_contact_email"), m.TechnicalContactEmail.ValueString(), remote.TechnicalContactEmail},
+	}
+
+	var diagnostics diag.Diagnostics
+	for _, c := range checks {
+		if c.configVal == c.remoteVal {
+			continue
+		}
+		diagnostics.AddAttributeError(
+			c.path,
+			"Error adopting SAML identity provider",
+			fmt.Sprintf(
+				"%q configuration does not match the state (remote=%q configuration=%q)",
+				c.path, c.remoteVal, c.configVal,
+			),
+		)
+	}
+	return diagnostics
 }
