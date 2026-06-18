@@ -1,0 +1,3 @@
+[[enhancements]]
+title = "Load `silo_saml_identity_provider` resource into state if it already exists"
+description = "The `silo_saml_identity_provider` (create-only resource) can now be removed from state and added back without issue [#766](https://github.com/oxidecomputer/terraform-provider-oxide/pull/766)."

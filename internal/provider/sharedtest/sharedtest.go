@@ -61,12 +61,13 @@ func ParsedAccConfig(
 	tpl string,
 ) (string, error) {
 	var buf bytes.Buffer
-	tmpl, _ := template.New("test").Parse(tpl)
-	err := tmpl.Execute(&buf, config)
+	tmpl, err := template.New("test").Parse(tpl)
 	if err != nil {
 		return "", err
 	}
-
+	if err := tmpl.Execute(&buf, config); err != nil {
+		return "", err
+	}
 	return buf.String(), nil
 }
 
