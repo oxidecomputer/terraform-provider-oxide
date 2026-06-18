@@ -498,7 +498,8 @@ func (m ResourceModel) Diff(remote *oxide.SamlIdentityProvider) diag.Diagnostics
 			"Error adopting SAML identity provider",
 			fmt.Sprintf(
 				"%q value does not match remote value %q.\nUpdate your configuration file to ensure this resource matches your SAML IdP configuration.",
-				c.path, c.remoteVal,
+				c.path,
+				c.remoteVal,
 			),
 		)
 	}
