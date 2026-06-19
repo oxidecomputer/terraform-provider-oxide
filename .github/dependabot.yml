@@ -7,6 +7,9 @@ version: 2
 updates:
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
+    ignore:
+      # The Oxide GO SDK is updated manually on each release.
+      - dependency-name: "github.com/oxidecomputer/oxide.go"
     schedule:
       interval: "weekly"
   - package-ecosystem: "github-actions" # See documentation for possible values
