@@ -139,13 +139,13 @@ where the patch version is (`vX.Y.0`).
   - # vX.Y.Z
   + # vX.Y.Z (Year/Month/Day)
   ```
-- [ ] Update `Version` in `internal/provider/version.go`.
+- [ ] Ensure `Version` in `internal/provider/version.go` is the version you're about to release.
   ```diff
     // Version contains the current terraform provider version.
   - const Version = "A.B.C"
   + const Version = "X.Y.Z"
   ```
-- [ ] Update the example block in `README.md`.
+- [ ] Ensure the example block in `README.md` uses the version you're about to release.
   ```diff
   terraform {
     required_version = ">= 1.11"

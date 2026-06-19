@@ -1,3 +1,51 @@
+# 0.20.0 (2026/Jun/18)
+
+### Breaking changes
+
+- **Minimum Supported Oxide Version:** The minimum supported Oxide version is now v20 (API Version [2026060800.0.0](https://github.com/oxidecomputer/omicron/blob/rel/v20/rc1/openapi/nexus/nexus-2026060800.0.0-f1db6e.json)). [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+- **`oxide_switch_port_settings`:** This resource will be removed in version v0.22.0 of the provider. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+- **`oxide_switch_port_settings`:** The `bgp_peers` attribute is no longer tracked in Terraform state. It is considered, but not enforced, to be write only. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+- **`oxide_switch_port_settings`:** The `bgp_peers[].peers[].address` attribute has been removed in favor of `bgp_peers[].peers[].addr`, which uses a new schema. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+- **`oxide_switch_port_settings`:** The `bgp_peers[].peers[].interface_name` attribute has been removed. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+
+### New features
+
+- **`oxide_instance`:** Added support for the `enable_jumbo_frames` attribute. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+- **`oxide_instance`:** Added support for the `cpu_platform` attribute. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+
+### Enhancements
+
+- **`oxide_disk`:** The `block_size` attribute now validates its value is one of `512`, `2048`, or `4096`. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770).
+- **Load `silo_saml_identity_provider` resource into state if it already exists:** The `silo_saml_identity_provider` (create-only resource) can now be removed from state and added back without issue [#766](https://github.com/oxidecomputer/terraform-provider-oxide/pull/766).
+
+### List of commits
+
+- [3709427](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3709427) build(deps): bump `oxide.go` to `v0.10.0` (#770)
+- [ac4fae4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ac4fae4) ci: ignore Go SDK version updates (#772)
+- [eebad53](https://github.com/oxidecomputer/terraform-provider-oxide/commit/eebad53) Load `silo_saml_identity_provider` resource into state if it already exists (#766)
+- [5108a35](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5108a35) misc: add colima instructions for apple silicon acceptance test runs (#768)
+- [f419928](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f419928) fix: disk acceptance test flakes (#769)
+- [b21b9d7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b21b9d7) fix local upgrade testing when terraformrc dev overrides is used (#767)
+- [72bbd6c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/72bbd6c) build(deps): bump goreleaser/goreleaser-action from 7.2.1 to 7.2.2 (#760)
+- [a333ecf](https://github.com/oxidecomputer/terraform-provider-oxide/commit/a333ecf) ci: allow triggering the test suite manually (#759)
+- [cab0a7a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cab0a7a) test: add TEST_ACC_SIM_HOST variable (#757)
+- [1b1315f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1b1315f) docs: add upgrade guide page (#758)
+- [3d379c7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3d379c7) build(deps): bump github.com/hashicorp/terraform-plugin-sdk/v2 from 2.40.0 to 2.40.1 (#756)
+- [c03025e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c03025e) build(deps): bump goreleaser/goreleaser-action from 7.1.0 to 7.2.1 (#755)
+- [8cfb389](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8cfb389) build(deps): bump github.com/hashicorp/terraform-plugin-testing from 1.15.0 to 1.16.0 (#754)
+- [4494955](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4494955) Update provider attribute docs to match openapi. (#751)
+- [18a8c87](https://github.com/oxidecomputer/terraform-provider-oxide/commit/18a8c87) build(deps): bump goreleaser/goreleaser-action from 7.0.0 to 7.1.0 (#749)
+- [8793ac8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8793ac8) misc: explicit resource and data source model types (#747)
+- [71becbd](https://github.com/oxidecomputer/terraform-provider-oxide/commit/71becbd) misc: repository refactor phase 3 (#748)
+- [d4c3504](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d4c3504) ci: update and fix tests (#750)
+- [5baa73c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5baa73c) misc: repository refactor phase 2 (#733)
+- [ced4789](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ced4789) misc: repository refactor phase 1 (#732)
+- [6bc627b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6bc627b) ci: enable `goimports` lint (#745)
+- [bf2be68](https://github.com/oxidecomputer/terraform-provider-oxide/commit/bf2be68) ci: auto-close TestRail run (#743)
+- [81d6950](https://github.com/oxidecomputer/terraform-provider-oxide/commit/81d6950) ci: fix TestRail results upload (#741)
+- [0d91b4a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0d91b4a) release: fix old versions and update release docs (#740)
+- [e2b3e25](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e2b3e25) release v0.19.0 (#739)
+
 # 0.19.0 (2026/Apr/09)
 
 ### Breaking changes

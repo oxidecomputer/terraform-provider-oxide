@@ -17,6 +17,60 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.20.0`
+
+Release `0.20.0` contains breaking changes that require updates to Terraform
+configuration files.
+
+### Minimum Supported Oxide Version
+
+The minimum supported Oxide version is now v20 (API Version [2026060800.0.0](https://github.com/oxidecomputer/omicron/blob/rel/v20/rc1/openapi/nexus/nexus-2026060800.0.0-f1db6e.json)).
+
+This provider will not work with previous versions of Oxide.
+
+### Resource `oxide_switch_port_settings`
+
+#### Breaking change: deprecated resource
+
+The `oxide_switch_port_settings` resource is deprecated and will be removed in
+version v0.22.0 of the provider. Please remove this resource from your Terraform
+state to stop managing it via Terraform. A future version of the provider will
+release a new resource with the functionality provided by this resource once the
+Oxide API has been updated accordingly.
+
+#### Breaking change: state removal
+
+The `bgp_peers` attribute is no longer tracked in Terraform state. It is
+considered, but not enforced, to be write only. Remove any usage of this
+attribute from your Terraform configuration.
+
+#### Breaking change: attribute removal
+
+The `bgp_peers[].peers[].interface_name` attribute has been removed. Remove any
+usage of this attribute from your Terraform configuration.
+
+#### Breaking change: attribute schema change
+
+The `bgp_peers[].peers[].address` attribute has been removed in favor of
+`bgp_peers[].peers[].addr`, which uses a new schema. Here's a diff showing how
+to migrate your Terrafrom configuration.
+
+```diff
+--- main.tf
++++ main.tf
+     {
+       peers = [
+         {
+-          address = "192.168.1.1"
++          addr = {
++            type = "numbered"
++            ip   = "192.168.1.1"
++          }
+         }
+       ]
+     }
+```
+
 ## Upgrading to `0.19.0`
 
 Release `0.19.0` contains breaking changes that require updates to Terraform
