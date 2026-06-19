@@ -1,3 +1,35 @@
+[[breaking]]
+title = "Minimum Supported Oxide Version"
+description = "The minimum supported Oxide version is now v20 (API Version [2026060800.0.0](https://github.com/oxidecomputer/omicron/blob/rel/v20/rc1/openapi/nexus/nexus-2026060800.0.0-f1db6e.json)). [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "This resource will be removed in version v0.22.0 of the provider. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "The `bgp_peers` attribute is no longer tracked in Terraform state. It is considered, but not enforced, to be write only. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "The `bgp_peers[].peers[].address` attribute has been removed in favor of `bgp_peers[].peers[].addr`, which uses a new schema. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[breaking]]
+title = "`oxide_switch_port_settings`"
+description = "The `bgp_peers[].peers[].interface_name` attribute has been removed. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[features]]
+title = "`oxide_instance`"
+description = "Added support for the `enable_jumbo_frames` attribute. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[features]]
+title = "`oxide_instance`"
+description = "Added support for the `cpu_platform` attribute. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
+[[enhancements]]
+title = "`oxide_disk`"
+description = "The `block_size` attribute now validates its value is one of `512`, `2048`, or `4096`. [#770](https://github.com/oxidecomputer/terraform-provider-oxide/pull/770)."
+
 [[enhancements]]
 title = "Load `silo_saml_identity_provider` resource into state if it already exists"
 description = "The `silo_saml_identity_provider` (create-only resource) can now be removed from state and added back without issue [#766](https://github.com/oxidecomputer/terraform-provider-oxide/pull/766)."

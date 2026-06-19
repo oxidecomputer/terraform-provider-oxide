@@ -58,8 +58,10 @@ type ResourceModel struct {
 	AntiAffinityGroups        types.Set                `tfsdk:"anti_affinity_groups"`
 	AutoRestartPolicy         types.String             `tfsdk:"auto_restart_policy"`
 	BootDiskID                types.String             `tfsdk:"boot_disk_id"`
+	CPUPlatform               types.String             `tfsdk:"cpu_platform"`
 	Description               types.String             `tfsdk:"description"`
 	DiskAttachments           types.Set                `tfsdk:"disk_attachments"`
+	EnableJumboFrames         types.Bool               `tfsdk:"enable_jumbo_frames"`
 	ExternalIPs               *ExternalIPResourceModel `tfsdk:"external_ips"`
 	Hostname                  types.String             `tfsdk:"hostname"`
 	ID                        types.String             `tfsdk:"id"`
@@ -285,6 +287,23 @@ This resource manages instances.
 						string(oxide.InstanceAutoRestartPolicyNever),
 					),
 				},
+			},
+			"cpu_platform": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The CPU platform to be used for this instance. If unset, the instance requires no particular CPU platform and will use the most general CPU platform supported by the sled it is placed on. Must be one of `amd_milan`, `amd_turin`, or `amd_turin_v2`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						string(oxide.InstanceCpuPlatformAmdMilan),
+						string(oxide.InstanceCpuPlatformAmdTurin),
+						string(oxide.InstanceCpuPlatformAmdTurinV2),
+					),
+				},
+			},
+			"enable_jumbo_frames": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Whether to enable jumbo frames (8500 byte MTU) on the instance's primary network interface. Enabling this requires the fleet-wide jumbo-frames opt-in to be enabled. Changes only take effect on the next instance restart.",
 			},
 			"anti_affinity_groups": schema.SetAttribute{
 				Optional:    true,
@@ -799,13 +818,14 @@ func (r *Resource) Create(
 	params := oxide.InstanceCreateParams{
 		Project: oxide.NameOrId(plan.ProjectID.ValueString()),
 		Body: &oxide.InstanceCreate{
-			Description: plan.Description.ValueString(),
-			Name:        oxide.Name(plan.Name.ValueString()),
-			Hostname:    oxide.Hostname(plan.Hostname.ValueString()),
-			Memory:      oxide.ByteCount(plan.Memory.ValueInt64()),
-			Ncpus:       oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
-			Start:       plan.StartOnCreate.ValueBoolPointer(),
-			UserData:    plan.UserData.ValueString(),
+			Description:       plan.Description.ValueString(),
+			EnableJumboFrames: plan.EnableJumboFrames.ValueBoolPointer(),
+			Name:              oxide.Name(plan.Name.ValueString()),
+			Hostname:          oxide.Hostname(plan.Hostname.ValueString()),
+			Memory:            oxide.ByteCount(plan.Memory.ValueInt64()),
+			Ncpus:             oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
+			Start:             plan.StartOnCreate.ValueBoolPointer(),
+			UserData:          plan.UserData.ValueString(),
 		},
 	}
 
@@ -813,6 +833,13 @@ func (r *Resource) Create(
 	if !plan.AutoRestartPolicy.IsNull() {
 		params.Body.AutoRestartPolicy = oxide.InstanceAutoRestartPolicy(
 			plan.AutoRestartPolicy.ValueString(),
+		)
+	}
+
+	// Add CPU platform if any.
+	if !plan.CPUPlatform.IsNull() {
+		params.Body.CpuPlatform = oxide.InstanceCpuPlatform(
+			plan.CPUPlatform.ValueString(),
 		)
 	}
 
@@ -910,6 +937,7 @@ func (r *Resource) Create(
 	)
 
 	// Map response body to schema and populate Computed attribute values
+	plan.EnableJumboFrames = types.BoolPointerValue(instance.EnableJumboFrames)
 	plan.ID = types.StringValue(instance.Id)
 	plan.Hostname = types.StringValue(instance.Hostname)
 	plan.TimeCreated = types.StringValue(instance.TimeCreated.String())
@@ -1000,7 +1028,11 @@ func (r *Resource) Read(
 	if instance.AutoRestartPolicy != "" {
 		state.AutoRestartPolicy = types.StringValue(string(instance.AutoRestartPolicy))
 	}
+	if instance.CpuPlatform != "" {
+		state.CPUPlatform = types.StringValue(string(instance.CpuPlatform))
+	}
 	state.Description = types.StringValue(instance.Description)
+	state.EnableJumboFrames = types.BoolPointerValue(instance.EnableJumboFrames)
 	state.Hostname = types.StringValue(string(instance.Hostname))
 	state.ID = types.StringValue(instance.Id)
 	state.Memory = types.Int64Value(int64(instance.Memory))
@@ -1156,19 +1188,27 @@ func (r *Resource) Update(
 	// even if only a single one changed.
 	if state.AutoRestartPolicy != plan.AutoRestartPolicy ||
 		state.BootDiskID != plan.BootDiskID ||
+		state.CPUPlatform != plan.CPUPlatform ||
 		state.Memory != plan.Memory ||
-		state.NCPUs != plan.NCPUs {
+		state.NCPUs != plan.NCPUs ||
+		state.EnableJumboFrames != plan.EnableJumboFrames {
 
 		params := oxide.InstanceUpdateParams{
 			Instance: oxide.NameOrId(state.ID.ValueString()),
 			Body: &oxide.InstanceUpdate{
-				Memory: oxide.ByteCount(plan.Memory.ValueInt64()),
-				Ncpus:  oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
+				EnableJumboFrames: plan.EnableJumboFrames.ValueBoolPointer(),
+				Memory:            oxide.ByteCount(plan.Memory.ValueInt64()),
+				Ncpus:             oxide.InstanceCpuCount(plan.NCPUs.ValueInt64()),
 			},
 		}
 		if !plan.AutoRestartPolicy.IsNull() {
 			params.Body.AutoRestartPolicy = (*oxide.InstanceAutoRestartPolicy)(
 				plan.AutoRestartPolicy.ValueStringPointer(),
+			)
+		}
+		if !plan.CPUPlatform.IsNull() {
+			params.Body.CpuPlatform = (*oxide.InstanceCpuPlatform)(
+				plan.CPUPlatform.ValueStringPointer(),
 			)
 		}
 		if !plan.BootDiskID.IsNull() {
@@ -1334,6 +1374,7 @@ func (r *Resource) Update(
 	)
 
 	// Map response body to schema and populate Computed attribute values
+	plan.EnableJumboFrames = types.BoolPointerValue(instance.EnableJumboFrames)
 	plan.ID = types.StringValue(instance.Id)
 	plan.Hostname = types.StringValue(instance.Hostname)
 	plan.ProjectID = types.StringValue(instance.ProjectId)

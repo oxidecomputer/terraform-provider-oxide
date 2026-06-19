@@ -187,6 +187,7 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 					int64validator.ConflictsWith(path.Expressions{
 						path.MatchRoot("source_snapshot_id"),
 					}...),
+					int64validator.OneOf(512, 2048, 4096),
 				},
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),

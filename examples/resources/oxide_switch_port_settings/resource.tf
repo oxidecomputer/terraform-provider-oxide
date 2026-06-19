@@ -23,7 +23,10 @@ resource "oxide_switch_port_settings" "example" {
       link_name = "phy0"
       peers = [
         {
-          address = "192.168.1.1"
+          addr = {
+            type = "numbered"
+            ip   = "192.168.1.1"
+          }
           allowed_export = {
             type = "no_filtering"
           }
@@ -37,7 +40,6 @@ resource "oxide_switch_port_settings" "example" {
           enforce_first_as = false
           hold_time        = 10
           idle_hold_time   = 10
-          interface_name   = "phy0"
           keepalive        = 10
         }
       ]
