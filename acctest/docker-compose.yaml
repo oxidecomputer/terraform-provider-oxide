@@ -6,10 +6,18 @@ services:
     environment:
       RUST_BACKTRACE: "1"
     command:
-      - "omicron-dev"
-      - "run-all"
-      - "--nexus-config=/omicron/nexus/examples/config.toml"
-      - "--gateway-config=/omicron/gateway-test-utils/configs/sp_sim_config.test.toml"
+      - "sh"
+      - "-c"
+      - |
+        config=/omicron/nexus/examples/config.toml
+        if grep -q '^\[multicast\]' "$$config"; then
+          sed -i '/^\[multicast\]/,/^\[/{s/^enabled = .*/enabled = true/}' "$$config"
+        else
+          printf '\n[multicast]\nenabled = true\n' >> "$$config"
+        fi
+        exec omicron-dev run-all \
+          --nexus-config=/omicron/nexus/examples/config.toml \
+          --gateway-config=/omicron/gateway-test-utils/configs/sp_sim_config.test.toml
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:12220"]
       interval: "5s"

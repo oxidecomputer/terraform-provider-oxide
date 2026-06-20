@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"sort"
 	"strconv"
 	"time"
 
@@ -66,6 +67,7 @@ type ResourceModel struct {
 	Hostname                  types.String             `tfsdk:"hostname"`
 	ID                        types.String             `tfsdk:"id"`
 	Memory                    types.Int64              `tfsdk:"memory"`
+	MulticastGroups           []MulticastGroupModel    `tfsdk:"multicast_groups"`
 	Name                      types.String             `tfsdk:"name"`
 	NetworkInterfaces         []NICResourceModel       `tfsdk:"network_interfaces"`
 	AttachedNetworkInterfaces types.Map                `tfsdk:"attached_network_interfaces"`
@@ -161,6 +163,27 @@ type EphemeralIPResourceModel struct {
 
 type FloatingIPResourceModel struct {
 	ID types.String `tfsdk:"id"`
+}
+
+type MulticastGroupModel struct {
+	Group     types.String `tfsdk:"group"`
+	IPVersion types.String `tfsdk:"ip_version"`
+	SourceIPs types.Set    `tfsdk:"source_ips"`
+}
+
+func (group MulticastGroupModel) Hash() string {
+	h := md5.New()
+
+	io.WriteString(h, group.Group.ValueString())
+	io.WriteString(h, group.IPVersion.ValueString())
+
+	sourceIPs := sourceIPStrings(group.SourceIPs)
+	sort.Strings(sourceIPs)
+	for _, ip := range sourceIPs {
+		io.WriteString(h, ip)
+	}
+
+	return string(h.Sum(nil))
 }
 
 var AttachedNICType = types.ObjectType{}.WithAttributeTypes(
@@ -309,6 +332,42 @@ This resource manages instances.
 				Optional:    true,
 				Description: "IDs of the anti-affinity groups to which this instance should be added.",
 				ElementType: types.StringType,
+			},
+			"multicast_groups": schema.SetNestedAttribute{
+				Optional:    true,
+				Description: "Multicast groups this instance should join.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"group": schema.StringAttribute{
+							Required:    true,
+							Description: "Multicast group to join, specified by name, UUID, or IP address.",
+							Validators: []validator.String{
+								stringvalidator.NoneOf(""),
+							},
+						},
+						"ip_version": schema.StringAttribute{
+							Optional:            true,
+							MarkdownDescription: "IP version for pool selection when creating a multicast group by name. Must be one of `v4` or `v6`.",
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									string(oxide.IpVersionV4),
+									string(oxide.IpVersionV6),
+								),
+							},
+						},
+						"source_ips": schema.SetAttribute{
+							Optional:    true,
+							Description: "Source IPs for source-filtered multicast.",
+							ElementType: types.StringType,
+							Validators: []validator.Set{
+								setvalidator.NoNullValues(),
+								setvalidator.ValueStringsAre(
+									stringvalidator.NoneOf(""),
+								),
+							},
+						},
+					},
+				},
 			},
 			"boot_disk_id": schema.StringAttribute{
 				Optional:            true,
@@ -936,6 +995,20 @@ func (r *Resource) Create(
 		map[string]any{"success": true},
 	)
 
+	diags = addMulticastGroups(ctx, r.client, plan.MulticastGroups, instance.Id)
+	if diags.HasError() {
+		if err := r.client.InstanceDelete(ctx, oxide.InstanceDeleteParams{
+			Instance: oxide.NameOrId(instance.Id),
+		}); err != nil && !shared.Is404(err) {
+			diags.AddWarning(
+				"Unable to clean up instance after multicast group error",
+				"API error: "+err.Error(),
+			)
+		}
+		resp.Diagnostics.Append(diags...)
+		return
+	}
+
 	// Map response body to schema and populate Computed attribute values
 	plan.EnableJumboFrames = types.BoolPointerValue(instance.EnableJumboFrames)
 	plan.ID = types.StringValue(instance.Id)
@@ -1074,6 +1147,15 @@ func (r *Resource) Read(
 	// Only set the anti-affinity group list if there are any associated groups
 	if len(antiAffinityGroupSet.Elements()) > 0 {
 		state.AntiAffinityGroups = antiAffinityGroupSet
+	}
+
+	multicastGroups, diags := newAssociatedMulticastGroups(ctx, r.client, state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if len(multicastGroups) > 0 || len(state.MulticastGroups) > 0 {
+		state.MulticastGroups = multicastGroups
 	}
 
 	diskSet, diags := newAttachedDisksSet(ctx, r.client, state.ID.ValueString())
@@ -1317,6 +1399,33 @@ func (r *Resource) Update(
 		return
 	}
 
+	// Update multicast groups.
+	multicastGroupsToRemove := shared.SliceDiffByID(
+		state.MulticastGroups,
+		plan.MulticastGroups,
+		func(e MulticastGroupModel) any {
+			return e.Hash()
+		},
+	)
+	resp.Diagnostics.Append(
+		removeMulticastGroups(ctx, r.client, multicastGroupsToRemove, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	multicastGroupsToAdd := shared.SliceDiffByID(
+		plan.MulticastGroups,
+		state.MulticastGroups,
+		func(e MulticastGroupModel) any {
+			return e.Hash()
+		},
+	)
+	resp.Diagnostics.Append(
+		addMulticastGroups(ctx, r.client, multicastGroupsToAdd, state.ID.ValueString())...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Update anti-affinity groups
 	planAntiAffinityGroups := plan.AntiAffinityGroups.Elements()
 	stateAntiAffinityGroups := state.AntiAffinityGroups.Elements()
@@ -1401,6 +1510,15 @@ func (r *Resource) Update(
 	// Only set the disk list if there are disk attachments
 	if len(diskSet.Elements()) > 0 {
 		plan.DiskAttachments = diskSet
+	}
+
+	multicastGroups, diags := newAssociatedMulticastGroups(ctx, r.client, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if len(multicastGroups) > 0 || len(plan.MulticastGroups) > 0 {
+		plan.MulticastGroups = multicastGroups
 	}
 
 	// TODO: should I do this or read from the newly created ones?
@@ -1655,6 +1773,220 @@ func newAssociatedAntiAffinityGroupsOnCreateSet(
 	}
 
 	return groupSet, nil
+}
+
+func newAssociatedMulticastGroups(
+	ctx context.Context,
+	client *oxide.Client,
+	state ResourceModel,
+) ([]MulticastGroupModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	params := oxide.InstanceMulticastGroupListParams{
+		Limit:    oxide.NewPointer(1000000000),
+		Instance: oxide.NameOrId(state.ID.ValueString()),
+	}
+	groups, err := client.ExperimentalInstanceMulticastGroupList(ctx, params)
+	if err != nil {
+		diags.AddError(
+			"Unable to list associated multicast groups:",
+			"API error: "+err.Error(),
+		)
+		return nil, diags
+	}
+
+	groupModels := []MulticastGroupModel{}
+	for _, group := range groups.Items {
+		matched := matchingMulticastGroupModel(group, state.MulticastGroups)
+		model := MulticastGroupModel{
+			Group:     types.StringValue(group.MulticastGroupId),
+			IPVersion: types.StringNull(),
+		}
+		if matched != nil {
+			model.Group = matched.Group
+			model.IPVersion = matched.IPVersion
+		}
+
+		if len(group.SourceIps) == 0 && matched != nil && matched.SourceIPs.IsNull() {
+			model.SourceIPs = types.SetNull(types.StringType)
+		} else {
+			sourceIPs, sourceIPDiags := newStringSet(group.SourceIps)
+			diags.Append(sourceIPDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			model.SourceIPs = sourceIPs
+		}
+		groupModels = append(groupModels, model)
+	}
+
+	return groupModels, nil
+}
+
+func matchingMulticastGroupModel(
+	group oxide.MulticastGroupMember,
+	models []MulticastGroupModel,
+) *MulticastGroupModel {
+	for i, model := range models {
+		groupID := model.Group.ValueString()
+		if groupID == group.MulticastGroupId ||
+			groupID == group.MulticastIp ||
+			groupID == string(group.Name) {
+			return &models[i]
+		}
+	}
+
+	return nil
+}
+
+func newMulticastGroupJoinSpecs(
+	model []MulticastGroupModel,
+) ([]oxide.MulticastGroupJoinSpec, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if len(model) == 0 {
+		return nil, nil
+	}
+
+	groups := make([]oxide.MulticastGroupJoinSpec, 0, len(model))
+	for _, group := range model {
+		sourceIPs := sourceIPStrings(group.SourceIPs)
+		spec := oxide.MulticastGroupJoinSpec{
+			Group:     oxide.MulticastGroupIdentifier(group.Group.ValueString()),
+			SourceIps: sourceIPs,
+		}
+		if !group.IPVersion.IsNull() {
+			spec.IpVersion = oxide.IpVersion(group.IPVersion.ValueString())
+		}
+		groups = append(groups, spec)
+	}
+
+	return groups, diags
+}
+
+func multicastGroupsChanged(state, plan []MulticastGroupModel) bool {
+	return len(shared.SliceDiffByID(
+		plan,
+		state,
+		func(e MulticastGroupModel) any {
+			return e.Hash()
+		},
+	)) > 0 || len(shared.SliceDiffByID(
+		state,
+		plan,
+		func(e MulticastGroupModel) any {
+			return e.Hash()
+		},
+	)) > 0
+}
+
+func addMulticastGroups(
+	ctx context.Context,
+	client *oxide.Client,
+	groups []MulticastGroupModel,
+	instanceID string,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, group := range groups {
+		groupID := group.Group.ValueString()
+		params := oxide.InstanceMulticastGroupJoinParams{
+			Instance:       oxide.NameOrId(instanceID),
+			MulticastGroup: oxide.MulticastGroupIdentifier(groupID),
+			Body: &oxide.InstanceMulticastGroupJoin{
+				SourceIps: sourceIPStrings(group.SourceIPs),
+			},
+		}
+		if !group.IPVersion.IsNull() {
+			params.Body.IpVersion = oxide.IpVersion(group.IPVersion.ValueString())
+		}
+
+		_, err := client.ExperimentalInstanceMulticastGroupJoin(ctx, params)
+		if err != nil {
+			diags.AddError(
+				"Error adding multicast group to instance",
+				"API error: "+err.Error(),
+			)
+			return diags
+		}
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf(
+				"added multicast group %q to instance with ID: %v",
+				groupID,
+				instanceID,
+			),
+			map[string]any{"success": true},
+		)
+	}
+
+	return nil
+}
+
+func removeMulticastGroups(
+	ctx context.Context,
+	client *oxide.Client,
+	groups []MulticastGroupModel,
+	instanceID string,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	for _, group := range groups {
+		groupID := group.Group.ValueString()
+		params := oxide.InstanceMulticastGroupLeaveParams{
+			Instance:       oxide.NameOrId(instanceID),
+			MulticastGroup: oxide.MulticastGroupIdentifier(groupID),
+		}
+
+		err := client.ExperimentalInstanceMulticastGroupLeave(ctx, params)
+		if err != nil {
+			if shared.Is404(err) {
+				return nil
+			}
+			diags.AddError(
+				"Error removing multicast group from instance",
+				"API error: "+err.Error(),
+			)
+			return diags
+		}
+		tflog.Trace(
+			ctx,
+			fmt.Sprintf(
+				"removed multicast group %q from instance with ID: %v",
+				groupID,
+				instanceID,
+			),
+			map[string]any{"success": true},
+		)
+	}
+
+	return nil
+}
+
+func sourceIPStrings(sourceIPs types.Set) []string {
+	if sourceIPs.IsNull() || sourceIPs.IsUnknown() {
+		return nil
+	}
+
+	ips := make([]string, 0, len(sourceIPs.Elements()))
+	for _, sourceIP := range sourceIPs.Elements() {
+		ip, err := strconv.Unquote(sourceIP.String())
+		if err != nil {
+			continue
+		}
+		ips = append(ips, ip)
+	}
+
+	return ips
+}
+
+func newStringSet(values []string) (types.Set, diag.Diagnostics) {
+	setValues := make([]attr.Value, 0, len(values))
+	for _, value := range values {
+		setValues = append(setValues, types.StringValue(value))
+	}
+
+	return types.SetValue(types.StringType, setValues)
 }
 
 func newNetworkInterfaceAttachment(

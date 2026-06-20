@@ -156,6 +156,7 @@ resource "oxide_instance" "example" {
 - `enable_jumbo_frames` (Boolean) Whether to enable jumbo frames (8500 byte MTU) on the instance's primary network interface. Enabling this requires the fleet-wide jumbo-frames opt-in to be enabled. Changes only take effect on the next instance restart.
 - `external_ips` (Attributes) External IP addresses provided to this instance. By default, all instances have outbound connectivity, but no inbound connectivity. These external addresses can be used to provide a fixed, known IP address for making inbound connections to the instance. (see [below for nested schema](#nestedatt--external_ips))
 - `hostname` (String) RFC1035-compliant hostname for the instance.
+- `multicast_groups` (Attributes Set) Multicast groups this instance should join. (see [below for nested schema](#nestedatt--multicast_groups))
 - `network_interfaces` (Attributes Set) The network interfaces to be created for this instance. (see [below for nested schema](#nestedatt--network_interfaces))
 - `ssh_public_keys` (Set of String) An allowlist of SSH public keys to be transferred to the instance via cloud-init during instance creation. If an empty list is provided, no public keys will be transmitted to the instance.
 - `start_on_create` (Boolean) Whether to start this instance upon creation.
@@ -195,6 +196,19 @@ Required:
 
 - `id` (String) The external floating IP ID.
 
+
+
+<a id="nestedatt--multicast_groups"></a>
+### Nested Schema for `multicast_groups`
+
+Required:
+
+- `group` (String) Multicast group to join, specified by name, UUID, or IP address.
+
+Optional:
+
+- `ip_version` (String) IP version for pool selection when creating a multicast group by name. Must be one of `v4` or `v6`.
+- `source_ips` (Set of String) Source IPs for source-filtered multicast.
 
 
 <a id="nestedatt--network_interfaces"></a>

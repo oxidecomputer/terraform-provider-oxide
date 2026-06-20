@@ -1,0 +1,15 @@
+[[breaking]]
+title = ""
+description = ""
+
+[[features]]
+title = "`oxide_instance`"
+description = "The `multicast_groups` attribute was added to configure an instance's multicast groups. [#TODO](https://github.com/oxidecomputer/terraform-provider-oxide/pull/TODO)."
+
+[[enhancements]]
+title = ""
+description = ""
+
+[[bugs]]
+title = ""
+description = ""

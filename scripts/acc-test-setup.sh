@@ -40,6 +40,11 @@ if ! oxide system networking ip-pool view --pool non-default > /dev/null; then
     oxide system networking ip-pool silo link --pool non-default --silo $SILO_NAME --is-default false
     oxide system networking ip-pool range add --first 10.0.2.0 --last 10.0.2.255 --pool non-default
 fi
+if ! oxide system networking ip-pool view --pool non-default-multicast > /dev/null; then
+    oxide system networking ip-pool create --name non-default-multicast --description 'non default multicast' --ip-version v4 --pool-type multicast
+    oxide system networking ip-pool silo link --pool non-default-multicast --silo $SILO_NAME --is-default false
+    oxide system networking ip-pool range add --first 239.1.0.0 --last 239.1.0.255 --pool non-default-multicast
+fi
 
 # The acceptance tests expect both at least a single project-scoped image and a
 # silo-scoped image. Import the same image twice, then promote one copy to the

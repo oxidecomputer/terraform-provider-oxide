@@ -19,7 +19,7 @@ endif
 # Acceptance test variables
 TEST_ACC_COUNT ?= 1
 TEST_ACC ?= github.com/oxidecomputer/terraform-provider-oxide/internal/...
-TEST_ACC_NAME ?= TestAcc
+TEST_ACC_NAME ?= TestAccCloudResourceInstance
 TEST_ACC_PARALLEL = 6
 TEST_ACC_OMICRON_BRANCH ?=
 TEST_ACC_SIM_HOST ?= http://localhost:12220

@@ -10,6 +10,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -1559,6 +1560,207 @@ resource "oxide_instance" "{{.BlockName}}" {
 	})
 }
 
+func TestAccCloudResourceInstance_multicastGroups(t *testing.T) {
+	type resourceInstanceMulticastGroupsConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+		GroupIP          string
+		GroupIP2         string
+	}
+
+	resourceInstanceMulticastGroupsConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_ip_pool" "non_default_multicast" {
+  name = "non-default-multicast"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  multicast_groups = [
+    {
+      group = "{{.GroupIP}}"
+    }
+  ]
+
+  depends_on = [data.oxide_ip_pool.non_default_multicast]
+}
+`
+
+	resourceInstanceMulticastGroupsConfigTplUpdate := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_ip_pool" "non_default_multicast" {
+  name = "non-default-multicast"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+  multicast_groups = [
+    {
+      group = "{{.GroupIP}}"
+    },
+    {
+      group      = "{{.GroupIP2}}"
+      source_ips = ["192.0.2.1"]
+    }
+  ]
+
+  depends_on = [data.oxide_ip_pool.non_default_multicast]
+}
+`
+
+	instanceName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance-multicast-groups")
+	supportBlockName := sharedtest.NewBlockName("support-instance-multicast-groups")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	groupOctet := rand.IntN(127) + 1
+	groupIP := fmt.Sprintf("239.1.0.%d", groupOctet)
+	groupIP2 := fmt.Sprintf("239.1.0.%d", groupOctet+127)
+
+	config, err := sharedtest.ParsedAccConfig(
+		resourceInstanceMulticastGroupsConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			GroupIP:          groupIP,
+		},
+		resourceInstanceMulticastGroupsConfigTpl,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	configUpdate, err := sharedtest.ParsedAccConfig(
+		resourceInstanceMulticastGroupsConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+			GroupIP:          groupIP,
+			GroupIP2:         groupIP2,
+		},
+		resourceInstanceMulticastGroupsConfigTplUpdate,
+	)
+	if err != nil {
+		t.Errorf("error parsing config template data: %e", err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			sharedtest.PreCheck(t)
+			skipIfMulticastDisabled(t)
+		},
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: checkResourceMulticastGroups(
+					resourceName,
+					instanceName,
+					groupIP,
+				),
+			},
+			{
+				Config: configUpdate,
+				Check: checkResourceMulticastGroupsUpdate(
+					resourceName,
+					instanceName,
+					groupIP,
+					groupIP2,
+				),
+			},
+			{
+				Config: config,
+				Check: checkResourceMulticastGroups(
+					resourceName,
+					instanceName,
+					groupIP,
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"start_on_create",
+					"multicast_groups",
+				},
+			},
+		},
+	})
+}
+
+func skipIfMulticastDisabled(t *testing.T) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	client, err := sharedtest.NewTestClient()
+	if err != nil {
+		t.Fatalf("failed to create oxide client for multicast precheck: %v", err)
+	}
+
+	instanceName := sharedtest.NewResourceName()
+	instance, err := client.InstanceCreate(ctx, oxide.InstanceCreateParams{
+		Project: oxide.NameOrId("tf-acc-test"),
+		Body: &oxide.InstanceCreate{
+			Description: "multicast precheck",
+			Name:        oxide.Name(instanceName),
+			Hostname:    oxide.Hostname(instanceName),
+			Memory:      oxide.ByteCount(1073741824),
+			Ncpus:       oxide.InstanceCpuCount(1),
+			Start:       oxide.NewPointer(false),
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to create multicast precheck instance: %v", err)
+	}
+
+	t.Cleanup(func() {
+		deleteCtx, deleteCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer deleteCancel()
+		_ = client.InstanceDelete(deleteCtx, oxide.InstanceDeleteParams{
+			Instance: oxide.NameOrId(instance.Id),
+		})
+	})
+
+	groupIP := fmt.Sprintf("239.1.0.%d", rand.IntN(127)+128)
+	_, err = client.ExperimentalInstanceMulticastGroupJoin(
+		ctx,
+		oxide.InstanceMulticastGroupJoinParams{
+			Instance:       oxide.NameOrId(instance.Id),
+			MulticastGroup: oxide.MulticastGroupIdentifier(groupIP),
+			Body:           &oxide.InstanceMulticastGroupJoin{},
+		},
+	)
+	if err == nil {
+		return
+	}
+	if strings.Contains(err.Error(), "multicast functionality is currently disabled") {
+		t.Skip("multicast functionality is currently disabled in this acceptance environment")
+	}
+	t.Fatalf("failed to join multicast group during precheck: %v", err)
+}
+
 func checkResource(resourceName, instanceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1894,6 +2096,60 @@ func checkResourceAntiAffinityGroupsUpdate(
 		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
 		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "anti_affinity_groups.1"),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceMulticastGroups(
+	resourceName, instanceName, groupIP string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttr(resourceName, "multicast_groups.#", "1"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"multicast_groups.*",
+			map[string]string{"group": groupIP},
+		),
+		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
+		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
+	}...)
+}
+
+func checkResourceMulticastGroupsUpdate(
+	resourceName, instanceName, groupIP, groupIP2 string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "description", "a test instance"),
+		resource.TestCheckResourceAttr(resourceName, "name", instanceName),
+		resource.TestCheckResourceAttr(resourceName, "hostname", "terraform-acc-myhost"),
+		resource.TestCheckResourceAttr(resourceName, "memory", "1073741824"),
+		resource.TestCheckResourceAttr(resourceName, "ncpus", "1"),
+		resource.TestCheckResourceAttr(resourceName, "start_on_create", "false"),
+		resource.TestCheckResourceAttr(resourceName, "multicast_groups.#", "2"),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"multicast_groups.*",
+			map[string]string{"group": groupIP},
+		),
+		resource.TestCheckTypeSetElemNestedAttrs(
+			resourceName,
+			"multicast_groups.*",
+			map[string]string{
+				"group":        groupIP2,
+				"source_ips.#": "1",
+			},
+		),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
