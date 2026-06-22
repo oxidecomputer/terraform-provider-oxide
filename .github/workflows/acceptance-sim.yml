@@ -114,12 +114,13 @@ jobs:
         if: always()
         continue-on-error: true
         working-directory: acctest
+        # Ignore command errors to collect as many logs as possible.
         run: |
-          docker compose exec -T omicron-dev sh -c 'tar -cf - /tmp/omicron-dev*.log' | tar -xf -
-          docker compose exec -T mitmproxy sh -c 'tar -cf - /tmp/mitmproxy.log' | tar -xf -
-          docker compose logs omicron-dev > ./tmp/omicron-dev.log
-          find .. -name terraform.log -exec cat {} \; > ./tmp/terraform.log
-          cp ./acc-tests.xml ./tmp
+          docker compose exec -T omicron-dev sh -c 'tar -cf - /tmp/omicron-dev*.log' | tar -xf - || true
+          docker compose exec -T mitmproxy sh -c 'tar -cf - /tmp/mitmproxy.log' | tar -xf - || true
+          docker compose logs omicron-dev > ./tmp/omicron-dev.log || true
+          find .. -name terraform.log -exec cat {} \; > ./tmp/terraform.log || true
+          cp ./acc-tests.xml ./tmp || true
       - name: rerun warn
         if: always()
         continue-on-error: true
