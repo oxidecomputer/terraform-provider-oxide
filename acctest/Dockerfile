@@ -19,7 +19,7 @@ FROM debian:bookworm-slim
 COPY --from=builder /omicron/tools/install_runner_prerequisites.sh /tmp/
 RUN apt-get update && \
     /tmp/install_runner_prerequisites.sh -y -s && \
-    apt-get install -y curl && \
+    apt-get install -y curl iproute2 && \
     rm -rf /var/lib/apt/lists/* /tmp/install_runner_prerequisites.sh
 
 # Copy binaries and config files from the builder image.
@@ -28,6 +28,7 @@ COPY --from=builder /omicron/out/clickhouse /omicron/out/clickhouse
 COPY --from=builder /omicron/out/cockroachdb /omicron/out/cockroachdb
 COPY --from=builder /omicron/out/dendrite-stub /omicron/out/dendrite-stub
 COPY --from=builder /omicron/out/mgd /omicron/out/mgd
+COPY --from=builder /omicron/out/mg-ddm /omicron/out/mg-ddm
 
 COPY --from=builder /omicron/nexus/examples /omicron/nexus/examples
 COPY --from=builder /omicron/gateway-test-utils/configs /omicron/gateway-test-utils/configs
@@ -39,7 +40,7 @@ RUN sed -i 's/bind_address = "127.0.0.1:12220"/bind_address = "0.0.0.0:12220"/' 
 # Add test paths required by omicron-dev.
 RUN mkdir -p /omicron/test-utils /omicron/nexus/test-utils
 
-ENV PATH="/omicron/out/cockroachdb/bin:/omicron/out/clickhouse:/omicron/out/dendrite-stub/bin:/omicron/out/mgd/root/opt/oxide/mgd/bin:${PATH}"
+ENV PATH="/omicron/out/cockroachdb/bin:/omicron/out/clickhouse:/omicron/out/dendrite-stub/bin:/omicron/out/mgd/root/opt/oxide/mgd/bin:/omicron/out/mg-ddm/root/opt/oxide/mg-ddm/bin:${PATH}"
 
 WORKDIR /omicron
 
