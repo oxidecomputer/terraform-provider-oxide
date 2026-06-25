@@ -1,0 +1,3 @@
+[[features]]
+title = "New function `provider::oxide::credentials`"
+description = "Added new function to read Oxide API credentials from a credentials file. [#782](https://github.com/oxidecomputer/terraform-provider-oxide/pull/782)"
