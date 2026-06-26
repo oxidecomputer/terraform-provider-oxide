@@ -79,7 +79,7 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 	supportBlockName := sharedtest.NewBlockName("support")
 	vpcBlockName := sharedtest.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_internet_gateway.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
@@ -89,11 +89,8 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			VPCName:                vpcName,
 			SupportBlockName:       supportBlockName,
@@ -103,9 +100,6 @@ func TestAccCloudResourceVPCInternetGateway_full(t *testing.T) {
 		},
 		resourceUpdateConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

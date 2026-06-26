@@ -71,7 +71,7 @@ data "oxide_instance_external_ips" "{{.BlockName}}" {
 
 func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-instance-external-ips")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
@@ -80,9 +80,6 @@ func TestAccCloudDataSourceInstanceExternalIPs_full(t *testing.T) {
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

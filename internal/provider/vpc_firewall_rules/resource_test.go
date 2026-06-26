@@ -418,35 +418,17 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 	resourceName := "oxide_vpc_firewall_rules.test"
 	tplData := resourceConfig{VPCName: vpcName}
 
-	config, err := sharedtest.ParsedAccConfig(tplData, resourceConfigTpl)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
+	config := sharedtest.ParsedAccConfig(t, tplData, resourceConfigTpl)
 
-	configUpdate, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl)
-	if err != nil {
-		t.Errorf("error parsing update config template data: %e", err)
-	}
+	configUpdate := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTpl)
 
-	configUpdate2, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl2)
-	if err != nil {
-		t.Errorf("error parsing update config 2 template data: %e", err)
-	}
+	configUpdate2 := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTpl2)
 
-	configUpdate3, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl3)
-	if err != nil {
-		t.Errorf("error parsing update config 3 template data: %e", err)
-	}
+	configUpdate3 := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTpl3)
 
-	configUpdate4, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl4)
-	if err != nil {
-		t.Errorf("error parsing update config 4 template data: %e", err)
-	}
+	configUpdate4 := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTpl4)
 
-	configUpdate5, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl5)
-	if err != nil {
-		t.Errorf("error parsing update config 5 template data: %e", err)
-	}
+	configUpdate5 := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTpl5)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -486,15 +468,9 @@ func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 	resourceName := "oxide_vpc_firewall_rules.test"
 	tplData := resourceConfig{VPCName: vpcName}
 
-	configV1, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTplV1)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
+	configV1 := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTplV1)
 
-	configV2, err := sharedtest.ParsedAccConfig(tplData, resourceUpdateConfigTpl5)
-	if err != nil {
-		t.Errorf("error parsing update config template data: %e", err)
-	}
+	configV2 := sharedtest.ParsedAccConfig(t, tplData, resourceUpdateConfigTpl5)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { sharedtest.PreCheck(t) },
@@ -530,13 +506,10 @@ func TestAccCloudResourceFirewallRules_icmp_no_filter(t *testing.T) {
 	vpcName := sharedtest.NewResourceName()
 	resourceName := "oxide_vpc_firewall_rules.test"
 
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{VPCName: vpcName},
 		resourceIcmpNoFilterConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

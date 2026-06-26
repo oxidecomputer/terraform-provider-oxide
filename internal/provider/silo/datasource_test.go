@@ -90,16 +90,13 @@ func TestAccSiloDataSourceSilo_full(t *testing.T) {
 
 	dnsName := sharedtest.SiloDNSName()
 
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:   blockName,
 			SiloDNSName: dnsName,
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	// Silo creation and deletion can cause database contention in nexus,
 	// so run all related tests in series:
