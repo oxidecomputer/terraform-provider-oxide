@@ -162,7 +162,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	blockName := sharedtest.NewBlockName("instance")
 	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -170,9 +170,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	instanceName2 := sharedtest.NewResourceName()
 	instanceDiskName := sharedtest.NewResourceName()
@@ -188,7 +185,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	supportBlockNameAaGroup := sharedtest.NewBlockName("support-instance-anti-affinity-group")
 	resourceName2 := fmt.Sprintf("oxide_instance.%s", blockName2)
 	autoRestartPolicy := "best_effort"
-	config2, err := sharedtest.ParsedAccConfig(
+	config2 := sharedtest.ParsedAccConfig(t,
 		resourceInstanceFullConfig{
 			BlockName:                  blockName2,
 			InstanceName:               instanceName2,
@@ -206,9 +203,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceFullConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -483,7 +477,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	supportBlockName := sharedtest.NewBlockName("support")
 	ipPoolBlockName := sharedtest.NewBlockName("ip-pool")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	initialConfig, err := sharedtest.ParsedAccConfig(
+	initialConfig := sharedtest.ParsedAccConfig(t,
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -494,11 +488,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceExternalIPConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing initial config template data: %e", err)
-	}
 
-	updateConfig1, err := sharedtest.ParsedAccConfig(
+	updateConfig1 := sharedtest.ParsedAccConfig(t,
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -507,11 +498,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceExternalIPConfigUpdate1Tpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing first update config template data: %e", err)
-	}
 
-	updateConfig1SingleStack, err := sharedtest.ParsedAccConfig(
+	updateConfig1SingleStack := sharedtest.ParsedAccConfig(t,
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -520,11 +508,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceExternalIPConfigUpdate1SingleStackTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing first update single stack config template data: %e", err)
-	}
 
-	updateConfig2, err := sharedtest.ParsedAccConfig(
+	updateConfig2 := sharedtest.ParsedAccConfig(t,
 		resourceInstanceConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -533,9 +518,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceExternalIPConfigUpdate2Tpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing second update config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -624,7 +606,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	supportBlockNameSshKeys := sharedtest.NewBlockName("support-instance-ssh-keys")
 	supportBlockNameSshKeys2 := sharedtest.NewBlockName("support-instance-ssh-keys-2")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameSshKeys)
-	configSshKeys, err := sharedtest.ParsedAccConfig(
+	configSshKeys := sharedtest.ParsedAccConfig(t,
 		resourceInstanceSshKeyConfig{
 			BlockName:         blockNameSshKeys,
 			SshKeyName:        instanceSshKeysName2,
@@ -634,9 +616,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceSSHKeysConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -884,7 +863,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	nonDefaultSubnetName := sharedtest.NewResourceName()
 	nonDefaultSubnetIPv4Block := fmt.Sprintf("10.%d.%d.0/24", rand.IntN(255), rand.IntN(255))
 	nonDefaultSubnetIPv6NetNum := rand.IntN(200)
-	configNic, err := sharedtest.ParsedAccConfig(
+	configNic := sharedtest.ParsedAccConfig(t,
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -897,10 +876,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceNicConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-	configNicAdd, err := sharedtest.ParsedAccConfig(
+	configNicAdd := sharedtest.ParsedAccConfig(t,
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -913,10 +889,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceNicConfigTwoNICsTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-	configNicUpdateSingleStack, err := sharedtest.ParsedAccConfig(
+	configNicUpdateSingleStack := sharedtest.ParsedAccConfig(t,
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -929,10 +902,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceNicConfigTwoNICsSingleStackTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-	configNicDelete, err := sharedtest.ParsedAccConfig(
+	configNicDelete := sharedtest.ParsedAccConfig(t,
 		resourceInstanceNicConfig{
 			BlockName:                  blockNameInstanceNic,
 			SubnetBlockName:            blockNameSubnet,
@@ -945,9 +915,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceNicConfigDeleteNicsTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -1094,7 +1061,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	blockNameInstanceDisk := sharedtest.NewBlockName("instance-disk")
 	blockNameInstanceDisk2 := sharedtest.NewBlockName("instance-disk-2")
 	resourceNameInstanceDisk := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	configDisk, err := sharedtest.ParsedAccConfig(
+	configDisk := sharedtest.ParsedAccConfig(t,
 		resourceInstanceDiskConfig{
 			BlockName:        blockNameInstance,
 			DiskBlockName:    blockNameInstanceDisk,
@@ -1106,10 +1073,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceDiskConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
-	configDiskUpdate, err := sharedtest.ParsedAccConfig(
+	configDiskUpdate := sharedtest.ParsedAccConfig(t,
 		resourceInstanceDiskConfig{
 			BlockName:        blockNameInstance,
 			DiskBlockName:    blockNameInstanceDisk,
@@ -1121,9 +1085,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceDiskConfigUpdateTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -1216,7 +1177,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	supportBlockName2 := sharedtest.NewBlockName("support-update")
 	blockNameInstance := sharedtest.NewBlockName("instance")
 	resourceNameInstance := fmt.Sprintf("oxide_instance.%s", blockNameInstance)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1224,11 +1185,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1236,11 +1194,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceConfigUpdateTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configUpdate2, err := sharedtest.ParsedAccConfig(
+	configUpdate2 := sharedtest.ParsedAccConfig(t,
 		resourceInstanceUpdateConfig{
 			BlockName:        blockNameInstance,
 			InstanceName:     instanceName,
@@ -1248,9 +1203,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceConfigUpdate2Tpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -1328,7 +1280,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 	diskBlockName := sharedtest.NewBlockName("disk")
 	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceInstanceNoBootDiskConfig{
 			BlockName:        blockName,
 			InstanceName:     instanceName,
@@ -1338,9 +1290,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceNoBootDiskConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -1474,7 +1423,7 @@ resource "oxide_instance" "{{.BlockName}}" {
 		"support-instance-anti-affinity-group",
 	)
 	resourceName := fmt.Sprintf("oxide_instance.%s", blockNameAntiAffinityGroups)
-	configAntiAffinityGroups, err := sharedtest.ParsedAccConfig(
+	configAntiAffinityGroups := sharedtest.ParsedAccConfig(t,
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                  blockNameAntiAffinityGroups,
 			InstanceName:               instanceAntiAffinityGroupsName,
@@ -1484,11 +1433,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceAntiAffinityGroupsConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configAntiAffinityGroupsUpdate, err := sharedtest.ParsedAccConfig(
+	configAntiAffinityGroupsUpdate := sharedtest.ParsedAccConfig(t,
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                   blockNameAntiAffinityGroups,
 			InstanceName:                instanceAntiAffinityGroupsName,
@@ -1500,11 +1446,8 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceAntiAffinityGroupsConfigTplUpdate,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configAntiAffinityGroupsUpdate2, err := sharedtest.ParsedAccConfig(
+	configAntiAffinityGroupsUpdate2 := sharedtest.ParsedAccConfig(t,
 		resourceInstanceAntiAffinityGroupsConfig{
 			BlockName:                   blockNameAntiAffinityGroups,
 			InstanceName:                instanceAntiAffinityGroupsName,
@@ -1516,9 +1459,6 @@ resource "oxide_instance" "{{.BlockName}}" {
 		},
 		resourceInstanceAntiAffinityGroupsConfigTplUpdate2,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

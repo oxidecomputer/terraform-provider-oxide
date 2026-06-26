@@ -48,28 +48,22 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	projectName := sharedtest.NewResourceName()
 	blockName := sharedtest.NewBlockName("project")
 	resourceName := fmt.Sprintf("oxide_project.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:   blockName,
 			ProjectName: projectName,
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	projectNameUpdated := projectName + "-updated"
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:   blockName,
 			ProjectName: projectNameUpdated,
 		},
 		resourceUpdateConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

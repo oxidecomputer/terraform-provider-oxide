@@ -124,7 +124,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 
 	siloDNSName := sharedtest.SiloDNSName()
 
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
@@ -134,9 +134,6 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Fatalf("error parsing config template data: %v", err)
-	}
 
 	// Silo creation and deletion can cause database contention in nexus,
 	// so run all related tests in series:
@@ -175,7 +172,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 
 	siloDNSName := sharedtest.SiloDNSName()
 
-	initialConfig, err := sharedtest.ParsedAccConfig(
+	initialConfig := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
@@ -185,11 +182,8 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Fatalf("error parsing config template data: %v", err)
-	}
 
-	noSAMLConfig, err := sharedtest.ParsedAccConfig(
+	noSAMLConfig := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			SiloBlockName:                     siloBlockName,
 			SiloDNSName:                       siloDNSName,
@@ -200,9 +194,6 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adopt(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Fatalf("error parsing no SAML config template data: %v", err)
-	}
 
 	// Silo creation and deletion can cause database contention in nexus,
 	// so run all related tests in series:
@@ -256,17 +247,11 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adoptMismatch(t *testing.T) {
 		SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
 	}
 
-	initialConfig, err := sharedtest.ParsedAccConfig(baseConfig, resourceConfigTpl)
-	if err != nil {
-		t.Fatalf("error parsing initial config: %v", err)
-	}
+	initialConfig := sharedtest.ParsedAccConfig(t, baseConfig, resourceConfigTpl)
 
 	noSAMLBase := baseConfig
 	noSAMLBase.SkipSiloSamlIdentityProvider = true
-	noSAMLConfig, err := sharedtest.ParsedAccConfig(noSAMLBase, resourceConfigTpl)
-	if err != nil {
-		t.Fatalf("error parsing no-SAML config: %v", err)
-	}
+	noSAMLConfig := sharedtest.ParsedAccConfig(t, noSAMLBase, resourceConfigTpl)
 
 	mutatedBase := baseConfig
 	mutatedBase.SiloSamlIdentityProviderACSURL = "https://mismatched-acs.example.com"
@@ -276,10 +261,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adoptMismatch(t *testing.T) {
 	mutatedBase.SiloSamlIdentityProviderSLOURL = "https://mismatched-slo.example.com"
 	mutatedBase.SiloSamlIdentityProviderSPClientID = "mismatched-client-id"
 	mutatedBase.SiloSamlIdentityProviderTechnicalContactEmail = "mismatched@example.com"
-	mutatedConfig, err := sharedtest.ParsedAccConfig(mutatedBase, resourceConfigTpl)
-	if err != nil {
-		t.Fatalf("error parsing mutated config: %v", err)
-	}
+	mutatedConfig := sharedtest.ParsedAccConfig(t, mutatedBase, resourceConfigTpl)
 
 	// Records that the ErrorCheck callback ran; verified after resource.Test
 	// returns to enforce that the re-adoption step actually errored.

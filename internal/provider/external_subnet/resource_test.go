@@ -91,11 +91,7 @@ resource "oxide_external_subnet" "test" {
 
 func buildResourceConfig(t *testing.T, cfg resourceConfig) string {
 	t.Helper()
-	config, err := sharedtest.ParsedAccConfig(cfg, resourceConfigTpl)
-	if err != nil {
-		t.Fatalf("error parsing config template: %v", err)
-	}
-	return config
+	return sharedtest.ParsedAccConfig(t, cfg, resourceConfigTpl)
 }
 
 func TestAccResourceExternalSubnet_full(t *testing.T) {
