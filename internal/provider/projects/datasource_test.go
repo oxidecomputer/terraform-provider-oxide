@@ -27,15 +27,12 @@ data "oxide_projects" "{{.BlockName}}" {
 
 func TestAccCloudDataSourceProjects_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-projects")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName: blockName,
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

@@ -43,16 +43,13 @@ data "oxide_vpc_router" "{{.BlockName}}" {
 
 func TestAccCloudDataSourceVPCRouter_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-vpc-router")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

@@ -64,7 +64,7 @@ func TestAccCloudResourceSnapshot_full(t *testing.T) {
 	snapshotName := sharedtest.NewResourceName()
 	blockName := sharedtest.NewBlockName("snapshot")
 	resourceName := fmt.Sprintf("oxide_snapshot.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:        blockName,
 			SnapshotName:     snapshotName,
@@ -74,9 +74,6 @@ func TestAccCloudResourceSnapshot_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

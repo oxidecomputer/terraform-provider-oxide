@@ -148,7 +148,7 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 	supportBlockName := sharedtest.NewBlockName("support")
 	vpcBlockName := sharedtest.NewBlockName("vpc")
 	resourceName := fmt.Sprintf("oxide_vpc_router_route.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			VPCName:            vpcName,
 			SupportBlockName:   supportBlockName,
@@ -160,12 +160,9 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	routerRouteNameUpdated := routerRouteName + "-updated"
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			VPCName:            vpcName,
 			SupportBlockName:   supportBlockName,
@@ -177,9 +174,6 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 		},
 		resourceUpdateConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	vpcNameDrop := sharedtest.NewResourceName()
 	routerNameDrop := sharedtest.NewResourceName()
@@ -188,7 +182,7 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 	supportBlockNameDrop := sharedtest.NewBlockName("support")
 	vpcBlockNameDrop := sharedtest.NewBlockName("vpc")
 	resourceNameDrop := fmt.Sprintf("oxide_vpc_router_route.%s", blockName)
-	configDrop, err := sharedtest.ParsedAccConfig(
+	configDrop := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			VPCName:            vpcNameDrop,
 			SupportBlockName:   supportBlockNameDrop,
@@ -200,9 +194,6 @@ func TestAccCloudResourceVPCRouterRoute_full(t *testing.T) {
 		},
 		resourceTargetDropConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

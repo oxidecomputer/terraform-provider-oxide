@@ -106,7 +106,7 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 	supportBlockName := sharedtest.NewBlockName("support")
 	resourceName := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
 	resourceName2 := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: supportBlockName,
@@ -114,11 +114,8 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfigUpdate{
 			BlockName:         blockName,
 			IPPoolName:        ipPoolName,
@@ -129,9 +126,6 @@ func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
 		},
 		resourceUpdateConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

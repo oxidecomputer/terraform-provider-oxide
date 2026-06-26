@@ -62,7 +62,7 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("anti_affinity_group")
 	resourceName := fmt.Sprintf("oxide_anti_affinity_group.%s", blockName)
 	supportBlockName := sharedtest.NewBlockName("support")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupName,
@@ -70,12 +70,9 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	antiAffinityGroupNameUpdated := antiAffinityGroupName + "-updated"
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:             blockName,
 			AntiAffinityGroupName: antiAffinityGroupNameUpdated,
@@ -83,9 +80,6 @@ func TestAccCloudResourceAntiAffinityGroup_full(t *testing.T) {
 		},
 		resourceUpdateConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

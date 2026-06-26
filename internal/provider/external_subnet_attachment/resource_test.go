@@ -117,10 +117,7 @@ func buildResourceConfig(
 	cfg resourceConfig,
 ) string {
 	t.Helper()
-	config, err := sharedtest.ParsedAccConfig(cfg, resourceConfigTpl)
-	if err != nil {
-		t.Fatalf("error parsing config template: %v", err)
-	}
+	config := sharedtest.ParsedAccConfig(t, cfg, resourceConfigTpl)
 	return config
 }
 

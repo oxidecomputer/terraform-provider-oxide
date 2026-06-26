@@ -42,7 +42,7 @@ data "oxide_ssh_key" "{{.BlockName}}" {
 func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-ssh-key")
 	resourceName := sharedtest.NewResourceName()
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
@@ -51,9 +51,6 @@ func TestAccCloudDataSourceSSHKey_full(t *testing.T) {
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

@@ -165,27 +165,21 @@ resource "oxide_switch_port_settings" "{{.BlockName}}" {
 	blockName := sharedtest.NewBlockName("switch-port-settings")
 	resourceName := fmt.Sprintf("oxide_switch_port_settings.%s", blockName)
 
-	initialConfig, err := sharedtest.ParsedAccConfig(
+	initialConfig := sharedtest.ParsedAccConfig(t,
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
 		},
 		initialConfigTmpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing initial config template data: %e", err)
-	}
 
-	updateConfig, err := sharedtest.ParsedAccConfig(
+	updateConfig := sharedtest.ParsedAccConfig(t,
 		resourceSwitchPortSettingsConfig{
 			BlockName:              blockName,
 			SwitchPortSettingsName: switchPortSettingsName,
 		},
 		updateConfigTmpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing update config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {

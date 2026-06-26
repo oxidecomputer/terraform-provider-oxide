@@ -40,15 +40,12 @@ data "oxide_disk" "test" {
 
 func TestAccCloudDataSourceDisk_full(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			DiskName: diskName,
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
