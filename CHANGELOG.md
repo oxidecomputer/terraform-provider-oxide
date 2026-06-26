@@ -1,3 +1,18 @@
+# 0.20.1 (2026/Jun/26)
+
+### New features
+
+- **New function `provider::oxide::credentials`:** Added new function to read Oxide API credentials from a credentials file. [#782](https://github.com/oxidecomputer/terraform-provider-oxide/pull/782)
+
+### List of commits
+
+- [1ff95ea](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1ff95ea) credentials: add new function to read credentials (#782)
+- [5379ca4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5379ca4) tests: refactor `sharedtest.ParsedAccConfig` (#783)
+- [b4cf8a7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b4cf8a7) ci: fix simulate Omicron image (#780)
+- [6ff02c0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6ff02c0) ci: ignore errors on log collection (#777)
+- [4b64ec0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4b64ec0) build(deps): bump actions/checkout from 6 to 7 (#773)
+- [b1fc80f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b1fc80f) misc: prepare for release v0.20.0 (#774)
+
 # 0.20.0 (2026/Jun/18)
 
 ### Breaking changes
