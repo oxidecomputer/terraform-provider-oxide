@@ -22,6 +22,7 @@ import (
 
 	addresslot "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/address_lot"
 	antiaffinitygroup "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/anti_affinity_group"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/credentials"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/disk"
 	externalsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnet"
 	externalsubnetattachment "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnet_attachment"
@@ -246,5 +247,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 
 // Functions defines the functions implemented in the provider.
 func (p *oxideProvider) Functions(_ context.Context) []func() function.Function {
-	return []func() function.Function{}
+	return []func() function.Function{
+		credentials.NewFunction,
+	}
 }
