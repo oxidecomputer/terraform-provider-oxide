@@ -8,10 +8,10 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
-	"html/template"
 	"os"
 	"sync/atomic"
 	"testing"
+	"text/template"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
