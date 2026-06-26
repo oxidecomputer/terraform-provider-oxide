@@ -46,7 +46,7 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 	publicKey := "ssh-ed25519 AAAA"
 	blockName := sharedtest.NewBlockName("ssh_key")
 	resourceName := fmt.Sprintf("oxide_ssh_key.%s", blockName)
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:   blockName,
 			Name:        sshKeyName,
@@ -55,9 +55,6 @@ func TestAccCloudResourceSSHKey_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

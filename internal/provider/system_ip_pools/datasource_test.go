@@ -28,16 +28,13 @@ data "oxide_system_ip_pools" "{{.BlockName}}" {
 
 func TestAccSiloDataSourceSystemIPPools_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-ip-pool")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

@@ -31,16 +31,13 @@ data "oxide_vpc_subnet" "{{.BlockName}}" {
 
 func TestAccCloudDataSourceVPCSubnet_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-vpc-subnet")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:        blockName,
 			SupportBlockName: sharedtest.NewBlockName("support"),
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

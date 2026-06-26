@@ -40,7 +40,7 @@ data "oxide_image" "{{.BlockName}}" {
 // NB: The project must be populated with at least one image for this test to pass
 func TestAccCloudDataSourceImage_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-image")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
@@ -48,9 +48,6 @@ func TestAccCloudDataSourceImage_full(t *testing.T) {
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

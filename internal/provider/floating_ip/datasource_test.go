@@ -44,7 +44,7 @@ data "oxide_floating_ip" "{{.BlockName}}" {
 func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("datasource-floating-ip")
 	resourceName := sharedtest.NewResourceName()
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		dataSourceConfig{
 			BlockName:         blockName,
 			SupportBlockName:  sharedtest.NewBlockName("support"),
@@ -53,9 +53,6 @@ func TestAccCloudDataSourceFloatingIP_full(t *testing.T) {
 		},
 		dataSourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

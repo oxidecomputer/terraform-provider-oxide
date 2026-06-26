@@ -46,15 +46,12 @@ resource "oxide_disk" "test" {
 
 func TestAccCloudResourceDisk_full(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			DiskName: diskName,
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -91,15 +88,12 @@ resource "oxide_disk" "test" {
 func TestAccCloudResourceDisk_local(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
 
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			DiskName: diskName,
 		},
 		resourceLocalConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -134,15 +128,12 @@ resource "oxide_disk" "test" {
 `
 
 func TestAccCloudResourceDisk_localSourceValidation(t *testing.T) {
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			DiskName: sharedtest.NewResourceName(),
 		},
 		resourceLocalInvalidConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
@@ -183,27 +174,21 @@ resource "oxide_disk" "test" {
 func TestAccCloudResourceDisk_readOnly(t *testing.T) {
 	diskName := sharedtest.NewResourceName()
 
-	configReadOnly, err := sharedtest.ParsedAccConfig(
+	configReadOnly := sharedtest.ParsedAccConfig(t,
 		resourceReadOnlyConfig{
 			DiskName: diskName,
 			ReadOnly: true,
 		},
 		resourceReadOnlyConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configReadWrite, err := sharedtest.ParsedAccConfig(
+	configReadWrite := sharedtest.ParsedAccConfig(t,
 		resourceReadOnlyConfig{
 			DiskName: diskName,
 			ReadOnly: false,
 		},
 		resourceReadOnlyConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

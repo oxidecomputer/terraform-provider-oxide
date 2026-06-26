@@ -58,11 +58,7 @@ resource "oxide_vpc_subnet" "test" {
 
 func buildResourceConfig(t *testing.T, cfg resourceConfig) string {
 	t.Helper()
-	config, err := sharedtest.ParsedAccConfig(cfg, resourceConfigTpl)
-	if err != nil {
-		t.Fatalf("error parsing config template: %v", err)
-	}
-	return config
+	return sharedtest.ParsedAccConfig(t, cfg, resourceConfigTpl)
 }
 
 func TestAccCloudResourceVPCSubnet_full(t *testing.T) {

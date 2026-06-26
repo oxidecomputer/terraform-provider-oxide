@@ -93,7 +93,7 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 	blockName := sharedtest.NewBlockName("floating_ip")
 	resourceName := fmt.Sprintf("oxide_floating_ip.%s", blockName)
 	supportBlockName := sharedtest.NewBlockName("support")
-	config, err := sharedtest.ParsedAccConfig(
+	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
@@ -101,12 +101,9 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 		},
 		resourceConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	floatingIPNameUpdated := floatingIPName + "-updated"
-	configUpdate, err := sharedtest.ParsedAccConfig(
+	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPNameUpdated,
@@ -114,11 +111,8 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 		},
 		resourceUpdateConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configV6, err := sharedtest.ParsedAccConfig(
+	configV6 := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
@@ -126,11 +120,8 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 		},
 		resourceV6ConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
-	configNonDefaultPool, err := sharedtest.ParsedAccConfig(
+	configNonDefaultPool := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
 			BlockName:        blockName,
 			FloatingIPName:   floatingIPName,
@@ -138,9 +129,6 @@ func TestAccCloudResourceFloatingIP_full(t *testing.T) {
 		},
 		resourceNonDefaultPoolConfigTpl,
 	)
-	if err != nil {
-		t.Errorf("error parsing config template data: %e", err)
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },

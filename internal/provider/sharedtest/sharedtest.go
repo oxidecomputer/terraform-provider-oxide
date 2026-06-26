@@ -56,19 +56,17 @@ func NewTestClient() (*oxide.Client, error) {
 	return client, nil
 }
 
-func ParsedAccConfig(
-	config any,
-	tpl string,
-) (string, error) {
+func ParsedAccConfig(tb testing.TB, config any, tpl string) string {
+	tb.Helper()
 	var buf bytes.Buffer
 	tmpl, err := template.New("test").Parse(tpl)
 	if err != nil {
-		return "", err
+		tb.Fatalf("failed to parse configuration template: %v", err)
 	}
 	if err := tmpl.Execute(&buf, config); err != nil {
-		return "", err
+		tb.Fatalf("failed to execute configuration template: %v", err)
 	}
-	return buf.String(), nil
+	return buf.String()
 }
 
 func NewResourceName() string {
