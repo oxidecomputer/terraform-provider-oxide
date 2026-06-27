@@ -3,5 +3,7 @@
 [[features]]
 
 [[enhancements]]
+title = "Validate UUID Attributes"
+description = "Attributes that expect UUIDs now validate whether their values are, in fact, valid UUIDs. This catches cases where names passed to attributes accidentally worked. [#795](https://github.com/oxidecomputer/terraform-provider-oxide/issues/795)."
 
 [[bugs]]

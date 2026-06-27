@@ -12,11 +12,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 var (
@@ -92,6 +94,9 @@ Retrieve a list of all images belonging to a silo or project.
 			"project_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "ID of the project which contains the images.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 			},
 			"id": schema.StringAttribute{
 				Computed: true,

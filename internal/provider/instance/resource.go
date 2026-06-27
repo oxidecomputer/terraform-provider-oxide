@@ -35,6 +35,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -242,6 +243,9 @@ This resource manages instances.
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID for the project containing this instance.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -314,6 +318,7 @@ This resource manages instances.
 				Optional:            true,
 				MarkdownDescription: "ID of the disk the instance should be booted from. Specifying a boot disk is optional but recommended to ensure predictable boot behavior. When provided, this ID must also be present in `disk_attachments`.",
 				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 					stringvalidator.AlsoRequires(
 						path.MatchRoot("disk_attachments"),
 					),
@@ -379,6 +384,9 @@ This resource manages instances.
 						"subnet_id": schema.StringAttribute{
 							Required:    true,
 							Description: "ID of the VPC subnet in which to create the instance network interface.",
+							Validators: []validator.String{
+								oxidevalidator.IsUUID(),
+							},
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
 									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
@@ -388,6 +396,9 @@ This resource manages instances.
 						"vpc_id": schema.StringAttribute{
 							Required:    true,
 							Description: "ID of the VPC in which to create the instance network interface.",
+							Validators: []validator.String{
+								oxidevalidator.IsUUID(),
+							},
 							PlanModifiers: []planmodifier.String{
 								stringplanmodifier.RequiresReplaceIf(
 									shared.RequiresReplaceUnlessEmptyStringOrNull(), "", "",
@@ -527,6 +538,7 @@ This resource manages instances.
 									Computed:            true,
 									MarkdownDescription: "ID of the IP pool to allocate from. Conflicts with `ip_version`.",
 									Validators: []validator.String{
+										oxidevalidator.IsUUID(),
 										stringvalidator.ConflictsWith(
 											path.MatchRelative().AtParent().AtName("ip_version"),
 										),

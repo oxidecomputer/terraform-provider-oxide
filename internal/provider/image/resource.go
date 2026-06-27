@@ -15,11 +15,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -111,6 +113,9 @@ This resource manages images.
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the project that will contain the image.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -143,6 +148,9 @@ This resource manages images.
 			"source_snapshot_id": schema.StringAttribute{
 				Required:    true,
 				Description: "Snapshot ID of the image source if applicable.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

@@ -26,6 +26,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -121,6 +122,9 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the project that will contain the disk.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -150,6 +154,7 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 				Optional:    true,
 				Description: "Image ID of the disk source if applicable.",
 				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("block_size"),
 					}...),
@@ -165,6 +170,7 @@ To create a blank disk it's necessary to set ''block_size''. Otherwise, one of '
 				Optional:    true,
 				Description: "Snapshot ID of the disk source if applicable.",
 				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 					stringvalidator.ConflictsWith(path.Expressions{
 						path.MatchRoot("block_size"),
 					}...),

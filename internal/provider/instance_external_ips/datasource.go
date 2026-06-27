@@ -12,11 +12,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 var (
@@ -79,6 +81,9 @@ Retrieve information of all external IPs associated to an instance.
 			"instance_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the instance to which the external IPs belong to.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
