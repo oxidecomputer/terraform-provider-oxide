@@ -29,6 +29,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -173,6 +174,9 @@ rules when updating this resource.
 			"vpc_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the VPC that will have the firewall rules applied to.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

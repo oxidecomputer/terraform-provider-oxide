@@ -25,6 +25,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -129,6 +130,9 @@ func (r *Resource) Schema(
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "Project ID where this external subnet is located.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -168,6 +172,7 @@ func (r *Resource) Schema(
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 					stringvalidator.ConflictsWith(path.MatchRoot("subnet")),
 				},
 			},

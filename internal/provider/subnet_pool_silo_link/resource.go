@@ -16,11 +16,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -104,14 +106,28 @@ func (r *Resource) Schema(
 				Required:    true,
 				Description: "ID of the silo to link the subnet pool to.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(
+						shared.RequiresReplaceUnlessNonUUIDToUUID(),
+						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
+						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
+					),
+				},
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 				},
 			},
 			"subnet_pool_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the subnet pool that will be linked to the silo.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(
+						shared.RequiresReplaceUnlessNonUUIDToUUID(),
+						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
+						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
+					),
+				},
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 				},
 			},
 			"is_default": schema.BoolAttribute{
@@ -236,8 +252,26 @@ func (r *Resource) Read(
 		return
 	}
 
+	// Resolve the silo to its UUID so the composite ID is always
+	// SUBNET_POOL_ID/SILO_ID in UUID form, even when silo_id was previously
+	// configured by name.
+	silo, err := r.client.SiloView(ctx, oxide.SiloViewParams{
+		Silo: oxide.NameOrId(state.SiloID.ValueString()),
+	})
+	if err != nil {
+		if shared.Is404(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		resp.Diagnostics.AddError(
+			"Unable to read silo:",
+			"API error: "+err.Error(),
+		)
+		return
+	}
+
 	// Set a deterministic ID based on composite attributes.
-	state.ID = types.StringValue(fmt.Sprintf("%s/%s", pools[idx].Id, state.SiloID.ValueString()))
+	state.ID = types.StringValue(fmt.Sprintf("%s/%s", pools[idx].Id, silo.Id))
 
 	state.SubnetPoolID = types.StringValue(pools[idx].Id)
 	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)

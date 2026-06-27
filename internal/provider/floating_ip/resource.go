@@ -23,6 +23,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 // ResourceModel represents the Terraform configuration and state for
@@ -144,6 +145,7 @@ This resource manages Oxide floating IPs.
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
 					stringvalidator.ConflictsWith(path.MatchRoot("ip")),
 					stringvalidator.ConflictsWith(path.MatchRoot("ip_version")),
 				},
@@ -168,6 +170,9 @@ This resource manages Oxide floating IPs.
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "Project ID where this floating IP is located.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
