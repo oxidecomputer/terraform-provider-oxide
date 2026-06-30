@@ -1,6 +1,8 @@
 [[breaking]]
 
 [[features]]
+title = "`oxide_ip_pool_silo_link`"
+description = "The `id` attribute for the `oxide_ip_pool_silo_link` resource now uses the format `IP_POOL_ID/SILO_ID`, matching the `oxide_subnet_pool_silo_link` resource. [#794](https://github.com/oxidecomputer/terraform-provider-oxide/pull/794)"
 
 [[enhancements]]
 
