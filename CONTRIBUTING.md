@@ -101,7 +101,7 @@ Run `make testacc`.
 
 To run tests against an empty simulated omicron environment, first provision
 the Docker containers with `make testacc-sim` and run the test suite with `make
-testacc-local`. 
+testacc-local`.
 
 To run the simulated omicron environment on Apple Silicon (arm64), use [colima](https://colima.run/).
 
@@ -130,21 +130,13 @@ where the patch version is (`vX.Y.0`).
   git pull origin main
   git checkout -b release-vX.Y.Z
   ```
-- [ ] Ensure the `.changelog/vX.Y.Z.toml` file has the changelog entries for the release and generate changelog.
-  ```
-  make changelog
-  ```
-- [ ] Update `CHANGELOG.md` with the release date.
-  ```diff
-  - # vX.Y.Z
-  + # vX.Y.Z (Year/Month/Day)
-  ```
 - [ ] Ensure `Version` in `internal/provider/version.go` is the version you're about to release.
   ```diff
     // Version contains the current terraform provider version.
   - const Version = "A.B.C"
   + const Version = "X.Y.Z"
   ```
+- [ ] Ensure the `VERSION` file has the version you're about to release.
 - [ ] Ensure the example block in `README.md` uses the version you're about to release.
   ```diff
   terraform {
@@ -159,6 +151,15 @@ where the patch version is (`vX.Y.0`).
     }
   }
   ```
+- [ ] Ensure the `.changelog/vX.Y.Z.toml` file has the changelog entries for the release and generate changelog.
+  ```
+  make changelog
+  ```
+- [ ] Update `CHANGELOG.md` with the release date.
+  ```diff
+  - # vX.Y.Z
+  + # vX.Y.Z (Year/Month/Day)
+  ```
 - [ ] Document any breaking change or deprecation in `templates/guides/upgrade.md.tmpl` and regenerate docs.
   ```
   make docs
@@ -166,7 +167,7 @@ where the patch version is (`vX.Y.0`).
 - [ ] `.0 ->` Update the `Build status` table in `README.md` to point to the new release line branch.
 - [ ] Commit changes and open a PR.
   ```
-  git add CHANGELOG.md README.md internal/provider/version.go templates/ docs/
+  git add CHANGELOG.md README.md VERSION internal/provider/version.go templates/ docs/
   git commit -m 'release vX.Y.Z'
   git push origin release-vX.Y.Z
   ```
