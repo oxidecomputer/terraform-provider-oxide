@@ -445,7 +445,7 @@ func TestAccCloudResourceFirewallRules_full(t *testing.T) {
 			},
 			{
 				Config: configUpdate2,
-				Check:  checkResourceUpdate2(resourceName, vpcName),
+				Check:  checkResourceUpdate2(resourceName),
 			},
 			{
 				Config: configUpdate3,
@@ -650,7 +650,7 @@ func checkResourceUpdate(resourceName string) resource.TestCheckFunc {
 	}...)
 }
 
-func checkResourceUpdate2(resourceName, vpcName string) resource.TestCheckFunc {
+func checkResourceUpdate2(resourceName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),

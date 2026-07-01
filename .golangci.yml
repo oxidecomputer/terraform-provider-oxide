@@ -1,9 +1,12 @@
+---
 version: "2"
 
 linters:
   default: standard
   enable:
     - godoclint
+    - unparam
+    - goheader
   disable:
     - errcheck
   settings:
@@ -14,12 +17,16 @@ linters:
       options:
         max-len:
           length: 100
+    goheader:
+      template: |-
+        This Source Code Form is subject to the terms of the Mozilla Public
+        License, v. 2.0. If a copy of the MPL was not distributed with this
+        file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 formatters:
   enable:
-    - gofmt
-    - golines
     - goimports
+    - golines
   settings:
     golines:
       max-len: 100
@@ -27,6 +34,8 @@ formatters:
     goimports:
       local-prefixes:
         - github.com/oxidecomputer/terraform-provider-oxide
+  exclusions:
+    generated: disable
 
 run:
   timeout: 5m
