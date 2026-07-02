@@ -90,6 +90,7 @@ fmt: golangci-fmt terrafmt-fmt docs
 golangci-fmt:
 	@ echo "-> Formatting Go code"
 	@ $(GO_TOOL) golangci-lint fmt
+	@ $(GO_TOOL) golangci-lint run --enable-only=goheader --fix
 
 .PHONY: terrafmt
 terrafmt:
