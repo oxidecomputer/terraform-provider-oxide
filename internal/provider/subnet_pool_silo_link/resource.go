@@ -175,7 +175,7 @@ func (r *Resource) Create(
 		map[string]any{"success": true},
 	)
 
-	// Set a deterministic ID based on the composite key (pool_id/silo_id)
+	// Set a deterministic ID based on composite attributes.
 	plan.ID = types.StringValue(fmt.Sprintf("%s/%s", link.SubnetPoolId, link.SiloId))
 
 	// Save plan into Terraform state
@@ -236,6 +236,9 @@ func (r *Resource) Read(
 		return
 	}
 
+	// Set a deterministic ID based on composite attributes.
+	state.ID = types.StringValue(fmt.Sprintf("%s/%s", pools[idx].Id, state.SiloID.ValueString()))
+
 	state.SubnetPoolID = types.StringValue(pools[idx].Id)
 	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)
 
@@ -295,8 +298,8 @@ func (r *Resource) Update(
 		map[string]any{"success": true},
 	)
 
-	// This is a terraform-specific ID. We just copy it from the state
-	plan.ID = state.ID
+	// Set a deterministic ID based on composite attributes.
+	plan.ID = types.StringValue(fmt.Sprintf("%s/%s", link.SubnetPoolId, link.SiloId))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

@@ -8,8 +8,8 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -75,7 +75,20 @@ func (r *Resource) ImportState(
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
 ) {
-	resource.ImportStatePassthroughID(ctx, path.Root("ip_pool_id"), req, resp)
+	idParts := strings.Split(req.ID, "/")
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Expected import ID format: ip_pool_id/silo_id, got: %s", req.ID),
+		)
+		return
+	}
+
+	// Use the import ID directly as the terraform ID (it's already in the correct format)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(
+		resp.State.SetAttribute(ctx, path.Root("ip_pool_id"), idParts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("silo_id"), idParts[1])...)
 }
 
 // Schema defines the schema for the resource.
@@ -167,8 +180,8 @@ func (r *Resource) Create(
 		map[string]any{"success": true},
 	)
 
-	// Set a unique ID for the resource payload
-	plan.ID = types.StringValue(uuid.New().String())
+	// Set a deterministic ID based on composite attributes.
+	plan.ID = types.StringValue(fmt.Sprintf("%s/%s", link.IpPoolId, link.SiloId))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -199,13 +212,11 @@ func (r *Resource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.SystemIpPoolSiloListParams{
-		Pool:   oxide.NameOrId(state.IPPoolID.ValueString()),
-		Limit:  oxide.NewPointer(1000000000),
-		SortBy: oxide.IdSortModeIdAscending,
-	}
-
-	links, err := r.client.SystemIpPoolSiloList(ctx, params)
+	// This `/v1/system/silos/{silo}/ip-pools` API works with non-discoverable silos
+	// whereas the `/v1/system/ip-pools/{pool}/silos` does not.
+	pools, err := r.client.SiloIpPoolListAllPages(ctx, oxide.SiloIpPoolListParams{
+		Silo: oxide.NameOrId(state.SiloID.ValueString()),
+	})
 	if err != nil {
 		if shared.Is404(err) {
 			// Remove resource from state during a refresh
@@ -220,27 +231,27 @@ func (r *Resource) Read(
 	}
 	tflog.Trace(
 		ctx,
-		fmt.Sprintf("read IP pool links with ID: %v", state.IPPoolID),
+		fmt.Sprintf("read IP pool links for silo: %v", state.SiloID.ValueString()),
 		map[string]any{"success": true},
 	)
 
-	siloID := state.SiloID.ValueString()
+	ipPoolID := state.IPPoolID.ValueString()
 	idx := slices.IndexFunc(
-		links.Items,
-		func(l oxide.IpPoolSiloLink) bool { return l.SiloId == siloID },
+		pools,
+		func(p oxide.SiloIpPool) bool { return p.Id == ipPoolID },
 	)
 	if idx < 0 {
-		resp.Diagnostics.AddError(
-			"Missing resource",
-			fmt.Sprintf("Unable to find requested link between IP pool %v and silo %v",
-				state.IPPoolID.ValueString(), state.SiloID.ValueString()),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	state.IPPoolID = types.StringValue(links.Items[idx].IpPoolId)
-	state.IsDefault = types.BoolPointerValue(links.Items[idx].IsDefault)
-	state.SiloID = types.StringValue(links.Items[idx].SiloId)
+	// Set a deterministic ID based on composite attributes.
+	state.ID = types.StringValue(
+		fmt.Sprintf("%s/%s", pools[idx].Id, state.SiloID.ValueString()),
+	)
+
+	state.IPPoolID = types.StringValue(pools[idx].Id)
+	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -300,8 +311,8 @@ func (r *Resource) Update(
 		map[string]any{"success": true},
 	)
 
-	// This is a terraform-specific ID. We just copy it from the state
-	plan.ID = state.ID
+	// Set a deterministic ID based on composite attributes.
+	plan.ID = types.StringValue(fmt.Sprintf("%s/%s", link.IpPoolId, link.SiloId))
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
