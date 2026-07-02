@@ -7,214 +7,149 @@ package ippoolsilolink_test
 import (
 	"context"
 	"fmt"
-	"slices"
 	"testing"
-	"time"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
-
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
-type resourceConfig struct {
-	BlockName        string
-	SupportBlockName string
-	IPPoolName       string
-}
-
-type resourceConfigUpdate struct {
-	BlockName         string
-	BlockName2        string
-	SupportBlockName  string
-	SupportBlockName2 string
-	IPPoolName        string
-	IPPoolName2       string
-}
-
-// TODO: Change the silo ID when we have a silo datasource
-var resourceConfigTpl = `
-resource "oxide_ip_pool" "{{.SupportBlockName}}" {
-  description       = "a test ip_pool"
-  name              = "{{.IPPoolName}}"
-  ranges = [
-    {
-	  first_address = "172.20.15.234"
-	  last_address  = "172.20.15.237"
-	}
-  ]
-}
-
-resource "oxide_ip_pool_silo_link" "{{.BlockName}}" {
-  silo_id = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
-  ip_pool_id = oxide_ip_pool.{{.SupportBlockName}}.id
-  is_default = true
-  timeouts = {
-    read   = "1m"
-    create = "3m"
-    delete = "2m"
-    update = "4m"
-  }
-}
-`
-
-var resourceUpdateConfigTpl = `
-resource "oxide_ip_pool" "{{.SupportBlockName}}" {
-  description       = "a test ip_pool"
-  name              = "{{.IPPoolName}}"
-  ranges = [
-    {
-	  first_address = "172.20.15.234"
-	  last_address  = "172.20.15.237"
-	}
-  ]
-}
-
-resource "oxide_ip_pool" "{{.SupportBlockName2}}" {
-  description       = "a test ip_pool"
-  name              = "{{.IPPoolName2}}"
-  ranges = [
-    {
-	  first_address = "172.20.15.238"
-	  last_address  = "172.20.15.240"
-	}
-  ]
-}
-
-resource "oxide_ip_pool_silo_link" "{{.BlockName}}" {
-  silo_id = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
-  ip_pool_id = oxide_ip_pool.{{.SupportBlockName}}.id
-  is_default = false
-}
-
-resource "oxide_ip_pool_silo_link" "{{.BlockName2}}" {
-  silo_id = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
-  ip_pool_id = oxide_ip_pool.{{.SupportBlockName2}}.id
-  is_default = true
-}
-`
-
 func TestAccSiloResourceIPPoolSiloLink_full(t *testing.T) {
-	t.Skip("skipping test until there is a silo datasource to retrieve the ID.")
-
+	// The IPv4 `default` IP pool already holds the default link for
+	// test-suite-silo, and only one default IP pool is allowed per silo, so
+	// this test links a non-default pool. Run in series to avoid contention
+	// over the shared silo's default link.
 	ipPoolName := sharedtest.NewResourceName()
-	blockName := sharedtest.NewBlockName("ip_pool")
-	blockName2 := sharedtest.NewBlockName("ip_pool")
-	supportBlockName := sharedtest.NewBlockName("support")
-	resourceName := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
-	resourceName2 := fmt.Sprintf("oxide_ip_pool_silo_link.%s", blockName)
-	config := sharedtest.ParsedAccConfig(t,
-		resourceConfig{
-			BlockName:        blockName,
-			SupportBlockName: supportBlockName,
-			IPPoolName:       ipPoolName,
-		},
-		resourceConfigTpl,
-	)
+	linkResourceName := "oxide_ip_pool_silo_link.test"
 
-	configUpdate := sharedtest.ParsedAccConfig(t,
-		resourceConfigUpdate{
-			BlockName:         blockName,
-			IPPoolName:        ipPoolName,
-			BlockName2:        blockName2,
-			IPPoolName2:       sharedtest.NewResourceName(),
-			SupportBlockName:  supportBlockName,
-			SupportBlockName2: sharedtest.NewBlockName("support"),
-		},
-		resourceUpdateConfigTpl,
-	)
-
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { sharedtest.PreCheck(t) },
 		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
-		CheckDestroy:             testAccResourceDestroy,
 		Steps: []resource.TestStep{
+			// Create pool and link.
 			{
-				Config: config,
-				Check:  checkResource(resourceName),
+				Config: testResourceConfig(ipPoolName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(linkResourceName, "id"),
+					// The ID is the composite ip_pool_id/silo_id.
+					checkLinkIDComposite(linkResourceName),
+					resource.TestCheckResourceAttr(linkResourceName, "is_default", "false"),
+					resource.TestCheckResourceAttr(linkResourceName, "timeouts.read", "1m"),
+					resource.TestCheckResourceAttr(linkResourceName, "timeouts.create", "3m"),
+					resource.TestCheckResourceAttr(linkResourceName, "timeouts.delete", "2m"),
+					resource.TestCheckResourceAttr(linkResourceName, "timeouts.update", "4m"),
+				),
 			},
+			// Import using the composite ID (format: ip_pool_id/silo_id).
 			{
-				Config: configUpdate,
-				Check:  checkResourceUpdate(resourceName, resourceName2),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            linkResourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"timeouts"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[linkResourceName]
+					if !ok {
+						return "", fmt.Errorf("resource not found: %s", linkResourceName)
+					}
+					return fmt.Sprintf(
+						"%s/%s",
+						rs.Primary.Attributes["ip_pool_id"],
+						rs.Primary.Attributes["silo_id"],
+					), nil
+				},
 			},
 		},
 	})
 }
 
-func checkResource(resourceName string) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttrSet(resourceName, "silo_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "ip_pool_id"),
-		resource.TestCheckResourceAttr(resourceName, "is_default", "true"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.read", "1m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.delete", "2m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.create", "3m"),
-		resource.TestCheckResourceAttr(resourceName, "timeouts.update", "4m"),
-	}...)
+func TestAccSiloResourceIPPoolSiloLink_disappears(t *testing.T) {
+	ipPoolName := sharedtest.NewResourceName()
+	linkResourceName := "oxide_ip_pool_silo_link.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testResourceConfig(ipPoolName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(linkResourceName, "id"),
+					// Delete the link out of band.
+					testAccResourceDisappears(linkResourceName),
+				),
+				// Detect the link is gone.
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
 }
 
-func checkResourceUpdate(resourceName, resourceName2 string) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
-		resource.TestCheckResourceAttrSet(resourceName, "id"),
-		resource.TestCheckResourceAttrSet(resourceName, "silo_id"),
-		resource.TestCheckResourceAttrSet(resourceName, "ip_pool_id"),
-		resource.TestCheckResourceAttr(resourceName, "is_default", "false"),
-		resource.TestCheckResourceAttrSet(resourceName2, "id"),
-		resource.TestCheckResourceAttrSet(resourceName2, "silo_id"),
-		resource.TestCheckResourceAttrSet(resourceName2, "ip_pool_id"),
-		resource.TestCheckResourceAttr(resourceName2, "is_default", "true"),
-	}...)
+func testResourceConfig(ipPoolName string) string {
+	return fmt.Sprintf(`
+data "oxide_silo" "test" {
+	name = "test-suite-silo"
 }
 
-func testAccResourceDestroy(s *terraform.State) error {
-	client, err := sharedtest.NewTestClient()
-	if err != nil {
-		return err
+resource "oxide_ip_pool" "test" {
+	name        = %[1]q
+	description = "a test ip_pool for silo link tests"
+}
+
+resource "oxide_ip_pool_silo_link" "test" {
+	ip_pool_id = oxide_ip_pool.test.id
+	silo_id    = data.oxide_silo.test.id
+	is_default = false
+	timeouts = {
+		read   = "1m"
+		create = "3m"
+		delete = "2m"
+		update = "4m"
 	}
+}
+`, ipPoolName)
+}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "oxide_ip_pool" {
-			continue
+// checkLinkIDComposite asserts that the resource ID is the composite
+// ip_pool_id/silo_id value.
+func checkLinkIDComposite(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
 		}
 
-		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, time.Minute)
-		defer cancel()
-
-		ipPoolID := rs.Primary.Attributes["ip_pool_id"]
-		siloID := rs.Primary.Attributes["silo_id"]
-		params := oxide.SystemIpPoolSiloListParams{
-			Pool:   oxide.NameOrId(oxide.NameOrId(ipPoolID)),
-			Limit:  oxide.NewPointer(1000000000),
-			SortBy: oxide.IdSortModeIdAscending,
-		}
-
-		links, err := client.SystemIpPoolSiloList(ctx, params)
-		if err != nil && shared.Is404(err) {
-			continue
-		}
-
-		idx := slices.IndexFunc(
-			links.Items,
-			func(l oxide.IpPoolSiloLink) bool { return l.SiloId == siloID },
+		want := fmt.Sprintf(
+			"%s/%s",
+			rs.Primary.Attributes["ip_pool_id"],
+			rs.Primary.Attributes["silo_id"],
 		)
-		if idx >= 0 {
-			return fmt.Errorf(
-				"link between IP pool: '%v' and silo '%v' still exists",
-				ipPoolID,
-				siloID,
-			)
+		if got := rs.Primary.Attributes["id"]; got != want {
+			return fmt.Errorf("expected id %q, got %q", want, got)
 		}
-	}
 
-	return nil
+		return nil
+	}
+}
+
+func testAccResourceDisappears(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		client, err := sharedtest.NewTestClient()
+		if err != nil {
+			return err
+		}
+
+		params := oxide.SystemIpPoolSiloUnlinkParams{
+			Pool: oxide.NameOrId(rs.Primary.Attributes["ip_pool_id"]),
+			Silo: oxide.NameOrId(rs.Primary.Attributes["silo_id"]),
+		}
+
+		return client.SystemIpPoolSiloUnlink(context.Background(), params)
+	}
 }
