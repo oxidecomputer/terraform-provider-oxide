@@ -106,11 +106,7 @@ func (r *Resource) Schema(
 				Required:    true,
 				Description: "ID of the silo to link the subnet pool to.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplaceIf(
-						shared.RequiresReplaceUnlessNonUUIDToUUID(),
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-					),
+					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					oxidevalidator.IsUUID(),
@@ -120,11 +116,7 @@ func (r *Resource) Schema(
 				Required:    true,
 				Description: "ID of the subnet pool that will be linked to the silo.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplaceIf(
-						shared.RequiresReplaceUnlessNonUUIDToUUID(),
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-					),
+					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					oxidevalidator.IsUUID(),
@@ -243,9 +235,14 @@ func (r *Resource) Read(
 		map[string]any{"success": true},
 	)
 
+	subnetPoolID := state.SubnetPoolID.ValueString()
 	idx := slices.IndexFunc(
 		pools,
-		func(p oxide.SiloSubnetPool) bool { return p.Id == state.SubnetPoolID.ValueString() },
+		func(p oxide.SiloSubnetPool) bool {
+			// We check for both ID and name equality to ensure resources that
+			// mistakenly used the subnet pool name aren't removed from state.
+			return p.Id == subnetPoolID || p.Name == oxide.Name(subnetPoolID)
+		},
 	)
 	if idx < 0 {
 		resp.State.RemoveResource(ctx)
@@ -273,6 +270,7 @@ func (r *Resource) Read(
 	// Set a deterministic ID based on composite attributes.
 	state.ID = types.StringValue(fmt.Sprintf("%s/%s", pools[idx].Id, silo.Id))
 
+	state.SiloID = types.StringValue(silo.Id)
 	state.SubnetPoolID = types.StringValue(pools[idx].Id)
 	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)
 

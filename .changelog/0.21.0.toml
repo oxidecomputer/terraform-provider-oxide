@@ -15,3 +15,11 @@ description = "The composite `id` attribute, formatted as `IP_POOL_ID/SILO_ID`, 
 [[bugs]]
 title = "`oxide_subnet_pool_silo_link`"
 description = "The composite `id` attribute, formatted as `SUBNET_POOL_ID/SILO_ID`, now resolves `SILO_ID` to its UUID, even if the `silo_id` attribute was previously configured by name."
+
+[[bugs]]
+title = "`oxide_ip_pool_silo_link`"
+description = "The `silo_id` attribute now resolves to the silo's UUID, even if the attribute was previously configured by name."
+
+[[bugs]]
+title = "`oxide_subnet_pool_silo_link`"
+description = "The `silo_id` attribute now resolves to the silo's UUID, even if the attribute was previously configured by name."

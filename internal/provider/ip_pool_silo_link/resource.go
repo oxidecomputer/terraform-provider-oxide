@@ -108,11 +108,7 @@ This resource manages IP pool to silo links.
 				Required:    true,
 				Description: "ID of the silo to link the IP pool to.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplaceIf(
-						shared.RequiresReplaceUnlessNonUUIDToUUID(),
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-					),
+					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					oxidevalidator.IsUUID(),
@@ -122,11 +118,7 @@ This resource manages IP pool to silo links.
 				Required:    true,
 				Description: "ID of the IP pool that will be linked to the silo.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplaceIf(
-						shared.RequiresReplaceUnlessNonUUIDToUUID(),
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-						"If the value of this attribute changes from non-UUID to UUID, do not replace this resource.",
-					),
+					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					oxidevalidator.IsUUID(),
@@ -284,6 +276,7 @@ func (r *Resource) Read(
 		fmt.Sprintf("%s/%s", pools[idx].Id, silo.Id),
 	)
 
+	state.SiloID = types.StringValue(silo.Id)
 	state.IPPoolID = types.StringValue(pools[idx].Id)
 	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)
 
