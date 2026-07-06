@@ -13,6 +13,11 @@ on:
     inputs:
       omicron_version:
         description: 'Git object to use for Omicron (commit SHA, tag, branch etc.). If not specified, the VERSION_OMICRON from oxide.go is used.'
+      testrail-upload:
+        description: 'Upload test results to TestRail'
+        type: boolean
+        required: false
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -65,7 +70,7 @@ jobs:
         if: matrix.tf-binary == 'terraform' # Linting tools require Terraform to be installed.
         run: make lint
       - name: upload test results to TestRail
-        if: always()
+        if: ${{ always() && inputs.testrail-upload }}
         continue-on-error: true
         env:
           TR_CLI_HOST: ${{ secrets.TESTRAIL_HOST }}
@@ -170,6 +175,7 @@ jobs:
     uses: "./.github/workflows/acceptance-sim.yml"
     with:
       omicron-sha: ${{ needs.omicron-version.outputs.sha }}
+      testrail-upload: ${{ inputs.testrail-upload || false }}
     secrets:
       testrail-host: ${{ secrets.TESTRAIL_HOST }}
       testrail-username: ${{ secrets.TESTRAIL_USERNAME }}
