@@ -23,6 +23,7 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
 var (
@@ -240,6 +241,9 @@ This resource manages switch port settings.
 									"address_lot_id": schema.StringAttribute{
 										Required:    true,
 										Description: "Address lot the address is allocated from.",
+										Validators: []validator.String{
+											oxidevalidator.IsUUID(),
+										},
 									},
 									"vlan_id": schema.Int32Attribute{
 										Optional:    true,

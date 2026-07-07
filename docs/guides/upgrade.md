@@ -17,6 +17,46 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.21.0`
+
+Release `0.21.0` contains breaking changes that require updates to Terraform
+configuration files.
+
+### UUID Validation
+
+Attributes that expect UUIDs now validate whether their values are, in fact,
+valid UUIDs. This catches cases where names passed to attributes expecting UUIDs
+accidentally worked.
+
+Terraform plans will fail with an `Invalid UUID` error on affected attributes.
+
+```
+╷
+│ Error: Invalid UUID
+│
+│   with oxide_ip_pool_silo_link.example,
+│   on main.tf line 15, in resource "oxide_ip_pool_silo_link" "example":
+│   15:   silo_id    = "oxide"
+│
+│ Attribute silo_id value must be a valid UUID, got: oxide
+╵
+```
+
+Update the attribute to its UUID to comply with the validation.
+
+```diff
+--- main.tf
++++ main.tf
+ }
+
+ resource "oxide_ip_pool_silo_link" "example" {
+-  silo_id    = "oxide"
++  silo_id    = "338bfaf2-75d3-4a1c-8850-32173960f658"
+   ip_pool_id = "c6f8c195-8cee-40b5-bc95-7eb86edec285"
+   is_default = false
+ }
+```
+
 ## Upgrading to `0.20.0`
 
 Release `0.20.0` contains breaking changes that require updates to Terraform
