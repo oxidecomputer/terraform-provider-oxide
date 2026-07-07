@@ -6,6 +6,10 @@ on:
       omicron-sha:
         type: "string"
         required: true
+      testrail-upload:
+        type: "boolean"
+        required: false
+        default: false
     secrets:
       testrail-host:
         required: false
@@ -129,24 +133,24 @@ jobs:
           if [ -f ./acc-test-rerun.txt ]; then
             echo "::warning title=${{ github.job }} (${{ matrix.tf-binary }}) - test rerun::$(cat ./acc-test-rerun.txt)"
           fi
-      #- name: upload test results to TestRail
-      #  if: always()
-      #  continue-on-error: true
-      #  env:
-      #    TR_CLI_HOST: ${{ secrets.testrail-host }}
-      #    TR_CLI_USERNAME: ${{ secrets.testrail-username }}
-      #    TR_CLI_KEY: ${{ secrets.testrail-api-key }}
-      #    TR_CLI_PROJECT: ${{ secrets.testrail-project }}
-      #  run: |
-      #    uvx trcli \
-      #      --yes `# Auto-create new test cases.` \
-      #      parse_junit \
-      #        --file './acctest/acc-tests.xml' \
-      #        --title 'Acceptance Tests (${{ matrix.tf-binary }}) - ${{ github.run_id }} - ${{ job.check_run_id }}' \
-      #        --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}' \
-      #        --update-existing-cases 'yes' \
-      #        --case-matcher 'auto' \
-      #        --close-run
+      - name: upload test results to TestRail
+        if: ${{ always() && inputs.testrail-upload }}
+        continue-on-error: true
+        env:
+          TR_CLI_HOST: ${{ secrets.testrail-host }}
+          TR_CLI_USERNAME: ${{ secrets.testrail-username }}
+          TR_CLI_KEY: ${{ secrets.testrail-api-key }}
+          TR_CLI_PROJECT: ${{ secrets.testrail-project }}
+        run: |
+          uvx trcli \
+            --yes `# Auto-create new test cases.` \
+            parse_junit \
+              --file './acctest/acc-tests.xml' \
+              --title 'Acceptance Tests (${{ matrix.tf-binary }}) - ${{ github.run_id }} - ${{ job.check_run_id }}' \
+              --run-description 'GitHub workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}' \
+              --update-existing-cases 'yes' \
+              --case-matcher 'auto' \
+              --close-run
       - name: upload logs
         if: always()
         continue-on-error: true
