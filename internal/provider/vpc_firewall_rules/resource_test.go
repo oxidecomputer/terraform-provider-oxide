@@ -480,7 +480,7 @@ func TestAccCloudResourceFirewallRules_v1_upgrade(t *testing.T) {
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"oxide": {
-						Source:            "oxidecomputer/oxide",
+						Source:            "registry.terraform.io/oxidecomputer/oxide",
 						VersionConstraint: "0.14.1",
 					},
 				},
@@ -1118,7 +1118,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"oxide": {
-						Source:            "oxidecomputer/oxide",
+						Source:            "registry.terraform.io/oxidecomputer/oxide",
 						VersionConstraint: "0.12.0",
 					},
 				},
@@ -1145,7 +1145,7 @@ resource "oxide_vpc_firewall_rules" "test" {
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"oxide": {
-						Source:            "oxidecomputer/oxide",
+						Source:            "registry.terraform.io/oxidecomputer/oxide",
 						VersionConstraint: "0.13.0",
 					},
 				},
