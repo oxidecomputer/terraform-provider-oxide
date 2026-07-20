@@ -39,7 +39,7 @@ jobs:
         if: matrix.tf-binary == 'tofu'
         with:
           tofu_wrapper: false
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
       - uses: docker/setup-compose-action@v2
