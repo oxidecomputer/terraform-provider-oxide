@@ -15,3 +15,7 @@ description = "The `silo_id` attribute now resolves to the silo's UUID, even if 
 [[bugs]]
 title = "`oxide_subnet_pool_silo_link`"
 description = "The `silo_id` attribute now resolves to the silo's UUID, even if the attribute was previously configured by name. [#795](https://github.com/oxidecomputer/terraform-provider-oxide/pull/795)."
+
+[[bugs]]
+title = "`oxide_system_ip_pools`"
+description = "The `oxide_system_ip_pools` data source now uses the `system_ip_pool_list` API, allowing it to read all the IP pools for the system.. [#807](https://github.com/oxidecomputer/terraform-provider-oxide/pull/807)."
