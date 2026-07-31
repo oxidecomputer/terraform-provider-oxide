@@ -23,3 +23,7 @@ description = "The `silo_id` attribute now resolves to the silo's UUID, even if 
 [[bugs]]
 title = "`oxide_system_ip_pools`"
 description = "The `oxide_system_ip_pools` data source now uses the `system_ip_pool_list` API, allowing it to read all the IP pools for the system.. [#807](https://github.com/oxidecomputer/terraform-provider-oxide/pull/807)."
+
+[[bugs]]
+title = "`oxide_silo`"
+description = "The `tls_certificates[].key` attribute is now marked sensitive and its cleartext value no longer logged in debug mode, resolving [Oxide Security Advisory 20260804-1](https://docs.oxide.computer/security/advisories/20260804-1). [#810](https://github.com/oxidecomputer/terraform-provider-oxide/pull/810)"
