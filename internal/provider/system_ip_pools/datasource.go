@@ -131,10 +131,10 @@ func (d *DataSource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	params := oxide.IpPoolListParams{
+	params := oxide.SystemIpPoolListParams{
 		SortBy: oxide.NameOrIdSortModeIdAscending,
 	}
-	ipPools, err := d.client.IpPoolListAllPages(ctx, params)
+	ipPools, err := d.client.SystemIpPoolListAllPages(ctx, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to read system IP pools list:",
