@@ -381,6 +381,7 @@ This resource manages switch port settings.
 										Description: "BGP local preference value for routes received from this peer.",
 									},
 									"md5_auth_key": schema.StringAttribute{
+										Sensitive:   true,
 										Optional:    true,
 										Description: "MD5 authentication key for this BGP session.",
 									},
