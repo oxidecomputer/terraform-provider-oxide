@@ -1,3 +1,51 @@
+# 0.21.0 (2026/Aug/05)
+
+### New features
+
+- **`oxide_ip_pool_silo_link`:** The `id` attribute for the `oxide_ip_pool_silo_link` resource now uses the format `IP_POOL_ID/SILO_ID`, matching the `oxide_subnet_pool_silo_link` resource. [#794](https://github.com/oxidecomputer/terraform-provider-oxide/pull/794)
+
+### Enhancements
+
+- **Validate UUID Attributes:** Attributes that expect UUIDs now validate whether their values are, in fact, valid UUIDs. This catches cases where names passed to attributes expecting UUIDs accidentally worked. [#795](https://github.com/oxidecomputer/terraform-provider-oxide/pull/795).
+- **`oxide_switch_port_settings`:** The `md5_auth_key` attribute is now configured to be sensitive. [#808](https://github.com/oxidecomputer/terraform-provider-oxide/pull/808).
+
+### Bug fixes
+
+- **`oxide_ip_pool_silo_link`:** The `silo_id` attribute now resolves to the silo's UUID, even if the attribute was previously configured by name. [#795](https://github.com/oxidecomputer/terraform-provider-oxide/pull/795).
+- **`oxide_subnet_pool_silo_link`:** The `silo_id` attribute now resolves to the silo's UUID, even if the attribute was previously configured by name. [#795](https://github.com/oxidecomputer/terraform-provider-oxide/pull/795).
+- **`oxide_system_ip_pools`:** The `oxide_system_ip_pools` data source now uses the `system_ip_pool_list` API, allowing it to read all the IP pools for the system.. [#807](https://github.com/oxidecomputer/terraform-provider-oxide/pull/807).
+- **`oxide_silo`:** The `tls_certificates[].key` attribute is now marked sensitive and its cleartext value no longer logged in debug mode, resolving [Oxide Security Advisory 20260804-1](https://docs.oxide.computer/security/advisories/20260804-1). [#810](https://github.com/oxidecomputer/terraform-provider-oxide/pull/810)
+
+### List of commits
+
+- [ce32553](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ce32553) misc: reconcile changelog on default branch (#812)
+- [5978de0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5978de0) fix(oxide_silo): mark tls_certificates[].key attribute sensitive (#810)
+- [ac59d3a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ac59d3a) oxide_switch_port_settings: mark the md5_auth_key attribute as sensitive (#808)
+- [4eb5dd9](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4eb5dd9) fix(oxide_system_ip_pools): use system_ip_pool_list api (#807)
+- [38591ec](https://github.com/oxidecomputer/terraform-provider-oxide/commit/38591ec) build(deps): bump docker/login-action from 4 to 4.5.2 (#805)
+- [cc0c253](https://github.com/oxidecomputer/terraform-provider-oxide/commit/cc0c253) build(deps): bump google.golang.org/grpc from 1.79.3 to 1.82.1 (#804)
+- [5d0e749](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5d0e749) build(deps): bump actions/setup-go from 6 to 7 (#802)
+- [c1b14ff](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c1b14ff) fix: use fully-qualified provider source (#803)
+- [c445cb5](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c445cb5) build(deps): bump golang.org/x/crypto from 0.45.0 to 0.52.0 in /tools (#800)
+- [dbe942b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/dbe942b) build(deps): bump golang.org/x/crypto from 0.51.0 to 0.52.0 (#801)
+- [c9bd498](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c9bd498) enhancement: validate uuid attributes (#795)
+- [4a5743f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4a5743f) ci: re-enable TestRail upload on manual runs (#799)
+- [e11529f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e11529f) build(deps): bump golang.org/x/net from 0.52.0 to 0.55.0 (#798)
+- [2bae38f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/2bae38f) build(deps): bump goreleaser/goreleaser-action from 7.2.2 to 7.2.3 (#797)
+- [722e9a3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/722e9a3) oxide_ip_pool_silo_link: use composite attributes for id (#794)
+- [d67ef60](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d67ef60) misc: update golangci-lint rules (#796)
+- [3d1009f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3d1009f) docs: update release notes (#790)
+- [581a46a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/581a46a) ci: pause TestRail upload for now (#792)
+- [f728c1e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f728c1e) build(deps): bump actions/cache from 5 to 6 (#787)
+- [10f4dd5](https://github.com/oxidecomputer/terraform-provider-oxide/commit/10f4dd5) release: prepare for v0.21.0 (#789)
+- [de91443](https://github.com/oxidecomputer/terraform-provider-oxide/commit/de91443) release v0.20.1 (#788)
+- [1ff95ea](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1ff95ea) credentials: add new function to read credentials (#782)
+- [5379ca4](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5379ca4) tests: refactor `sharedtest.ParsedAccConfig` (#783)
+- [b4cf8a7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b4cf8a7) ci: fix simulate Omicron image (#780)
+- [6ff02c0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6ff02c0) ci: ignore errors on log collection (#777)
+- [4b64ec0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4b64ec0) build(deps): bump actions/checkout from 6 to 7 (#773)
+- [b1fc80f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b1fc80f) misc: prepare for release v0.20.0 (#774)
+
 # 0.20.2 (2026/Aug/05)
 
 ### Bug fixes

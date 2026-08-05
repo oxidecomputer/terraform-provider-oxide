@@ -226,7 +226,7 @@ Required:
 Optional:
 
 - `local_pref` (Number) BGP local preference value for routes received from this peer.
-- `md5_auth_key` (String) MD5 authentication key for this BGP session.
+- `md5_auth_key` (String, Sensitive) MD5 authentication key for this BGP session.
 - `min_ttl` (Number) Minimum acceptable TTL for BGP packets from this peer.
 - `multi_exit_discriminator` (Number) Multi-exit discriminator (MED) to advertise to this peer.
 - `remote_asn` (Number) Remote autonomous system number for this BGP peer.

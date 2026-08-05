@@ -19,7 +19,7 @@ for a full list of changes.
 
 ## Upgrading to `0.21.0`
 
-Release `0.21.0` contains breaking changes that require updates to Terraform
+Release `0.21.0` contains changes that may require updates to Terraform
 configuration files.
 
 ### UUID Validation
