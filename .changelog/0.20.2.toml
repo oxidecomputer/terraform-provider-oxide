@@ -1,0 +1,3 @@
+[[bugs]]
+title = "`oxide_silo`"
+description = "The `tls_certificates[].key` attribute is now marked sensitive and its cleartext value no longer logged in debug mode, resolving [Oxide Security Advisory 20260804-1](https://docs.oxide.computer/security/advisories/20260804-1). [#810](https://github.com/oxidecomputer/terraform-provider-oxide/pull/810)"
