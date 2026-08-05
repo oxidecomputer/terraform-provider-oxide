@@ -1,3 +1,13 @@
+# 0.20.2 (2026/Aug/05)
+
+### Bug fixes
+
+- **`oxide_silo`:** The `tls_certificates[].key` attribute is now marked sensitive and its cleartext value no longer logged in debug mode, resolving [Oxide Security Advisory 20260804-1](https://docs.oxide.computer/security/advisories/20260804-1). [#810](https://github.com/oxidecomputer/terraform-provider-oxide/pull/810)
+
+### List of commits
+
+- [5978de0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5978de0) fix(oxide_silo): mark tls_certificates[].key attribute sensitive (#810)
+
 # 0.20.1 (2026/Jun/26)
 
 ### New features
