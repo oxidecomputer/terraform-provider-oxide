@@ -214,6 +214,7 @@ attributes will result in the silo being destroyed and created anew.
 						"key": schema.StringAttribute{
 							Required:    true,
 							WriteOnly:   true,
+							Sensitive:   true,
 							Description: "PEM-formatted string containing private key.",
 						},
 						"service": schema.StringAttribute{
@@ -345,8 +346,6 @@ func (r *Resource) Create(
 			TlsCertificates: tlsCertsModelToCertificateCreateSlice(plan.TlsCertificates),
 		},
 	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Silo creation parameters: %+v", params.Body.TlsCertificates), nil)
 
 	silo, err := r.client.SiloCreate(ctx, params)
 	if err != nil {
