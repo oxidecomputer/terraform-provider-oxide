@@ -46,6 +46,14 @@
 - [4b64ec0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4b64ec0) build(deps): bump actions/checkout from 6 to 7 (#773)
 - [b1fc80f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/b1fc80f) misc: prepare for release v0.20.0 (#774)
 
+# 0.20.3 (2026/Aug/05)
+
+This release contains only documentation corrections. There are no provider code changes.
+
+### List of commits
+
+- [9dfedc3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/9dfedc3) misc: fix documentation for v0.20.x
+
 # 0.20.2 (2026/Aug/05)
 
 ### Bug fixes
