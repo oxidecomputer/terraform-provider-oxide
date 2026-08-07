@@ -24,8 +24,10 @@ import (
 )
 
 var (
-	_ resource.Resource              = (*Resource)(nil)
-	_ resource.ResourceWithConfigure = (*Resource)(nil)
+	_ resource.Resource                 = (*Resource)(nil)
+	_ resource.ResourceWithConfigure    = (*Resource)(nil)
+	_ resource.ResourceWithImportState  = (*Resource)(nil)
+	_ resource.ResourceWithUpgradeState = (*Resource)(nil)
 )
 
 // NewResource returns a new silo SAML identity provider resource.
@@ -92,6 +94,7 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
+		Version: 1,
 		MarkdownDescription: `
 Manages a SAML identity provider (IdP) for an Oxide silo.
 
@@ -128,10 +131,12 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 			},
 			"idp_metadata_source": schema.SingleNestedAttribute{
 				Required:    true,
+				WriteOnly:   true,
 				Description: "Source of identity provider metadata (URL or base64-encoded XML).",
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
 						Required:            true,
+						WriteOnly:           true,
 						MarkdownDescription: "The type of metadata source. Must be one of: `url`, `base64_encoded_xml`.",
 						Validators: []validator.String{
 							stringvalidator.OneOf(
@@ -142,6 +147,7 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 					},
 					"url": schema.StringAttribute{
 						Optional:            true,
+						WriteOnly:           true,
 						MarkdownDescription: "URL to fetch metadata from (required when type is `url`). Conflicts with `data`.",
 						Validators: []validator.String{
 							stringvalidator.ConflictsWith(
@@ -151,6 +157,7 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 					},
 					"data": schema.StringAttribute{
 						Optional:            true,
+						WriteOnly:           true,
 						MarkdownDescription: "Base64-encoded XML metadata (required when type is `base64_encoded_xml`). Conflicts with `url`.",
 						Validators: []validator.String{
 							stringvalidator.ConflictsWith(
@@ -173,12 +180,13 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 				Attributes: map[string]schema.Attribute{
 					"private_key": schema.StringAttribute{
 						Required:    true,
+						WriteOnly:   true,
 						Sensitive:   true,
-						Description: "RSA private key (base64 encoded).",
+						Description: "Request signing RSA private key in PKCS#1 DER format (base64 encoded).",
 					},
 					"public_cert": schema.StringAttribute{
 						Required:    true,
-						Description: "Public certificate (base64 encoded).",
+						Description: "Request signing public certificate in DER format (base64 encoded).",
 					},
 				},
 			},
@@ -222,6 +230,24 @@ func (r *Resource) Create(
 		return
 	}
 
+	// Fetch write-only attributes from the configuration instead of the plan, as
+	// documented by the plugin framework.
+	var idpMetadataSourceConfig *MetadataSourceResourceModel
+	resp.Diagnostics.Append(req.Config.GetAttribute(
+		ctx,
+		path.Root("idp_metadata_source"),
+		&idpMetadataSourceConfig,
+	)...)
+	var signingKeypairConfig *SigningKeypairResourceModel
+	resp.Diagnostics.Append(req.Config.GetAttribute(
+		ctx,
+		path.Root("signing_keypair"),
+		&signingKeypairConfig,
+	)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createTimeout, diags := plan.Timeouts.Create(ctx, shared.DefaultTimeout())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -232,17 +258,17 @@ func (r *Resource) Create(
 	defer cancel()
 
 	var idpMetadataSource oxide.IdpMetadataSource
-	switch oxide.IdpMetadataSourceType(plan.IdpMetadataSource.Type.ValueString()) {
+	switch oxide.IdpMetadataSourceType(idpMetadataSourceConfig.Type.ValueString()) {
 	case oxide.IdpMetadataSourceTypeBase64EncodedXml:
 		idpMetadataSource = oxide.IdpMetadataSource{
 			Value: &oxide.IdpMetadataSourceBase64EncodedXml{
-				Data: plan.IdpMetadataSource.Data.ValueString(),
+				Data: idpMetadataSourceConfig.Data.ValueString(),
 			},
 		}
 	case oxide.IdpMetadataSourceTypeUrl:
 		idpMetadataSource = oxide.IdpMetadataSource{
 			Value: &oxide.IdpMetadataSourceUrl{
-				Url: plan.IdpMetadataSource.Url.ValueString(),
+				Url: idpMetadataSourceConfig.Url.ValueString(),
 			},
 		}
 	default:
@@ -250,7 +276,7 @@ func (r *Resource) Create(
 			"Invalid IDP metadata source type",
 			fmt.Sprintf(
 				"Unexpected IDP metadata source type: %s",
-				plan.IdpMetadataSource.Type.ValueString(),
+				idpMetadataSourceConfig.Type.ValueString(),
 			),
 		)
 		return
@@ -271,10 +297,10 @@ func (r *Resource) Create(
 		},
 	}
 
-	if plan.SigningKeypair != nil {
+	if signingKeypairConfig != nil {
 		params.Body.SigningKeypair = oxide.DerEncodedKeyPair{
-			PrivateKey: plan.SigningKeypair.PrivateKey.ValueString(),
-			PublicCert: plan.SigningKeypair.PublicCert.ValueString(),
+			PrivateKey: signingKeypairConfig.PrivateKey.ValueString(),
+			PublicCert: signingKeypairConfig.PublicCert.ValueString(),
 		}
 	}
 
@@ -283,9 +309,8 @@ func (r *Resource) Create(
 	if errors.Is(err, oxide.ErrObjectAlreadyExists) {
 		// Read the remote state from the Oxide Control Plane.
 		// The response does not include all parameters from the Create.
-		// The idp_metadata_source and the signing_keypair.private_key attributes are not returned
-		// from the API on a read. In those cases, the plan includes the user-provided values from
-		// the configuration.
+		// The idp_metadata_source and signing_keypair.private_key attributes are
+		// not returned from the API on a read.
 		idpConfig, err = r.client.SamlIdentityProviderView(
 			ctx,
 			oxide.SamlIdentityProviderViewParams{
@@ -304,7 +329,10 @@ func (r *Resource) Create(
 		// Diff the remote state with the configuration before adopting the resource
 		// If any parameters differ, diagnostics are returned and we should abort to display
 		// errors to the user.
-		if diagnostics := plan.Diff(idpConfig); diagnostics.HasError() {
+		if diagnostics := plan.diff(
+			idpConfig,
+			signingKeypairConfig,
+		); diagnostics.HasError() {
 			resp.Diagnostics.Append(diagnostics...)
 			return
 		}
@@ -405,6 +433,14 @@ func (r *Resource) Read(
 	state.Description = types.StringValue(idpConfig.Description)
 	state.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
 	state.Name = types.StringValue(string(idpConfig.Name))
+	if idpConfig.PublicCert == "" {
+		state.SigningKeypair = nil
+	} else {
+		state.SigningKeypair = &SigningKeypairResourceModel{
+			PrivateKey: types.StringNull(),
+			PublicCert: types.StringValue(idpConfig.PublicCert),
+		}
+	}
 	state.SloUrl = types.StringValue(idpConfig.SloUrl)
 	state.SpClientId = types.StringValue(idpConfig.SpClientId)
 	state.TechnicalContactEmail = types.StringValue(idpConfig.TechnicalContactEmail)
@@ -449,17 +485,67 @@ func (r *Resource) Delete(
 	)
 }
 
-// Diff returns diagnostics for any attributes that differ between the
+// ImportState implements [resource.ResourceWithImportState].
+func (r *Resource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// UpgradeState implements [resource.ResourceWithUpgradeState].
+func (r *Resource) UpgradeState(
+	ctx context.Context,
+) map[int64]resource.StateUpgrader {
+	priorSchema := r.schemaV0(ctx)
+
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema:   &priorSchema,
+			StateUpgrader: r.stateUpgraderV0ToCurrent,
+		},
+	}
+}
+
+// stateUpgraderV0ToCurrent updates the v0 state to current.
+func (r *Resource) stateUpgraderV0ToCurrent(
+	ctx context.Context,
+	req resource.UpgradeStateRequest,
+	resp *resource.UpgradeStateResponse,
+) {
+	var state ResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Explicitly remove write-only attributes from state. The Terraform plugin
+	// framework does this automatically but having this here makes it easier to
+	// understand the intentions of the state upgrade.
+	state.IdpMetadataSource = nil
+	if state.SigningKeypair != nil {
+		state.SigningKeypair.PrivateKey = types.StringNull()
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+// diff returns diagnostics for any attributes that differ between the
 // configuration (m) and the remote IdP state. It only compares
 // attributes the Oxide API returns on read; idp_metadata_source and
 // signing_keypair.private_key are not returned and therefore cannot be diffed.
-func (m ResourceModel) Diff(remote *oxide.SamlIdentityProvider) diag.Diagnostics {
+func (m ResourceModel) diff(
+	remote *oxide.SamlIdentityProvider,
+	signingKeypairConfig *SigningKeypairResourceModel,
+) diag.Diagnostics {
 	// signing_keypair is optional; when the block is absent, treat the
 	// public_cert as the empty string so the comparison flags a mismatch
 	// when the remote IdP has a cert configured.
 	var signingPublicCert string
-	if m.SigningKeypair != nil {
-		signingPublicCert = m.SigningKeypair.PublicCert.ValueString()
+	if signingKeypairConfig != nil {
+		signingPublicCert = signingKeypairConfig.PublicCert.ValueString()
 	}
 
 	checks := []struct {

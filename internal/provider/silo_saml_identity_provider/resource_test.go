@@ -11,13 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
-
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
 type resourceConfig struct {
@@ -35,6 +34,7 @@ type resourceConfig struct {
 	SiloSamlIdentityProviderTechnicalContactEmail  string
 	SkipSiloSamlIdentityProviderGroupAttributeName bool
 	SkipSiloSamlIdentityProvider                   bool
+	IncludeSigningKeypair                          bool
 }
 
 var resourceConfigTpl = `
@@ -107,6 +107,14 @@ resource "oxide_silo_saml_identity_provider" "{{.SiloSamlIdentityProviderBlockNa
     type = "base64_encoded_xml"
     data = "PG1kOkVudGl0eURlc2NyaXB0b3IKCXhtbG5zPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6bWV0YWRhdGEiCgl4bWxuczptZD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm1ldGFkYXRhIgoJeG1sbnM6c2FtbD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmFzc2VydGlvbiIKCXhtbG5zOmRzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwLzA5L3htbGRzaWcjIiBlbnRpdHlJRD0iaHR0cHM6Ly9leGFtcGxlLmNvbSI+Cgk8bWQ6SURQU1NPRGVzY3JpcHRvciBXYW50QXV0aG5SZXF1ZXN0c1NpZ25lZD0idHJ1ZSIgcHJvdG9jb2xTdXBwb3J0RW51bWVyYXRpb249InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpwcm90b2NvbCI+CgkJPG1kOktleURlc2NyaXB0b3IgdXNlPSJzaWduaW5nIj4KCQkJPGRzOktleUluZm8+CgkJCQk8ZHM6S2V5TmFtZT5xWlc3N3I2Vy1NQVhCQURPWkdfb0lVeGlWSmhzWHJGa2tEUlFlQWREYzhjPC9kczpLZXlOYW1lPgoJCQkJPGRzOlg1MDlEYXRhPgoJCQkJCTxkczpYNTA5Q2VydGlmaWNhdGU+TUlJQ3VUQ0NBYUVDQmdHVUdOYUluekFOQmdrcWhraUc5dzBCQVFzRkFEQWdNUjR3SEFZRFZRUUREQlZrWlcxdkxUQXdaakF6WWpoaFpEUmpaVFExT0RJd0hoY05NalF4TWpNd01UZ3pNREF3V2hjTk16UXhNak13TVRnek1UUXdXakFnTVI0d0hBWURWUVFEREJWa1pXMXZMVEF3WmpBellqaGhaRFJqWlRRMU9ESXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDc04yR2Y4Z040b0hHSVI3NXZTaDBZakc0ejFyNytLSGx2cG84QnZmRm9hVk5QR255NHNOMVJGdlI5V25pOVMvM0lXRHNjaDV3NTZnMnk3MFNYcmloUWVKZUptUHhucVd1cUFuSDVLeUgxcjFZeVNqK3pHRGJpRHJyM3pBNlYvdFErUHlJZ0R1cUEvaGg1cmxoRndwOEdQRndnZFBCNTEyK2x5MmR5bTkzQ1BrdDdTdk1KQXhlOHFWYWZPTU9nVEIzcUdiT25jSDdYd1BMMnlhTUhKYUlsTFMwSHh5Ti81S1RrUk5aZERwb25JTFYvajlZT2hZSDdJRDl3c3Y2dlR2NnM3Y3BST0dPMmdFOUVPM1pzTTlwUWlxMjN0RGlTUjloY3BvT2piOElyc0VzMXYxZDlkUGRTV2xybSt4L0U1THlZb1VVT1RUdnlpWDdrU0dPVVFMbS9BZ01CQUFFd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFHTGhBSXlITURVSk9QNkttNzRIYjhUSncxdVh4bVJXRjBRcDBza1BtcUxFSEdRYVpic0R4YVBNYzR0ZDI2TUY0R2dMZ2FNZXVnQlkwZk12d0ErMGJDR0EwY2hLVWpJQUwybEg0UGpzVG15cGliVWMySDFlU1BsOTNoYlBzaTFPSm85bTRvblVHcmg3Z3hHWWJ5Tm85R0tBemgvMmZyZVNRbE82K1pmZkdmSlhabEtTT3pnangzcUVYOTc1N2t1Q3VYWVdtQ3hGbmROd0h2ZjdOTVJENUlQOHRYeEN4a09sbUFBZjRKbUlBbnNsNVp1KzR6K0NuZE1vNkYxMjFsT0t4Tkt2Y0ZYaHFQaHJyd1krZlFreEpXdWprVGp2dTRTN1FsM0dOMzVDWURZdDg5a2drL212VmVCaHVRd1pBR3dWRzE3RnlsN3BNRlFyTGtUQ2ErQmJyY1U9PC9kczpYNTA5Q2VydGlmaWNhdGU+CgkJCQk8L2RzOlg1MDlEYXRhPgoJCQk8L2RzOktleUluZm8+CgkJPC9tZDpLZXlEZXNjcmlwdG9yPgoJCTxtZDpBcnRpZmFjdFJlc29sdXRpb25TZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpTT0FQIiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIgaW5kZXg9IjAiLz4KCQk8bWQ6U2luZ2xlTG9nb3V0U2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1QT1NUIiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpTaW5nbGVMb2dvdXRTZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpIVFRQLVJlZGlyZWN0IiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpTaW5nbGVMb2dvdXRTZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpIVFRQLUFydGlmYWN0IiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpTaW5nbGVMb2dvdXRTZXJ2aWNlIEJpbmRpbmc9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpiaW5kaW5nczpTT0FQIiBMb2NhdGlvbj0iaHR0cHM6Ly9leGFtcGxlLmNvbSIvPgoJCTxtZDpOYW1lSURGb3JtYXQ+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6cGVyc2lzdGVudDwvbWQ6TmFtZUlERm9ybWF0PgoJCTxtZDpOYW1lSURGb3JtYXQ+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6dHJhbnNpZW50PC9tZDpOYW1lSURGb3JtYXQ+CgkJPG1kOk5hbWVJREZvcm1hdD51cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoxLjE6bmFtZWlkLWZvcm1hdDp1bnNwZWNpZmllZDwvbWQ6TmFtZUlERm9ybWF0PgoJCTxtZDpOYW1lSURGb3JtYXQ+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6MS4xOm5hbWVpZC1mb3JtYXQ6ZW1haWxBZGRyZXNzPC9tZDpOYW1lSURGb3JtYXQ+CgkJPG1kOlNpbmdsZVNpZ25PblNlcnZpY2UgQmluZGluZz0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmJpbmRpbmdzOkhUVFAtUE9TVCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCQk8bWQ6U2luZ2xlU2lnbk9uU2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1SZWRpcmVjdCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCQk8bWQ6U2luZ2xlU2lnbk9uU2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6U09BUCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCQk8bWQ6U2luZ2xlU2lnbk9uU2VydmljZSBCaW5kaW5nPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YmluZGluZ3M6SFRUUC1BcnRpZmFjdCIgTG9jYXRpb249Imh0dHBzOi8vZXhhbXBsZS5jb20iLz4KCTwvbWQ6SURQU1NPRGVzY3JpcHRvcj4KPC9tZDpFbnRpdHlEZXNjcmlwdG9yPgo="
   }
+
+  {{ if .IncludeSigningKeypair }}
+  signing_keypair = {
+    # PEM bodies are already base64-encoded DER; remove the PEM encapsulation.
+    private_key = replace(tls_private_key.self-signed.private_key_pem, "/-----[^-]+-----|[[:space:]]/", "")
+    public_cert = replace(tls_self_signed_cert.self-signed.cert_pem, "/-----[^-]+-----|[[:space:]]/", "")
+  }
+  {{ end }}
 }
 {{ end }}
 `
@@ -131,6 +139,7 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 			SiloName:                          siloName,
 			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
 			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
+			IncludeSigningKeypair:             true,
 		},
 		resourceConfigTpl,
 	)
@@ -150,8 +159,69 @@ func TestAccSiloResourceSiloSamlIdentityProvider_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check: checkResource(
+				Check: checkResourceWithSigningKeypair(
 					siloSamlIdentityProviderResourceID,
+					siloSamlIdentityProviderName,
+				),
+			},
+			{
+				ResourceName:            siloSamlIdentityProviderResourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"silo"},
+			},
+		},
+	})
+}
+
+func TestAccSiloResourceSiloSamlIdentityProvider_v0Upgrade(t *testing.T) {
+	siloBlockName := sharedtest.NewBlockName("silo")
+	siloName := sharedtest.NewResourceName()
+	siloSamlIdentityProviderBlockName := sharedtest.NewBlockName("silo-idp")
+	siloSamlIdentityProviderName := sharedtest.NewResourceName()
+	resourceName := fmt.Sprintf(
+		"oxide_silo_saml_identity_provider.%s",
+		siloSamlIdentityProviderBlockName,
+	)
+
+	config := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			SiloBlockName:                     siloBlockName,
+			SiloDNSName:                       sharedtest.SiloDNSName(),
+			SiloName:                          siloName,
+			SiloSamlIdentityProviderBlockName: siloSamlIdentityProviderBlockName,
+			SiloSamlIdentityProviderName:      siloSamlIdentityProviderName,
+			IncludeSigningKeypair:             true,
+		},
+		resourceConfigTpl,
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { sharedtest.PreCheck(t) },
+		CheckDestroy: testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"oxide": {
+						Source:            "registry.terraform.io/oxidecomputer/oxide",
+						VersionConstraint: "0.21.0",
+					},
+					"tls": {
+						Source: "hashicorp/tls",
+					},
+				},
+				Config: config,
+			},
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"tls": {
+						Source: "hashicorp/tls",
+					},
+				},
+				ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+				Config:                   config,
+				Check: checkResourceWithSigningKeypair(
+					resourceName,
 					siloSamlIdentityProviderName,
 				),
 			},
@@ -336,11 +406,24 @@ func TestAccSiloResourceSiloSamlIdentityProvider_adoptMismatch(t *testing.T) {
 	}
 }
 
+func checkResourceWithSigningKeypair(
+	resourceID string,
+	nameAttr string,
+) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		checkResource(resourceID, nameAttr),
+		resource.TestCheckResourceAttrSet(
+			resourceID,
+			"signing_keypair.public_cert",
+		),
+	)
+}
+
 func checkResource(
 	resourceID string,
 	nameAttr string,
 ) resource.TestCheckFunc {
-	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+	return resource.ComposeAggregateTestCheckFunc(
 		resource.TestCheckResourceAttrSet(resourceID, "id"),
 		resource.TestCheckResourceAttr(resourceID, "name", nameAttr),
 		resource.TestCheckResourceAttr(resourceID, "description", "Managed by Terraform."),
@@ -355,13 +438,11 @@ func checkResource(
 			"technical_contact_email",
 			"example@example.com",
 		),
-		resource.TestCheckResourceAttr(
-			resourceID,
-			"idp_metadata_source.type",
-			"base64_encoded_xml",
-		),
-		resource.TestCheckResourceAttrSet(resourceID, "idp_metadata_source.data"),
-	}...)
+		resource.TestCheckNoResourceAttr(resourceID, "idp_metadata_source.type"),
+		resource.TestCheckNoResourceAttr(resourceID, "idp_metadata_source.url"),
+		resource.TestCheckNoResourceAttr(resourceID, "idp_metadata_source.data"),
+		resource.TestCheckNoResourceAttr(resourceID, "signing_keypair.private_key"),
+	)
 }
 
 func testAccResourceDestroy(s *terraform.State) error {
