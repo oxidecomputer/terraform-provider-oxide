@@ -54,12 +54,12 @@ resource "oxide_silo_saml_identity_provider" "example" {
 
   idp_metadata_source = {
     type = "base64_encoded_xml"
-    data = base64encode(file("${path.module}/idp-metadata.xml"))
+    data = filebase64("${path.module}/idp-metadata.xml")
   }
 
   signing_keypair = {
-    private_key = base64encode(file("${path.module}/saml-key.pem"))
-    public_cert = base64encode(file("${path.module}/saml-cert.pem"))
+    private_key = filebase64("${path.module}/saml-key.der")
+    public_cert = filebase64("${path.module}/saml-cert.der")
   }
 }
 ```
@@ -69,10 +69,12 @@ resource "oxide_silo_saml_identity_provider" "example" {
 
 ### Required
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `acs_url` (String) URL where the identity provider should send the SAML response.
 - `description` (String) Free-form text describing the SAML identity provider.
 - `idp_entity_id` (String) Identity provider's entity ID.
-- `idp_metadata_source` (Attributes) Source of identity provider metadata (URL or base64-encoded XML). (see [below for nested schema](#nestedatt--idp_metadata_source))
+- `idp_metadata_source` (Attributes, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Source of identity provider metadata (URL or base64-encoded XML). (see [below for nested schema](#nestedatt--idp_metadata_source))
 - `name` (String) Unique, immutable, user-controlled identifier of the SAML identity provider.
 - `silo` (String) Name or ID of the silo.
 - `slo_url` (String) URL where the identity provider should send logout requests.
@@ -96,12 +98,12 @@ resource "oxide_silo_saml_identity_provider" "example" {
 
 Required:
 
-- `type` (String) The type of metadata source. Must be one of: `url`, `base64_encoded_xml`.
+- `type` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) The type of metadata source. Must be one of: `url`, `base64_encoded_xml`.
 
 Optional:
 
-- `data` (String) Base64-encoded XML metadata (required when type is `base64_encoded_xml`). Conflicts with `url`.
-- `url` (String) URL to fetch metadata from (required when type is `url`). Conflicts with `data`.
+- `data` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Base64-encoded XML metadata (required when type is `base64_encoded_xml`). Conflicts with `url`.
+- `url` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) URL to fetch metadata from (required when type is `url`). Conflicts with `data`.
 
 
 <a id="nestedatt--signing_keypair"></a>
@@ -109,8 +111,8 @@ Optional:
 
 Required:
 
-- `private_key` (String, Sensitive) RSA private key (base64 encoded).
-- `public_cert` (String) Public certificate (base64 encoded).
+- `private_key` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Request signing RSA private key in PKCS#1 DER format (base64 encoded).
+- `public_cert` (String) Request signing public certificate in DER format (base64 encoded).
 
 
 <a id="nestedatt--timeouts"></a>
@@ -120,3 +122,13 @@ Optional:
 
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import oxide_silo_saml_identity_provider.example 508d32b8-3685-43b6-846f-f339f3100ed9
+```
