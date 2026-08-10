@@ -10,8 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // schemaV0 is the resource schema before idp_metadata_source and
@@ -135,4 +137,28 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 			}),
 		},
 	}
+}
+
+// stateUpgraderV0 updates the v0 state to current.
+func (r *Resource) stateUpgraderV0(
+	ctx context.Context,
+	req resource.UpgradeStateRequest,
+	resp *resource.UpgradeStateResponse,
+) {
+	var state ResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Explicitly remove write-only attributes from state. The Terraform plugin
+	// framework does this automatically but having this here makes it easier to
+	// understand the intentions of the state upgrade.
+	state.IdpMetadataSource = nil
+	if state.SigningKeypair != nil {
+		state.SigningKeypair.PrivateKey = types.StringNull()
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

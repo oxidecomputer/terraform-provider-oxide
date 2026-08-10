@@ -433,9 +433,7 @@ func (r *Resource) Read(
 	state.Description = types.StringValue(idpConfig.Description)
 	state.IdpEntityId = types.StringValue(idpConfig.IdpEntityId)
 	state.Name = types.StringValue(string(idpConfig.Name))
-	if idpConfig.PublicCert == "" {
-		state.SigningKeypair = nil
-	} else {
+	if idpConfig.PublicCert != "" {
 		state.SigningKeypair = &SigningKeypairResourceModel{
 			PrivateKey: types.StringNull(),
 			PublicCert: types.StringValue(idpConfig.PublicCert),
@@ -503,33 +501,9 @@ func (r *Resource) UpgradeState(
 	return map[int64]resource.StateUpgrader{
 		0: {
 			PriorSchema:   &priorSchema,
-			StateUpgrader: r.stateUpgraderV0ToCurrent,
+			StateUpgrader: r.stateUpgraderV0,
 		},
 	}
-}
-
-// stateUpgraderV0ToCurrent updates the v0 state to current.
-func (r *Resource) stateUpgraderV0ToCurrent(
-	ctx context.Context,
-	req resource.UpgradeStateRequest,
-	resp *resource.UpgradeStateResponse,
-) {
-	var state ResourceModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Explicitly remove write-only attributes from state. The Terraform plugin
-	// framework does this automatically but having this here makes it easier to
-	// understand the intentions of the state upgrade.
-	state.IdpMetadataSource = nil
-	if state.SigningKeypair != nil {
-		state.SigningKeypair.PrivateKey = types.StringNull()
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 // diff returns diagnostics for any attributes that differ between the
