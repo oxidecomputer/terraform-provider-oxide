@@ -28,8 +28,10 @@ type DataSource struct {
 type DataSourceModel struct {
 	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
+	IPVersion    types.String   `tfsdk:"ip_version"`
 	IsDefault    types.Bool     `tfsdk:"is_default"`
 	Name         types.String   `tfsdk:"name"`
+	PoolType     types.String   `tfsdk:"pool_type"`
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 	TimeCreated  types.String   `tfsdk:"time_created"`
 	TimeModified types.String   `tfsdk:"time_modified"`
@@ -85,9 +87,17 @@ Retrieve information about a specified IP pool.
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the IP pool.",
 			},
+			"ip_version": schema.StringAttribute{
+				Computed:    true,
+				Description: "IP version for the pool.",
+			},
 			"is_default": schema.BoolAttribute{
 				Computed:    true,
 				Description: "If a pool is the default for a silo, floating IPs and instance ephemeral IPs will come from that pool when no other pool is specified. There can be at most one default for a given silo.",
+			},
+			"pool_type": schema.StringAttribute{
+				Computed:    true,
+				Description: "Pool type for the IP pool.",
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
@@ -145,8 +155,10 @@ func (d *DataSource) Read(
 	// Map response body to model
 	state.Description = types.StringValue(ipPool.Description)
 	state.ID = types.StringValue(ipPool.Id)
+	state.IPVersion = types.StringValue(string(ipPool.IpVersion))
 	state.IsDefault = types.BoolPointerValue(ipPool.IsDefault)
 	state.Name = types.StringValue(string(ipPool.Name))
+	state.PoolType = types.StringValue(string(ipPool.PoolType))
 	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
 	state.TimeModified = types.StringValue(ipPool.TimeModified.String())
 
