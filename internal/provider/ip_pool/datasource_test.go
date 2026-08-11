@@ -56,8 +56,10 @@ func checkDataSource(dataName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(dataName, "name"),
 		resource.TestCheckResourceAttr(dataName, "timeouts.read", "1m"),
 		resource.TestCheckResourceAttrSet(dataName, "id"),
+		resource.TestCheckResourceAttrSet(dataName, "ip_version"),
 		resource.TestCheckResourceAttrSet(dataName, "is_default"),
 		resource.TestCheckResourceAttrSet(dataName, "description"),
+		resource.TestCheckResourceAttrSet(dataName, "pool_type"),
 		resource.TestCheckResourceAttrSet(dataName, "time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "time_modified"),
 	}...)
