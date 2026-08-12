@@ -87,7 +87,12 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "This resource manages subnet pools. Use `oxide_subnet_pool_member` to add members to the pool.",
+		DeprecationMessage: "This resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_subnet_pool instead.",
+		MarkdownDescription: shared.ReplaceBackticks(`
+This resource manages system subnet pools.
+
+!> This resource is deprecated and will be removed in version v0.25.0 of the provider. Use ''oxide_system_subnet_pool'' instead.
+`),
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
