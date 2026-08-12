@@ -17,6 +17,102 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.22.0`
+
+Release `0.22.0` contains changes that may require updates to Terraform
+configuration files.
+
+### Resource `oxide_ip_pool`
+
+#### Deprecation
+
+The `oxide_ip_pool` resource is deprecated and will be removed in `0.25.0`.
+
+Replace `oxide_ip_pool` with `oxide_system_ip_pool`. Remove the nested `ranges`
+attribute as described in the next section.
+
+```diff
+-resource "oxide_ip_pool" "example" {
++resource "oxide_system_ip_pool" "example" {
+   name        = "my-pool"
+   description = "Example IP pool"
+ }
+```
+
+Record the pool UUID before changing the Terraform state. Then remove the old
+resource from state and import the pool into the replacement resource.
+
+```shell
+terraform state rm oxide_ip_pool.example
+terraform import oxide_system_ip_pool.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90
+```
+
+### Attribute `oxide_ip_pool.ranges`
+
+#### Deprecation
+
+The nested `ranges` attribute of `oxide_ip_pool` is deprecated and will be
+removed with the resource in `0.25.0`.
+
+Move each entry into its own `oxide_system_ip_pool_range` resource. The `pool`
+attribute accepts a pool name or ID.
+
+```diff
+ resource "oxide_system_ip_pool" "example" {
+   name        = "my-pool"
+   description = "Example IP pool"
+-  ranges = [{
+-    first_address = "192.0.2.1"
+-    last_address  = "192.0.2.10"
+-  }]
+ }
++
++resource "oxide_system_ip_pool_range" "example" {
++  pool  = oxide_system_ip_pool.example.id
++  first = "192.0.2.1"
++  last  = "192.0.2.10"
++}
+```
+
+Record each range UUID before changing the Terraform state. Then import each
+range into its replacement resource using `POOL_NAME_OR_ID/RANGE_ID`.
+
+```shell
+terraform import oxide_system_ip_pool_range.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90/92b55f1d-09f7-4267-8fab-2227a386922c
+```
+
+### Resource `oxide_ip_pool_silo_link`
+
+#### Deprecation
+
+The `oxide_ip_pool_silo_link` resource is deprecated and will be removed in
+`0.25.0`.
+
+Replace `oxide_ip_pool_silo_link` with `oxide_system_ip_pool_silo_link`, rename
+`ip_pool_id` to `pool`, and rename `silo_id` to `silo`. The new attributes
+accept names or IDs. Keep `is_default` unchanged.
+
+```diff
+-resource "oxide_ip_pool_silo_link" "example" {
+-  ip_pool_id = oxide_system_ip_pool.example.id
+-  silo_id    = "9e199e45-01a6-43d3-8bc3-5b27726e67a6"
++resource "oxide_system_ip_pool_silo_link" "example" {
++  pool       = oxide_system_ip_pool.example.id
++  silo       = "9e199e45-01a6-43d3-8bc3-5b27726e67a6"
+   is_default = false
+ }
+```
+
+Record the pool and silo UUIDs from the old resource's `id` attribute, which
+is formatted as `IP_POOL_ID/SILO_ID`. Then remove the old resource from state
+and import the link into the replacement resource using the same format.
+Import accepts names or IDs for both the pool and silo.
+
+```shell
+terraform state rm oxide_ip_pool_silo_link.example
+terraform import oxide_system_ip_pool_silo_link.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90/9e199e45-01a6-43d3-8bc3-5b27726e67a6
+```
+
 ## Upgrading to `0.21.0`
 
 Release `0.21.0` contains changes that may require updates to Terraform

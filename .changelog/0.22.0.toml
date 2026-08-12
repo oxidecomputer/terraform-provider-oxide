@@ -1,6 +1,14 @@
 [[breaking]]
-title = ""
-description = ""
+title = "`oxide_ip_pool`"
+description = "This resource will be removed in version v0.25.0 of the provider. Use `oxide_system_ip_pool` instead."
+
+[[breaking]]
+title = "`oxide_ip_pool.ranges`"
+description = "This attribute will be removed in version v0.25.0 of the provider. Use `oxide_system_ip_pool_range` instead."
+
+[[breaking]]
+title = "`oxide_ip_pool_silo_link`"
+description = "This resource will be removed in version v0.25.0 of the provider. Use `oxide_system_ip_pool_silo_link` instead."
 
 [[features]]
 title = "New data source"
@@ -13,6 +21,18 @@ description = "`oxide_system_subnet_pools`"
 [[features]]
 title = "New data source"
 description = "`oxide_current_user`"
+
+[[features]]
+title = "New resource"
+description = "`oxide_system_ip_pool`"
+
+[[features]]
+title = "New resource"
+description = "`oxide_system_ip_pool_range`"
+
+[[features]]
+title = "New resource"
+description = "`oxide_system_ip_pool_silo_link`"
 
 [[enhancements]]
 title = "`oxide_silo_saml_identity_provider`"
