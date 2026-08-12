@@ -11,6 +11,9 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 type dataSourceConfig struct {
@@ -45,6 +48,18 @@ func TestAccSiloDataSourceSystemIPPools_full(t *testing.T) {
 				Check: checkDataSource(
 					fmt.Sprintf("data.oxide_system_ip_pools.%s", blockName),
 				),
+				// The `oxide_system_ip_pools` data source returns results sorted by UUID which
+				// means, depending on the Oxide environment the test runs against, the 0th
+				// system IP pool may not have a description. We'll check the state directly for
+				// this attribute.
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						fmt.Sprintf("data.oxide_system_ip_pools.%s", blockName),
+						tfjsonpath.New("ip_pools").AtSliceIndex(0).
+							AtMapKey("description"),
+						knownvalue.NotNull(),
+					),
+				},
 			},
 		},
 	})
@@ -56,7 +71,6 @@ func checkDataSource(dataName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(dataName, "id"),
 		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.id"),
 		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.name"),
-		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.description"),
 		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.time_created"),
 		resource.TestCheckResourceAttrSet(dataName, "ip_pools.0.time_modified"),
 	}...)
