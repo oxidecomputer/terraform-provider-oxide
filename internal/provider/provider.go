@@ -43,6 +43,7 @@ import (
 	subnetpoolmember "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/subnet_pool_member"
 	subnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/subnet_pool_silo_link"
 	switchportsettings "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/switch_port_settings"
+	systemippool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pool"
 	systemippools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pools"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc"
 	vpcfirewallrules "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_firewall_rules"
@@ -205,6 +206,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		silo.NewDataSource,
 		sshkey.NewDataSource,
 		subnetpool.NewDataSource,
+		systemippool.NewDataSource,
 		systemippools.NewDataSource,
 		vpc.NewDataSource,
 		vpcinternetgateway.NewDataSource,

@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New data source"
+description = "`oxide_system_ip_pool`"
 
 [[enhancements]]
 title = "`oxide_silo_saml_identity_provider`"
