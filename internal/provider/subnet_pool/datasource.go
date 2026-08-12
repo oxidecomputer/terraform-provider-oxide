@@ -96,7 +96,7 @@ func (d *DataSource) Schema(
 			},
 			"members": schema.ListNestedAttribute{
 				Computed:    true,
-				Description: "List of subnet members in the pool. Members are managed via the `oxide_subnet_pool_member` resource.",
+				Description: "List of subnet members in the pool. Members are managed via the `oxide_system_subnet_pool_member` resource.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"subnet": schema.StringAttribute{

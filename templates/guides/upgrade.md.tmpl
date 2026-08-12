@@ -17,6 +17,97 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.22.0`
+
+Release `0.22.0` contains changes that may require updates to Terraform
+configuration files.
+
+### Resource `oxide_subnet_pool`
+
+#### Deprecation
+
+The `oxide_subnet_pool` resource is deprecated and will be removed in
+`0.25.0`.
+
+Replace `oxide_subnet_pool` with `oxide_system_subnet_pool`. The resource
+schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_subnet_pool" "example" {
++resource "oxide_system_subnet_pool" "example" {
+   name        = "my-pool"
+   description = "Example subnet pool"
+   ip_version  = "v4"
+ }
+```
+
+Record the pool UUID from the old resource's `id` attribute. Then remove the
+old resource from state and import the pool into the replacement resource.
+
+```shell
+terraform state rm oxide_subnet_pool.example
+terraform import oxide_system_subnet_pool.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90
+```
+
+### Resource `oxide_subnet_pool_member`
+
+#### Deprecation
+
+The `oxide_subnet_pool_member` resource is deprecated and will be removed in
+`0.25.0`.
+
+Replace `oxide_subnet_pool_member` with `oxide_system_subnet_pool_member`. The
+resource schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_subnet_pool_member" "example" {
++resource "oxide_system_subnet_pool_member" "example" {
+   subnet_pool_id    = oxide_system_subnet_pool.example.id
+   subnet            = "192.0.2.0/24"
+   min_prefix_length = 24
+   max_prefix_length = 28
+ }
+```
+
+Record the pool UUID from the old resource's `subnet_pool_id` attribute
+and the member UUID from its `id` attribute. Then remove the old resource
+from state and import the member into the replacement resource using
+`SUBNET_POOL_ID/MEMBER_ID`.
+
+```shell
+terraform state rm oxide_subnet_pool_member.example
+terraform import oxide_system_subnet_pool_member.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90/9e199e45-01a6-43d3-8bc3-5b27726e67a6
+```
+
+### Resource `oxide_subnet_pool_silo_link`
+
+#### Deprecation
+
+The `oxide_subnet_pool_silo_link` resource is deprecated and will be removed
+in `0.25.0`.
+
+Replace `oxide_subnet_pool_silo_link` with
+`oxide_system_subnet_pool_silo_link`. The `is_default` attribute is now optional
+and defaults to `false`.
+
+```diff
+-resource "oxide_subnet_pool_silo_link" "example" {
++resource "oxide_system_subnet_pool_silo_link" "example" {
+   subnet_pool_id = oxide_system_subnet_pool.example.id
+   silo_id        = "9e199e45-01a6-43d3-8bc3-5b27726e67a6"
+   is_default     = false
+ }
+```
+
+Record the silo and pool UUIDs from the old resource's `id` attribute,
+which is formatted as `POOL_ID/SILO_ID`. Then remove the old resource from
+state and import the link into the replacement resource using the same format.
+
+```shell
+terraform state rm oxide_subnet_pool_silo_link.example
+terraform import oxide_system_subnet_pool_silo_link.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90/9e199e45-01a6-43d3-8bc3-5b27726e67a6
+```
+
 ## Upgrading to `0.21.0`
 
 Release `0.21.0` contains changes that may require updates to Terraform
