@@ -45,6 +45,7 @@ import (
 	switchportsettings "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/switch_port_settings"
 	systemippool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pool"
 	systemippools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pools"
+	systemsubnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool_silo_link"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc"
 	vpcfirewallrules "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_firewall_rules"
 	vpcinternetgateway "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_internet_gateway"
@@ -238,6 +239,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		subnetpool.NewResource,
 		subnetpoolsilolink.NewResource,
 		switchportsettings.NewResource,
+		systemsubnetpoolsilolink.NewResource,
 		vpcfirewallrules.NewResource,
 		vpcinternetgateway.NewResource,
 		vpc.NewResource,

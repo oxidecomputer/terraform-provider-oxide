@@ -100,7 +100,10 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "This resource manages subnet pool to silo links.",
+		DeprecationMessage: "Use the oxide_system_subnet_pool_silo_link resource instead.",
+		MarkdownDescription: `This resource manages subnet pool to silo links.
+
+!> This resource is deprecated. Use the ` + "`oxide_system_subnet_pool_silo_link`" + ` resource instead.`,
 		Attributes: map[string]schema.Attribute{
 			"silo_id": schema.StringAttribute{
 				Required:    true,
