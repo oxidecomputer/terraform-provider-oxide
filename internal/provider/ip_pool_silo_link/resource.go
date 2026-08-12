@@ -100,8 +100,11 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
+		DeprecationMessage: "The oxide_ip_pool_silo_link resource is deprecated; use oxide_system_ip_pool_silo_link instead.",
 		MarkdownDescription: `
 This resource manages IP pool to silo links.
+
+!> This resource is deprecated. Use ` + "`oxide_system_ip_pool_silo_link`" + ` instead.
 `,
 		Attributes: map[string]schema.Attribute{
 			"silo_id": schema.StringAttribute{
