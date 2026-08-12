@@ -28,7 +28,7 @@ Retrieve information about a specified subnet pool.
 - `description` (String) Description for the subnet pool.
 - `id` (String) Unique, immutable, system-controlled identifier of the subnet pool.
 - `ip_version` (String) The IP version for this pool (v4 or v6).
-- `members` (Attributes List) List of subnet members in the pool. Members are managed via the `oxide_subnet_pool_member` resource. (see [below for nested schema](#nestedatt--members))
+- `members` (Attributes List) List of subnet members in the pool. Members are managed via the `oxide_system_subnet_pool_member` resource. (see [below for nested schema](#nestedatt--members))
 - `time_created` (String) Timestamp of when this subnet pool was created.
 - `time_modified` (String) Timestamp of when this subnet pool was last modified.
 

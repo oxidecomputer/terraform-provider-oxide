@@ -4,11 +4,14 @@ page_title: "oxide_subnet_pool_member Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
   This resource manages a member (subnet) within a subnet pool.
+  !> This resource is deprecated. Use oxide_system_subnet_pool_member instead.
 ---
 
 # oxide_subnet_pool_member (Resource)
 
 This resource manages a member (subnet) within a subnet pool.
+
+!> This resource is deprecated. Use `oxide_system_subnet_pool_member` instead.
 
 
 

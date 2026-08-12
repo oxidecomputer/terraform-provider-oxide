@@ -17,6 +17,36 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.22.0`
+
+Release `0.22.0` deprecates the `oxide_subnet_pool_member` resource in favor of
+`oxide_system_subnet_pool_member`.
+
+The replacement resource uses the system API and has a smaller schema. Replace
+`subnet_pool_id` with `pool`, remove `min_prefix_length` and
+`max_prefix_length`, remove the old resource from Terraform state, and import
+the member into the replacement resource using the format `POOL/SUBNET`.
+Importing an existing member preserves its current prefix-length constraints,
+but the replacement resource does not manage those constraints. Recreate the
+member if it should use the API defaults instead.
+
+```diff
+-resource "oxide_subnet_pool_member" "example" {
+-  subnet_pool_id    = oxide_subnet_pool.example.id
+-  subnet            = "192.0.2.0/24"
+-  min_prefix_length = 24
+-  max_prefix_length = 32
++resource "oxide_system_subnet_pool_member" "example" {
++  pool   = oxide_subnet_pool.example.id
++  subnet = "192.0.2.0/24"
+ }
+```
+
+```shell
+terraform state rm oxide_subnet_pool_member.example
+terraform import oxide_system_subnet_pool_member.example my-pool/192.0.2.0/24
+```
+
 ## Upgrading to `0.21.0`
 
 Release `0.21.0` contains changes that may require updates to Terraform

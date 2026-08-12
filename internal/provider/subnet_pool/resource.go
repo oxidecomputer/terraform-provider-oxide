@@ -87,7 +87,7 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "This resource manages subnet pools. Use `oxide_subnet_pool_member` to add members to the pool.",
+		MarkdownDescription: "This resource manages subnet pools. Use `oxide_system_subnet_pool_member` to add members to the pool.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required:    true,
