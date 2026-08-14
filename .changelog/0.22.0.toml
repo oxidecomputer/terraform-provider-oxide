@@ -10,6 +10,10 @@ description = "`oxide_system_ip_pool`"
 title = "New data source"
 description = "`oxide_system_subnet_pools`"
 
+[[features]]
+title = "New data source"
+description = "`oxide_current_user`"
+
 [[enhancements]]
 title = "`oxide_silo_saml_identity_provider`"
 description = "The `idp_metadata_source` and `signing_keypair.private_key` attributes are now write-only. [#819](https://github.com/oxidecomputer/terraform-provider-oxide/pull/819)"
