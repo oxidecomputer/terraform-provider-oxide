@@ -1532,6 +1532,22 @@ func checkResourceFull(resourceName, instanceName, nicName string) resource.Test
 		resource.TestCheckResourceAttrSet(resourceName, "external_ips.ephemeral.1.pool_id"),
 		resource.TestCheckResourceAttr(resourceName, "external_ips.ephemeral.1.ip_version", "v6"),
 		resource.TestCheckResourceAttrSet(resourceName, "external_ips.floating.0.id"),
+		resource.TestCheckResourceAttr(resourceName, "attached_external_ips.ephemeral.#", "2"),
+		resource.TestCheckResourceAttrSet(resourceName, "attached_external_ips.ephemeral.0.ip"),
+		resource.TestCheckResourceAttrSet(
+			resourceName, "attached_external_ips.ephemeral.0.ip_pool_id",
+		),
+		resource.TestCheckResourceAttrSet(
+			resourceName, "attached_external_ips.ephemeral.0.ip_version",
+		),
+		resource.TestCheckResourceAttr(resourceName, "attached_external_ips.floating.#", "2"),
+		resource.TestCheckResourceAttrSet(resourceName, "attached_external_ips.floating.0.ip"),
+		resource.TestCheckResourceAttrSet(resourceName, "attached_external_ips.floating.0.id"),
+		resource.TestCheckResourceAttrSet(resourceName, "attached_external_ips.floating.0.name"),
+		resource.TestCheckResourceAttrSet(
+			resourceName, "attached_external_ips.floating.0.ip_pool_id",
+		),
+		resource.TestCheckResourceAttrSet(resourceName, "attached_external_ips.snat.#"),
 		testResourceNetworkInterface(resourceName, nicName, "a sample nic", 0, "dual"),
 		resource.TestCheckResourceAttrSet(resourceName, "ssh_public_keys.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "project_id"),
@@ -1630,6 +1646,8 @@ func checkResourceIPUpdate2(resourceName, instanceName string) resource.TestChec
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_modified"),
 		resource.TestCheckNoResourceAttr(resourceName, "external_ips"),
+		resource.TestCheckResourceAttr(resourceName, "attached_external_ips.ephemeral.#", "0"),
+		resource.TestCheckResourceAttr(resourceName, "attached_external_ips.floating.#", "0"),
 	}...)
 }
 

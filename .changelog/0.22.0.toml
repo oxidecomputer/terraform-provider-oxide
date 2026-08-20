@@ -15,6 +15,10 @@ title = "New data source"
 description = "`oxide_current_user`"
 
 [[enhancements]]
+title = "`oxide_instance`"
+description = "The `oxide_instance` resource now includes a read-only `attached_external_ips` that lists attached IP addresses by kind (floating, ephemeral, SNAT). This can replace the use of the `oxide_instance_external_ips` data source for terraform-managed instances. [#841](https://github.com/oxidecomputer/terraform-provider-oxide/pull/841)"
+
+[[enhancements]]
 title = "`oxide_silo_saml_identity_provider`"
 description = "The `idp_metadata_source` and `signing_keypair.private_key` attributes are now write-only. [#819](https://github.com/oxidecomputer/terraform-provider-oxide/pull/819)"
 
