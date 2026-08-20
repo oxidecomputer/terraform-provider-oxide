@@ -64,6 +64,7 @@ type ResourceModel struct {
 	DiskAttachments           types.Set                `tfsdk:"disk_attachments"`
 	EnableJumboFrames         types.Bool               `tfsdk:"enable_jumbo_frames"`
 	ExternalIPs               *ExternalIPResourceModel `tfsdk:"external_ips"`
+	AttachedExternalIPs       types.Object             `tfsdk:"attached_external_ips"`
 	Hostname                  types.String             `tfsdk:"hostname"`
 	ID                        types.String             `tfsdk:"id"`
 	Memory                    types.Int64              `tfsdk:"memory"`
@@ -164,6 +165,32 @@ type FloatingIPResourceModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
+type AttachedExternalIPsModel struct {
+	Ephemeral []AttachedEphemeralIPModel `tfsdk:"ephemeral"`
+	Floating  []AttachedFloatingIPModel  `tfsdk:"floating"`
+	SNAT      []AttachedSNATIPModel      `tfsdk:"snat"`
+}
+
+type AttachedEphemeralIPModel struct {
+	IP        types.String `tfsdk:"ip"`
+	IPPoolID  types.String `tfsdk:"ip_pool_id"`
+	IPVersion types.String `tfsdk:"ip_version"`
+}
+
+type AttachedFloatingIPModel struct {
+	IP       types.String `tfsdk:"ip"`
+	ID       types.String `tfsdk:"id"`
+	Name     types.String `tfsdk:"name"`
+	IPPoolID types.String `tfsdk:"ip_pool_id"`
+}
+
+type AttachedSNATIPModel struct {
+	IP        types.String `tfsdk:"ip"`
+	IPPoolID  types.String `tfsdk:"ip_pool_id"`
+	FirstPort types.Int64  `tfsdk:"first_port"`
+	LastPort  types.Int64  `tfsdk:"last_port"`
+}
+
 var AttachedNICType = types.ObjectType{}.WithAttributeTypes(
 	map[string]attr.Type{
 		"id":          types.StringType,
@@ -190,6 +217,40 @@ var AttachedNICType = types.ObjectType{}.WithAttributeTypes(
 		},
 		"time_created":  types.StringType,
 		"time_modified": types.StringType,
+	},
+)
+
+var AttachedEphemeralIPType = types.ObjectType{}.WithAttributeTypes(
+	map[string]attr.Type{
+		"ip":         types.StringType,
+		"ip_pool_id": types.StringType,
+		"ip_version": types.StringType,
+	},
+)
+
+var AttachedFloatingIPType = types.ObjectType{}.WithAttributeTypes(
+	map[string]attr.Type{
+		"ip":         types.StringType,
+		"id":         types.StringType,
+		"name":       types.StringType,
+		"ip_pool_id": types.StringType,
+	},
+)
+
+var AttachedSNATIPType = types.ObjectType{}.WithAttributeTypes(
+	map[string]attr.Type{
+		"ip":         types.StringType,
+		"ip_pool_id": types.StringType,
+		"first_port": types.Int64Type,
+		"last_port":  types.Int64Type,
+	},
+)
+
+var AttachedExternalIPsType = types.ObjectType{}.WithAttributeTypes(
+	map[string]attr.Type{
+		"ephemeral": types.ListType{ElemType: AttachedEphemeralIPType},
+		"floating":  types.ListType{ElemType: AttachedFloatingIPType},
+		"snat":      types.ListType{ElemType: AttachedSNATIPType},
 	},
 )
 
@@ -578,6 +639,80 @@ This resource manages instances.
 					},
 				},
 			},
+			"attached_external_ips": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "External IP addresses attached to the instance, grouped by kind.",
+				Attributes: map[string]schema.Attribute{
+					"ephemeral": schema.ListNestedAttribute{
+						Computed:    true,
+						Description: "Ephemeral external IPs attached to the instance.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "Ephemeral external IP address.",
+								},
+								"ip_pool_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the IP pool the address was allocated from.",
+								},
+								"ip_version": schema.StringAttribute{
+									Computed:            true,
+									MarkdownDescription: "IP version of the address. One of `v4` or `v6`.",
+								},
+							},
+						},
+					},
+					"floating": schema.ListNestedAttribute{
+						Computed:    true,
+						Description: "Floating external IPs attached to the instance.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "Floating external IP address.",
+								},
+								"id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the floating IP.",
+								},
+								"name": schema.StringAttribute{
+									Computed:    true,
+									Description: "Name of the floating IP.",
+								},
+								"ip_pool_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the IP pool the address was allocated from.",
+								},
+							},
+						},
+					},
+					"snat": schema.ListNestedAttribute{
+						Computed:    true,
+						Description: "Shared source NAT addresses used for outbound connectivity only.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"ip": schema.StringAttribute{
+									Computed:    true,
+									Description: "Source NAT IP address.",
+								},
+								"ip_pool_id": schema.StringAttribute{
+									Computed:    true,
+									Description: "ID of the IP pool the address was allocated from.",
+								},
+								"first_port": schema.Int64Attribute{
+									Computed:    true,
+									Description: "First port in the range assigned to this instance.",
+								},
+								"last_port": schema.Int64Attribute{
+									Computed:    true,
+									Description: "Last port in the range assigned to this instance.",
+								},
+							},
+						},
+					},
+				},
+			},
 			"user_data": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: `
@@ -698,14 +833,17 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 					Name:                      oldState.Name,
 					NetworkInterfaces:         newNICs,
 					AttachedNetworkInterfaces: oldState.AttachedNetworkInterfaces,
-					NCPUs:                     oldState.NCPUs,
-					ProjectID:                 oldState.ProjectID,
-					SSHPublicKeys:             oldState.SSHPublicKeys,
-					StartOnCreate:             oldState.StartOnCreate,
-					TimeCreated:               oldState.TimeCreated,
-					TimeModified:              oldState.TimeModified,
-					Timeouts:                  oldState.Timeouts,
-					UserData:                  oldState.UserData,
+					AttachedExternalIPs: types.ObjectNull(
+						AttachedExternalIPsType.AttributeTypes(),
+					),
+					NCPUs:         oldState.NCPUs,
+					ProjectID:     oldState.ProjectID,
+					SSHPublicKeys: oldState.SSHPublicKeys,
+					StartOnCreate: oldState.StartOnCreate,
+					TimeCreated:   oldState.TimeCreated,
+					TimeModified:  oldState.TimeModified,
+					Timeouts:      oldState.Timeouts,
+					UserData:      oldState.UserData,
 				}
 
 				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
@@ -798,6 +936,9 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 					// that is going to be populated when the state is
 					// refreshed.
 					AttachedNetworkInterfaces: types.MapNull(AttachedNICType),
+					AttachedExternalIPs: types.ObjectNull(
+						AttachedExternalIPsType.AttributeTypes(),
+					),
 				}
 
 				resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
@@ -956,7 +1097,11 @@ func (r *Resource) Create(
 	plan.TimeModified = types.StringValue(instance.TimeModified.String())
 
 	// Populate Computed attribute values about external IPs.
-	instExternalIPs, diags := newAttachedExternalIPResourceModel(ctx, r.client, plan)
+	instExternalIPs, attachedExternalIPs, diags := newAttachedExternalIPResourceModel(
+		ctx,
+		r.client,
+		plan,
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -965,6 +1110,16 @@ func (r *Resource) Create(
 	for i, ip := range instExternalIPs.Ephemeral {
 		plan.ExternalIPs.Ephemeral[i].PoolID = ip.PoolID
 		plan.ExternalIPs.Ephemeral[i].IPVersion = ip.IPVersion
+	}
+
+	plan.AttachedExternalIPs, diags = types.ObjectValueFrom(
+		ctx,
+		AttachedExternalIPsType.AttributeTypes(),
+		attachedExternalIPs,
+	)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Populate Computed attribute values about network interfaces.
@@ -1054,7 +1209,11 @@ func (r *Resource) Read(
 	state.TimeCreated = types.StringValue(instance.TimeCreated.String())
 	state.TimeModified = types.StringValue(instance.TimeModified.String())
 
-	externalIPs, diags := newAttachedExternalIPResourceModel(ctx, r.client, state)
+	externalIPs, attachedExternalIPs, diags := newAttachedExternalIPResourceModel(
+		ctx,
+		r.client,
+		state,
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1065,6 +1224,15 @@ func (r *Resource) Read(
 		externalIPs = nil
 	}
 	state.ExternalIPs = externalIPs
+	state.AttachedExternalIPs, diags = types.ObjectValueFrom(
+		ctx,
+		AttachedExternalIPsType.AttributeTypes(),
+		attachedExternalIPs,
+	)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	keySet, diags := newAssociatedSSHKeysOnCreateSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
@@ -1397,13 +1565,26 @@ func (r *Resource) Update(
 
 	// We use the plan here instead of the state to capture the desired IP pool ID
 	// value for the ephemeral external IP rather than the previous value.
-	externalIPs, diags := newAttachedExternalIPResourceModel(ctx, r.client, plan)
+	externalIPs, attachedExternalIPs, diags := newAttachedExternalIPResourceModel(
+		ctx,
+		r.client,
+		plan,
+	)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	if !externalIPs.Empty() {
 		plan.ExternalIPs = externalIPs
+	}
+	plan.AttachedExternalIPs, diags = types.ObjectValueFrom(
+		ctx,
+		AttachedExternalIPsType.AttributeTypes(),
+		attachedExternalIPs,
+	)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// TODO: should I do this or read from the newly created ones?
@@ -1828,7 +2009,7 @@ func newAttachedExternalIPResourceModel(
 	client *oxide.Client,
 	model ResourceModel,
 ) (
-	*ExternalIPResourceModel, diag.Diagnostics) {
+	*ExternalIPResourceModel, *AttachedExternalIPsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	externalIPResponse, err := client.InstanceExternalIpList(
@@ -1842,10 +2023,15 @@ func newAttachedExternalIPResourceModel(
 			"Unable to list instance external ips:",
 			"API error: "+err.Error(),
 		)
-		return nil, diags
+		return nil, nil, diags
 	}
 
 	externalIPs := &ExternalIPResourceModel{}
+	attachedExternalIPs := &AttachedExternalIPsModel{
+		Ephemeral: []AttachedEphemeralIPModel{},
+		Floating:  []AttachedFloatingIPModel{},
+		SNAT:      []AttachedSNATIPModel{},
+	}
 	for _, ip := range externalIPResponse.Items {
 		switch v := ip.Value.(type) {
 		case *oxide.ExternalIpEphemeral:
@@ -1864,14 +2050,40 @@ func newAttachedExternalIPResourceModel(
 				PoolID:    types.StringValue(v.IpPoolId),
 				IPVersion: types.StringValue(ipVersion),
 			})
+			attachedExternalIPs.Ephemeral = append(
+				attachedExternalIPs.Ephemeral,
+				AttachedEphemeralIPModel{
+					IP:        types.StringValue(v.Ip),
+					IPPoolID:  types.StringValue(v.IpPoolId),
+					IPVersion: types.StringValue(ipVersion),
+				},
+			)
 
 		case *oxide.ExternalIpFloating:
 			externalIPs.Floating = append(externalIPs.Floating, FloatingIPResourceModel{
 				ID: types.StringValue(v.Id),
 			})
-		// Skipped until the schema is updated to support SNAT external IPs.
+			attachedExternalIPs.Floating = append(
+				attachedExternalIPs.Floating,
+				AttachedFloatingIPModel{
+					IP:       types.StringValue(v.Ip),
+					ID:       types.StringValue(v.Id),
+					Name:     types.StringValue(string(v.Name)),
+					IPPoolID: types.StringValue(v.IpPoolId),
+				},
+			)
+
 		case *oxide.ExternalIpSnat:
-			continue
+			attachedExternalIPs.SNAT = append(
+				attachedExternalIPs.SNAT,
+				AttachedSNATIPModel{
+					IP:        types.StringValue(v.Ip),
+					IPPoolID:  types.StringValue(v.IpPoolId),
+					FirstPort: types.Int64Value(int64(*v.FirstPort)),
+					LastPort:  types.Int64Value(int64(*v.LastPort)),
+				},
+			)
+
 		default:
 			diags.AddError(
 				"Invalid external IP kind:",
@@ -1880,7 +2092,7 @@ func newAttachedExternalIPResourceModel(
 		}
 	}
 
-	return externalIPs, nil
+	return externalIPs, attachedExternalIPs, diags
 }
 
 type vpcAndSubnetNames struct {
