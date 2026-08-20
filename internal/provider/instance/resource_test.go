@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
@@ -563,6 +564,171 @@ resource "oxide_instance" "{{.BlockName}}" {
 					"external_ips",
 					"network_interfaces.0.ip_config",
 				},
+			},
+		},
+	})
+}
+
+// TestAccCloudResourceInstance_extIPDetachedOutOfBand tests for correctness when an external IP is
+// detached from a tf-managed instance out of band. We provision an instance with an external IP,
+// detach the IP outside terraform, then re-apply. We assert that the plan is non-empty after
+// detaching an IP out of band.
+func TestAccCloudResourceInstance_extIPDetachedOutOfBand(t *testing.T) {
+	type resourceInstanceConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceOutOfBandConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+data "oxide_vpc_subnet" "default" {
+  project_name = data.oxide_project.{{.SupportBlockName}}.name
+  vpc_name     = "default"
+  name         = "default"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+
+  external_ips = {
+    ephemeral = [
+      { ip_version = "v4" },
+    ]
+  }
+
+  network_interfaces = [
+    {
+      name        = "net0"
+      description = "net0"
+      subnet_id   = data.oxide_vpc_subnet.default.id
+      vpc_id      = data.oxide_vpc_subnet.default.vpc_id
+      ip_config = {
+        v4 = { ip = "auto" }
+      }
+    }
+  ]
+}
+`
+
+	instanceName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance")
+	supportBlockName := sharedtest.NewBlockName("support")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config := sharedtest.ParsedAccConfig(t,
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceOutOfBandConfigTpl,
+	)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccDetachEphemeralIPOutOfBand(resourceName),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func testAccDetachEphemeralIPOutOfBand(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		client, err := sharedtest.NewTestClient()
+		if err != nil {
+			return err
+		}
+
+		return client.InstanceEphemeralIpDetach(
+			context.Background(),
+			oxide.InstanceEphemeralIpDetachParams{
+				Instance:  oxide.NameOrId(rs.Primary.ID),
+				IpVersion: oxide.IpVersionV4,
+			},
+		)
+	}
+}
+
+// TestAccCloudResourceInstance_extIPsOmitted is a regression test asserting that an instance that
+// omits `external_ips` has an empty plan after apply. This prevents a regression such that an
+// omitted `external_ips` registers as different from an empty `ExternalIPResourceModel` struct,
+// triggering a perpetual diff.
+func TestAccCloudResourceInstance_extIPsOmitted(t *testing.T) {
+	type resourceInstanceConfig struct {
+		BlockName        string
+		InstanceName     string
+		SupportBlockName string
+	}
+
+	resourceInstanceNoExternalIPConfigTpl := `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_instance" "{{.BlockName}}" {
+  project_id      = data.oxide_project.{{.SupportBlockName}}.id
+  description     = "a test instance"
+  name            = "{{.InstanceName}}"
+  hostname        = "terraform-acc-myhost"
+  memory          = 1073741824
+  ncpus           = 1
+  start_on_create = false
+}
+`
+
+	instanceName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("instance")
+	supportBlockName := sharedtest.NewBlockName("support")
+	resourceName := fmt.Sprintf("oxide_instance.%s", blockName)
+	config := sharedtest.ParsedAccConfig(t,
+		resourceInstanceConfig{
+			BlockName:        blockName,
+			InstanceName:     instanceName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceInstanceNoExternalIPConfigTpl,
+	)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "external_ips"),
+				),
 			},
 		},
 	})
