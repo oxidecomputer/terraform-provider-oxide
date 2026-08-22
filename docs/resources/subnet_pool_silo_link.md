@@ -3,20 +3,23 @@
 page_title: "oxide_subnet_pool_silo_link Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  This resource manages subnet pool to silo links.
+  This resource manages a link between a system subnet pool and a silo.
+  !> This resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_subnet_pool_silo_link instead.
 ---
 
 # oxide_subnet_pool_silo_link (Resource)
 
-This resource manages subnet pool to silo links.
+This resource manages a link between a system subnet pool and a silo.
+
+!> This resource is deprecated and will be removed in version v0.25.0 of the provider. Use `oxide_system_subnet_pool_silo_link` instead.
 
 ## Example Usage
 
 ```terraform
 resource "oxide_subnet_pool_silo_link" "example" {
-  silo_id    = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
-  ip_pool_id = "081a331d-5ee4-4a23-ac8b-328af5e15cdc"
-  is_default = true
+  silo_id        = "1fec2c21-cf22-40d8-9ebd-e5b57ebec80f"
+  subnet_pool_id = "081a331d-5ee4-4a23-ac8b-328af5e15cdc"
+  is_default     = true
 }
 ```
 
