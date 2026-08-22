@@ -2,14 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package ippool
+package systemippool
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -30,11 +29,6 @@ var (
 	_ resource.ResourceWithImportState = (*Resource)(nil)
 )
 
-const (
-	legacyResourceDeprecationMessage = "The oxide_ip_pool resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_ip_pool instead."
-	importRangesPrivateKey           = "import_ranges"
-)
-
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return &Resource{}
@@ -46,18 +40,12 @@ type Resource struct {
 }
 
 type ResourceModel struct {
-	Description  types.String         `tfsdk:"description"`
-	ID           types.String         `tfsdk:"id"`
-	Name         types.String         `tfsdk:"name"`
-	Ranges       []RangeResourceModel `tfsdk:"ranges"`
-	TimeCreated  types.String         `tfsdk:"time_created"`
-	TimeModified types.String         `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
-}
-
-type RangeResourceModel struct {
-	FirstAddress types.String `tfsdk:"first_address"`
-	LastAddress  types.String `tfsdk:"last_address"`
+	Description  types.String   `tfsdk:"description"`
+	ID           types.String   `tfsdk:"id"`
+	Name         types.String   `tfsdk:"name"`
+	TimeCreated  types.String   `tfsdk:"time_created"`
+	TimeModified types.String   `tfsdk:"time_modified"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -66,7 +54,7 @@ func (r *Resource) Metadata(
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_ip_pool"
+	resp.TypeName = "oxide_system_ip_pool"
 }
 
 // Configure adds the provider configured client to the data source.
@@ -88,7 +76,6 @@ func (r *Resource) ImportState(
 	resp *resource.ImportStateResponse,
 ) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.Private.SetKey(ctx, importRangesPrivateKey, []byte("true"))...)
 }
 
 // Schema defines the schema for the resource.
@@ -98,11 +85,8 @@ func (r *Resource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		DeprecationMessage: legacyResourceDeprecationMessage,
 		MarkdownDescription: `
-This resource manages IP pools.
-
-!> The oxide_ip_pool resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_ip_pool instead.
+This resource manages system IP pools.
 `,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
@@ -110,24 +94,9 @@ This resource manages IP pools.
 				Description: "Name of the IP pool.",
 			},
 			"description": schema.StringAttribute{
-				Required:    true,
 				Description: "Description for the IP pool.",
-			},
-			"ranges": schema.ListNestedAttribute{
-				Optional:           true,
-				DeprecationMessage: "This attribute is deprecated and will be removed in version v0.25.0 of the provider. Use the oxide_system_ip_pool_range resource instead.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"first_address": schema.StringAttribute{
-							Description: "First address in the range.",
-							Required:    true,
-						},
-						"last_address": schema.StringAttribute{
-							Description: "Last address in the range.",
-							Required:    true,
-						},
-					},
-				},
+				Optional:    true,
+				Computed:    true,
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -197,14 +166,10 @@ func (r *Resource) Create(
 	)
 
 	// Map response body to schema and populate Computed attribute values
+	plan.Description = types.StringValue(ipPool.Description)
 	plan.ID = types.StringValue(ipPool.Id)
 	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
 	plan.TimeModified = types.StringValue(ipPool.TimeModified.String())
-
-	resp.Diagnostics.Append(addRanges(ctx, r.client, plan.Ranges, plan.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -239,6 +204,10 @@ func (r *Resource) Read(
 		Pool: oxide.NameOrId(state.ID.ValueString()),
 	})
 	if err != nil {
+		if shared.Is404(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Unable to read IP Pool:",
 			"API error: "+err.Error(),
@@ -256,75 +225,6 @@ func (r *Resource) Read(
 	state.Name = types.StringValue(string(ipPool.Name))
 	state.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
 	state.TimeModified = types.StringValue(ipPool.TimeModified.String())
-
-	// Append information about IP Pool ranges
-	listParams := oxide.SystemIpPoolRangeListParams{
-		Pool:  oxide.NameOrId(ipPool.Id),
-		Limit: oxide.NewPointer(1000000000),
-	}
-	ipPoolRanges, err := r.client.SystemIpPoolRangeList(ctx, listParams)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to read IP Pool ranges:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("read all IP pool ranges from IP pool with ID: %v", ipPool.Id),
-		map[string]any{"success": true},
-	)
-
-	importRanges, diags := req.Private.GetKey(ctx, importRangesPrivateKey)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if len(importRanges) != 0 {
-		state.Ranges = make([]RangeResourceModel, 0, len(ipPoolRanges.Items))
-		for _, item := range ipPoolRanges.Items {
-			ipPoolRange, ok := rangeResourceModel(item.Range)
-			if !ok {
-				resp.Diagnostics.AddError(
-					"Unable to read IP Pool ranges:",
-					fmt.Sprintf(
-						"internal error: unexpected IpRange variant type %T. If you hit this bug, please contact support",
-						item.Range.Value,
-					),
-				)
-				return
-			}
-			state.Ranges = append(state.Ranges, ipPoolRange)
-		}
-		resp.Diagnostics.Append(resp.Private.SetKey(ctx, importRangesPrivateKey, nil)...)
-	} else if state.Ranges != nil {
-		// Only refresh ranges already managed by this legacy attribute. Ranges
-		// managed by oxide_system_ip_pool_range must not be adopted into this
-		// resource's state and subsequently removed during an update.
-		refreshedRanges := make([]RangeResourceModel, 0, len(state.Ranges))
-		for _, stateRange := range state.Ranges {
-			for _, item := range ipPoolRanges.Items {
-				ipPoolRange, ok := rangeResourceModel(item.Range)
-				if !ok {
-					resp.Diagnostics.AddError(
-						"Unable to read IP Pool ranges:",
-						fmt.Sprintf(
-							"internal error: unexpected IpRange variant type %T. If you hit this bug, please contact support",
-							item.Range.Value,
-						),
-					)
-					return
-				}
-				if ipPoolRange == stateRange {
-					refreshedRanges = append(refreshedRanges, ipPoolRange)
-					break
-				}
-			}
-		}
-		state.Ranges = refreshedRanges
-	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -363,29 +263,16 @@ func (r *Resource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	planRanges := plan.Ranges
-	stateRanges := state.Ranges
-
-	// Check plan and if it has a range that the state doesn't then attach it
-	rangesToAdd := shared.SliceDiff(planRanges, stateRanges)
-	resp.Diagnostics.Append(addRanges(ctx, r.client, rangesToAdd, state.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
+	update := oxide.IpPoolUpdate{
+		Name: oxide.Name(plan.Name.ValueString()),
 	}
-
-	// Check state and if it has a range that the plan doesn't then detach it
-	rangesToDetach := shared.SliceDiff(stateRanges, planRanges)
-	resp.Diagnostics.Append(removeRanges(ctx, r.client, rangesToDetach, state.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
+	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
+		update.Description = plan.Description.ValueString()
 	}
 
 	params := oxide.SystemIpPoolUpdateParams{
 		Pool: oxide.NameOrId(state.ID.ValueString()),
-		Body: &oxide.IpPoolUpdate{
-			Description: plan.Description.ValueString(),
-			Name:        oxide.Name(plan.Name.ValueString()),
-		},
+		Body: &update,
 	}
 
 	ipPool, err := r.client.SystemIpPoolUpdate(ctx, params)
@@ -403,6 +290,7 @@ func (r *Resource) Update(
 	)
 
 	// Map response body to schema and populate Computed attribute values
+	plan.Description = types.StringValue(ipPool.Description)
 	plan.ID = types.StringValue(ipPool.Id)
 	plan.TimeCreated = types.StringValue(ipPool.TimeCreated.String())
 	plan.TimeModified = types.StringValue(ipPool.TimeModified.String())
@@ -437,13 +325,6 @@ func (r *Resource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	// Remove only ranges owned by this legacy nested attribute. Standalone
-	// oxide_system_ip_pool_range resources must manage their own ranges.
-	resp.Diagnostics.Append(removeRanges(ctx, r.client, state.Ranges, state.ID.ValueString())...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if err := r.client.SystemIpPoolDelete(
 		ctx,
 		oxide.SystemIpPoolDeleteParams{
@@ -462,117 +343,4 @@ func (r *Resource) Delete(
 		fmt.Sprintf("deleted IP pool with ID: %v", state.ID.ValueString()),
 		map[string]any{"success": true},
 	)
-}
-
-func addRanges(
-	ctx context.Context,
-	client *oxide.Client,
-	ranges []RangeResourceModel,
-	poolID string,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	for _, ipPoolRange := range ranges {
-		firstAddress := ipPoolRange.FirstAddress.ValueString()
-		lastAddress := ipPoolRange.LastAddress.ValueString()
-
-		body, err := oxide.NewIpRange(firstAddress, lastAddress)
-		if err != nil {
-			diags.AddError(
-				"Error creating range within IP Pool",
-				err.Error(),
-			)
-			return diags
-		}
-
-		params := oxide.SystemIpPoolRangeAddParams{
-			Pool: oxide.NameOrId(poolID),
-			Body: &body,
-		}
-
-		ipR, err := client.SystemIpPoolRangeAdd(ctx, params)
-		if err != nil {
-			diags.AddError(
-				"Error creating range within IP Pool",
-				"API error: "+err.Error(),
-			)
-			return diags
-		}
-		tflog.Trace(
-			ctx,
-			fmt.Sprintf(
-				"added IP Pool range with ID: %v, from: %v to: %v",
-				ipR.Id,
-				firstAddress,
-				lastAddress,
-			),
-			map[string]any{"success": true},
-		)
-	}
-
-	return nil
-}
-
-func removeRanges(
-	ctx context.Context,
-	client *oxide.Client,
-	ranges []RangeResourceModel,
-	poolID string,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	for _, ipPoolRange := range ranges {
-		firstAddress := ipPoolRange.FirstAddress.ValueString()
-		lastAddress := ipPoolRange.LastAddress.ValueString()
-
-		body, err := oxide.NewIpRange(firstAddress, lastAddress)
-		if err != nil {
-			diags.AddError(
-				"Error removing range within IP Pool",
-				err.Error(),
-			)
-			return diags
-		}
-
-		params := oxide.SystemIpPoolRangeRemoveParams{
-			Pool: oxide.NameOrId(poolID),
-			Body: &body,
-		}
-
-		err = client.SystemIpPoolRangeRemove(ctx, params)
-		if err != nil {
-			if shared.Is404(err) {
-				continue
-			}
-			diags.AddError(
-				"Error removing range within IP Pool",
-				"API error: "+err.Error(),
-			)
-			return diags
-		}
-		tflog.Trace(
-			ctx,
-			fmt.Sprintf("removed IP Pool range from: %v to: %v", firstAddress, lastAddress),
-			map[string]any{"success": true},
-		)
-	}
-
-	return nil
-}
-
-func rangeResourceModel(ipRange oxide.IpRange) (RangeResourceModel, bool) {
-	switch value := ipRange.Value.(type) {
-	case *oxide.Ipv4Range:
-		return RangeResourceModel{
-			FirstAddress: types.StringValue(value.First),
-			LastAddress:  types.StringValue(value.Last),
-		}, true
-	case *oxide.Ipv6Range:
-		return RangeResourceModel{
-			FirstAddress: types.StringValue(value.First),
-			LastAddress:  types.StringValue(value.Last),
-		}, true
-	default:
-		return RangeResourceModel{}, false
-	}
 }
