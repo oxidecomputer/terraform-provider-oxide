@@ -18,6 +18,10 @@ description = "`oxide_current_user`"
 title = "New resource"
 description = "`oxide_vpc_internet_gateway_ip_address_attachment`"
 
+[[features]]
+title = "New resource"
+description = "`oxide_vpc_internet_gateway_ip_pool_attachment`"
+
 [[enhancements]]
 title = "`oxide_silo_saml_identity_provider`"
 description = "The `idp_metadata_source` and `signing_keypair.private_key` attributes are now write-only. [#819](https://github.com/oxidecomputer/terraform-provider-oxide/pull/819)"
@@ -27,5 +31,5 @@ title = "`oxide_silo_saml_identity_provider`"
 description = "The `oxide_silo_saml_identity_provider` resource can now be imported. [#819](https://github.com/oxidecomputer/terraform-provider-oxide/pull/819)"
 
 [[bugs]]
-title = ""
-description = ""
+title = "`oxide_instance`"
+description = "Previously, the provider would fail to detect a diff on the `external_ips` attribute of the `oxide_instance` resource when external IPs were detached from the instance out of band. These diffs are now detected correctly. [#842](https://github.com/oxidecomputer/terraform-provider-oxide/pull/842)"
