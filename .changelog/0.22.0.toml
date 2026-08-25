@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "`oxide_switch_port_settings`"
+description = "The `oxide_switch_port_settings` resource has been removed."
 
 [[features]]
 title = "New data source"
