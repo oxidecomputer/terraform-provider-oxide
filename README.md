@@ -19,7 +19,7 @@ Alternatively, it is possible to authenticate via the optional `host` and `token
 
 To generate a token, follow these steps:
 
-- Make sure you have installed the Oxide CLI
+- Make sure you have installed the Oxide CLI.
 - Log in via the Oxide console.
 - Run `oxide auth login --host <host>`
 - Retrieve the token associated with the host from `$HOME/.config/oxide/credentials.toml`.
