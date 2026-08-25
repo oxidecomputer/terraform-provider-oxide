@@ -1059,10 +1059,12 @@ func (r *Resource) Read(
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Only set the external IPs if there are any to avoid drift.
-	if !externalIPs.Empty() {
-		state.ExternalIPs = externalIPs
+	// If the current attached external IPs list is empty (i.e. no non-snat IPs), write `nil` to the
+	// state. This represents an instance with an unspecified `external_ips` block.
+	if externalIPs.Empty() {
+		externalIPs = nil
 	}
+	state.ExternalIPs = externalIPs
 
 	keySet, diags := newAssociatedSSHKeysOnCreateSet(ctx, r.client, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
