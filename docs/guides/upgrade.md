@@ -115,6 +115,38 @@ moved {
 
 Run `terraform apply` to complete the migration.
 
+### Resource `oxide_system_silo`
+
+Release `0.22.0` introduces the `oxide_system_silo` resource and deprecates the
+`oxide_silo` resource. The `oxide_silo` data source is unchanged.
+
+The `oxide_system_silo` resource replaces the deprecated `oxide_silo` resource.
+Both resource types have the same schema and behavior.
+
+To migrate an existing silo without destroying and recreating it, rename the
+resource type and add a `moved` block:
+
+```terraform
+resource "oxide_system_silo" "example" {
+  # The arguments are unchanged from oxide_silo.example.
+}
+
+moved {
+  from = oxide_silo.example
+  to   = oxide_system_silo.example
+}
+```
+
+The provider moves the existing state to the new resource type. Run
+`terraform plan` and verify that it reports the address move with no resources
+to add, change, or destroy before applying the migration. Module authors should
+retain the `moved` block so all module instances retain this migration path.
+
+Do not use `terraform state mv` for this migration. Terraform only permits that
+command between addresses of the same resource type. If a declarative move
+cannot be used, remove the old address from state and import the silo ID at the
+new address only after backing up the state.
+
 ## Upgrading to `0.21.0`
 
 Release `0.21.0` contains changes that may require updates to Terraform

@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package silo
+package systemsilo
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -40,18 +41,35 @@ var (
 	_ resource.Resource                = (*Resource)(nil)
 	_ resource.ResourceWithConfigure   = (*Resource)(nil)
 	_ resource.ResourceWithImportState = (*Resource)(nil)
+	_ resource.ResourceWithMoveState   = (*Resource)(nil)
 )
 
-// NewResource is a helper to easily construct a Resource as a type that
-// implements the Terraform resource interface.
+const (
+	resourceTypeName           = "oxide_system_silo"
+	deprecatedResourceTypeName = "oxide_silo"
+	deprecationMessage         = "Use oxide_system_silo instead. " +
+		"The oxide_silo resource will be removed in a future release."
+)
+
+// NewResource returns the canonical system silo resource.
 func NewResource() resource.Resource {
-	return &Resource{}
+	return &Resource{typeName: resourceTypeName}
+}
+
+// NewDeprecatedResource returns the deprecated silo resource.
+func NewDeprecatedResource() resource.Resource {
+	return &Resource{
+		typeName:           deprecatedResourceTypeName,
+		deprecationMessage: deprecationMessage,
+	}
 }
 
 // Resource is the concrete type that implements the necessary Terraform
 // resource interfaces. It holds state to interact with the Oxide API.
 type Resource struct {
-	client *oxide.Client
+	client             *oxide.Client
+	typeName           string
+	deprecationMessage string
 }
 
 // ResourceModel represents the Terraform configuration and state for the
@@ -94,7 +112,7 @@ func (r *Resource) Metadata(
 	req resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_silo"
+	resp.TypeName = r.typeName
 }
 
 // Configure sets up necessary data or clients needed by this resource.
@@ -127,13 +145,24 @@ func (r *Resource) Schema(
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
-	resp.Schema = schema.Schema{
-		MarkdownDescription: shared.ReplaceBackticks(`
-This resource manages the creation of an Oxide silo.
+	resp.Schema = siloSchema(ctx, r.deprecationMessage)
+}
+
+func siloSchema(ctx context.Context, deprecationMessage string) schema.Schema {
+	markdownDescription := `This resource manages the creation of an Oxide silo.
 
 -> Only the ''quotas'' attribute supports in-place modification. Changes to other
 attributes will result in the silo being destroyed and created anew.
-`),
+`
+	if deprecationMessage != "" {
+		markdownDescription = `-> **Deprecated:** Use the ''oxide_system_silo'' resource instead.
+
+` + markdownDescription
+	}
+
+	return schema.Schema{
+		DeprecationMessage:  deprecationMessage,
+		MarkdownDescription: shared.ReplaceBackticks(markdownDescription),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -294,6 +323,58 @@ attributes will result in the silo being destroyed and created anew.
 				Update: true,
 				Delete: true,
 			}),
+		},
+	}
+}
+
+// MoveState enables moving deprecated oxide_silo state to oxide_system_silo.
+func (r *Resource) MoveState(ctx context.Context) []resource.StateMover {
+	if r.typeName != resourceTypeName {
+		return nil
+	}
+
+	sourceSchema := siloSchema(ctx, "")
+
+	return []resource.StateMover{
+		{
+			SourceSchema: &sourceSchema,
+			StateMover: func(
+				ctx context.Context,
+				req resource.MoveStateRequest,
+				resp *resource.MoveStateResponse,
+			) {
+				_, sourceProvider, hasHostname := strings.Cut(
+					req.SourceProviderAddress,
+					"/",
+				)
+				if req.SourceTypeName != deprecatedResourceTypeName ||
+					req.SourceSchemaVersion != 0 ||
+					!hasHostname ||
+					sourceProvider != "oxidecomputer/oxide" {
+					return
+				}
+
+				if req.SourceState == nil {
+					resp.Diagnostics.AddError(
+						"Unable to Move Silo State",
+						"The oxide_silo source state could not be decoded.",
+					)
+					return
+				}
+
+				var sourceState ResourceModel
+				resp.Diagnostics.Append(
+					req.SourceState.Get(ctx, &sourceState)...,
+				)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				resp.Diagnostics.Append(
+					resp.TargetState.Set(ctx, &sourceState)...,
+				)
+				resp.TargetPrivate = req.SourcePrivate
+			},
 		},
 	}
 }

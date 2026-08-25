@@ -25,7 +25,7 @@ Terraform, it will be removed from state but will continue to exist in Oxide.
 ```terraform
 # With URL metadata source.
 resource "oxide_silo_saml_identity_provider" "example_url" {
-  silo                    = oxide_silo.example.id
+  silo                    = oxide_system_silo.example.id
   name                    = "keycloak"
   description             = "Managed by Terraform."
   group_attribute_name    = "groups"
@@ -43,7 +43,7 @@ resource "oxide_silo_saml_identity_provider" "example_url" {
 
 # With base64-encoded XML metadata.
 resource "oxide_silo_saml_identity_provider" "example_xml" {
-  silo                    = oxide_silo.example.id
+  silo                    = oxide_system_silo.example.id
   name                    = "custom-idp"
   description             = "Custom SAML identity provider"
   idp_entity_id           = "https://idp.example.com"

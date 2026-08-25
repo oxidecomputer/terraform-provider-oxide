@@ -34,6 +34,14 @@ description = "`oxide_vpc_internet_gateway_ip_address_attachment`"
 title = "New resource"
 description = "`oxide_vpc_internet_gateway_ip_pool_attachment`"
 
+[[features]]
+title = "New resource"
+description = "`oxide_system_silo`"
+
+[[enhancements]]
+title = "`oxide_silo`"
+description = "The `oxide_silo` resource is deprecated in favor of `oxide_system_silo`. Existing resources can migrate without recreation by using a Terraform `moved` block. The `oxide_silo` data source is unchanged."
+
 [[enhancements]]
 title = "`oxide_instance`"
 description = "The oxide_instance resource now exposes a read-only `attached_external_ips` attribute, which lists attached floating, ephemeral, and SNAT external IP addresses. For Terraform-managed instances, this attribute can replace the `oxide_instance_external_ips` data source. [#841](https://github.com/oxidecomputer/terraform-provider-oxide/pull/841)"
