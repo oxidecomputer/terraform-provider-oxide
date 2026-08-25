@@ -39,7 +39,7 @@ terraform {
 }
 
 provider "oxide" {
-  # The provider will default to use $OXIDE_HOST and $OXIDE_TOKEN,
+  # The provider will default to using $OXIDE_HOST and $OXIDE_TOKEN,
   # or $OXIDE_PROFILE.
   # If necessary they can be set explicitly (not recommended).
   # host = "<host address>"
