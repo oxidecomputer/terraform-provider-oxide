@@ -50,6 +50,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc"
 	vpcfirewallrules "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_firewall_rules"
 	vpcinternetgateway "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_internet_gateway"
+	vpcinternetgatewayippoolattachment "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_internet_gateway_ip_pool_attachment"
 	vpcrouter "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_router"
 	vpcrouterroute "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_router_route"
 	vpcsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_subnet"
@@ -244,6 +245,7 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		switchportsettings.NewResource,
 		vpcfirewallrules.NewResource,
 		vpcinternetgateway.NewResource,
+		vpcinternetgatewayippoolattachment.NewResource,
 		vpc.NewResource,
 		vpcrouter.NewResource,
 		vpcrouterroute.NewResource,
