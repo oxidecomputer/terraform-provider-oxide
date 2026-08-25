@@ -182,9 +182,6 @@ func (r *Resource) Create(
 	}
 
 	plan.ID = types.StringValue(attachment.Id)
-	plan.Address = iptypes.NewIPAddressValue(attachment.Address)
-	plan.Name = types.StringValue(string(attachment.Name))
-	plan.Description = types.StringValue(attachment.Description)
 
 	tflog.Trace(
 		ctx,
