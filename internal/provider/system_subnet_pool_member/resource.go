@@ -192,12 +192,10 @@ func (r *Resource) Create(
 
 	body := &oxide.SubnetPoolMemberAdd{Subnet: subnet}
 	if !plan.MaxPrefixLength.IsNull() && !plan.MaxPrefixLength.IsUnknown() {
-		maxPrefixLength := int(plan.MaxPrefixLength.ValueInt64())
-		body.MaxPrefixLength = &maxPrefixLength
+		body.MaxPrefixLength = oxide.NewPointer(int(plan.MaxPrefixLength.ValueInt64()))
 	}
 	if !plan.MinPrefixLength.IsNull() && !plan.MinPrefixLength.IsUnknown() {
-		minPrefixLength := int(plan.MinPrefixLength.ValueInt64())
-		body.MinPrefixLength = &minPrefixLength
+		body.MinPrefixLength = oxide.NewPointer(int(plan.MinPrefixLength.ValueInt64()))
 	}
 
 	member, err := r.client.SystemSubnetPoolMemberAdd(

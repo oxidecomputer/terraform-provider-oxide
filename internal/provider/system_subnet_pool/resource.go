@@ -101,7 +101,7 @@ func (r *Resource) Schema(
 			},
 			"ip_version": schema.StringAttribute{
 				Required:    true,
-				Description: "The IP version for this pool. All subnets in the pool must match this version.",
+				Description: "The IP version for this pool. All subnets in the pool must match this version. Possible values: `v4`, `v6`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(string(oxide.IpVersionV4), string(oxide.IpVersionV6)),
 				},
