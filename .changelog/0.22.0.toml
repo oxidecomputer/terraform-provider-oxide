@@ -16,6 +16,10 @@ description = "`oxide_current_user`"
 
 [[features]]
 title = "New resource"
+description = "`oxide_vpc_internet_gateway_ip_address_attachment`"
+
+[[features]]
+title = "New resource"
 description = "`oxide_vpc_internet_gateway_ip_pool_attachment`"
 
 [[enhancements]]
