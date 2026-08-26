@@ -41,3 +41,7 @@ description = "Added the read-only attributes `ip_version` and `pool_type`."
 [[bugs]]
 title = "`oxide_instance`"
 description = "Previously, the provider would fail to detect a diff on the `external_ips` attribute of the `oxide_instance` resource when external IPs were detached from the instance out of band. These diffs are now detected correctly. [#842](https://github.com/oxidecomputer/terraform-provider-oxide/pull/842)"
+
+[[bugs]]
+title = "`oxide_floating_ip`"
+description = "Previously, the `oxide_floating_ip` data source would return a null object and throw an uninformative error if the relevant floating IP didn't exist. These errors are now surfaced correctly, without manifesting as provider bugs. [#850](https://github.com/oxidecomputer/terraform-provider-oxide/pull/850)"

@@ -24,7 +24,6 @@ const examplesRoot = "../../examples"
 //
 // TODO: Fix failing examples and deprecate this escape hatch.
 var knownFailingExample = map[string]bool{
-	"data-sources/oxide_floating_ip/data-source.tf":           true,
 	"data-sources/oxide_image/data-source.tf":                 true,
 	"data-sources/oxide_instance_external_ips/data-source.tf": true,
 	"data-sources/oxide_silo/data-source.tf":                  true,
