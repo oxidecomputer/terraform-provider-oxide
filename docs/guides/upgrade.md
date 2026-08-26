@@ -17,6 +17,104 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.22.0`
+
+Release `0.22.0` contains changes that may require updates to Terraform
+configuration files.
+
+### Resource `oxide_subnet_pool`
+
+#### Deprecation
+
+The `oxide_subnet_pool` resource is deprecated and will be removed in `0.25.0`.
+Use the `moved` block to migrate to the `oxide_system_subnet_pool` resource.
+
+Replace `oxide_subnet_pool` with `oxide_system_subnet_pool` in your
+configuration. The resource schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_subnet_pool" "example" {
++resource "oxide_system_subnet_pool" "example" {
+   name        = "my-pool"
+   description = "Example subnet pool"
+   ip_version  = "v4"
+ }
+```
+
+Add a `moved` block to transfer the existing resource state to the new resource.
+
+```terraform
+moved {
+  from = oxide_subnet_pool.example
+  to   = oxide_system_subnet_pool.example
+}
+```
+
+Run `terraform apply` to complete the migration.
+
+### Resource `oxide_subnet_pool_member`
+
+#### Deprecation
+
+The `oxide_subnet_pool_member` resource is deprecated and will
+be removed in `0.25.0`. Use the `moved` block to migrate to the
+`oxide_system_subnet_pool_member` resource.
+
+Replace `oxide_subnet_pool_member` with `oxide_system_subnet_pool_member` in
+your configuration. The resource schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_subnet_pool_member" "example" {
++resource "oxide_system_subnet_pool_member" "example" {
+   subnet_pool_id    = oxide_system_subnet_pool.example.id
+   subnet            = "192.0.2.0/24"
+   min_prefix_length = 24
+   max_prefix_length = 28
+ }
+```
+
+Add a `moved` block to transfer the existing resource state to the new resource.
+
+```terraform
+moved {
+  from = oxide_subnet_pool_member.example
+  to   = oxide_system_subnet_pool_member.example
+}
+```
+
+Run `terraform apply` to complete the migration.
+
+### Resource `oxide_subnet_pool_silo_link`
+
+#### Deprecation
+
+The `oxide_subnet_pool_silo_link` resource is deprecated and will
+be removed in `0.25.0`. Use the `moved` block to migrate to the
+`oxide_system_subnet_pool_silo_link` resource.
+
+Replace `oxide_subnet_pool_silo_link` with `oxide_system_subnet_pool_silo_link`
+in your configuration. The resource schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_subnet_pool_silo_link" "example" {
++resource "oxide_system_subnet_pool_silo_link" "example" {
+   subnet_pool_id = oxide_system_subnet_pool.example.id
+   silo_id        = "9e199e45-01a6-43d3-8bc3-5b27726e67a6"
+   is_default     = false
+ }
+```
+
+Add a `moved` block to transfer the existing resource state to the new resource.
+
+```terraform
+moved {
+  from = oxide_subnet_pool_silo_link.example
+  to   = oxide_system_subnet_pool_silo_link.example
+}
+```
+
+Run `terraform apply` to complete the migration.
+
 ## Upgrading to `0.21.0`
 
 Release `0.21.0` contains changes that may require updates to Terraform

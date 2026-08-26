@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package subnetpoolsilolink
+package systemsubnetpoolsilolink
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -26,40 +27,37 @@ import (
 	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*Resource)(nil)
-	_ resource.ResourceWithConfigure = (*Resource)(nil)
+	_ resource.Resource                = (*Resource)(nil)
+	_ resource.ResourceWithConfigure   = (*Resource)(nil)
+	_ resource.ResourceWithImportState = (*Resource)(nil)
+	_ resource.ResourceWithMoveState   = (*Resource)(nil)
 )
 
-// NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return &Resource{}
 }
 
-// Resource is the resource implementation.
 type Resource struct {
 	client *oxide.Client
 }
 
 type ResourceModel struct {
 	ID           types.String   `tfsdk:"id"`
-	SiloID       types.String   `tfsdk:"silo_id"`
 	SubnetPoolID types.String   `tfsdk:"subnet_pool_id"`
+	SiloID       types.String   `tfsdk:"silo_id"`
 	IsDefault    types.Bool     `tfsdk:"is_default"`
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
-// Metadata returns the resource type name.
 func (r *Resource) Metadata(
 	_ context.Context,
-	req resource.MetadataRequest,
+	_ resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_subnet_pool_silo_link"
+	resp.TypeName = "oxide_system_subnet_pool_silo_link"
 }
 
-// Configure adds the provider configured client to the data source.
 func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
@@ -72,65 +70,79 @@ func (r *Resource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
-// ImportState imports an existing resource into Terraform state.
+// ImportState imports this resource using a composite ID in the format
+// `${SUBNET_POOL_ID}/${SILO_ID}`.
 func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
 	resp *resource.ImportStateResponse,
 ) {
-	idParts := strings.Split(req.ID, "/")
-	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+	poolID, siloID, err := parseID(req.ID)
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Invalid Import ID",
-			fmt.Sprintf("Expected import ID format: subnet_pool_id/silo_id, got: %s", req.ID),
+			fmt.Sprintf(
+				"Expected import ID format: subnet_pool_id/silo_id, got: %s",
+				req.ID,
+			),
 		)
 		return
 	}
 
-	// Use the import ID directly as the terraform ID (it's already in the correct format)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	resp.Diagnostics.Append(
-		resp.State.SetAttribute(ctx, path.Root("subnet_pool_id"), idParts[0])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("silo_id"), idParts[1])...)
+		resp.State.SetAttribute(ctx, path.Root("subnet_pool_id"), poolID)...,
+	)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("silo_id"), siloID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
-// Schema defines the schema for the resource.
+func (r *Resource) MoveState(ctx context.Context) []resource.StateMover {
+	return []resource.StateMover{
+		shared.MoveState[ResourceModel](
+			"oxide_subnet_pool_silo_link",
+			0,
+			resourceSchema(ctx),
+		),
+	}
+}
+
 func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
-	resp.Schema = schema.Schema{
-		DeprecationMessage: "This resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_subnet_pool_silo_link instead.",
-		MarkdownDescription: shared.ReplaceBackticks(`
-This resource manages a link between a system subnet pool and a silo.
+	resp.Schema = resourceSchema(ctx)
+}
 
-!> This resource is deprecated and will be removed in version v0.25.0 of the provider. Use ''oxide_system_subnet_pool_silo_link'' instead.
-`),
+func resourceSchema(ctx context.Context) schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: "This resource manages the link between a system subnet pool and a silo.",
 		Attributes: map[string]schema.Attribute{
-			"silo_id": schema.StringAttribute{
-				Required:    true,
-				Description: "ID of the silo to link the subnet pool to.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					oxidevalidator.IsUUID(),
-				},
-			},
 			"subnet_pool_id": schema.StringAttribute{
 				Required:    true,
-				Description: "ID of the subnet pool that will be linked to the silo.",
+				Description: "ID of the subnet pool to link to the silo.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+			},
+			"silo_id": schema.StringAttribute{
+				Required:    true,
+				Description: "ID of the silo to link to the subnet pool.",
 				Validators: []validator.String{
 					oxidevalidator.IsUUID(),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"is_default": schema.BoolAttribute{
-				Required:    true,
-				Description: "Whether this is the default subnet pool for the silo. When true, external subnet allocations that don't specify a pool use this one.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Whether this is the default subnet pool for the silo. External subnet allocations that don't specify a pool use this one.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -146,15 +158,12 @@ This resource manages a link between a system subnet pool and a silo.
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
 func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
 	var plan ResourceModel
-
-	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -168,46 +177,33 @@ func (r *Resource) Create(
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	params := oxide.SystemSubnetPoolSiloLinkParams{
+	link, err := r.client.SystemSubnetPoolSiloLink(ctx, oxide.SystemSubnetPoolSiloLinkParams{
 		Pool: oxide.NameOrId(plan.SubnetPoolID.ValueString()),
 		Body: &oxide.SubnetPoolLinkSilo{
 			IsDefault: plan.IsDefault.ValueBoolPointer(),
 			Silo:      oxide.NameOrId(plan.SiloID.ValueString()),
 		},
-	}
-	link, err := r.client.SystemSubnetPoolSiloLink(ctx, params)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating subnet pool silo link",
+			"Error creating system subnet pool silo link",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("created subnet pool silo link for subnet pool: %v", link.SubnetPoolId),
-		map[string]any{"success": true},
-	)
 
-	// Set a deterministic ID based on composite attributes.
+	tflog.Trace(ctx, "created system subnet pool silo link", map[string]any{"success": true})
 	plan.ID = types.StringValue(fmt.Sprintf("%s/%s", link.SubnetPoolId, link.SiloId))
-
-	// Save plan into Terraform state
+	plan.IsDefault = types.BoolPointerValue(link.IsDefault)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
-// Read refreshes the Terraform state with the latest data.
 func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
 	var state ResourceModel
-
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -221,73 +217,39 @@ func (r *Resource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	pools, err := r.client.SiloSubnetPoolListAllPages(ctx, oxide.SiloSubnetPoolListParams{
-		Silo: oxide.NameOrId(state.SiloID.ValueString()),
-	})
+	links, err := r.client.SystemSubnetPoolSiloListAllPages(
+		ctx,
+		oxide.SystemSubnetPoolSiloListParams{
+			Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
+		},
+	)
 	if err != nil {
 		if errors.Is(err, oxide.ErrHTTP404) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
 		resp.Diagnostics.AddError(
-			"Unable to read subnet pool silo links:",
+			"Unable to read system subnet pool silo links",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("read subnet pool silo links for pool: %v", state.SubnetPoolID.ValueString()),
-		map[string]any{"success": true},
-	)
 
-	subnetPoolID := state.SubnetPoolID.ValueString()
-	idx := slices.IndexFunc(
-		pools,
-		func(p oxide.SiloSubnetPool) bool {
-			// We check for both ID and name equality to ensure resources that
-			// mistakenly used the subnet pool name aren't removed from state.
-			return p.Id == subnetPoolID || p.Name == oxide.Name(subnetPoolID)
-		},
-	)
+	idx := slices.IndexFunc(links, func(link oxide.SubnetPoolSiloLink) bool {
+		return link.SiloId == state.SiloID.ValueString()
+	})
 	if idx < 0 {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	// Resolve the silo to its UUID so the composite ID is always
-	// SUBNET_POOL_ID/SILO_ID in UUID form, even when silo_id was previously
-	// configured by name.
-	silo, err := r.client.SiloView(ctx, oxide.SiloViewParams{
-		Silo: oxide.NameOrId(state.SiloID.ValueString()),
-	})
-	if err != nil {
-		if errors.Is(err, oxide.ErrHTTP404) {
-			resp.State.RemoveResource(ctx)
-			return
-		}
-		resp.Diagnostics.AddError(
-			"Unable to read silo:",
-			"API error: "+err.Error(),
-		)
-		return
-	}
-
-	// Set a deterministic ID based on composite attributes.
-	state.ID = types.StringValue(fmt.Sprintf("%s/%s", pools[idx].Id, silo.Id))
-
-	state.SiloID = types.StringValue(silo.Id)
-	state.SubnetPoolID = types.StringValue(pools[idx].Id)
-	state.IsDefault = types.BoolPointerValue(pools[idx].IsDefault)
-
-	// Save updated data into Terraform state
+	link := links[idx]
+	state.ID = types.StringValue(fmt.Sprintf("%s/%s", link.SubnetPoolId, link.SiloId))
+	state.IsDefault = types.BoolPointerValue(link.IsDefault)
+	tflog.Trace(ctx, "read system subnet pool silo link", map[string]any{"success": true})
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
 func (r *Resource) Update(
 	ctx context.Context,
 	req resource.UpdateRequest,
@@ -295,13 +257,10 @@ func (r *Resource) Update(
 ) {
 	var plan ResourceModel
 	var state ResourceModel
-
-	// Read Terraform plan data into the plan model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -315,46 +274,31 @@ func (r *Resource) Update(
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	params := oxide.SystemSubnetPoolSiloUpdateParams{
+	link, err := r.client.SystemSubnetPoolSiloUpdate(ctx, oxide.SystemSubnetPoolSiloUpdateParams{
 		Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
-		Body: &oxide.SubnetPoolSiloUpdate{
-			IsDefault: plan.IsDefault.ValueBoolPointer(),
-		},
-	}
-	link, err := r.client.SystemSubnetPoolSiloUpdate(ctx, params)
+		Body: &oxide.SubnetPoolSiloUpdate{IsDefault: plan.IsDefault.ValueBoolPointer()},
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating subnet pool silo link",
+			"Error updating system subnet pool silo link",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("updated subnet pool silo link for subnet pool: %v", link.SubnetPoolId),
-		map[string]any{"success": true},
-	)
 
-	// Set a deterministic ID based on composite attributes.
+	tflog.Trace(ctx, "updated system subnet pool silo link", map[string]any{"success": true})
 	plan.ID = types.StringValue(fmt.Sprintf("%s/%s", link.SubnetPoolId, link.SiloId))
-
-	// Save plan into Terraform state
+	plan.IsDefault = types.BoolPointerValue(link.IsDefault)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
 func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
 	var state ResourceModel
-
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -368,22 +312,29 @@ func (r *Resource) Delete(
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
-	params := oxide.SystemSubnetPoolSiloUnlinkParams{
+	err := r.client.SystemSubnetPoolSiloUnlink(ctx, oxide.SystemSubnetPoolSiloUnlinkParams{
 		Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
+	})
+	if err != nil && !errors.Is(err, oxide.ErrHTTP404) {
+		resp.Diagnostics.AddError(
+			"Error deleting system subnet pool silo link",
+			"API error: "+err.Error(),
+		)
+		return
 	}
-	if err := r.client.SystemSubnetPoolSiloUnlink(ctx, params); err != nil {
-		if !errors.Is(err, oxide.ErrHTTP404) {
-			resp.Diagnostics.AddError(
-				"Error deleting subnet pool silo link:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
+
+	tflog.Trace(ctx, "deleted system subnet pool silo link", map[string]any{"success": true})
+}
+
+func parseID(id string) (string, string, error) {
+	idParts := strings.Split(id, "/")
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		return "", "", fmt.Errorf(
+			"expected ID format subnet_pool_id/silo_id, got %q",
+			id,
+		)
 	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("deleted subnet pool silo link with ID: %v", state.ID.ValueString()),
-		map[string]any{"success": true},
-	)
+
+	return idParts[0], idParts[1], nil
 }

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package subnetpoolmember
+package systemsubnetpoolmember
 
 import (
 	"context"
@@ -12,32 +12,33 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
+	oxidevalidator "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/validator"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = (*Resource)(nil)
-	_ resource.ResourceWithConfigure = (*Resource)(nil)
+	_ resource.Resource                = (*Resource)(nil)
+	_ resource.ResourceWithConfigure   = (*Resource)(nil)
+	_ resource.ResourceWithImportState = (*Resource)(nil)
+	_ resource.ResourceWithMoveState   = (*Resource)(nil)
 )
 
-// NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return &Resource{}
 }
 
-// Resource is the resource implementation.
 type Resource struct {
 	client *oxide.Client
 }
@@ -52,16 +53,14 @@ type ResourceModel struct {
 	Timeouts        timeouts.Value     `tfsdk:"timeouts"`
 }
 
-// Metadata returns the resource type name.
 func (r *Resource) Metadata(
 	_ context.Context,
-	req resource.MetadataRequest,
+	_ resource.MetadataRequest,
 	resp *resource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_subnet_pool_member"
+	resp.TypeName = "oxide_system_subnet_pool_member"
 }
 
-// Configure adds the provider configured client to the data source.
 func (r *Resource) Configure(
 	_ context.Context,
 	req resource.ConfigureRequest,
@@ -74,6 +73,9 @@ func (r *Resource) Configure(
 	r.client = req.ProviderData.(*oxide.Client)
 }
 
+// ImportState imports this resource using a composite ID in the format
+// `${SUBNET_POOL_ID}/${ID}`. The `id` attribute alone is not enough to qualify
+// this resource.
 func (r *Resource) ImportState(
 	ctx context.Context,
 	req resource.ImportStateRequest,
@@ -83,33 +85,50 @@ func (r *Resource) ImportState(
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
 		resp.Diagnostics.AddError(
 			"Invalid Import ID",
-			fmt.Sprintf("Expected import ID format: subnet_pool_id/member_id, got: %s", req.ID),
+			fmt.Sprintf(
+				"Expected import ID format: subnet_pool_id/member_id, got: %s",
+				req.ID,
+			),
 		)
 		return
 	}
 
 	resp.Diagnostics.Append(
-		resp.State.SetAttribute(ctx, path.Root("subnet_pool_id"), idParts[0])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idParts[1])...)
+		resp.State.SetAttribute(ctx, path.Root("subnet_pool_id"), idParts[0])...,
+	)
+	resp.Diagnostics.Append(
+		resp.State.SetAttribute(ctx, path.Root("id"), idParts[1])...,
+	)
 }
 
-// Schema defines the schema for the resource.
+func (r *Resource) MoveState(ctx context.Context) []resource.StateMover {
+	return []resource.StateMover{
+		shared.MoveState[ResourceModel](
+			"oxide_subnet_pool_member",
+			0,
+			resourceSchema(ctx),
+		),
+	}
+}
+
 func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
-	resp.Schema = schema.Schema{
-		DeprecationMessage: "This resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_subnet_pool_member instead.",
-		MarkdownDescription: shared.ReplaceBackticks(`
-This resource manages a member (subnet) within a system subnet pool.
+	resp.Schema = resourceSchema(ctx)
+}
 
-!> This resource is deprecated and will be removed in version v0.25.0 of the provider. Use ''oxide_system_subnet_pool_member'' instead.
-`),
+func resourceSchema(ctx context.Context) schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: "This resource manages a subnet pool member.",
 		Attributes: map[string]schema.Attribute{
 			"subnet_pool_id": schema.StringAttribute{
 				Required:    true,
-				Description: "ID of the subnet pool this member belongs to.",
+				Description: "ID of the subnet pool.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -117,7 +136,7 @@ This resource manages a member (subnet) within a system subnet pool.
 			"subnet": schema.StringAttribute{
 				Required:    true,
 				CustomType:  cidrtypes.IPPrefixType{},
-				Description: "The subnet CIDR to add to the pool (e.g., '10.0.0.0/16').",
+				Description: "Subnet CIDR to add to the pool.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -126,18 +145,22 @@ This resource manages a member (subnet) within a system subnet pool.
 				Optional:    true,
 				Computed:    true,
 				Description: "Minimum prefix length for allocations from this subnet. Defaults to the subnet's prefix length.",
+				Validators: []validator.Int64{
+					int64validator.Between(0, 128),
+				},
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
-					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"max_prefix_length": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
 				Description: "Maximum prefix length for allocations from this subnet. Defaults to 32 for IPv4 and 128 for IPv6.",
+				Validators: []validator.Int64{
+					int64validator.Between(0, 128),
+				},
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
-					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
@@ -148,9 +171,6 @@ This resource manages a member (subnet) within a system subnet pool.
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique, immutable, system-controlled identifier of the subnet pool member.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
@@ -160,15 +180,12 @@ This resource manages a member (subnet) within a system subnet pool.
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
 func (r *Resource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
 	var plan ResourceModel
-
-	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -184,68 +201,52 @@ func (r *Resource) Create(
 
 	subnet, err := oxide.NewIpNet(plan.Subnet.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error parsing subnet CIDR",
-			err.Error(),
-		)
+		resp.Diagnostics.AddError("Error parsing subnet CIDR", err.Error())
 		return
 	}
 
-	body := &oxide.SubnetPoolMemberAdd{
-		Subnet: subnet,
-	}
-
-	if !plan.MinPrefixLength.IsNull() && !plan.MinPrefixLength.IsUnknown() {
-		minPrefixLen := int(plan.MinPrefixLength.ValueInt64())
-		body.MinPrefixLength = &minPrefixLen
-	}
-
+	body := &oxide.SubnetPoolMemberAdd{Subnet: subnet}
 	if !plan.MaxPrefixLength.IsNull() && !plan.MaxPrefixLength.IsUnknown() {
-		maxPrefixLen := int(plan.MaxPrefixLength.ValueInt64())
-		body.MaxPrefixLength = &maxPrefixLen
+		body.MaxPrefixLength = oxide.NewPointer(int(plan.MaxPrefixLength.ValueInt64()))
+	}
+	if !plan.MinPrefixLength.IsNull() && !plan.MinPrefixLength.IsUnknown() {
+		body.MinPrefixLength = oxide.NewPointer(int(plan.MinPrefixLength.ValueInt64()))
 	}
 
-	params := oxide.SystemSubnetPoolMemberAddParams{
-		Pool: oxide.NameOrId(plan.SubnetPoolID.ValueString()),
-		Body: body,
-	}
-
-	member, err := r.client.SystemSubnetPoolMemberAdd(ctx, params)
+	member, err := r.client.SystemSubnetPoolMemberAdd(
+		ctx,
+		oxide.SystemSubnetPoolMemberAddParams{
+			Pool: oxide.NameOrId(plan.SubnetPoolID.ValueString()),
+			Body: body,
+		},
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating subnet pool member",
+			"Error creating system subnet pool member",
 			"API error: "+err.Error(),
 		)
 		return
 	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("created subnet pool member with ID: %v", member.Id),
-		map[string]any{"success": true},
-	)
 
-	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(member.Id)
-	plan.MinPrefixLength = types.Int64Value(int64(*member.MinPrefixLength))
 	plan.MaxPrefixLength = types.Int64Value(int64(*member.MaxPrefixLength))
+	plan.MinPrefixLength = types.Int64Value(int64(*member.MinPrefixLength))
 	plan.TimeCreated = types.StringValue(member.TimeCreated.String())
+	tflog.Trace(ctx, "created system subnet pool member", map[string]any{
+		"id":     member.Id,
+		"pool":   plan.SubnetPoolID.ValueString(),
+		"subnet": plan.Subnet.ValueString(),
+	})
 
-	// Save plan into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
-// Read refreshes the Terraform state with the latest data.
 func (r *Resource) Read(
 	ctx context.Context,
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
 	var state ResourceModel
-
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -259,28 +260,24 @@ func (r *Resource) Read(
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	// The API doesn't have a direct "view" endpoint for a single member by ID.
-	// We need to list all members and find the one matching our ID.
 	members, err := r.client.SystemSubnetPoolMemberListAllPages(
 		ctx,
 		oxide.SystemSubnetPoolMemberListParams{
 			Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
 		},
 	)
+	if errors.Is(err, oxide.ErrHTTP404) {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if err != nil {
-		if errors.Is(err, oxide.ErrHTTP404) {
-			// Pool doesn't exist, remove resource from state
-			resp.State.RemoveResource(ctx)
-			return
-		}
 		resp.Diagnostics.AddError(
-			"Unable to read subnet pool members:",
+			"Unable to read system subnet pool members",
 			"API error: "+err.Error(),
 		)
 		return
 	}
 
-	// Find the member with matching ID
 	var foundMember *oxide.SubnetPoolMember
 	for i := range members {
 		if members[i].Id == state.ID.ValueString() {
@@ -290,54 +287,41 @@ func (r *Resource) Read(
 	}
 
 	if foundMember == nil {
-		// Member not found, remove resource from state
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("read subnet pool member with ID: %v", foundMember.Id),
-		map[string]any{"success": true},
-	)
-
-	state.ID = types.StringValue(foundMember.Id)
 	state.Subnet = cidrtypes.NewIPPrefixValue(foundMember.Subnet.String())
-	state.MinPrefixLength = types.Int64Value(int64(*foundMember.MinPrefixLength))
+	state.ID = types.StringValue(foundMember.Id)
+	state.SubnetPoolID = types.StringValue(foundMember.SubnetPoolId)
 	state.MaxPrefixLength = types.Int64Value(int64(*foundMember.MaxPrefixLength))
+	state.MinPrefixLength = types.Int64Value(int64(*foundMember.MinPrefixLength))
 	state.TimeCreated = types.StringValue(foundMember.TimeCreated.String())
-
-	// Save updated data into Terraform state
+	tflog.Trace(ctx, "read system subnet pool member", map[string]any{
+		"id":     foundMember.Id,
+		"pool":   state.SubnetPoolID.ValueString(),
+		"subnet": foundMember.Subnet.String(),
+	})
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-// Note: All attributes require replacement, so this should never be called.
 func (r *Resource) Update(
-	ctx context.Context,
-	req resource.UpdateRequest,
+	_ context.Context,
+	_ resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	// All attributes either require replacement or are computed.
-	// This method should never be called.
 	resp.Diagnostics.AddError(
 		"Unexpected Update",
 		"This resource does not support in-place updates. All changes require replacement.",
 	)
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
 func (r *Resource) Delete(
 	ctx context.Context,
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
 	var state ResourceModel
-
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -353,36 +337,39 @@ func (r *Resource) Delete(
 
 	subnet, err := oxide.NewIpNet(state.Subnet.ValueString())
 	if err != nil {
+		resp.Diagnostics.AddError("Error parsing subnet CIDR", err.Error())
+		return
+	}
+
+	err = r.client.SystemSubnetPoolMemberRemove(
+		ctx,
+		oxide.SystemSubnetPoolMemberRemoveParams{
+			Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
+			Body: &oxide.SubnetPoolMemberRemove{Subnet: subnet},
+		},
+	)
+	if err != nil && !IsSubnetPoolMemberNotFound(err) {
 		resp.Diagnostics.AddError(
-			"Error parsing subnet CIDR",
-			err.Error(),
+			"Error deleting system subnet pool member",
+			"API error: "+err.Error(),
 		)
 		return
 	}
 
-	params := oxide.SystemSubnetPoolMemberRemoveParams{
-		Pool: oxide.NameOrId(state.SubnetPoolID.ValueString()),
-		Body: &oxide.SubnetPoolMemberRemove{
-			Subnet: subnet,
-		},
+	tflog.Trace(ctx, "deleted system subnet pool member", map[string]any{
+		"pool":   state.SubnetPoolID.ValueString(),
+		"subnet": state.Subnet.ValueString(),
+	})
+}
+
+func IsSubnetPoolMemberNotFound(err error) bool {
+	if errors.Is(err, oxide.ErrHTTP404) {
+		return true
 	}
 
-	if err := r.client.SystemSubnetPoolMemberRemove(ctx, params); err != nil {
-		// The API returns 400 with "does not exist" if the member is already gone,
-		// rather than 404. Handle both cases for idempotent deletes.
-		//
-		// TODO: Switch to a 404 in omicron.
-		if !errors.Is(err, oxide.ErrHTTP404) && !strings.Contains(err.Error(), "does not exist") {
-			resp.Diagnostics.AddError(
-				"Error deleting subnet pool member:",
-				"API error: "+err.Error(),
-			)
-			return
-		}
-	}
-	tflog.Trace(
-		ctx,
-		fmt.Sprintf("deleted subnet pool member with ID: %v", state.ID.ValueString()),
-		map[string]any{"success": true},
-	)
+	var httpErr *oxide.HTTPError
+	return errors.Is(err, oxide.ErrInvalidRequest) &&
+		errors.As(err, &httpErr) &&
+		httpErr.ErrorResponse != nil &&
+		strings.Contains(httpErr.ErrorResponse.Message, "does not exist")
 }

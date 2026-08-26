@@ -45,6 +45,9 @@ import (
 	subnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/subnet_pool_silo_link"
 	systemippool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pool"
 	systemippools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pools"
+	systemsubnetpool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool"
+	systemsubnetpoolmember "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool_member"
+	systemsubnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool_silo_link"
 	systemsubnetpools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pools"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc"
 	vpcfirewallrules "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_firewall_rules"
@@ -227,8 +230,8 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		addresslot.NewResource,
 		antiaffinitygroup.NewResource,
 		disk.NewResource,
-		externalsubnetattachment.NewResource,
 		externalsubnet.NewResource,
+		externalsubnetattachment.NewResource,
 		floatingip.NewResource,
 		image.NewResource,
 		instance.NewResource,
@@ -239,14 +242,17 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		silosamlidp.NewResource,
 		snapshot.NewResource,
 		sshkey.NewResource,
-		subnetpoolmember.NewResource,
 		subnetpool.NewResource,
+		subnetpoolmember.NewResource,
 		subnetpoolsilolink.NewResource,
+		systemsubnetpool.NewResource,
+		systemsubnetpoolmember.NewResource,
+		systemsubnetpoolsilolink.NewResource,
+		vpc.NewResource,
 		vpcfirewallrules.NewResource,
 		vpcinternetgateway.NewResource,
 		vpcinternetgatewayipaddressattachment.NewResource,
 		vpcinternetgatewayippoolattachment.NewResource,
-		vpc.NewResource,
 		vpcrouter.NewResource,
 		vpcrouterroute.NewResource,
 		vpcsubnet.NewResource,

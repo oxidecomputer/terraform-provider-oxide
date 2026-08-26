@@ -24,21 +24,22 @@ const examplesRoot = "../../examples"
 //
 // TODO: Fix failing examples and deprecate this escape hatch.
 var knownFailingExample = map[string]bool{
-	"data-sources/oxide_image/data-source.tf":                 true,
-	"data-sources/oxide_instance_external_ips/data-source.tf": true,
-	"data-sources/oxide_silo/data-source.tf":                  true,
-	"functions/credentials/function.tf":                       true,
-	"provider/provider.tf":                                    true,
-	"provider/provider-auth-config.tf":                        true,
-	"resources/oxide_disk/resource.tf":                        true,
-	"resources/oxide_image/resource.tf":                       true,
-	"resources/oxide_instance/resource-external-ips.tf":       true,
-	"resources/oxide_ip_pool_silo_link/resource.tf":           true,
-	"resources/oxide_silo_saml_identity_provider/resource.tf": true,
-	"resources/oxide_silo/resource.tf":                        true,
-	"resources/oxide_subnet_pool_silo_link/resource.tf":       true,
-	"resources/oxide_vpc_firewall_rules/resource.tf":          true,
-	"resources/oxide_vpc_router_route/resource.tf":            true,
+	"data-sources/oxide_image/data-source.tf":                  true,
+	"data-sources/oxide_instance_external_ips/data-source.tf":  true,
+	"data-sources/oxide_silo/data-source.tf":                   true,
+	"functions/credentials/function.tf":                        true,
+	"provider/provider-auth-config.tf":                         true,
+	"provider/provider.tf":                                     true,
+	"resources/oxide_disk/resource.tf":                         true,
+	"resources/oxide_image/resource.tf":                        true,
+	"resources/oxide_instance/resource-external-ips.tf":        true,
+	"resources/oxide_ip_pool_silo_link/resource.tf":            true,
+	"resources/oxide_silo_saml_identity_provider/resource.tf":  true,
+	"resources/oxide_silo/resource.tf":                         true,
+	"resources/oxide_subnet_pool_silo_link/resource.tf":        true,
+	"resources/oxide_system_subnet_pool_silo_link/resource.tf": true,
+	"resources/oxide_vpc_firewall_rules/resource.tf":           true,
+	"resources/oxide_vpc_router_route/resource.tf":             true,
 }
 
 // TestAcc_Examples lists .tf files within examples/ and runs each as an acceptance test. Because
