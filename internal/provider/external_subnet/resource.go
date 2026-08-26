@@ -6,6 +6,7 @@ package externalsubnet
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
@@ -350,7 +351,7 @@ func (r *Resource) Read(
 
 	externalSubnet, err := r.client.ExternalSubnetView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -479,7 +480,7 @@ func (r *Resource) Delete(
 	}
 
 	if err := r.client.ExternalSubnetDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting external subnet:",
 				"API error: "+err.Error(),

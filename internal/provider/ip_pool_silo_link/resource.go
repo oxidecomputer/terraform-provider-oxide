@@ -6,6 +6,7 @@ package ippoolsilolink
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -223,7 +224,7 @@ func (r *Resource) Read(
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 	})
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -260,7 +261,7 @@ func (r *Resource) Read(
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 	})
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -375,7 +376,7 @@ func (r *Resource) Delete(
 		Silo: oxide.NameOrId(state.SiloID.ValueString()),
 	}
 	if err := r.client.SystemIpPoolSiloUnlink(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting link:",
 				"API error: "+err.Error(),

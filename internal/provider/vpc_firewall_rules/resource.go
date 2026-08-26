@@ -6,6 +6,7 @@ package vpcfirewallrules
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -520,7 +521,7 @@ func (r *Resource) Read(
 	}
 	firewallRules, err := r.client.VpcFirewallRulesView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return

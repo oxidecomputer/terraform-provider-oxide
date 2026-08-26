@@ -6,6 +6,7 @@ package addresslot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -349,7 +350,7 @@ func (r *Resource) Delete(
 		oxide.NetworkingAddressLotDeleteParams{
 			AddressLot: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting Address Lot:",
 				"API error: "+err.Error(),

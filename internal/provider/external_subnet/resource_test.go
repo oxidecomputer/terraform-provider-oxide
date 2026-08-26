@@ -6,6 +6,7 @@ package externalsubnet_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -14,8 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
-
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 // resourceConfig holds parameters for generating test configurations.
@@ -393,7 +392,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 			ctx,
 			oxide.ExternalSubnetViewParams{ExternalSubnet: oxide.NameOrId(rs.Primary.ID)},
 		)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 		if err == nil {

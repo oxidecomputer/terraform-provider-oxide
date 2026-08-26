@@ -6,6 +6,7 @@ package vpcrouterroute
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -321,7 +322,7 @@ func (r *Resource) Read(
 	}
 	vpcRouterRoute, err := r.client.VpcRouterRouteView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -486,7 +487,7 @@ func (r *Resource) Delete(
 		Route: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.VpcRouterRouteDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to delete VPC router route:",
 				"API error: "+err.Error(),

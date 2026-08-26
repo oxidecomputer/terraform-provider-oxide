@@ -6,6 +6,7 @@ package subnetpoolmember
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -262,7 +263,7 @@ func (r *Resource) Read(
 		},
 	)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Pool doesn't exist, remove resource from state
 			resp.State.RemoveResource(ctx)
 			return
@@ -366,7 +367,7 @@ func (r *Resource) Delete(
 		// rather than 404. Handle both cases for idempotent deletes.
 		//
 		// TODO: Switch to a 404 in omicron.
-		if !shared.Is404(err) && !strings.Contains(err.Error(), "does not exist") {
+		if !errors.Is(err, oxide.ErrHTTP404) && !strings.Contains(err.Error(), "does not exist") {
 			resp.Diagnostics.AddError(
 				"Error deleting subnet pool member:",
 				"API error: "+err.Error(),

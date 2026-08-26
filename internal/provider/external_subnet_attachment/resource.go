@@ -6,6 +6,7 @@ package externalsubnetattachment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -210,7 +211,7 @@ func (r *Resource) Read(
 
 	externalSubnet, err := r.client.ExternalSubnetView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -294,7 +295,7 @@ func (r *Resource) Delete(
 		ctx, viewParams,
 	)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			return
 		}
 		resp.Diagnostics.AddError(
@@ -314,7 +315,7 @@ func (r *Resource) Delete(
 	if _, err := r.client.ExternalSubnetDetach(
 		ctx, detachParams,
 	); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error detaching external subnet:",
 				"API error: "+err.Error(),

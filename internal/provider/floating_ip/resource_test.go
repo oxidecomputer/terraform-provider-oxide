@@ -6,6 +6,7 @@ package floatingip_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -245,7 +246,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.FloatingIpView(ctx, params)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 
