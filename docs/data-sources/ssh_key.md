@@ -14,7 +14,7 @@ Retrieve information about a specified SSH key.
 
 ```terraform
 data "oxide_ssh_key" "example" {
-  name = "example"
+  name = "my-key"
   timeouts = {
     read = "1m"
   }
