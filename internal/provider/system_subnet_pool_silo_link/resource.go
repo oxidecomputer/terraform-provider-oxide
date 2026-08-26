@@ -116,7 +116,7 @@ func (r *Resource) Schema(
 
 func resourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "This resource manages a system subnet pool's link to a silo.",
+		MarkdownDescription: "This resource manages the link between a system subnet pool and a silo.",
 		Attributes: map[string]schema.Attribute{
 			"subnet_pool_id": schema.StringAttribute{
 				Required:    true,
@@ -142,7 +142,7 @@ func resourceSchema(ctx context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
-				Description: "Whether this is the default subnet pool for the silo. When true, external subnet allocations that don't specify a pool use this one.",
+				Description: "Whether this is the default subnet pool for the silo. External subnet allocations that don't specify a pool use this one.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,

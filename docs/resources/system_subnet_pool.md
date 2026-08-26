@@ -26,7 +26,7 @@ resource "oxide_system_subnet_pool" "example" {
 ### Required
 
 - `description` (String) Description for the subnet pool.
-- `ip_version` (String) The IP version for this pool. All subnets in the pool must match this version. Possible values: `v4`, `v6`.
+- `ip_version` (String) The IP version for this pool. All subnets in the pool must have the same version. Possible values: `v4`, `v6`.
 - `name` (String) Name of the subnet pool.
 
 ### Optional

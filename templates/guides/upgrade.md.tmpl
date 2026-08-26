@@ -27,10 +27,10 @@ configuration files.
 #### Deprecation
 
 The `oxide_subnet_pool` resource is deprecated and will be removed in `0.25.0`.
-Move to the `oxide_system_subnet_pool` resource using a `moved` block.
+Use the `moved` block to migrate to the `oxide_system_subnet_pool` resource.
 
-Replace `oxide_subnet_pool` with `oxide_system_subnet_pool`. The resource
-schemas are otherwise unchanged.
+Replace `oxide_subnet_pool` with `oxide_system_subnet_pool` in your
+configuration. The resource schemas are otherwise unchanged.
 
 ```diff
 -resource "oxide_subnet_pool" "example" {
@@ -41,8 +41,7 @@ schemas are otherwise unchanged.
  }
 ```
 
-Add a `moved` block to transfer the existing resource state to the new resource
-type without recreating the subnet pool.
+Add a `moved` block to transfer the existing resource state to the new resource.
 
 ```terraform
 moved {
@@ -51,16 +50,18 @@ moved {
 }
 ```
 
+Run `terraform apply` to complete the migration.
+
 ### Resource `oxide_subnet_pool_member`
 
 #### Deprecation
 
-The `oxide_subnet_pool_member` resource is deprecated and will be removed in
-`0.25.0`. Move to the `oxide_system_subnet_pool_member` resource using a `moved`
-block.
+The `oxide_subnet_pool_member` resource is deprecated and will
+be removed in `0.25.0`. Use the `moved` block to migrate to the
+`oxide_system_subnet_pool_member` resource.
 
-Replace `oxide_subnet_pool_member` with `oxide_system_subnet_pool_member`. The
-resource schemas are otherwise unchanged.
+Replace `oxide_subnet_pool_member` with `oxide_system_subnet_pool_member` in
+your configuration. The resource schemas are otherwise unchanged.
 
 ```diff
 -resource "oxide_subnet_pool_member" "example" {
@@ -72,8 +73,7 @@ resource schemas are otherwise unchanged.
  }
 ```
 
-Add a `moved` block to transfer the existing resource state to the new resource
-type without recreating the subnet pool member.
+Add a `moved` block to transfer the existing resource state to the new resource.
 
 ```terraform
 moved {
@@ -82,17 +82,18 @@ moved {
 }
 ```
 
+Run `terraform apply` to complete the migration.
+
 ### Resource `oxide_subnet_pool_silo_link`
 
 #### Deprecation
 
-The `oxide_subnet_pool_silo_link` resource is deprecated and will be removed
-in `0.25.0`. Move to the `oxide_system_subnet_pool_silo_link` resource using a
-`moved` block.
+The `oxide_subnet_pool_silo_link` resource is deprecated and will
+be removed in `0.25.0`. Use the `moved` block to migrate to the
+`oxide_system_subnet_pool_silo_link` resource.
 
-Replace `oxide_subnet_pool_silo_link` with
-`oxide_system_subnet_pool_silo_link`. The `is_default` attribute is now optional
-and defaults to `false`.
+Replace `oxide_subnet_pool_silo_link` with `oxide_system_subnet_pool_silo_link`
+in your configuration. The resource schemas are otherwise unchanged.
 
 ```diff
 -resource "oxide_subnet_pool_silo_link" "example" {
@@ -103,8 +104,7 @@ and defaults to `false`.
  }
 ```
 
-Add a `moved` block to transfer the existing resource state to the new resource
-type without unlinking and relinking the subnet pool and silo.
+Add a `moved` block to transfer the existing resource state to the new resource.
 
 ```terraform
 moved {
@@ -112,6 +112,8 @@ moved {
   to   = oxide_system_subnet_pool_silo_link.example
 }
 ```
+
+Run `terraform apply` to complete the migration.
 
 ## Upgrading to `0.21.0`
 

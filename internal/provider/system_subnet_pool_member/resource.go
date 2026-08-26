@@ -47,8 +47,8 @@ type ResourceModel struct {
 	ID              types.String       `tfsdk:"id"`
 	SubnetPoolID    types.String       `tfsdk:"subnet_pool_id"`
 	Subnet          cidrtypes.IPPrefix `tfsdk:"subnet"`
-	MaxPrefixLength types.Int64        `tfsdk:"max_prefix_length"`
 	MinPrefixLength types.Int64        `tfsdk:"min_prefix_length"`
+	MaxPrefixLength types.Int64        `tfsdk:"max_prefix_length"`
 	TimeCreated     types.String       `tfsdk:"time_created"`
 	Timeouts        timeouts.Value     `tfsdk:"timeouts"`
 }
@@ -121,7 +121,7 @@ func (r *Resource) Schema(
 
 func resourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "This resource manages a subnet pool member using the system API.",
+		MarkdownDescription: "This resource manages a subnet pool member.",
 		Attributes: map[string]schema.Attribute{
 			"subnet_pool_id": schema.StringAttribute{
 				Required:    true,
@@ -141,10 +141,10 @@ func resourceSchema(ctx context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"max_prefix_length": schema.Int64Attribute{
+			"min_prefix_length": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Maximum prefix length for allocations from this subnet. Defaults to 32 for IPv4 and 128 for IPv6.",
+				Description: "Minimum prefix length for allocations from this subnet. Defaults to the subnet's prefix length.",
 				Validators: []validator.Int64{
 					int64validator.Between(0, 128),
 				},
@@ -152,10 +152,10 @@ func resourceSchema(ctx context.Context) schema.Schema {
 					int64planmodifier.RequiresReplace(),
 				},
 			},
-			"min_prefix_length": schema.Int64Attribute{
+			"max_prefix_length": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Minimum prefix length for allocations from this subnet. Defaults to the subnet's prefix length.",
+				Description: "Maximum prefix length for allocations from this subnet. Defaults to 32 for IPv4 and 128 for IPv6.",
 				Validators: []validator.Int64{
 					int64validator.Between(0, 128),
 				},
@@ -348,7 +348,7 @@ func (r *Resource) Delete(
 			Body: &oxide.SubnetPoolMemberRemove{Subnet: subnet},
 		},
 	)
-	if err != nil && !isSubnetPoolMemberNotFound(err) {
+	if err != nil && !IsSubnetPoolMemberNotFound(err) {
 		resp.Diagnostics.AddError(
 			"Error deleting system subnet pool member",
 			"API error: "+err.Error(),
@@ -362,7 +362,7 @@ func (r *Resource) Delete(
 	})
 }
 
-func isSubnetPoolMemberNotFound(err error) bool {
+func IsSubnetPoolMemberNotFound(err error) bool {
 	if errors.Is(err, oxide.ErrHTTP404) {
 		return true
 	}

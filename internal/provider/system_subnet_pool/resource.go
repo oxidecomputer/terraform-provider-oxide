@@ -44,10 +44,10 @@ type Resource struct {
 }
 
 type ResourceModel struct {
-	Description  types.String   `tfsdk:"description"`
 	ID           types.String   `tfsdk:"id"`
-	IpVersion    types.String   `tfsdk:"ip_version"`
 	Name         types.String   `tfsdk:"name"`
+	Description  types.String   `tfsdk:"description"`
+	IpVersion    types.String   `tfsdk:"ip_version"`
 	TimeCreated  types.String   `tfsdk:"time_created"`
 	TimeModified types.String   `tfsdk:"time_modified"`
 	Timeouts     timeouts.Value `tfsdk:"timeouts"`
@@ -106,6 +106,13 @@ func resourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "This resource manages system subnet pools. Use `oxide_system_subnet_pool_member` to add members to the pool.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, immutable, system-controlled identifier of the subnet pool.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the subnet pool.",
@@ -116,7 +123,7 @@ func resourceSchema(ctx context.Context) schema.Schema {
 			},
 			"ip_version": schema.StringAttribute{
 				Required:    true,
-				Description: "The IP version for this pool. All subnets in the pool must match this version. Possible values: `v4`, `v6`.",
+				Description: "The IP version for this pool. All subnets in the pool must have the same version. Possible values: `v4`, `v6`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(string(oxide.IpVersionV4), string(oxide.IpVersionV6)),
 				},
@@ -130,13 +137,6 @@ func resourceSchema(ctx context.Context) schema.Schema {
 				Update: true,
 				Delete: true,
 			}),
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Unique, immutable, system-controlled identifier of the subnet pool.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
 			"time_created": schema.StringAttribute{
 				Computed:    true,
 				Description: "Timestamp of when this subnet pool was created.",

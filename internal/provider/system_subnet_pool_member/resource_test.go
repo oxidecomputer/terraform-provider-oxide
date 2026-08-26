@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -16,7 +17,74 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
+	systemsubnetpoolmember "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool_member"
 )
+
+func TestIsSubnetPoolMemberNotFound(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"matching invalid request": {
+			err: newHTTPError(
+				http.StatusBadRequest,
+				"InvalidRequest",
+				"A provided subnet pool member with subnet 1.1.1.1/32 does not exist",
+			),
+			want: true,
+		},
+		"different invalid request": {
+			err: newHTTPError(
+				http.StatusBadRequest,
+				"InvalidRequest",
+				"Cannot delete external subnet pool member while it contains external subnets.",
+			),
+			want: false,
+		},
+		"different not found message": {
+			err: newHTTPError(
+				http.StatusBadRequest,
+				"InvalidRequest",
+				"The subnet pool member does not exist in this pool",
+			),
+			want: true,
+		},
+		"http not found": {
+			err:  newHTTPError(http.StatusNotFound, "ObjectNotFound", "not found"),
+			want: true,
+		},
+		"other error": {
+			err:  errors.New("connection failed"),
+			want: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got := systemsubnetpoolmember.IsSubnetPoolMemberNotFound(test.err)
+			if got != test.want {
+				t.Fatalf(
+					"IsSubnetPoolMemberNotFound() = %t, want %t",
+					got,
+					test.want,
+				)
+			}
+		})
+	}
+}
+
+func newHTTPError(status int, code, message string) error {
+	return &oxide.HTTPError{
+		HTTPResponse: &http.Response{StatusCode: status},
+		ErrorResponse: &oxide.ErrorResponse{
+			ErrorCode: code,
+			Message:   message,
+		},
+	}
+}
 
 func TestAccResourceSystemSubnetPoolMember_full(t *testing.T) {
 	poolName := sharedtest.NewResourceName()

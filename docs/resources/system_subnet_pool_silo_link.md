@@ -3,19 +3,36 @@
 page_title: "oxide_system_subnet_pool_silo_link Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
-  This resource manages a system subnet pool's link to a silo.
+  This resource manages the link between a system subnet pool and a silo.
 ---
 
 # oxide_system_subnet_pool_silo_link (Resource)
 
-This resource manages a system subnet pool's link to a silo.
+This resource manages the link between a system subnet pool and a silo.
 
 ## Example Usage
 
 ```terraform
+data "oxide_silo" "example" {
+  name = "my-silo"
+}
+
+resource "oxide_system_subnet_pool" "example" {
+  name        = "my-subnet-pool"
+  description = "Example system subnet pool."
+  ip_version  = "v4"
+}
+
+resource "oxide_system_subnet_pool_member" "example" {
+  subnet_pool_id    = oxide_system_subnet_pool.example.id
+  subnet            = "192.0.2.0/24"
+  min_prefix_length = 24
+  max_prefix_length = 28
+}
+
 resource "oxide_system_subnet_pool_silo_link" "example" {
-  subnet_pool_id = "3e2c6e84-bed8-4c94-afc3-1032082d6a90"
-  silo_id        = "9e199e45-01a6-43d3-8bc3-5b27726e67a6"
+  subnet_pool_id = oxide_system_subnet_pool.example.id
+  silo_id        = data.oxide_silo.example.id
 }
 ```
 
@@ -29,7 +46,7 @@ resource "oxide_system_subnet_pool_silo_link" "example" {
 
 ### Optional
 
-- `is_default` (Boolean) Whether this is the default subnet pool for the silo. When true, external subnet allocations that don't specify a pool use this one.
+- `is_default` (Boolean) Whether this is the default subnet pool for the silo. External subnet allocations that don't specify a pool use this one.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
