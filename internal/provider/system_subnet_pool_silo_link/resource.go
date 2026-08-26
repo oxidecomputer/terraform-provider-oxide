@@ -31,6 +31,7 @@ var (
 	_ resource.Resource                = (*Resource)(nil)
 	_ resource.ResourceWithConfigure   = (*Resource)(nil)
 	_ resource.ResourceWithImportState = (*Resource)(nil)
+	_ resource.ResourceWithMoveState   = (*Resource)(nil)
 )
 
 func NewResource() resource.Resource {
@@ -95,12 +96,26 @@ func (r *Resource) ImportState(
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
+func (r *Resource) MoveState(ctx context.Context) []resource.StateMover {
+	return []resource.StateMover{
+		shared.MoveState[ResourceModel](
+			"oxide_subnet_pool_silo_link",
+			0,
+			resourceSchema(ctx),
+		),
+	}
+}
+
 func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
-	resp.Schema = schema.Schema{
+	resp.Schema = resourceSchema(ctx)
+}
+
+func resourceSchema(ctx context.Context) schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: "This resource manages a system subnet pool's link to a silo.",
 		Attributes: map[string]schema.Attribute{
 			"subnet_pool_id": schema.StringAttribute{

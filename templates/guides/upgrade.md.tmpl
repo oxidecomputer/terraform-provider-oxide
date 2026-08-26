@@ -26,8 +26,8 @@ configuration files.
 
 #### Deprecation
 
-The `oxide_subnet_pool` resource is deprecated and will be removed in
-`0.25.0`.
+The `oxide_subnet_pool` resource is deprecated and will be removed in `0.25.0`.
+Move to the `oxide_system_subnet_pool` resource using a `moved` block.
 
 Replace `oxide_subnet_pool` with `oxide_system_subnet_pool`. The resource
 schemas are otherwise unchanged.
@@ -41,12 +41,14 @@ schemas are otherwise unchanged.
  }
 ```
 
-Record the pool UUID from the old resource's `id` attribute. Then remove the
-old resource from state and import the pool into the replacement resource.
+Add a `moved` block to transfer the existing resource state to the new resource
+type without recreating the subnet pool.
 
-```shell
-terraform state rm oxide_subnet_pool.example
-terraform import oxide_system_subnet_pool.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90
+```terraform
+moved {
+  from = oxide_subnet_pool.example
+  to   = oxide_system_subnet_pool.example
+}
 ```
 
 ### Resource `oxide_subnet_pool_member`
@@ -54,7 +56,8 @@ terraform import oxide_system_subnet_pool.example 3e2c6e84-bed8-4c94-afc3-103208
 #### Deprecation
 
 The `oxide_subnet_pool_member` resource is deprecated and will be removed in
-`0.25.0`.
+`0.25.0`. Move to the `oxide_system_subnet_pool_member` resource using a `moved`
+block.
 
 Replace `oxide_subnet_pool_member` with `oxide_system_subnet_pool_member`. The
 resource schemas are otherwise unchanged.
@@ -69,14 +72,14 @@ resource schemas are otherwise unchanged.
  }
 ```
 
-Record the pool UUID from the old resource's `subnet_pool_id` attribute
-and the member UUID from its `id` attribute. Then remove the old resource
-from state and import the member into the replacement resource using
-`SUBNET_POOL_ID/MEMBER_ID`.
+Add a `moved` block to transfer the existing resource state to the new resource
+type without recreating the subnet pool member.
 
-```shell
-terraform state rm oxide_subnet_pool_member.example
-terraform import oxide_system_subnet_pool_member.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90/9e199e45-01a6-43d3-8bc3-5b27726e67a6
+```terraform
+moved {
+  from = oxide_subnet_pool_member.example
+  to   = oxide_system_subnet_pool_member.example
+}
 ```
 
 ### Resource `oxide_subnet_pool_silo_link`
@@ -84,7 +87,8 @@ terraform import oxide_system_subnet_pool_member.example 3e2c6e84-bed8-4c94-afc3
 #### Deprecation
 
 The `oxide_subnet_pool_silo_link` resource is deprecated and will be removed
-in `0.25.0`.
+in `0.25.0`. Move to the `oxide_system_subnet_pool_silo_link` resource using a
+`moved` block.
 
 Replace `oxide_subnet_pool_silo_link` with
 `oxide_system_subnet_pool_silo_link`. The `is_default` attribute is now optional
@@ -99,13 +103,14 @@ and defaults to `false`.
  }
 ```
 
-Record the silo and pool UUIDs from the old resource's `id` attribute,
-which is formatted as `POOL_ID/SILO_ID`. Then remove the old resource from
-state and import the link into the replacement resource using the same format.
+Add a `moved` block to transfer the existing resource state to the new resource
+type without unlinking and relinking the subnet pool and silo.
 
-```shell
-terraform state rm oxide_subnet_pool_silo_link.example
-terraform import oxide_system_subnet_pool_silo_link.example 3e2c6e84-bed8-4c94-afc3-1032082d6a90/9e199e45-01a6-43d3-8bc3-5b27726e67a6
+```terraform
+moved {
+  from = oxide_subnet_pool_silo_link.example
+  to   = oxide_system_subnet_pool_silo_link.example
+}
 ```
 
 ## Upgrading to `0.21.0`

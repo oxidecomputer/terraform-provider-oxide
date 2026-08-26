@@ -32,6 +32,7 @@ var (
 	_ resource.Resource                = (*Resource)(nil)
 	_ resource.ResourceWithConfigure   = (*Resource)(nil)
 	_ resource.ResourceWithImportState = (*Resource)(nil)
+	_ resource.ResourceWithMoveState   = (*Resource)(nil)
 )
 
 func NewResource() resource.Resource {
@@ -100,12 +101,26 @@ func (r *Resource) ImportState(
 	)
 }
 
+func (r *Resource) MoveState(ctx context.Context) []resource.StateMover {
+	return []resource.StateMover{
+		shared.MoveState[ResourceModel](
+			"oxide_subnet_pool_member",
+			0,
+			resourceSchema(ctx),
+		),
+	}
+}
+
 func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
-	resp.Schema = schema.Schema{
+	resp.Schema = resourceSchema(ctx)
+}
+
+func resourceSchema(ctx context.Context) schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: "This resource manages a subnet pool member using the system API.",
 		Attributes: map[string]schema.Attribute{
 			"subnet_pool_id": schema.StringAttribute{

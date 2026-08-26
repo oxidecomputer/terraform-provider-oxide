@@ -4,15 +4,15 @@ description = "The `oxide_switch_port_settings` resource has been removed."
 
 [[breaking]]
 title = "`oxide_subnet_pool`"
-description = "This resource will be removed in version v0.25.0 of the provider. Use `oxide_system_subnet_pool` instead."
+description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool` resource."
 
 [[breaking]]
 title = "`oxide_subnet_pool_member`"
-description = "This resource will be removed in version v0.25.0 of the provider. Use `oxide_system_subnet_pool_member` instead."
+description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool_member` resource."
 
 [[breaking]]
 title = "`oxide_subnet_pool_silo_link`"
-description = "This resource will be removed in version v0.25.0 of the provider. Use `oxide_system_subnet_pool_silo_link` instead."
+description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool_silo_link` resource."
 
 [[features]]
 title = "New data source"

@@ -30,6 +30,7 @@ var (
 	_ resource.Resource                = (*Resource)(nil)
 	_ resource.ResourceWithConfigure   = (*Resource)(nil)
 	_ resource.ResourceWithImportState = (*Resource)(nil)
+	_ resource.ResourceWithMoveState   = (*Resource)(nil)
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -82,13 +83,27 @@ func (r *Resource) ImportState(
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+func (r *Resource) MoveState(ctx context.Context) []resource.StateMover {
+	return []resource.StateMover{
+		shared.MoveState[ResourceModel](
+			"oxide_subnet_pool",
+			0,
+			resourceSchema(ctx),
+		),
+	}
+}
+
 // Schema defines the schema for the resource.
 func (r *Resource) Schema(
 	ctx context.Context,
 	_ resource.SchemaRequest,
 	resp *resource.SchemaResponse,
 ) {
-	resp.Schema = schema.Schema{
+	resp.Schema = resourceSchema(ctx)
+}
+
+func resourceSchema(ctx context.Context) schema.Schema {
+	return schema.Schema{
 		MarkdownDescription: "This resource manages system subnet pools. Use `oxide_system_subnet_pool_member` to add members to the pool.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
