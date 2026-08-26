@@ -348,7 +348,7 @@ func (r *Resource) Delete(
 			Body: &oxide.SubnetPoolMemberRemove{Subnet: subnet},
 		},
 	)
-	if err != nil && !isSubnetPoolMemberNotFound(err, state.Subnet.ValueString()) {
+	if err != nil && !isSubnetPoolMemberNotFound(err) {
 		resp.Diagnostics.AddError(
 			"Error deleting system subnet pool member",
 			"API error: "+err.Error(),
@@ -362,7 +362,7 @@ func (r *Resource) Delete(
 	})
 }
 
-func isSubnetPoolMemberNotFound(err error, subnet string) bool {
+func isSubnetPoolMemberNotFound(err error) bool {
 	if errors.Is(err, oxide.ErrHTTP404) {
 		return true
 	}
@@ -371,8 +371,5 @@ func isSubnetPoolMemberNotFound(err error, subnet string) bool {
 	return errors.Is(err, oxide.ErrInvalidRequest) &&
 		errors.As(err, &httpErr) &&
 		httpErr.ErrorResponse != nil &&
-		httpErr.ErrorResponse.Message == fmt.Sprintf(
-			"A provided subnet pool member with subnet %s does not exist",
-			subnet,
-		)
+		strings.Contains(httpErr.ErrorResponse.Message, "does not exist")
 }

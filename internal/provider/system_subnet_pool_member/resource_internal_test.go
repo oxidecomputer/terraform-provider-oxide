@@ -15,7 +15,6 @@ import (
 func TestIsSubnetPoolMemberNotFound(t *testing.T) {
 	t.Parallel()
 
-	const subnet = "1.1.1.1/32"
 	tests := map[string]struct {
 		err  error
 		want bool
@@ -36,13 +35,13 @@ func TestIsSubnetPoolMemberNotFound(t *testing.T) {
 			),
 			want: false,
 		},
-		"different subnet": {
+		"different not found message": {
 			err: newHTTPError(
 				http.StatusBadRequest,
 				"InvalidRequest",
-				"A provided subnet pool member with subnet 2.2.2.2/32 does not exist",
+				"The subnet pool member does not exist in this pool",
 			),
-			want: false,
+			want: true,
 		},
 		"http not found": {
 			err:  newHTTPError(http.StatusNotFound, "ObjectNotFound", "not found"),
@@ -57,7 +56,7 @@ func TestIsSubnetPoolMemberNotFound(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if got := isSubnetPoolMemberNotFound(test.err, subnet); got != test.want {
+			if got := isSubnetPoolMemberNotFound(test.err); got != test.want {
 				t.Fatalf("isSubnetPoolMemberNotFound() = %t, want %t", got, test.want)
 			}
 		})
