@@ -6,7 +6,6 @@ package floatingip
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -165,10 +164,6 @@ func (f *DataSource) Read(
 
 	floatingIP, err := f.client.FloatingIpView(ctx, params)
 	if err != nil {
-		if errors.Is(err, oxide.ErrHTTP404) {
-			resp.State.RemoveResource(ctx)
-			return
-		}
 		resp.Diagnostics.AddError(
 			"Unable to read floating IP:",
 			"API error: "+err.Error(),

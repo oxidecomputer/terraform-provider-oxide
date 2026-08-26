@@ -32,6 +32,19 @@ if ! oxide disk view --project my-project --disk my-disk > /dev/null 2>&1; then
 EOF
 fi
 
+if ! oxide floating-ip view --project my-project --floating-ip my-floating-ip > /dev/null 2>&1; then
+    oxide api "/v1/floating-ips?project=my-project" --method POST --input - > /dev/null <<'EOF'
+{
+  "name": "my-floating-ip",
+  "description": "my-floating-ip",
+  "address_allocator": {
+    "type": "auto",
+    "pool_selector": { "type": "auto", "ip_version": "v4" }
+  }
+}
+EOF
+fi
+
 if ! oxide system networking ip-pool view --pool my-pool > /dev/null 2>&1; then
     oxide system networking ip-pool create --name my-pool --description my-pool > /dev/null
 fi
