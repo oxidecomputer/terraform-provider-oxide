@@ -6,6 +6,7 @@ package ippool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -415,7 +416,7 @@ func (r *Resource) Delete(
 		},
 	)
 	if err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error retrieving IP Pool ranges:",
 				"API error: "+err.Error(),
@@ -436,7 +437,7 @@ func (r *Resource) Delete(
 			Body: &item.Range,
 		}
 		if err := r.client.SystemIpPoolRangeRemove(ctx, params); err != nil {
-			if !shared.Is404(err) {
+			if !errors.Is(err, oxide.ErrHTTP404) {
 				resp.Diagnostics.AddError(
 					"Error deleting IP Pool range:",
 					"API error: "+err.Error(),
@@ -456,7 +457,7 @@ func (r *Resource) Delete(
 		oxide.SystemIpPoolDeleteParams{
 			Pool: oxide.NameOrId(state.ID.ValueString()),
 		}); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting IP Pool:",
 				"API error: "+err.Error(),

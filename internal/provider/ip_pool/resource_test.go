@@ -6,6 +6,7 @@ package ippool_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -14,8 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
-
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 func TestAccSiloResourceIpPool_full(t *testing.T) {
@@ -195,7 +194,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SystemIpPoolViewParams{Pool: "terraform-acc-myippool"},
 		)
-		if err == nil || !shared.Is404(err) {
+		if err == nil || !errors.Is(err, oxide.ErrHTTP404) {
 			return fmt.Errorf("ip_pool (%v) still exists", &res.Name)
 		}
 
@@ -203,7 +202,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SystemIpPoolViewParams{Pool: "terraform-acc-myippool2"},
 		)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 		return fmt.Errorf("ip_pool (%v) still exists", &res2.Name)

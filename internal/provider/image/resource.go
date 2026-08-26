@@ -6,6 +6,7 @@ package image
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -322,7 +323,7 @@ func (r *Resource) Read(
 	}
 	image, err := r.client.ImageView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -430,7 +431,7 @@ func (r *Resource) Delete(
 	if err := r.client.ImageDelete(ctx, oxide.ImageDeleteParams{
 		Image: oxide.NameOrId(state.ID.ValueString()),
 	}); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to read image:",
 				"API error: "+err.Error(),

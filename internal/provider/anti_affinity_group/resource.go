@@ -6,6 +6,7 @@ package antiaffinitygroup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -243,7 +244,7 @@ func (r *Resource) Read(
 	}
 	antiAffinityGroup, err := r.client.AntiAffinityGroupView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -366,7 +367,7 @@ func (r *Resource) Delete(
 		AntiAffinityGroup: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.AntiAffinityGroupDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting AntiAffinityGroup:",
 				"API error: "+err.Error(),

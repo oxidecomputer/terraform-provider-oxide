@@ -6,6 +6,7 @@ package vpcinternetgateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -229,7 +230,7 @@ func (r *Resource) Read(
 	}
 	vpcInternetGateway, err := r.client.InternetGatewayView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -301,7 +302,7 @@ func (r *Resource) Update(
 	}
 	vpcInternetGateway, err := r.client.InternetGatewayView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -356,7 +357,7 @@ func (r *Resource) Delete(
 		Cascade: state.CascadeDelete.ValueBoolPointer(),
 	}
 	if err := r.client.InternetGatewayDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to delete VPC internet gateway:",
 				"API error: "+err.Error(),

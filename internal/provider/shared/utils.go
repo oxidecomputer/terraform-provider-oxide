@@ -23,10 +23,6 @@ func ReplaceBackticks(s string) string {
 	return strings.ReplaceAll(s, "''", "`")
 }
 
-func Is404(err error) bool {
-	return strings.Contains(err.Error(), "Status: 404")
-}
-
 // IsIPv4 checks if the string is an IP version 4.
 // Original function from https://pkg.go.dev/github.com/asaskevich/govalidator#IsIPv4
 // Shamelessly copied here to avoid importing the entire package

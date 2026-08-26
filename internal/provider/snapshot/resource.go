@@ -6,6 +6,7 @@ package snapshot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -255,7 +256,7 @@ func (r *Resource) Read(
 	}
 	snapshot, err := r.client.SnapshotView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -325,7 +326,7 @@ func (r *Resource) Delete(
 		Snapshot: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.SnapshotDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting snapshot:",
 				"API error: "+err.Error(),

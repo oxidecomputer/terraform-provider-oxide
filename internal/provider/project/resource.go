@@ -6,6 +6,7 @@ package project
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -202,7 +203,7 @@ func (r *Resource) Read(
 	}
 	project, err := r.client.ProjectView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -324,7 +325,7 @@ func (r *Resource) Delete(
 		Subnet:  oxide.NameOrId("default"),
 	}
 	if err := r.client.VpcSubnetDelete(ctx, paramsSubnet); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting default subnet:",
 				"API error: "+err.Error(),
@@ -343,7 +344,7 @@ func (r *Resource) Delete(
 		Vpc:     oxide.NameOrId("default"),
 	}
 	if err := r.client.VpcDelete(ctx, paramsVPC); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting default VPC:",
 				"API error: "+err.Error(),
@@ -361,7 +362,7 @@ func (r *Resource) Delete(
 		Project: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.ProjectDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting project:",
 				"API error: "+err.Error(),

@@ -6,6 +6,7 @@ package silo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -400,7 +401,7 @@ func (r *Resource) Read(
 
 	silo, err := r.client.SiloView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -552,7 +553,7 @@ func (r *Resource) Delete(
 	}
 
 	if err := r.client.SiloDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting silo:",
 				"API error: "+err.Error(),

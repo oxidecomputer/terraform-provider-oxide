@@ -6,6 +6,7 @@ package disk_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"testing"
@@ -17,8 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
-
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 type resourceConfig struct {
@@ -266,7 +265,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 		}
 		res, err := client.DiskView(ctx, params)
 
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 

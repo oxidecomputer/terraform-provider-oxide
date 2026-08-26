@@ -402,7 +402,7 @@ func (r *Resource) Read(
 
 	idpConfig, err := r.client.SamlIdentityProviderView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			resp.State.RemoveResource(ctx)
 			return
 		}

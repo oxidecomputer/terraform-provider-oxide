@@ -6,6 +6,7 @@ package instance_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"os"
@@ -19,7 +20,6 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/instance"
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
@@ -2152,7 +2152,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 			Instance: oxide.NameOrId(rs.Primary.Attributes["id"]),
 		}
 		res, err := client.InstanceView(ctx, params)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 

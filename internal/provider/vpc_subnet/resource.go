@@ -6,6 +6,7 @@ package vpcsubnet
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
@@ -246,7 +247,7 @@ func (r *Resource) Read(
 	}
 	subnet, err := r.client.VpcSubnetView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -369,7 +370,7 @@ func (r *Resource) Delete(
 		Subnet: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.VpcSubnetDelete(ctx, params); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Error deleting VPC subnet:",
 				"API error: "+err.Error(),

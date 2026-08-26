@@ -6,6 +6,7 @@ package silosamlidp_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
@@ -465,7 +465,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 		}
 
 		res, err := client.SamlIdentityProviderView(ctx, params)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 

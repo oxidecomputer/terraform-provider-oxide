@@ -6,6 +6,7 @@ package subnetpoolmember_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -14,8 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
-
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 )
 
 func TestAccResourceSubnetPoolMember_full(t *testing.T) {
@@ -284,7 +283,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 			ctx,
 			oxide.SystemSubnetPoolMemberListParams{Pool: oxide.NameOrId(poolID)},
 		)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			// Pool doesn't exist, so member is definitely gone
 			continue
 		}

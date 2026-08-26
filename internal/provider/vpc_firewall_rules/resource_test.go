@@ -7,6 +7,7 @@ package vpcfirewallrules_test
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +23,6 @@ import (
 	"github.com/oxidecomputer/oxide.go/oxide"
 	"github.com/stretchr/testify/require"
 
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/shared"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 )
 
@@ -812,7 +812,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 		defer cancel()
 
 		res, err := client.VpcFirewallRulesView(ctx, params)
-		if err != nil && shared.Is404(err) {
+		if err != nil && errors.Is(err, oxide.ErrHTTP404) {
 			continue
 		}
 

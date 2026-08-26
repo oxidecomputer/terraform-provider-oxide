@@ -7,6 +7,7 @@ package instance
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -1171,7 +1172,7 @@ func (r *Resource) Read(
 	}
 	instance, err := r.client.InstanceView(ctx, params)
 	if err != nil {
-		if shared.Is404(err) {
+		if errors.Is(err, oxide.ErrHTTP404) {
 			// Remove resource from state during a refresh
 			resp.State.RemoveResource(ctx)
 			return
@@ -1330,7 +1331,7 @@ func (r *Resource) Update(
 	}
 	_, err := r.client.InstanceStop(ctx, stopParams)
 	if err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to stop instance:",
 				"API error: "+err.Error(),
@@ -1527,7 +1528,7 @@ func (r *Resource) Update(
 	startParams := oxide.InstanceStartParams{Instance: oxide.NameOrId(state.ID.ValueString())}
 	_, err = r.client.InstanceStart(ctx, startParams)
 	if err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to start instance:",
 				"API error: "+err.Error(),
@@ -1652,7 +1653,7 @@ func (r *Resource) Delete(
 	}
 	_, err := r.client.InstanceStop(ctx, params)
 	if err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to stop instance:",
 				"API error: "+err.Error(),
@@ -1676,7 +1677,7 @@ func (r *Resource) Delete(
 		Instance: oxide.NameOrId(state.ID.ValueString()),
 	}
 	if err := r.client.InstanceDelete(ctx, params2); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			resp.Diagnostics.AddError(
 				"Unable to delete instance:",
 				"API error: "+err.Error(),
@@ -1720,7 +1721,7 @@ func waitForInstanceStop(
 			}
 			instance, err := client.InstanceView(ctx, params)
 			if err != nil {
-				if !shared.Is404(err) {
+				if !errors.Is(err, oxide.ErrHTTP404) {
 					return nil, "nil", fmt.Errorf(
 						"while polling for the status of instance %v: %v",
 						instanceID,
@@ -1738,7 +1739,7 @@ func waitForInstanceStop(
 		},
 	}
 	if _, err := stateConfig.WaitForStateContext(ctx); err != nil {
-		if !shared.Is404(err) {
+		if !errors.Is(err, oxide.ErrHTTP404) {
 			diags.AddError(
 				"Error stopping instance",
 				"API error: "+err.Error(),
@@ -2382,7 +2383,7 @@ func deleteNICs(
 			Interface: oxide.NameOrId(model.ID.ValueString()),
 		}
 		if err := client.InstanceNetworkInterfaceDelete(ctx, params); err != nil {
-			if !shared.Is404(err) {
+			if !errors.Is(err, oxide.ErrHTTP404) {
 				diags.AddError(
 					"Error deleting instance network interface:",
 					"API error: "+err.Error(),
@@ -2810,7 +2811,7 @@ func removeAntiAffinityGroups(
 		if err != nil {
 			// If the anti-affinity group doesn't exist anymore, it means
 			// the instance isn't part of it. We can just return.
-			if shared.Is404(err) {
+			if errors.Is(err, oxide.ErrHTTP404) {
 				return nil
 			}
 			diags.AddError(
