@@ -62,7 +62,12 @@ docs:
 .PHONY: check-docs
 check-docs:
 	@ $(GO_TOOL) tfplugindocs generate
-	@ if ! git diff --exit-code docs; then echo 'Generated docs have changed. Re-generate with `make docs`.'; fi
+	@ if [ -n "$$(git status --porcelain -- docs)" ]; then \
+	    git status --short -- docs; \
+	    git diff -- docs; \
+	    echo 'Generated docs have changed. Re-generate with `make docs`.'; \
+	    exit 1; \
+	  fi
 
 ## Lints all of the source files
 .PHONY: lint
