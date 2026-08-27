@@ -45,6 +45,7 @@ import (
 	subnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/subnet_pool_silo_link"
 	systemippool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pool"
 	systemippools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_ip_pools"
+	systemsilo "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_silo"
 	systemsubnetpool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool"
 	systemsubnetpoolmember "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool_member"
 	systemsubnetpoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pool_silo_link"
@@ -238,7 +239,8 @@ func (p *oxideProvider) Resources(_ context.Context) []func() resource.Resource 
 		ippool.NewResource,
 		ippoolsilolink.NewResource,
 		project.NewResource,
-		silo.NewResource,
+		systemsilo.NewResource,
+		systemsilo.NewDeprecatedResource,
 		silosamlidp.NewResource,
 		snapshot.NewResource,
 		sshkey.NewResource,

@@ -115,6 +115,35 @@ moved {
 
 Run `terraform apply` to complete the migration.
 
+### Resource `oxide_silo`
+
+#### Deprecation
+
+The `oxide_silo` resource is deprecated and will be removed in `0.25.0`.
+Use the `moved` block to migrate to the `oxide_system_silo` resource.
+The `oxide_silo` data source is unchanged.
+
+Replace `oxide_silo` with `oxide_system_silo` in your configuration. The
+resource schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_silo" "example" {
++resource "oxide_system_silo" "example" {
+  # The arguments are unchanged.
+}
+```
+
+Add a `moved` block to transfer the existing resource state to the new resource.
+
+```terraform
+moved {
+  from = oxide_silo.example
+  to   = oxide_system_silo.example
+}
+```
+
+Run `terraform apply` to complete the migration.
+
 ## Upgrading to `0.21.0`
 
 Release `0.21.0` contains changes that may require updates to Terraform

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package silo_test
+package systemsilo_test
 
 import (
 	"context"
@@ -11,17 +11,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
-
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
+	"github.com/stretchr/testify/require"
+
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
+	systemsilo "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_silo"
 )
 
 type resourceConfig struct {
-	BlockName   string
-	SiloName    string
-	SiloDNSName string
+	BlockName      string
+	ResourceType   string
+	SiloName       string
+	SiloDNSName    string
+	MoveFromLegacy bool
 }
 
 var resourceConfigTpl = `
@@ -48,7 +54,7 @@ resource "tls_self_signed_cert" "self-signed" {
   ]
 }
 
-resource "oxide_silo" "{{.BlockName}}" {
+resource "{{.ResourceType}}" "{{.BlockName}}" {
   name          = "{{.SiloName}}"
   description   = "Managed by Terraform."
   discoverable  = true
@@ -82,6 +88,13 @@ resource "oxide_silo" "{{.BlockName}}" {
     delete = "4m"
   }
 }
+
+{{ if .MoveFromLegacy }}
+moved {
+  from = oxide_silo.{{.BlockName}}
+  to   = oxide_system_silo.{{.BlockName}}
+}
+{{ end }}
 `
 
 var resourceUpdateConfigTpl = `
@@ -108,7 +121,7 @@ resource "tls_self_signed_cert" "self-signed" {
   ]
 }
 
-resource "oxide_silo" "{{.BlockName}}" {
+resource "{{.ResourceType}}" "{{.BlockName}}" {
   name          = "{{.SiloName}}"
   description   = "Managed by Terraform."
   discoverable  = true
@@ -137,27 +150,148 @@ resource "oxide_silo" "{{.BlockName}}" {
 }
 `
 
+func TestSiloResourceMetadataAndDeprecation(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		resource           fwresource.Resource
+		typeName           string
+		deprecationMessage string
+		stateMoverCount    int
+	}{
+		"canonical": {
+			resource:        systemsilo.NewResource(),
+			typeName:        "oxide_system_silo",
+			stateMoverCount: 1,
+		},
+		"deprecated": {
+			resource: systemsilo.NewDeprecatedResource(),
+			typeName: "oxide_silo",
+			deprecationMessage: "Use oxide_system_silo instead. " +
+				"The oxide_silo resource will be removed in a future release.",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			metadataResponse := &fwresource.MetadataResponse{}
+			test.resource.Metadata(
+				ctx,
+				fwresource.MetadataRequest{ProviderTypeName: "oxide"},
+				metadataResponse,
+			)
+			require.Equal(t, test.typeName, metadataResponse.TypeName)
+
+			schemaResponse := &fwresource.SchemaResponse{}
+			test.resource.Schema(
+				ctx,
+				fwresource.SchemaRequest{},
+				schemaResponse,
+			)
+			require.Equal(
+				t,
+				test.deprecationMessage,
+				schemaResponse.Schema.DeprecationMessage,
+			)
+
+			resourceWithMoveState, ok := test.resource.(fwresource.ResourceWithMoveState)
+			require.True(t, ok)
+			require.Len(
+				t,
+				resourceWithMoveState.MoveState(ctx),
+				test.stateMoverCount,
+			)
+		})
+	}
+}
+
+func TestSiloResourceMoveStateRejectsUnexpectedSource(t *testing.T) {
+	t.Parallel()
+
+	resourceWithMoveState := systemsilo.NewResource().(fwresource.ResourceWithMoveState)
+	mover := resourceWithMoveState.MoveState(context.Background())[0]
+
+	tests := map[string]fwresource.MoveStateRequest{
+		"resource type": {
+			SourceTypeName:        "oxide_other",
+			SourceSchemaVersion:   0,
+			SourceProviderAddress: "registry.terraform.io/oxidecomputer/oxide",
+		},
+		"schema version": {
+			SourceTypeName:        "oxide_silo",
+			SourceSchemaVersion:   1,
+			SourceProviderAddress: "registry.terraform.io/oxidecomputer/oxide",
+		},
+		"provider address": {
+			SourceTypeName:        "oxide_silo",
+			SourceSchemaVersion:   0,
+			SourceProviderAddress: "registry.terraform.io/hashicorp/oxide",
+		},
+	}
+
+	for name, request := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			response := &fwresource.MoveStateResponse{}
+			mover.StateMover(context.Background(), request, response)
+
+			require.Empty(t, response.Diagnostics)
+			require.Nil(t, response.TargetState.Schema)
+		})
+	}
+}
+
+func TestSiloResourceMoveStateAcceptsOpenTofuProvider(t *testing.T) {
+	t.Parallel()
+
+	resourceWithMoveState := systemsilo.NewResource().(fwresource.ResourceWithMoveState)
+	mover := resourceWithMoveState.MoveState(context.Background())[0]
+	request := fwresource.MoveStateRequest{
+		SourceTypeName:        "oxide_silo",
+		SourceSchemaVersion:   0,
+		SourceProviderAddress: "registry.opentofu.org/oxidecomputer/oxide",
+	}
+	response := &fwresource.MoveStateResponse{}
+
+	mover.StateMover(context.Background(), request, response)
+
+	require.Len(t, response.Diagnostics, 1)
+	require.Equal(
+		t,
+		"Unable to Move Silo State",
+		response.Diagnostics[0].Summary(),
+	)
+}
+
 func TestAccSiloResourceSilo_full(t *testing.T) {
+	t.Setenv(resource.EnvTfAccProviderNamespace, "oxidecomputer")
+
 	siloName := sharedtest.NewResourceName()
 	blockName := sharedtest.NewBlockName("silo")
-	resourceName := fmt.Sprintf("oxide_silo.%s", blockName)
+	resourceName := fmt.Sprintf("oxide_system_silo.%s", blockName)
 
 	dnsName := sharedtest.SiloDNSName()
 
 	config := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
-			BlockName:   blockName,
-			SiloName:    siloName,
-			SiloDNSName: dnsName,
+			BlockName:    blockName,
+			ResourceType: "oxide_system_silo",
+			SiloName:     siloName,
+			SiloDNSName:  dnsName,
 		},
 		resourceConfigTpl,
 	)
 
 	configUpdate := sharedtest.ParsedAccConfig(t,
 		resourceConfig{
-			BlockName:   blockName,
-			SiloName:    siloName,
-			SiloDNSName: dnsName,
+			BlockName:    blockName,
+			ResourceType: "oxide_system_silo",
+			SiloName:     siloName,
+			SiloDNSName:  dnsName,
 		},
 		resourceUpdateConfigTpl,
 	)
@@ -187,6 +321,76 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccSiloResourceSilo_moveFromDeprecated(t *testing.T) {
+	t.Setenv(resource.EnvTfAccProviderNamespace, "oxidecomputer")
+
+	siloName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("silo")
+	deprecatedResourceName := fmt.Sprintf("oxide_silo.%s", blockName)
+	resourceName := fmt.Sprintf("oxide_system_silo.%s", blockName)
+	dnsName := sharedtest.SiloDNSName()
+
+	deprecatedConfig := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			BlockName:    blockName,
+			ResourceType: "oxide_silo",
+			SiloName:     siloName,
+			SiloDNSName:  dnsName,
+		},
+		resourceConfigTpl,
+	)
+	config := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			BlockName:      blockName,
+			ResourceType:   "oxide_system_silo",
+			SiloName:       siloName,
+			SiloDNSName:    dnsName,
+			MoveFromLegacy: true,
+		},
+		resourceConfigTpl,
+	)
+
+	var siloID string
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"tls": {
+				Source: "hashicorp/tls",
+			},
+		},
+		CheckDestroy: testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: deprecatedConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResource(deprecatedResourceName, siloName),
+					sharedtest.CaptureResourceID(
+						deprecatedResourceName,
+						&siloID,
+					),
+				),
+			},
+			{
+				Config: config,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResource(resourceName, siloName),
+					resource.TestCheckResourceAttrPtr(
+						resourceName,
+						"id",
+						&siloID,
+					),
+				),
 			},
 		},
 	})
@@ -237,7 +441,7 @@ func testAccResourceDestroy(s *terraform.State) error {
 	}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "oxide_silo" {
+		if rs.Type != "oxide_silo" && rs.Type != "oxide_system_silo" {
 			continue
 		}
 

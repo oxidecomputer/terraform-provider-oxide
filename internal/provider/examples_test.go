@@ -37,6 +37,7 @@ var knownFailingExample = map[string]bool{
 	"resources/oxide_silo_saml_identity_provider/resource.tf":  true,
 	"resources/oxide_silo/resource.tf":                         true,
 	"resources/oxide_subnet_pool_silo_link/resource.tf":        true,
+	"resources/oxide_system_silo/resource.tf":                  true,
 	"resources/oxide_system_subnet_pool_silo_link/resource.tf": true,
 	"resources/oxide_vpc_firewall_rules/resource.tf":           true,
 	"resources/oxide_vpc_router_route/resource.tf":             true,
