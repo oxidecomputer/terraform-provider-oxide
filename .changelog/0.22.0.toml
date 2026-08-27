@@ -40,7 +40,7 @@ description = "`oxide_system_silo`"
 
 [[enhancements]]
 title = "`oxide_silo`"
-description = "The `oxide_silo` resource is deprecated in favor of `oxide_system_silo`. Existing resources can migrate without recreation by using a Terraform `moved` block. The `oxide_silo` data source is unchanged."
+description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_silo` resource."
 
 [[enhancements]]
 title = "`oxide_instance`"
