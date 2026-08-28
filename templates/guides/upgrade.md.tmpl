@@ -22,6 +22,10 @@ for a full list of changes.
 Release `0.22.0` contains changes that may require updates to Terraform
 configuration files.
 
+Before upgrading to `0.22.0`, upgrade to `0.21.0`, follow its upgrade steps,
+and refresh the Terraform state. The `0.22.0` resource migrations assume the
+UUID-normalized state produced by `0.21.0`.
+
 ### Resource `oxide_subnet_pool`
 
 #### Deprecation
@@ -139,6 +143,94 @@ Add a `moved` block to transfer the existing resource state to the new resource.
 moved {
   from = oxide_silo.example
   to   = oxide_system_silo.example
+}
+```
+
+Run `terraform apply` to complete the migration.
+
+### Resource `oxide_ip_pool`
+
+#### Deprecation
+
+The `oxide_ip_pool` resource is deprecated and will be removed in `0.25.0`. Use
+the `moved` block to migrate to the `oxide_system_ip_pool` resource and imports
+to migrate to the `oxide_system_ip_pool_range` resource.
+
+Replace `oxide_ip_pool` with `oxide_system_ip_pool` in your configuration
+and move each entry from the `ranges` attribute into its own
+`oxide_system_ip_pool_range` resource.
+
+```diff
+-resource "oxide_ip_pool" "example" {
++resource "oxide_system_ip_pool" "example" {
+   name        = "my-pool"
+   description = "Example IP pool"
+-  ranges = [
+-    {
+-      first_address = "172.20.18.227"
+-      last_address  = "172.20.18.239"
+-    }
+-  ]
+ }
++
++resource "oxide_system_ip_pool_range" "example" {
++  ip_pool_id    = oxide_system_ip_pool.example.id
++  first_address = "172.20.18.227"
++  last_address  = "172.20.18.239"
++}
+```
+
+Add a `moved` block to transfer the existing resource state to the new resource.
+
+```terraform
+moved {
+  from = oxide_ip_pool.example
+  to   = oxide_system_ip_pool.example
+}
+```
+
+Add an `import` block to import each existing range into its replacement
+resource using the `id` format `IP_POOL_ID/FIRST_ADDRESS/LAST_ADDRESS`. The
+provider resolves the range's UUID from its addresses, so the migration does not
+require recording range UUIDs.
+
+```terraform
+import {
+  to = oxide_system_ip_pool_range.example
+  id = "${oxide_system_ip_pool.example.id}/172.20.18.227/172.20.18.239"
+}
+```
+
+The existing `IP_POOL_ID/RANGE_ID` import format remains supported.
+
+Run `terraform apply` to complete the migration.
+
+### Resource `oxide_ip_pool_silo_link`
+
+#### Deprecation
+
+The `oxide_ip_pool_silo_link` resource is deprecated and will
+be removed in `0.25.0`. Use the `moved` block to migrate to the
+`oxide_system_ip_pool_silo_link` resource.
+
+Replace `oxide_ip_pool_silo_link` with `oxide_system_ip_pool_silo_link`
+in your configuration. The resource schemas are otherwise unchanged.
+
+```diff
+-resource "oxide_ip_pool_silo_link" "example" {
++resource "oxide_system_ip_pool_silo_link" "example" {
+   ip_pool_id     = oxide_system_ip_pool.example.id
+   silo_id        = "9e199e45-01a6-43d3-8bc3-5b27726e67a6"
+   is_default     = false
+ }
+```
+
+Add a `moved` block to transfer the existing resource state to the new resource.
+
+```terraform
+moved {
+  from = oxide_ip_pool_silo_link.example
+  to   = oxide_system_ip_pool_silo_link.example
 }
 ```
 
