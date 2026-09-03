@@ -1,16 +1,16 @@
 ---
-page_title: "Oxide Provider"
+page_title: "Oxide Terraform Provider"
 description: |-
-  The Oxide provider is used to declaratively manage
-  Oxide https://oxide.computer infrastructure.
+  The Oxide Terraform provider declaratively manages
+  Oxide https://oxide.computer resources with Terraform or OpenTofu.
   The provider uses the Oxide Go SDK https://github.com/oxidecomputer/oxide.go
   to create, read, update, and delete Oxide resources.
 ---
 
-# Oxide Provider
+# Oxide Terraform Provider
 
-The Oxide provider is used to declaratively manage
-[Oxide](https://oxide.computer) infrastructure.
+The Oxide Terraform provider declaratively manages
+[Oxide](https://oxide.computer) resources with Terraform or OpenTofu.
 
 The provider uses the [Oxide Go SDK](https://github.com/oxidecomputer/oxide.go)
 to create, read, update, and delete Oxide resources.

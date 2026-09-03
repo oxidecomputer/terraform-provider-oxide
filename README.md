@@ -1,30 +1,40 @@
-# Terraform Provider Oxide
+# Oxide Terraform Provider
 
-## Build status
+The Oxide Terraform provider declaratively manages
+[Oxide](https://oxide.computer) resources with Terraform or OpenTofu.
+
+The provider uses the [Oxide Go SDK](https://github.com/oxidecomputer/oxide.go)
+to create, read, update, and delete Oxide resources.
+
+## Build Status
 
 | Branch      | Status |
 | ----------- | ------ |
 | `main`      | [![main](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=main)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Amain) |
 | `rel/v0.21` | [![0.21](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=rel%2Fv0.21)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Arel%2Fv0.21) |
 
-## Requirements
+## Version Policy
 
-- [Terraform](https://www.terraform.io/downloads) 1.11.x and above, we recommend using the latest stable release whenever possible. When installing on an Illumos machine use the Solaris binary.
+This project adheres to [Semantic Versioning](https://semver.org/). It is
+currently at major version zero (e.g., v0.Y.Z). Please note the following
+semantics:
 
-## Using the provider
+- The minimum supported Oxide version may change across minor version releases.
+- Configuration changes may be required across minor version releases.
 
-As a preferred method of authentication, export the `OXIDE_HOST` and `OXIDE_TOKEN` environment variables, or the `OXIDE_PROFILE` environment variable, with their corresponding values.
+Read the [upgrade guide](./docs/guides/upgrade.md) before upgrading.
 
-Alternatively, it is possible to authenticate via the optional `host` and `token` or `profile` arguments. In most cases this method of authentication is not recommended. It is generally preferable to keep credential information out of the configuration.
+### Minimum Supported Terraform and OpenTofu Versions
 
-To generate a token, follow these steps:
+Because this provider uses write-only attributes, it requires the following
+minimum versions:
 
-- Make sure you have installed the Oxide CLI
-- Log in via the Oxide console.
-- Run `oxide auth login --host <host>`
-- Retrieve the token associated with the host from `$HOME/.config/oxide/credentials.toml`.
+- Terraform 1.11
+- OpenTofu 1.11
 
-### Example
+## Usage
+
+Create a `main.tf` with the following configuration.
 
 ```hcl
 terraform {
@@ -32,33 +42,57 @@ terraform {
 
   required_providers {
     oxide = {
-      source  = "oxidecomputer/oxide"
-      version = "0.21.0"
+      source = "oxidecomputer/oxide"
     }
   }
 }
 
-provider "oxide" {
-  # The provider will default to use $OXIDE_HOST and $OXIDE_TOKEN,
-  # or $OXIDE_PROFILE.
-  # If necessary they can be set explicitly (not recommended).
-  # host = "<host address>"
-  # token = "<token value>"
-  # profile = "<profile name>"
-}
+# The provider defaults to using environment variables for authentication.
+#
+# - OXIDE_HOST: Oxide API host (e.g., https://oxide.sys.example.com)
+# - OXIDE_TOKEN: Oxide API token (e.g., oxide-token-abc123)
+provider "oxide" {}
 
-# Create a blank disk
-resource "oxide_disk" "example" {
-  project_id  = "c1dee930-a8e4-11ed-afa1-0242ac120002"
-  description = "a test disk"
-  name        = "mydisk"
-  size        = 1073741824
-  block_size  = 512
+resource "oxide_project" "example" {
+  name        = "my-project"
+  description = "A project managed by the Oxide provider."
 }
 ```
 
-There are several examples in the [examples/](./examples/) directory.
+For other authentication methods, see the
+[provider documentation](https://registry.terraform.io/providers/oxidecomputer/oxide/latest/docs).
 
-## Development guides and contributing information
+OpenTofu users can run the equivalent commands below by replacing `terraform`
+with `tofu`.
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) to learn more.
+Initialize the configuration and install the provider:
+
+```shell
+terraform init
+```
+
+Create the Oxide project:
+
+```shell
+terraform apply
+```
+
+Delete the Oxide project:
+
+```shell
+terraform destroy
+```
+
+## Documentation
+
+Refer to the [Oxide Terraform Provider](https://registry.terraform.io/providers/oxidecomputer/oxide/latest)
+documentation to learn which resources, data sources, and functions are
+supported by this provider.
+
+The registry documentation is rendered from [docs](./docs), which is generated
+from [templates](./templates), [examples](./examples), and the provider source
+code.
+
+## Contributing
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before contributing to this project.

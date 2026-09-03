@@ -103,8 +103,8 @@ func (p *oxideProvider) Schema(
 ) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `
-The Oxide provider is used to declaratively manage
-[Oxide](https://oxide.computer) infrastructure.
+The Oxide Terraform provider declaratively manages
+[Oxide](https://oxide.computer) resources with Terraform or OpenTofu.
 
 The provider uses the [Oxide Go SDK](https://github.com/oxidecomputer/oxide.go)
 to create, read, update, and delete Oxide resources.
