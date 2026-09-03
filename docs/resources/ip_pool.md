@@ -4,11 +4,14 @@ page_title: "oxide_ip_pool Resource - terraform-provider-oxide"
 subcategory: ""
 description: |-
   This resource manages IP pools.
+  !> The oxide_ip_pool resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_ip_pool instead.
 ---
 
 # oxide_ip_pool (Resource)
 
 This resource manages IP pools.
+
+!> The oxide_ip_pool resource is deprecated and will be removed in version v0.25.0 of the provider. Use oxide_system_ip_pool instead.
 
 ## Example Usage
 
@@ -41,7 +44,7 @@ resource "oxide_ip_pool" "example" {
 
 ### Optional
 
-- `ranges` (Attributes List) (see [below for nested schema](#nestedatt--ranges))
+- `ranges` (Attributes List, Deprecated) (see [below for nested schema](#nestedatt--ranges))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

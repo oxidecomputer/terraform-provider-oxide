@@ -14,6 +14,14 @@ description = "This resource will be removed in version v0.25.0 of the provider.
 title = "`oxide_subnet_pool_silo_link`"
 description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool_silo_link` resource."
 
+[[breaking]]
+title = "`oxide_ip_pool`"
+description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_ip_pool` resource. Values for the `ranges` attribute must be imported into `oxide_system_ip_pool_range` resources."
+
+[[breaking]]
+title = "`oxide_ip_pool_silo_link`"
+description = "This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_ip_pool_silo_link` resource."
+
 [[features]]
 title = "New data source"
 description = "`oxide_system_ip_pool`"
@@ -57,6 +65,18 @@ description = "`oxide_system_subnet_pool_member`"
 [[features]]
 title = "New resource"
 description = "`oxide_system_subnet_pool_silo_link`"
+
+[[features]]
+title = "New resource"
+description = "`oxide_system_ip_pool`"
+
+[[features]]
+title = "New resource"
+description = "`oxide_system_ip_pool_range`"
+
+[[features]]
+title = "New resource"
+description = "`oxide_system_ip_pool_silo_link`"
 
 [[enhancements]]
 title = "`oxide_silo_saml_identity_provider`"

@@ -298,7 +298,7 @@ func (r *Resource) Create(
 	}
 
 	if signingKeypairConfig != nil {
-		params.Body.SigningKeypair = oxide.DerEncodedKeyPair{
+		params.Body.SigningKeypair = &oxide.DerEncodedKeyPair{
 			PrivateKey: signingKeypairConfig.PrivateKey.ValueString(),
 			PublicCert: signingKeypairConfig.PublicCert.ValueString(),
 		}
