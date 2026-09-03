@@ -190,9 +190,7 @@ moved {
 ```
 
 Add an `import` block to import each existing range into its replacement
-resource using the `id` format `IP_POOL_ID/FIRST_ADDRESS/LAST_ADDRESS`. The
-provider resolves the range's UUID from its addresses, so the migration does not
-require recording range UUIDs.
+resource using the `id` format `IP_POOL_ID/FIRST_ADDRESS/LAST_ADDRESS`.
 
 ```terraform
 import {
@@ -200,8 +198,6 @@ import {
   id = "${oxide_system_ip_pool.example.id}/172.20.18.227/172.20.18.239"
 }
 ```
-
-The existing `IP_POOL_ID/RANGE_ID` import format remains supported.
 
 Run `terraform apply` to complete the migration.
 
