@@ -137,20 +137,6 @@ where the patch version is (`vX.Y.0`).
   + const Version = "X.Y.Z"
   ```
 - [ ] Ensure the `VERSION` file has the version you're about to release.
-- [ ] Ensure the example block in `README.md` uses the version you're about to release.
-  ```diff
-  terraform {
-    required_version = ">= 1.11"
-
-    required_providers {
-      oxide = {
-        source  = "oxidecomputer/oxide"
-  -     version = "A.B.C"
-  +     version = "X.Y.Z"
-      }
-    }
-  }
-  ```
 - [ ] Ensure the `.changelog/vX.Y.Z.toml` file has the changelog entries for the release and generate changelog.
   ```
   make changelog

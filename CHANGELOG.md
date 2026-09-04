@@ -1,3 +1,71 @@
+# 0.22.0 (2026/Sep/03)
+
+### Breaking changes
+
+- **`oxide_switch_port_settings`:** The `oxide_switch_port_settings` resource has been removed.
+- **`oxide_subnet_pool`:** This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool` resource.
+- **`oxide_subnet_pool_member`:** This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool_member` resource.
+- **`oxide_subnet_pool_silo_link`:** This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_subnet_pool_silo_link` resource.
+- **`oxide_ip_pool`:** This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_ip_pool` resource. Values for the `ranges` attribute must be imported into `oxide_system_ip_pool_range` resources.
+- **`oxide_ip_pool_silo_link`:** This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_ip_pool_silo_link` resource.
+
+### New features
+
+- **New data source:** `oxide_system_ip_pool`
+- **New data source:** `oxide_system_subnet_pools`
+- **New data source:** `oxide_current_user`
+- **New resource:** `oxide_vpc_internet_gateway_ip_address_attachment`
+- **New resource:** `oxide_vpc_internet_gateway_ip_pool_attachment`
+- **New resource:** `oxide_system_silo`
+- **New resource:** `oxide_system_subnet_pool`
+- **New resource:** `oxide_system_subnet_pool_member`
+- **New resource:** `oxide_system_subnet_pool_silo_link`
+- **New resource:** `oxide_system_ip_pool`
+- **New resource:** `oxide_system_ip_pool_range`
+- **New resource:** `oxide_system_ip_pool_silo_link`
+
+### Enhancements
+
+- **`oxide_silo`:** This resource will be removed in version v0.25.0 of the provider. Use Terraform's `moved` functionality to move to the `oxide_system_silo` resource.
+- **`oxide_instance`:** The oxide_instance resource now exposes a read-only `attached_external_ips` attribute, which lists attached floating, ephemeral, and SNAT external IP addresses. For Terraform-managed instances, this attribute can replace the `oxide_instance_external_ips` data source. [#841](https://github.com/oxidecomputer/terraform-provider-oxide/pull/841)
+- **`oxide_silo_saml_identity_provider`:** The `idp_metadata_source` and `signing_keypair.private_key` attributes are now write-only. [#819](https://github.com/oxidecomputer/terraform-provider-oxide/pull/819)
+- **`oxide_silo_saml_identity_provider`:** The `oxide_silo_saml_identity_provider` resource can now be imported. [#819](https://github.com/oxidecomputer/terraform-provider-oxide/pull/819)
+- **`oxide_ip_pool`:** Added the read-only attributes `ip_version` and `pool_type`.
+
+### Bug fixes
+
+- **`oxide_instance`:** Previously, the provider would fail to detect a diff on the `external_ips` attribute of the `oxide_instance` resource when external IPs were detached from the instance out of band. These diffs are now detected correctly. [#842](https://github.com/oxidecomputer/terraform-provider-oxide/pull/842)
+- **`oxide_floating_ip`:** Previously, the `oxide_floating_ip` data source would return a null object and throw an uninformative error if the relevant floating IP didn't exist. These errors are now surfaced correctly, without manifesting as provider bugs. [#850](https://github.com/oxidecomputer/terraform-provider-oxide/pull/850)
+
+### List of commits
+
+- [3c8c564](https://github.com/oxidecomputer/terraform-provider-oxide/commit/3c8c564) docs: update readme and provider content (#853)
+- [6df2814](https://github.com/oxidecomputer/terraform-provider-oxide/commit/6df2814) feat: oxide_system_ip_pool resources (#839)
+- [ed1de89](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ed1de89) build(deps): bump google.golang.org/grpc from 1.82.1 to 1.83.1 (#852)
+- [450986c](https://github.com/oxidecomputer/terraform-provider-oxide/commit/450986c) oxide_system_silo: move from oxide_silo (#848)
+- [22ced97](https://github.com/oxidecomputer/terraform-provider-oxide/commit/22ced97) feat: oxide_system_subnet_pool resources (#834)
+- [547c36d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/547c36d) fix: handle 404 on fip datasource and fix example test. (#850)
+- [02cc631](https://github.com/oxidecomputer/terraform-provider-oxide/commit/02cc631) fix: update ci check on generated docs. (#851)
+- [73ff6a0](https://github.com/oxidecomputer/terraform-provider-oxide/commit/73ff6a0) misc: use oxide.go error type for 404 (#849)
+- [74de61b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/74de61b) Test examples. (#753)
+- [be52818](https://github.com/oxidecomputer/terraform-provider-oxide/commit/be52818) misc: regenerate docs
+- [f3b65c8](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f3b65c8) feat(oxide_ip_pool): added read-only attributes (#821)
+- [e26b67e](https://github.com/oxidecomputer/terraform-provider-oxide/commit/e26b67e) feat(oxide_vpc_internet_gateway_ip_address_attachment): new resource (#845)
+- [96d9cb1](https://github.com/oxidecomputer/terraform-provider-oxide/commit/96d9cb1) oxide_switch_port_settings: remove resource (#847)
+- [17f5049](https://github.com/oxidecomputer/terraform-provider-oxide/commit/17f5049) Add `attached_external_ips` to the instance resource. (#841)
+- [0e60c1f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/0e60c1f) feat(oxide_vpc_internet_gateway_ip_pool_attachment): new resource (#844)
+- [133dd48](https://github.com/oxidecomputer/terraform-provider-oxide/commit/133dd48) fix: record empty set of external ips. (#842)
+- [ff15f48](https://github.com/oxidecomputer/terraform-provider-oxide/commit/ff15f48) build(deps): bump github.com/stretchr/testify from 1.11.1 to 1.12.1 (#843)
+- [202485d](https://github.com/oxidecomputer/terraform-provider-oxide/commit/202485d) feat(oxide_current_user): add data source (#840)
+- [879ea58](https://github.com/oxidecomputer/terraform-provider-oxide/commit/879ea58) feat(oxide_system_subnet_pools): add data source (#836)
+- [edf04ca](https://github.com/oxidecomputer/terraform-provider-oxide/commit/edf04ca) fix: flaky test (#837)
+- [f77085f](https://github.com/oxidecomputer/terraform-provider-oxide/commit/f77085f) feat(oxide_system_ip_pool): add data source (#835)
+- [c285428](https://github.com/oxidecomputer/terraform-provider-oxide/commit/c285428) feat(oxide_silo_saml_identity_provider): support import and mark attributes write-only (#819)
+- [d647ad7](https://github.com/oxidecomputer/terraform-provider-oxide/commit/d647ad7) build(deps): bump github.com/hashicorp/terraform-plugin-log from 0.10.0 to 0.11.0 (#817)
+- [8a135a3](https://github.com/oxidecomputer/terraform-provider-oxide/commit/8a135a3) build(deps): bump docker/login-action from 4.5.2 to 4.6.0 (#818)
+- [075ec98](https://github.com/oxidecomputer/terraform-provider-oxide/commit/075ec98) misc: update changelog with v0.20.3 release (#815)
+- [4ab3c8b](https://github.com/oxidecomputer/terraform-provider-oxide/commit/4ab3c8b) misc: bump to next development version (#814)
+
 # 0.21.0 (2026/Aug/05)
 
 ### New features
