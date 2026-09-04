@@ -207,4 +207,4 @@ $(GOBIN):
 # TODO: actually release a version of whatsit to use the tag flag
 $(GOBIN)/whatsit: | $(GOBIN)
 	@ echo "-> Installing whatsit..."
-	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git#$(VERSION_WHATSIT) --branch main --root ./
+	@ cargo install --git ssh://git@github.com/oxidecomputer/whatsit.git --rev $(VERSION_WHATSIT) --root ./

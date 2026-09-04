@@ -11,7 +11,7 @@ to create, read, update, and delete Oxide resources.
 | Branch      | Status |
 | ----------- | ------ |
 | `main`      | [![main](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=main)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Amain) |
-| `rel/v0.21` | [![0.21](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=rel%2Fv0.21)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Arel%2Fv0.21) |
+| `rel/v0.22` | [![0.22](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml/badge.svg?branch=rel%2Fv0.22)](https://github.com/oxidecomputer/terraform-provider-oxide/actions/workflows/build-test.yml?query=branch%3Arel%2Fv0.22) |
 
 ## Version Policy
 
