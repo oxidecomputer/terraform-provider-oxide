@@ -39,6 +39,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/silo"
 	silosamlidp "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/silo_saml_identity_provider"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/snapshot"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/snapshots"
 	sshkey "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/ssh_key"
 	subnetpool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/subnet_pool"
 	subnetpoolmember "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/subnet_pool_member"
@@ -214,6 +215,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		project.NewDataSource,
 		projects.NewDataSource,
 		silo.NewDataSource,
+		snapshots.NewDataSource,
 		sshkey.NewDataSource,
 		subnetpool.NewDataSource,
 		systemippool.NewDataSource,
