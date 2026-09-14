@@ -31,6 +31,7 @@ type DataSourceModel struct {
 	IpVersion    types.String            `tfsdk:"ip_version"`
 	Name         types.String            `tfsdk:"name"`
 	Members      []MemberDataSourceModel `tfsdk:"members"`
+	Pool         types.String            `tfsdk:"pool"`
 	Timeouts     timeouts.Value          `tfsdk:"timeouts"`
 	TimeCreated  types.String            `tfsdk:"time_created"`
 	TimeModified types.String            `tfsdk:"time_modified"`
@@ -78,9 +79,9 @@ func (d *DataSource) Schema(
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieve information about a specified subnet pool.",
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{
+			"pool": schema.StringAttribute{
 				Required:    true,
-				Description: "Name of the subnet pool.",
+				Description: "Name or ID of the subnet pool.",
 			},
 			"description": schema.StringAttribute{
 				Computed:    true,
@@ -93,6 +94,10 @@ func (d *DataSource) Schema(
 			"ip_version": schema.StringAttribute{
 				Computed:    true,
 				Description: "The IP version for this pool (v4 or v6).",
+			},
+			"name": schema.StringAttribute{
+				Computed:    true,
+				Description: "Unique, mutable, user-controlled identifier for the subnet pool.",
 			},
 			"members": schema.ListNestedAttribute{
 				Computed:    true,
@@ -150,7 +155,7 @@ func (d *DataSource) Read(
 	defer cancel()
 
 	params := oxide.SystemSubnetPoolViewParams{
-		Pool: oxide.NameOrId(state.Name.ValueString()),
+		Pool: oxide.NameOrId(state.Pool.ValueString()),
 	}
 	pool, err := d.client.SystemSubnetPoolView(ctx, params)
 	if err != nil {

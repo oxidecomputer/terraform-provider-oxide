@@ -47,7 +47,7 @@ resource "oxide_subnet_pool_member" "test" {
 }
 
 data "oxide_subnet_pool" "test" {
-	name       = oxide_subnet_pool.test.name
+	pool       = oxide_subnet_pool.test.id
 	depends_on = [oxide_subnet_pool_member.test]
 	timeouts = {
 		read = "1m"
@@ -58,6 +58,7 @@ data "oxide_subnet_pool" "test" {
 
 func checkDataSource(dataName, subnet string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckResourceAttrPair(dataName, "pool", "oxide_subnet_pool.test", "id"),
 		resource.TestCheckResourceAttr(dataName, "name", "terraform-acc-ds-subnet-pool"),
 		resource.TestCheckResourceAttr(
 			dataName,

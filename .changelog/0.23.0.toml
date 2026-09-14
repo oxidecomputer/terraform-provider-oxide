@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "`oxide_subnet_pool` data source"
+description = "The subnet pool selector has been renamed from `name` to `pool`, and `name` is now a computed attribute. The `pool` attribute accepts either a subnet pool name or ID."
 
 [[features]]
 title = ""
