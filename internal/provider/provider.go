@@ -24,6 +24,7 @@ import (
 	antiaffinitygroup "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/anti_affinity_group"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/credentials"
 	currentuser "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/current_user"
+	currentusergroups "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/current_user_groups"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/disk"
 	externalsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnet"
 	externalsubnetattachment "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnet_attachment"
@@ -205,6 +206,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		addresslot.NewDataSource,
 		antiaffinitygroup.NewDataSource,
 		currentuser.NewDataSource,
+		currentusergroups.NewDataSource,
 		disk.NewDataSource,
 		floatingip.NewDataSource,
 		image.NewDataSource,
