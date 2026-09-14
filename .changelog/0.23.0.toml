@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New data source"
+description = "`oxide_subnet_pools`. This data source is deprecated; use `oxide_system_subnet_pools` instead."
 
 [[enhancements]]
 title = ""
