@@ -27,6 +27,7 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/disk"
 	externalsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnet"
 	externalsubnetattachment "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnet_attachment"
+	externalsubnets "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/external_subnets"
 	floatingip "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/floating_ip"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/image"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/images"
@@ -206,6 +207,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		antiaffinitygroup.NewDataSource,
 		currentuser.NewDataSource,
 		disk.NewDataSource,
+		externalsubnets.NewDataSource,
 		floatingip.NewDataSource,
 		image.NewDataSource,
 		images.NewDataSource,
