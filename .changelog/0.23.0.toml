@@ -6,6 +6,10 @@ description = ""
 title = ""
 description = ""
 
+[[features]]
+title = "New data source"
+description = "`oxide_ip_pools`"
+
 [[enhancements]]
 title = ""
 description = ""
