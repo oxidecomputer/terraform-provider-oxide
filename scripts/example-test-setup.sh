@@ -49,6 +49,13 @@ if ! oxide system networking ip-pool view --pool my-pool > /dev/null 2>&1; then
     oxide system networking ip-pool create --name my-pool --description my-pool > /dev/null
 fi
 
+if ! oxide system networking subnet-pool view --pool my-pool > /dev/null 2>&1; then
+    oxide system networking subnet-pool create \
+        --name my-pool \
+        --description my-pool \
+        --ip-version v4 > /dev/null
+fi
+
 if ! oxide current-user ssh-key view --ssh-key my-key > /dev/null 2>&1; then
     oxide current-user ssh-key create \
         --name my-key \
