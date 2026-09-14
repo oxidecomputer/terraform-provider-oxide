@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New data source"
+description = "`oxide_snapshot`"
 
 [[enhancements]]
 title = ""
