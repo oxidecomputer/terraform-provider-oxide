@@ -3,8 +3,8 @@ title = ""
 description = ""
 
 [[features]]
-title = ""
-description = ""
+title = "New data source"
+description = "`oxide_vpc_firewall_rules`"
 
 [[enhancements]]
 title = ""

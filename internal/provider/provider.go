@@ -220,6 +220,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		systemippools.NewDataSource,
 		systemsubnetpools.NewDataSource,
 		vpc.NewDataSource,
+		vpcfirewallrules.NewDataSource,
 		vpcinternetgateway.NewDataSource,
 		vpcrouter.NewDataSource,
 		vpcrouterroute.NewDataSource,
