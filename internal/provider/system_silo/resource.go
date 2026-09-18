@@ -20,7 +20,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -259,11 +258,10 @@ attributes will result in the silo being destroyed and created anew.
 				},
 			},
 			"discoverable": schema.BoolAttribute{
-				Required:            true,
-				MarkdownDescription: "Whether this silo is discoverable and present in the silo list.",
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
+				Optional: true,
+				DeprecationMessage: "The Oxide API no longer supports configuring silo discoverability. " +
+					"This attribute is ignored and will be removed in v0.25.0 of the provider.",
+				MarkdownDescription: "This attribute is ignored because the Oxide API no longer supports configuring silo discoverability.",
 			},
 			"identity_mode": schema.StringAttribute{
 				Optional:    true,
@@ -415,7 +413,6 @@ func (r *Resource) Create(
 			AdminGroupName:   plan.AdminGroupName.ValueString(),
 			Description:      plan.Description.ValueString(),
 			IdentityMode:     oxide.SiloIdentityMode(plan.IdentityMode.ValueString()),
-			Discoverable:     plan.Discoverable.ValueBoolPointer(),
 			MappedFleetRoles: stringMapToFleetRoleMap(plan.MappedFleetRoles),
 			Name:             oxide.Name(plan.Name.ValueString()),
 			Quotas: oxide.SiloQuotasCreate{
@@ -514,7 +511,6 @@ func (r *Resource) Read(
 		Memory:  types.Int64Value(int64(siloQuotas.Memory)),
 		Storage: types.Int64Value(int64(siloQuotas.Storage)),
 	}
-	state.Discoverable = types.BoolPointerValue(silo.Discoverable)
 	state.IdentityMode = types.StringValue(string(silo.IdentityMode))
 	state.MappedFleetRoles = fleetRoleMapToStringMap(silo.MappedFleetRoles)
 	state.TimeCreated = types.StringValue(silo.TimeCreated.String())

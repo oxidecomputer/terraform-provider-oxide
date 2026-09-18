@@ -204,6 +204,16 @@ func TestSiloResourceMetadataAndDeprecation(t *testing.T) {
 				resourceWithMoveState.MoveState(ctx),
 				test.stateMoverCount,
 			)
+
+			discoverable := schemaResponse.Schema.Attributes["discoverable"]
+			require.True(t, discoverable.IsOptional())
+			require.False(t, discoverable.IsRequired())
+			require.Equal(
+				t,
+				"The Oxide API no longer supports configuring silo discoverability. "+
+					"This attribute is ignored and will be removed in v0.25.0 of the provider.",
+				discoverable.GetDeprecationMessage(),
+			)
 		})
 	}
 }
@@ -321,6 +331,9 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"discoverable",
+				},
 			},
 		},
 	})
