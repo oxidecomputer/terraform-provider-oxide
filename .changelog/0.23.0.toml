@@ -1,6 +1,6 @@
 [[breaking]]
-title = ""
-description = ""
+title = "Minimum Supported Oxide Version"
+description = "The minimum supported Oxide version is now v23 (API Version [2026091500.0.0](https://github.com/oxidecomputer/omicron/blob/rel/v23/rc0/openapi/nexus//nexus-2026091500.0.0-742248.json))."
 
 [[features]]
 title = ""
@@ -11,5 +11,5 @@ title = ""
 description = ""
 
 [[bugs]]
-title = ""
-description = ""
+title = "Silo resource discoverability"
+description = "Deprecated the `discoverable` attribute on `oxide_silo` and `oxide_system_silo`. The attribute is no longer sent to or refreshed from the Oxide API."
