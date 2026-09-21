@@ -32,6 +32,7 @@ COPY --from=builder /omicron/out/mg-ddm /omicron/out/mg-ddm
 
 COPY --from=builder /omicron/nexus/examples /omicron/nexus/examples
 COPY --from=builder /omicron/gateway-test-utils/configs /omicron/gateway-test-utils/configs
+COPY --from=builder /omicron/oximeter/db/src/configs /omicron/oximeter/db/src/configs
 COPY --from=builder /omicron/smf /omicron/smf
 
 RUN sed -i 's/bind_address = "127.0.0.1:12220"/bind_address = "0.0.0.0:12220"/' \
