@@ -45,6 +45,7 @@ data "oxide_project" "my_project" {
 ### Optional
 
 - `ipv6_prefix` (String) IPv6 prefix of the VPC.
+- `skip_default_subnet` (Boolean) Whether to skip creating the default subnet when the VPC is created. This does not affect the system router, default firewall rules, or default internet gateway.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

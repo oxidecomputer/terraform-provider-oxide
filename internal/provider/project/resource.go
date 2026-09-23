@@ -39,12 +39,13 @@ type Resource struct {
 }
 
 type ResourceModel struct {
-	Description  types.String   `tfsdk:"description"`
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	TimeCreated  types.String   `tfsdk:"time_created"`
-	TimeModified types.String   `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	Description    types.String   `tfsdk:"description"`
+	ID             types.String   `tfsdk:"id"`
+	Name           types.String   `tfsdk:"name"`
+	SkipDefaultVPC types.Bool     `tfsdk:"skip_default_vpc"`
+	TimeCreated    types.String   `tfsdk:"time_created"`
+	TimeModified   types.String   `tfsdk:"time_modified"`
+	Timeouts       timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -89,6 +90,10 @@ func (r *Resource) Schema(
 This resource manages projects.
 `,
 		Attributes: map[string]schema.Attribute{
+			"skip_default_vpc": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Whether to skip creating the default VPC when the project is created.",
+			},
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the project.",
@@ -149,6 +154,9 @@ func (r *Resource) Create(
 			Description: plan.Description.ValueString(),
 			Name:        oxide.Name(plan.Name.ValueString()),
 		},
+	}
+	if plan.SkipDefaultVPC.ValueBool() {
+		params.Body.Defaults = &oxide.ProjectCreateDefaults{}
 	}
 	project, err := r.client.ProjectCreate(ctx, params)
 	if err != nil {

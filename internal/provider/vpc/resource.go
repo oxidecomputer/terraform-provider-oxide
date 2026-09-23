@@ -41,16 +41,17 @@ type Resource struct {
 }
 
 type ResourceModel struct {
-	Description    types.String   `tfsdk:"description"`
-	DNSName        types.String   `tfsdk:"dns_name"`
-	ID             types.String   `tfsdk:"id"`
-	IPV6Prefix     types.String   `tfsdk:"ipv6_prefix"`
-	Name           types.String   `tfsdk:"name"`
-	ProjectID      types.String   `tfsdk:"project_id"`
-	SystemRouterID types.String   `tfsdk:"system_router_id"`
-	TimeCreated    types.String   `tfsdk:"time_created"`
-	TimeModified   types.String   `tfsdk:"time_modified"`
-	Timeouts       timeouts.Value `tfsdk:"timeouts"`
+	Description       types.String   `tfsdk:"description"`
+	DNSName           types.String   `tfsdk:"dns_name"`
+	ID                types.String   `tfsdk:"id"`
+	IPV6Prefix        types.String   `tfsdk:"ipv6_prefix"`
+	Name              types.String   `tfsdk:"name"`
+	ProjectID         types.String   `tfsdk:"project_id"`
+	SkipDefaultSubnet types.Bool     `tfsdk:"skip_default_subnet"`
+	SystemRouterID    types.String   `tfsdk:"system_router_id"`
+	TimeCreated       types.String   `tfsdk:"time_created"`
+	TimeModified      types.String   `tfsdk:"time_modified"`
+	Timeouts          timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -95,6 +96,10 @@ func (r *Resource) Schema(
 This resource manages VPCs.
 `,
 		Attributes: map[string]schema.Attribute{
+			"skip_default_subnet": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Whether to skip creating the default subnet when the VPC is created. This does not affect the system router, default firewall rules, or default internet gateway.",
+			},
 			"project_id": schema.StringAttribute{
 				Required:    true,
 				Description: "ID of the project that will contain the VPC.",
@@ -184,6 +189,9 @@ func (r *Resource) Create(
 			DnsName:     oxide.Name(plan.DNSName.ValueString()),
 			Ipv6Prefix:  oxide.Ipv6Net(plan.IPV6Prefix.ValueString()),
 		},
+	}
+	if plan.SkipDefaultSubnet.ValueBool() {
+		params.Body.Defaults = &oxide.VpcCreateDefaults{}
 	}
 	vpc, err := r.client.VpcCreate(ctx, params)
 	if err != nil {

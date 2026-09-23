@@ -35,6 +35,7 @@ resource "oxide_project" "example" {
 
 ### Optional
 
+- `skip_default_vpc` (Boolean) Whether to skip creating the default VPC when the project is created.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
