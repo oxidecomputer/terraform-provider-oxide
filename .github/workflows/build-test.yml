@@ -18,6 +18,11 @@ on:
         type: boolean
         required: false
         default: false
+      force-build:
+        description: 'Force image build'
+        type: boolean
+        required: false
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -135,6 +140,8 @@ jobs:
         run: |
           if docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.omicron-version.outputs.sha }} > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.force-build }}' == 'true' ]]; then
+            echo "exists=false" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
