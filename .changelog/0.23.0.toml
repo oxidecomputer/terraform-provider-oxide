@@ -6,6 +6,10 @@ description = "The minimum supported Oxide version is now v23 (API Version [2026
 title = ""
 description = ""
 
+[[features]]
+title = "New data source"
+description = "`oxide_ip_pools`"
+
 [[enhancements]]
 title = ""
 description = ""
