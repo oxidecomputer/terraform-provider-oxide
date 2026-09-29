@@ -3,8 +3,8 @@ title = "Minimum Supported Oxide Version"
 description = "The minimum supported Oxide version is now v23 (API Version [2026091500.0.0](https://github.com/oxidecomputer/omicron/blob/rel/v23/rc0/openapi/nexus//nexus-2026091500.0.0-742248.json))."
 
 [[features]]
-title = ""
-description = ""
+title = "New data source"
+description = "`oxide_subnet_pools`. This data source is deprecated; use `oxide_system_subnet_pools` instead."
 
 [[enhancements]]
 title = ""
