@@ -214,6 +214,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		project.NewDataSource,
 		projects.NewDataSource,
 		silo.NewDataSource,
+		snapshot.NewDataSource,
 		sshkey.NewDataSource,
 		subnetpool.NewDataSource,
 		systemippool.NewDataSource,
