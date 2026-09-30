@@ -1,3 +1,26 @@
+# 0.23.0 (2026/Sep/29)
+
+### Breaking changes
+
+- **Minimum Supported Oxide Version:** The minimum supported Oxide version is now v23 (API Version [2026091500.0.0](https://github.com/oxidecomputer/omicron/blob/rel/v23/rc0/openapi/nexus//nexus-2026091500.0.0-742248.json)).
+
+### Enhancements
+
+- **`oxide_project`:** Added the `skip_default_vpc` attribute to skip creating the `default` VPC. [#857](https://github.com/oxidecomputer/terraform-provider-oxide/issues/857)
+- **`oxide_vpc`:** Added the `skip_default_subnet` attribute to skip creating the `default` subnet. [#857](https://github.com/oxidecomputer/terraform-provider-oxide/issues/857)
+
+### Bug fixes
+
+- **Silo resource discoverability:** Deprecated the `discoverable` attribute on `oxide_silo` and `oxide_system_silo`. The attribute is no longer sent to or refreshed from the Oxide API. [#870](https://github.com/oxidecomputer/terraform-provider-oxide/pull/870)
+
+### List of commits
+
+- [45c9524](https://github.com/oxidecomputer/terraform-provider-oxide/commit/45c9524) feat: oxide v23 api version (#872)
+- [992d344](https://github.com/oxidecomputer/terraform-provider-oxide/commit/992d344) fix: deprecate discoverable attribute for silo resources (#870)
+- [5c11024](https://github.com/oxidecomputer/terraform-provider-oxide/commit/5c11024) ci: fix image build (#871)
+- [1de7014](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1de7014) build(deps): bump google.golang.org/grpc from 1.83.1 to 1.83.2 (#858)
+- [46d456a](https://github.com/oxidecomputer/terraform-provider-oxide/commit/46d456a) misc: bump to next development version (#855)
+
 # 0.22.0 (2026/Sep/03)
 
 ### Breaking changes
