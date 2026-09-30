@@ -7,8 +7,12 @@ title = ""
 description = ""
 
 [[enhancements]]
-title = ""
-description = ""
+title = "`oxide_project`"
+description = "Added the `skip_default_vpc` attribute to skip creating the `default` VPC. [#857](https://github.com/oxidecomputer/terraform-provider-oxide/issues/857)"
+
+[[enhancements]]
+title = "`oxide_vpc`"
+description = "Added the `skip_default_subnet` attribute to skip creating the `default` subnet. [#857](https://github.com/oxidecomputer/terraform-provider-oxide/issues/857)"
 
 [[bugs]]
 title = "Silo resource discoverability"

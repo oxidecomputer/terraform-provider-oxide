@@ -70,6 +70,20 @@ resource "oxide_vpc" "{{.BlockName}}" {
   }
 `
 
+var resourceSkipDefaultSubnetConfigTpl = `
+data "oxide_project" "{{.SupportBlockName}}" {
+	name = "tf-acc-test"
+}
+
+resource "oxide_vpc" "{{.BlockName}}" {
+	project_id          = data.oxide_project.{{.SupportBlockName}}.id
+	description         = "a test VPC without a default subnet"
+	name                = "{{.VPCName}}"
+	dns_name            = "no-default-subnet"
+	skip_default_subnet = true
+}
+`
+
 func TestAccCloudResourceVPC_full(t *testing.T) {
 	vpcName := sharedtest.NewResourceName()
 	blockName := sharedtest.NewBlockName("vpc")
@@ -137,8 +151,78 @@ func TestAccCloudResourceVPC_full(t *testing.T) {
 	})
 }
 
+func TestAccCloudResourceVPC_skipDefaultSubnet(t *testing.T) {
+	vpcName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("vpc")
+	resourceName := fmt.Sprintf("oxide_vpc.%s", blockName)
+	supportBlockName := sharedtest.NewBlockName("support")
+	config := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			BlockName:        blockName,
+			VPCName:          vpcName,
+			SupportBlockName: supportBlockName,
+		},
+		resourceSkipDefaultSubnetConfigTpl,
+	)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						resourceName,
+						"skip_default_subnet",
+						"true",
+					),
+					testAccCheckNoSubnets(resourceName),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"skip_default_subnet",
+				},
+			},
+		},
+	})
+}
+
+func testAccCheckNoSubnets(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		client, err := sharedtest.NewTestClient()
+		if err != nil {
+			return err
+		}
+
+		subnets, err := client.VpcSubnetListAllPages(
+			context.Background(),
+			oxide.VpcSubnetListParams{Vpc: oxide.NameOrId(rs.Primary.ID)},
+		)
+		if err != nil {
+			return err
+		}
+		if len(subnets) != 0 {
+			return fmt.Errorf("expected VPC to have no subnets, got %d", len(subnets))
+		}
+
+		return nil
+	}
+}
+
 func checkResource(resourceName, vpcName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckNoResourceAttr(resourceName, "skip_default_subnet"),
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test vpc"),
 		resource.TestCheckResourceAttr(resourceName, "name", vpcName),

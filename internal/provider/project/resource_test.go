@@ -43,6 +43,14 @@ resource "oxide_project" "{{.BlockName}}" {
   }
 `
 
+var resourceSkipDefaultVPCConfigTpl = `
+resource "oxide_project" "{{.BlockName}}" {
+	description      = "a test project without a default VPC"
+	name             = "{{.ProjectName}}"
+	skip_default_vpc = true
+}
+`
+
 func TestAccCloudResourceProject_full(t *testing.T) {
 	projectName := sharedtest.NewResourceName()
 	blockName := sharedtest.NewBlockName("project")
@@ -86,8 +94,78 @@ func TestAccCloudResourceProject_full(t *testing.T) {
 	})
 }
 
+func TestAccCloudResourceProject_skipDefaultVPC(t *testing.T) {
+	projectName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("project")
+	resourceName := fmt.Sprintf("oxide_project.%s", blockName)
+	config := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			BlockName:   blockName,
+			ProjectName: projectName,
+		},
+		resourceSkipDefaultVPCConfigTpl,
+	)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		CheckDestroy:             testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "skip_default_vpc", "true"),
+					testAccCheckDefaultVPC(resourceName, false),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"skip_default_vpc",
+				},
+			},
+		},
+	})
+}
+
+// testAccCheckDefaultVPC checks whether the project has only the default VPC
+// or no VPCs at all.
+func testAccCheckDefaultVPC(resourceName string, want bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+
+		client, err := sharedtest.NewTestClient()
+		if err != nil {
+			return err
+		}
+
+		vpcs, err := client.VpcListAllPages(
+			context.Background(),
+			oxide.VpcListParams{Project: oxide.NameOrId(rs.Primary.ID)},
+		)
+		if err != nil {
+			return err
+		}
+		if want && (len(vpcs) != 1 || vpcs[0].Name != "default") {
+			return fmt.Errorf("expected project to have only the default VPC, got %v", vpcs)
+		}
+		if !want && len(vpcs) != 0 {
+			return fmt.Errorf("expected project to have no VPCs, got %d", len(vpcs))
+		}
+
+		return nil
+	}
+}
+
 func checkResource(resourceName, projectName string) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
+		resource.TestCheckNoResourceAttr(resourceName, "skip_default_vpc"),
+		testAccCheckDefaultVPC(resourceName, true),
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "description", "a test project"),
 		resource.TestCheckResourceAttr(resourceName, "name", projectName),
