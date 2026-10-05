@@ -27,6 +27,7 @@ type resourceConfig struct {
 	ResourceType   string
 	SiloName       string
 	SiloDNSName    string
+	IdentityMode   string
 	MoveFromLegacy bool
 }
 
@@ -58,7 +59,7 @@ resource "{{.ResourceType}}" "{{.BlockName}}" {
   name          = "{{.SiloName}}"
   description   = "Managed by Terraform."
   discoverable  = true
-  identity_mode = "local_only"
+  identity_mode = "{{or .IdentityMode "local_only"}}"
 
   quotas = {
     cpus    = 2
@@ -321,7 +322,7 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: config,
-				Check:  checkResource(resourceName, siloName),
+				Check:  checkResource(resourceName, siloName, "local_only"),
 			},
 			{
 				Config: configUpdate,
@@ -333,6 +334,79 @@ func TestAccSiloResourceSilo_full(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"discoverable",
+				},
+			},
+		},
+	})
+}
+
+func TestAccSiloResourceSilo_samlScim(t *testing.T) {
+	t.Setenv(resource.EnvTfAccProviderNamespace, "oxidecomputer")
+
+	siloName := sharedtest.NewResourceName()
+	blockName := sharedtest.NewBlockName("silo")
+	resourceName := fmt.Sprintf("oxide_system_silo.%s", blockName)
+
+	config := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			BlockName:    blockName,
+			ResourceType: "oxide_system_silo",
+			SiloName:     siloName,
+			SiloDNSName:  sharedtest.SiloDNSName(),
+			IdentityMode: string(oxide.SiloIdentityModeSamlScim),
+		},
+		resourceConfigTpl,
+	)
+
+	configLocalOnly := sharedtest.ParsedAccConfig(t,
+		resourceConfig{
+			BlockName:    blockName,
+			ResourceType: "oxide_system_silo",
+			SiloName:     siloName,
+			SiloDNSName:  sharedtest.SiloDNSName(),
+			IdentityMode: string(oxide.SiloIdentityModeLocalOnly),
+		},
+		resourceConfigTpl,
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { sharedtest.PreCheck(t) },
+		ProtoV6ProviderFactories: sharedtest.ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"tls": {
+				Source: "hashicorp/tls",
+			},
+		},
+		CheckDestroy: testAccResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: checkResource(
+					resourceName,
+					siloName,
+					string(oxide.SiloIdentityModeSamlScim),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"discoverable",
+				},
+			},
+			{
+				// Changing the identity mode requires replacing the silo.
+				Config:             configLocalOnly,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionReplace,
+						),
+					},
 				},
 			},
 		},
@@ -382,7 +456,7 @@ func TestAccSiloResourceSilo_moveFromDeprecated(t *testing.T) {
 			{
 				Config: deprecatedConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					checkResource(deprecatedResourceName, siloName),
+					checkResource(deprecatedResourceName, siloName, "local_only"),
 					sharedtest.CaptureResourceID(
 						deprecatedResourceName,
 						&siloID,
@@ -397,7 +471,7 @@ func TestAccSiloResourceSilo_moveFromDeprecated(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					checkResource(resourceName, siloName),
+					checkResource(resourceName, siloName, "local_only"),
 					resource.TestCheckResourceAttrPtr(
 						resourceName,
 						"id",
@@ -409,7 +483,11 @@ func TestAccSiloResourceSilo_moveFromDeprecated(t *testing.T) {
 	})
 }
 
-func checkResource(resourceName string, siloName string) resource.TestCheckFunc {
+func checkResource(
+	resourceName string,
+	siloName string,
+	identityMode string,
+) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
 		resource.TestCheckResourceAttr(resourceName, "name", siloName),
@@ -418,7 +496,7 @@ func checkResource(resourceName string, siloName string) resource.TestCheckFunc 
 		resource.TestCheckResourceAttr(resourceName, "quotas.memory", "8589934592"),
 		resource.TestCheckResourceAttr(resourceName, "quotas.storage", "8589934592"),
 		resource.TestCheckResourceAttr(resourceName, "discoverable", "true"),
-		resource.TestCheckResourceAttr(resourceName, "identity_mode", "local_only"),
+		resource.TestCheckResourceAttr(resourceName, "identity_mode", identityMode),
 		resource.TestCheckResourceAttrSet(resourceName, "mapped_fleet_roles.admin.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "mapped_fleet_roles.viewer.0"),
 		resource.TestCheckResourceAttrSet(resourceName, "time_created"),

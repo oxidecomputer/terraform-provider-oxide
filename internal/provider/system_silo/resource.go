@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -264,14 +263,16 @@ attributes will result in the silo being destroyed and created anew.
 				MarkdownDescription: "This attribute is ignored because the Oxide API no longer supports configuring silo discoverability.",
 			},
 			"identity_mode": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
+				Required:    true,
 				Description: "How users and groups are managed in the silo.",
-				Default:     stringdefault.StaticString(string(oxide.SiloIdentityModeLocalOnly)),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						string(oxide.SiloIdentityModeLocalOnly),
 						string(oxide.SiloIdentityModeSamlJit),
+						string(oxide.SiloIdentityModeSamlScim),
 					),
 				},
 			},
