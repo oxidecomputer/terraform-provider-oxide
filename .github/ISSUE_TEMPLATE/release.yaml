@@ -1,7 +1,7 @@
 name: Release
 description: Request a new release to be published.
 title: "Release: Terraform Provider"
-projects: ["oxidecomputer/116"]
+labels: ["Terraform Provider", "Task"]
 body:
   - type: markdown
     attributes:
