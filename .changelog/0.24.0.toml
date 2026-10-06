@@ -1,14 +1,22 @@
 [[breaking]]
-title = ""
-description = ""
+title = "`oxide_silo`"
+description = "Changing `identity_mode` now replaces the silo. There's no API to update a silo's `identity_mode`, so previously Terraform reported a successful update that was never actually applied, leading to a diff on every subsequent plan. Additionally, `identity_mode` is now required. [#877](https://github.com/oxidecomputer/terraform-provider-oxide/issues/877)"
+
+[[breaking]]
+title = "`oxide_system_silo`"
+description = "Changing `identity_mode` now replaces the silo. There's no API to update a silo's `identity_mode`, so previously Terraform reported a successful update that was never actually applied, leading to a diff on every subsequent plan. Additionally, `identity_mode` is now required. [#877](https://github.com/oxidecomputer/terraform-provider-oxide/issues/877)"
 
 [[features]]
 title = ""
 description = ""
 
 [[enhancements]]
-title = ""
-description = ""
+title = "`oxide_silo`"
+description = "Added support for the `saml_scim` identity mode. [#877](https://github.com/oxidecomputer/terraform-provider-oxide/issues/877)"
+
+[[enhancements]]
+title = "`oxide_system_silo`"
+description = "Added support for the `saml_scim` identity mode. [#877](https://github.com/oxidecomputer/terraform-provider-oxide/issues/877)"
 
 [[bugs]]
 title = ""

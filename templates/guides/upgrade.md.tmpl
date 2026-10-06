@@ -17,6 +17,47 @@ Refer to the
 [changelog](https://github.com/oxidecomputer/terraform-provider-oxide/blob/main/CHANGELOG.md)
 for a full list of changes.
 
+## Upgrading to `0.24.0`
+
+Release `0.24.0` contains changes that may require updates to Terraform
+configuration files.
+
+### Resource `oxide_silo`
+
+#### Breaking change: attribute schema change
+
+Changing `identity_mode` now replaces the silo. There's no API to update a
+silo's `identity_mode`, so previously Terraform reported a successful update
+that was never actually applied, leading to a diff on every subsequent plan.
+
+If your configuration sets an `identity_mode` that doesn't match the silo, the
+next apply will destroy and re-create the silo. After upgrading, run `terraform
+plan` and look for `identity_mode` marked `# forces replacement`. To keep
+the silo, set `identity_mode` to its current value, shown on the left side of
+that diff. Consider adding `lifecycle { prevent_destroy = true }` to silos as
+a safeguard.
+
+`identity_mode` is now required. Configurations that omitted it, and relied on
+the `local_only` default, must set it to the silo's current value.
+
+### Resource `oxide_system_silo`
+
+#### Breaking change: attribute schema change
+
+Changing `identity_mode` now replaces the silo. There's no API to update a
+silo's `identity_mode`, so previously Terraform reported a successful update
+that was never actually applied, leading to a diff on every subsequent plan.
+
+If your configuration sets an `identity_mode` that doesn't match the silo, the
+next apply will destroy and re-create the silo. After upgrading, run `terraform
+plan` and look for `identity_mode` marked `# forces replacement`. To keep
+the silo, set `identity_mode` to its current value, shown on the left side of
+that diff. Consider adding `lifecycle { prevent_destroy = true }` to silos as
+a safeguard.
+
+`identity_mode` is now required. Configurations that omitted it, and relied on
+the `local_only` default, must set it to the silo's current value.
+
 ## Upgrading to `0.22.0`
 
 Release `0.22.0` contains changes that may require updates to Terraform
