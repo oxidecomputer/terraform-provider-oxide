@@ -212,9 +212,11 @@ attributes will result in the silo being destroyed and created anew.
 				},
 			},
 			"tls_certificates": schema.ListNestedAttribute{
-				Required:    true,
-				WriteOnly:   true,
-				Description: "Initial TLS certificates to be used for the new silo's console and API endpoints.",
+				Required:  true,
+				WriteOnly: true,
+				MarkdownDescription: "Initial TLS certificates for the silo's console and API endpoints, which must be valid for the silo's DNS name. " +
+					"These are only applied at silo creation. Modifications are not applied to an existing silo. " +
+					"Use the `oxide_system_certificate` resource to manage certificates after the silo is created.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{

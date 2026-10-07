@@ -59,7 +59,7 @@ resource "oxide_silo" "example" {
 - `identity_mode` (String) How users and groups are managed in the silo.
 - `name` (String) Unique, immutable, user-controlled identifier of the silo.
 - `quotas` (Attributes) Limits the amount of provisionable CPU, memory, and storage in the silo. (see [below for nested schema](#nestedatt--quotas))
-- `tls_certificates` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Initial TLS certificates to be used for the new silo's console and API endpoints. (see [below for nested schema](#nestedatt--tls_certificates))
+- `tls_certificates` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Initial TLS certificates for the silo's console and API endpoints, which must be valid for the silo's DNS name. These are only applied at silo creation. Modifications are not applied to an existing silo. Use the `oxide_system_certificate` resource to manage certificates after the silo is created. (see [below for nested schema](#nestedatt--tls_certificates))
 
 ### Optional
 
