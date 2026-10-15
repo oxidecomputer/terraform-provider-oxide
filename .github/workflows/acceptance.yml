@@ -2,6 +2,8 @@ name: acceptance
 on:
   release:
     types: [published, unpublished, edited]
+permissions:
+  contents: read
 jobs:
   acceptance:
     runs-on: ubuntu-latest
