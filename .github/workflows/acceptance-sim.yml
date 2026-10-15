@@ -20,6 +20,9 @@ on:
       testrail-api-key:
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   acceptance:
     runs-on: ubuntu-latest

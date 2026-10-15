@@ -10,6 +10,9 @@ concurrency:
   group: "PR #${{ github.event.pull_request.number }}"
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   backport:
     if: "github.event.pull_request.merged"
