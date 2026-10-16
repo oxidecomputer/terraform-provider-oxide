@@ -34,6 +34,7 @@ import (
 	instanceexternalips "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/instance_external_ips"
 	ippool "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/ip_pool"
 	ippoolsilolink "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/ip_pool_silo_link"
+	ippools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/ip_pools"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/project"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/projects"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/silo"
@@ -211,6 +212,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		images.NewDataSource,
 		instanceexternalips.NewDataSource,
 		ippool.NewDataSource,
+		ippools.NewDataSource,
 		project.NewDataSource,
 		projects.NewDataSource,
 		silo.NewDataSource,
