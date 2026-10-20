@@ -7,8 +7,8 @@ title = "`oxide_system_silo`"
 description = "Changing `identity_mode` now replaces the silo. There's no API to update a silo's `identity_mode`, so previously Terraform reported a successful update that was never actually applied, leading to a diff on every subsequent plan. Additionally, `identity_mode` is now required. [#877](https://github.com/oxidecomputer/terraform-provider-oxide/issues/877)"
 
 [[features]]
-title = ""
-description = ""
+title = "New data source"
+description = "`oxide_anti_affinity_group_members`"
 
 [[enhancements]]
 title = "`oxide_silo`"
