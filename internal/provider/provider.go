@@ -22,6 +22,7 @@ import (
 
 	addresslot "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/address_lot"
 	antiaffinitygroup "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/anti_affinity_group"
+	antiaffinitygroupmembers "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/anti_affinity_group_members"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/credentials"
 	currentuser "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/current_user"
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/disk"
@@ -204,6 +205,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 	return []func() datasource.DataSource{
 		addresslot.NewDataSource,
 		antiaffinitygroup.NewDataSource,
+		antiaffinitygroupmembers.NewDataSource,
 		currentuser.NewDataSource,
 		disk.NewDataSource,
 		floatingip.NewDataSource,
