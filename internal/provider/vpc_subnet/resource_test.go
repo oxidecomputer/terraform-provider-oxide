@@ -14,15 +14,17 @@ import (
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/oxidecomputer/oxide.go/oxide"
 )
 
 type resourceConfig struct {
-	SubnetName  string
-	Description string
-	IPv4Block   string
-	IPv6Block   string // optional, rendered conditionally
+	SubnetName   string
+	Description  string
+	IPv4Block    string
+	IPv6Block    string // optional, rendered conditionally
+	CustomRouter bool
 }
 
 var resourceConfigTpl = `
@@ -38,6 +40,12 @@ resource "oxide_vpc" "test" {
 	ipv6_prefix = "fdfe:f6a5:5f06::/48"
 }
 
+resource "oxide_vpc_router" "test" {
+	vpc_id      = oxide_vpc.test.id
+	description = "a test vpc router"
+	name        = "terraform-acc-vpc-subnet-router"
+}
+
 resource "oxide_vpc_subnet" "test" {
 	vpc_id      = oxide_vpc.test.id
 	description = "{{.Description}}"
@@ -45,6 +53,9 @@ resource "oxide_vpc_subnet" "test" {
 	ipv4_block  = "{{.IPv4Block}}"
 {{- if .IPv6Block}}
 	ipv6_block  = "{{.IPv6Block}}"
+{{- end}}
+{{- if .CustomRouter}}
+	custom_router_id = oxide_vpc_router.test.id
 {{- end}}
 	timeouts = {
 		read   = "1m"
@@ -75,6 +86,14 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 	updateConfig.SubnetName = "terraform-acc-vpc-subnet-updated"
 	updateConfig.Description = "a test vpc subnety"
 
+	// In-place update config attaching a custom router.
+	routerConfig := updateConfig
+	routerConfig.CustomRouter = true
+
+	// In-place update config renaming the subnet while the router stays attached.
+	routerRenameConfig := routerConfig
+	routerRenameConfig.SubnetName = "terraform-acc-vpc-subnet-router"
+
 	// Recreate config with v6 cidr.
 	ipv6Config := baseConfig
 	ipv6Config.SubnetName = "terraform-acc-vpc-subnet-v6"
@@ -94,9 +113,58 @@ func TestAccCloudResourceVPCSubnet_full(t *testing.T) {
 				Check:  checkResourceUpdate("terraform-acc-vpc-subnet-updated"),
 			},
 			{
+				Config: buildResourceConfig(t, routerConfig),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionUpdate,
+						),
+					},
+				},
+				Check: resource.TestCheckResourceAttrPair(
+					resourceName,
+					"custom_router_id",
+					"oxide_vpc_router.test",
+					"id",
+				),
+			},
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: buildResourceConfig(t, routerRenameConfig),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						resourceName,
+						"name",
+						"terraform-acc-vpc-subnet-router",
+					),
+					resource.TestCheckResourceAttrPair(
+						resourceName,
+						"custom_router_id",
+						"oxide_vpc_router.test",
+						"id",
+					),
+				),
+			},
+			{
+				// Removing custom_router_id detaches the router in place.
+				Config: buildResourceConfig(t, updateConfig),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionUpdate,
+						),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceUpdate("terraform-acc-vpc-subnet-updated"),
+					resource.TestCheckNoResourceAttr(resourceName, "custom_router_id"),
+				),
 			},
 			{
 				Config: buildResourceConfig(t, ipv6Config),

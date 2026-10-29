@@ -42,15 +42,16 @@ type Resource struct {
 }
 
 type ResourceModel struct {
-	Description  types.String         `tfsdk:"description"`
-	ID           types.String         `tfsdk:"id"`
-	IPV4Block    cidrtypes.IPv4Prefix `tfsdk:"ipv4_block"`
-	IPV6Block    cidrtypes.IPv6Prefix `tfsdk:"ipv6_block"`
-	Name         types.String         `tfsdk:"name"`
-	VPCID        types.String         `tfsdk:"vpc_id"`
-	TimeCreated  types.String         `tfsdk:"time_created"`
-	TimeModified types.String         `tfsdk:"time_modified"`
-	Timeouts     timeouts.Value       `tfsdk:"timeouts"`
+	CustomRouterID types.String         `tfsdk:"custom_router_id"`
+	Description    types.String         `tfsdk:"description"`
+	ID             types.String         `tfsdk:"id"`
+	IPV4Block      cidrtypes.IPv4Prefix `tfsdk:"ipv4_block"`
+	IPV6Block      cidrtypes.IPv6Prefix `tfsdk:"ipv6_block"`
+	Name           types.String         `tfsdk:"name"`
+	VPCID          types.String         `tfsdk:"vpc_id"`
+	TimeCreated    types.String         `tfsdk:"time_created"`
+	TimeModified   types.String         `tfsdk:"time_modified"`
+	Timeouts       timeouts.Value       `tfsdk:"timeouts"`
 }
 
 // Metadata returns the resource type name.
@@ -136,6 +137,17 @@ This resource manages VPC subnets.
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
+			"custom_router_id": schema.StringAttribute{
+				Optional: true,
+				Description: "ID the custom router used to direct packets sent from hosts " +
+					"in this subnet to any destination address. " +
+					"Custom routers apply in addition to the VPC system router, " +
+					"and have higher priority than the system router " +
+					"for an otherwise equal-prefix-length match.",
+				Validators: []validator.String{
+					oxidevalidator.IsUUID(),
+				},
+			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
@@ -186,10 +198,11 @@ func (r *Resource) Create(
 	params := oxide.VpcSubnetCreateParams{
 		Vpc: oxide.NameOrId(plan.VPCID.ValueString()),
 		Body: &oxide.VpcSubnetCreate{
-			Description: plan.Description.ValueString(),
-			Name:        oxide.Name(plan.Name.ValueString()),
-			Ipv4Block:   oxide.Ipv4Net(plan.IPV4Block.ValueString()),
-			Ipv6Block:   oxide.Ipv6Net(plan.IPV6Block.ValueString()),
+			Description:  plan.Description.ValueString(),
+			Name:         oxide.Name(plan.Name.ValueString()),
+			Ipv4Block:    oxide.Ipv4Net(plan.IPV4Block.ValueString()),
+			Ipv6Block:    oxide.Ipv6Net(plan.IPV6Block.ValueString()),
+			CustomRouter: oxide.NameOrId(plan.CustomRouterID.ValueString()),
 		},
 	}
 	subnet, err := r.client.VpcSubnetCreate(ctx, params)
@@ -264,6 +277,11 @@ func (r *Resource) Read(
 		map[string]any{"success": true},
 	)
 
+	// The API returns an empty string when no custom router is attached.
+	state.CustomRouterID = types.StringNull()
+	if subnet.CustomRouterId != "" {
+		state.CustomRouterID = types.StringValue(subnet.CustomRouterId)
+	}
 	state.Description = types.StringValue(subnet.Description)
 	state.ID = types.StringValue(subnet.Id)
 	state.IPV4Block = cidrtypes.NewIPv4PrefixValue(string(subnet.Ipv4Block))
@@ -313,8 +331,9 @@ func (r *Resource) Update(
 	params := oxide.VpcSubnetUpdateParams{
 		Subnet: oxide.NameOrId(state.ID.ValueString()),
 		Body: &oxide.VpcSubnetUpdate{
-			Description: plan.Description.ValueString(),
-			Name:        oxide.Name(plan.Name.ValueString()),
+			Description:  plan.Description.ValueString(),
+			Name:         oxide.Name(plan.Name.ValueString()),
+			CustomRouter: oxide.NameOrId(plan.CustomRouterID.ValueString()),
 		},
 	}
 	subnet, err := r.client.VpcSubnetUpdate(ctx, params)

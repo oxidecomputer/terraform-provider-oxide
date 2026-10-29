@@ -18,6 +18,10 @@ description = "Added support for the `saml_scim` identity mode. [#877](https://g
 title = "`oxide_system_silo`"
 description = "Added support for the `saml_scim` identity mode. [#877](https://github.com/oxidecomputer/terraform-provider-oxide/issues/877)"
 
+[[enhancements]]
+title = "`oxide_vpc_subnet`"
+description = "Added the `custom_router_id` attribute to attach a custom VPC router to the subnet. [#479](https://github.com/oxidecomputer/terraform-provider-oxide/issues/479)"
+
 [[bugs]]
 title = ""
 description = ""
