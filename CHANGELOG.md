@@ -1,3 +1,13 @@
+# 0.23.1 (2026/Oct/29)
+
+### Enhancements
+
+- **`oxide_vpc_subnet`:** Added the `custom_router_id` attribute to attach a custom VPC router to the subnet. [#479](https://github.com/oxidecomputer/terraform-provider-oxide/issues/479)
+
+### List of commits
+
+- [846cc65](https://github.com/oxidecomputer/terraform-provider-oxide/commit/846cc65) feat: `oxide_vpc_subnet` custom router support (#883)
+
 # 0.23.0 (2026/Sep/29)
 
 ### Breaking changes
