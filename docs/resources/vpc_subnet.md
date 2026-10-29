@@ -45,6 +45,7 @@ data "oxide_vpc" "default" {
 
 ### Optional
 
+- `custom_router_id` (String) ID the custom router used to direct packets sent from hosts in this subnet to any destination address. Custom routers apply in addition to the VPC system router, and have higher priority than the system router for an otherwise equal-prefix-length match.
 - `ipv6_block` (String) IPv6 address range for this VPC subnet. It must be allocated from the RFC 4193 Unique Local Address range, with the prefix equal to the parent VPC's prefix. A random `/64` block will be assigned if one is not provided. It must not overlap with any existing subnet in the VPC.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
