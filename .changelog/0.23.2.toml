@@ -1,0 +1,3 @@
+[[enhancements]]
+title = "Update Go version"
+description = "Update Go version to v1.27.3. [#887](https://github.com/oxidecomputer/terraform-provider-oxide/pull/887)"
