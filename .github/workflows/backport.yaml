@@ -11,7 +11,8 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  # The backport tool needs to read/write files, branches, and pull requests.
+  contents: "write"
 
 jobs:
   backport:
