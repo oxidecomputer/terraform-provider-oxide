@@ -1,3 +1,13 @@
+# 0.23.2 (2026/Oct/30)
+
+### Enhancements
+
+- **Update Go version:** Update Go version to v1.27.3. [#887](https://github.com/oxidecomputer/terraform-provider-oxide/pull/887)
+
+### List of commits
+
+- [1a03a24](https://github.com/oxidecomputer/terraform-provider-oxide/commit/1a03a24) Backport of "deps: update Go and related dependencies" to rel/v0.23 (#888)
+
 # 0.23.1 (2026/Oct/29)
 
 ### Enhancements
