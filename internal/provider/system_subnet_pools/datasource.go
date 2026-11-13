@@ -21,8 +21,17 @@ import (
 var _ datasource.DataSource = (*DataSource)(nil)
 var _ datasource.DataSourceWithConfigure = (*DataSource)(nil)
 
+const (
+	dataSourceTypeName           = "oxide_system_subnet_pools"
+	deprecatedDataSourceTypeName = "oxide_subnet_pools"
+	deprecationMessage           = "Use oxide_system_subnet_pools instead. " +
+		"The oxide_subnet_pools data source will be removed in a future release."
+)
+
 type DataSource struct {
-	client *oxide.Client
+	client             *oxide.Client
+	typeName           string
+	deprecationMessage string
 }
 
 type DataSourceModel struct {
@@ -42,7 +51,15 @@ type SubnetPoolDataSourceModel struct {
 
 // NewDataSource initialises a system_subnet_pools data source.
 func NewDataSource() datasource.DataSource {
-	return &DataSource{}
+	return &DataSource{typeName: dataSourceTypeName}
+}
+
+// NewDeprecatedDataSource initialises the deprecated subnet_pools data source.
+func NewDeprecatedDataSource() datasource.DataSource {
+	return &DataSource{
+		typeName:           deprecatedDataSourceTypeName,
+		deprecationMessage: deprecationMessage,
+	}
 }
 
 func (d *DataSource) Metadata(
@@ -50,7 +67,7 @@ func (d *DataSource) Metadata(
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
 ) {
-	resp.TypeName = "oxide_system_subnet_pools"
+	resp.TypeName = d.typeName
 }
 
 // Configure adds the provider configured client to the data source.
@@ -71,8 +88,15 @@ func (d *DataSource) Schema(
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
 ) {
+	markdownDescription := "Retrieve all configured subnet pools for the Oxide system."
+	if d.deprecationMessage != "" {
+		markdownDescription = "-> **Deprecated:** Use the `oxide_system_subnet_pools` data source instead.\n\n" +
+			markdownDescription
+	}
+
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Retrieve all configured subnet pools for the Oxide system.",
+		DeprecationMessage:  d.deprecationMessage,
+		MarkdownDescription: markdownDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
