@@ -61,6 +61,7 @@ import (
 	vpcrouter "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_router"
 	vpcrouterroute "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_router_route"
 	vpcsubnet "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpc_subnet"
+	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/vpcs"
 )
 
 var _ provider.Provider = (*oxideProvider)(nil)
@@ -221,6 +222,7 @@ func (p *oxideProvider) DataSources(_ context.Context) []func() datasource.DataS
 		systemippools.NewDataSource,
 		systemsubnetpools.NewDataSource,
 		vpc.NewDataSource,
+		vpcs.NewDataSource,
 		vpcinternetgateway.NewDataSource,
 		vpcrouter.NewDataSource,
 		vpcrouterroute.NewDataSource,
