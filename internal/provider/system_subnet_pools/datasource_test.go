@@ -5,15 +5,55 @@
 package systemsubnetpools_test
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
 
+	fwdatasource "github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 
 	"github.com/oxidecomputer/terraform-provider-oxide/internal/provider/sharedtest"
+	systemsubnetpools "github.com/oxidecomputer/terraform-provider-oxide/internal/provider/system_subnet_pools"
 )
+
+func TestDataSourceMetadataAndDeprecation(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		dataSource         fwdatasource.DataSource
+		typeName           string
+		deprecationMessage string
+	}{
+		"canonical": {
+			dataSource: systemsubnetpools.NewDataSource(),
+			typeName:   "oxide_system_subnet_pools",
+		},
+		"deprecated": {
+			dataSource: systemsubnetpools.NewDeprecatedDataSource(),
+			typeName:   "oxide_subnet_pools",
+			deprecationMessage: "Use oxide_system_subnet_pools instead. " +
+				"The oxide_subnet_pools data source will be removed in a future release.",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			metadataResponse := &fwdatasource.MetadataResponse{}
+			test.dataSource.Metadata(ctx, fwdatasource.MetadataRequest{}, metadataResponse)
+			require.Equal(t, test.typeName, metadataResponse.TypeName)
+
+			schemaResponse := &fwdatasource.SchemaResponse{}
+			test.dataSource.Schema(ctx, fwdatasource.SchemaRequest{}, schemaResponse)
+			require.Equal(t, test.deprecationMessage, schemaResponse.Schema.DeprecationMessage)
+		})
+	}
+}
 
 func TestAccDataSourceSystemSubnetPools_full(t *testing.T) {
 	const dataSourceName = "data.oxide_system_subnet_pools.test"
